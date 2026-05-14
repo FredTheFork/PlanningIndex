@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 
 import Layout from './components/Layout';
-import { Header } from './components/layout/Header';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Marketing pages
 import WhatsIncludedPage from './pages/WhatsIncludedPage';
@@ -11,13 +10,16 @@ import HowItWorksPage from './pages/HowItWorksPage';
 import AdditionalServicesPage from './pages/AdditionalServicesPage';
 import AboutPage from './pages/AboutPage';
 
-// App / Stripe flow pages
-import { Home } from './pages/Home';
-import { Login } from './pages/Login';
-import { Signup } from './pages/Signup';
-import { Products } from './pages/Products';
-import { Dashboard } from './pages/Dashboard';
+// Public flow pages
+import CheckoutPage from './pages/Checkout';
 import { Success } from './pages/Success';
+
+// Personal area pages
+import PersonalLayout from './pages/personal/PersonalLayout';
+import PersonalOverview from './pages/personal/PersonalOverview';
+import PersonalIntake from './pages/personal/PersonalIntake';
+import PersonalStatus from './pages/personal/PersonalStatus';
+import PersonalDocuments from './pages/personal/PersonalDocuments';
 
 // Home sections
 import Hero from './components/Hero';
@@ -56,22 +58,8 @@ function PlaceholderPage({ title }: { title: string }) {
 }
 
 export default function App() {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(docHeight > 0 ? (scrollTop / docHeight) * 100 : 0);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   return (
     <Router>
-      <Header />
-
       <Routes>
         {/* Marketing site */}
         <Route element={<Layout />}>
@@ -84,12 +72,24 @@ export default function App() {
           <Route path="/faq" element={<PlaceholderPage title="FAQ" />} />
         </Route>
 
-        {/* Auth / Stripe flow */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* Checkout flow (public) */}
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/success" element={<Success />} />
+
+        {/* Personal area (protected) */}
+        <Route
+          path="/personal"
+          element={
+            <ProtectedRoute>
+              <PersonalLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<PersonalOverview />} />
+          <Route path="intake" element={<PersonalIntake />} />
+          <Route path="status" element={<PersonalStatus />} />
+          <Route path="documents" element={<PersonalDocuments />} />
+        </Route>
       </Routes>
     </Router>
   );

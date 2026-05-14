@@ -11,8 +11,8 @@ export interface StripeProduct {
 export const stripeProducts: StripeProduct[] = [
   {
     priceId: 'price_1TX34AGfxcDbzGRtxVtQN95g',
-    name: 'Foundationary Basic Package',
-    description: 'Essential foundation package to get you started',
+    name: 'Business Foundations Pack',
+    description: 'Complete business foundations pack for UK sole traders — 10 bespoke documents delivered in 24 hours',
     mode: 'payment',
     price: 149.00,
     currency: 'gbp',

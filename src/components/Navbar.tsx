@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useClientProfile } from '../hooks/useClientProfile';
 
 const navLinks = [
   { label: "What's Included", to: '/whats-included' },
@@ -13,6 +15,8 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const { profile } = useClientProfile();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -24,6 +28,8 @@ export default function Navbar() {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
+
+  const isPaidUser = user && profile;
 
   return (
     <nav
@@ -72,13 +78,35 @@ export default function Navbar() {
         </div>
 
         {/* Desktop CTA */}
-        <a
-          href="#" // TODO: Link to checkout
-          className="hidden lg:inline-block font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
-          style={{ padding: '10px 20px', fontSize: '0.9rem' }}
-        >
-          Get Your Pack — £149
-        </a>
+        <div className="hidden lg:flex items-center gap-3">
+          {isPaidUser ? (
+            <>
+              <Link
+                to="/personal"
+                className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
+                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              >
+                Personal
+              </Link>
+              <button
+                onClick={signOut}
+                className="font-inter font-medium text-secondary-text hover:text-navy transition-colors duration-200"
+                style={{ fontSize: '0.85rem' }}
+                title="Sign out"
+              >
+                <LogOut size={18} />
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/checkout"
+              className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
+              style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+            >
+              Get Your Pack — £149
+            </Link>
+          )}
+        </div>
 
         {/* Mobile hamburger */}
         <button
@@ -103,14 +131,34 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <a
-            href="#" // TODO: Link to checkout
-            className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
-            style={{ padding: '14px 32px', fontSize: '1rem' }}
-            onClick={() => setMobileOpen(false)}
-          >
-            Get Your Pack — £149
-          </a>
+          {isPaidUser ? (
+            <>
+              <Link
+                to="/personal"
+                className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
+                style={{ padding: '14px 32px', fontSize: '1rem' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Personal
+              </Link>
+              <button
+                onClick={() => { setMobileOpen(false); signOut(); }}
+                className="font-inter font-medium text-white mt-2"
+                style={{ fontSize: '1rem' }}
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/checkout"
+              className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
+              style={{ padding: '14px 32px', fontSize: '1rem' }}
+              onClick={() => setMobileOpen(false)}
+            >
+              Get Your Pack — £149
+            </Link>
+          )}
         </div>
       )}
     </nav>
