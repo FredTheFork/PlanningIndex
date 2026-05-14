@@ -40,6 +40,14 @@ function PlaceholderPage({ title }: { title: string }) {
     </div>
   );
 }
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Header } from './components/layout/Header';
+import { Home } from './pages/Home';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
+import { Products } from './pages/Products';
+import { Dashboard } from './pages/Dashboard';
+import { Success } from './pages/Success';
 
 function App() {
   const [progress, setProgress] = useState(0);
@@ -55,9 +63,19 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <div id="scroll-progress" style={{ width: `${progress}%` }} />
-      <Routes>
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/success" element={<Success />} />
+        </Routes>
+      </div>
+    </Router>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/whats-included" element={<WhatsIncludedPage />} />
