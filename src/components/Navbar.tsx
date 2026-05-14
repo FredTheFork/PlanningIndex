@@ -1,0 +1,118 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
+
+const navLinks = [
+  { label: "What's Included", to: '/whats-included' },
+  { label: 'How It Works', to: '/how-it-works' },
+  { label: 'Pricing', to: '/pricing' },
+  { label: 'Additional Services', to: '/additional-services' },
+  { label: 'About', to: '/about' },
+];
+
+export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
+  return (
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-border transition-shadow duration-200 ${
+        scrolled ? 'shadow-[0_2px_12px_rgba(27,63,122,0.08)]' : ''
+      }`}
+      style={{ height: 'clamp(64px, 8vw, 72px)' }}
+    >
+      <div className="max-w-[1200px] mx-auto px-6 h-full flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 shrink-0" style={{ height: 40 }}>
+          <svg width="36" height="40" viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="20" width="8" height="18" rx="1.5" fill="#1B3F7A" />
+            <rect x="26" y="20" width="8" height="18" rx="1.5" fill="#1B3F7A" />
+            <rect x="2" y="16" width="32" height="5" rx="1.5" fill="#1B3F7A" />
+            <path d="M18 2L22 10H14L18 2Z" fill="#1B3F7A" />
+            <rect x="16.5" y="10" width="3" height="8" rx="1" fill="#1B3F7A" />
+            <path d="M15 14L18 18L21 14" stroke="#1B3F7A" strokeWidth="1.5" fill="none" />
+          </svg>
+          <div className="flex flex-col">
+            <span className="font-inter font-bold text-navy leading-none" style={{ fontSize: '1.15rem' }}>
+              <span style={{ fontSize: '1.3rem' }}>F</span>oundationary
+            </span>
+            <span
+              className="font-inter font-semibold text-secondary-text"
+              style={{ fontSize: '0.65rem', letterSpacing: '0.12em', lineHeight: 1.2 }}
+            >
+              BUSINESS FOUNDATIONS. FAST.
+            </span>
+          </div>
+        </Link>
+
+        {/* Desktop nav */}
+        <div className="hidden lg:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              to={link.to}
+              className="font-inter font-medium text-secondary-text hover:text-navy relative group"
+              style={{ fontSize: '0.9rem' }}
+            >
+              {link.label}
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-medium-blue transition-all duration-200 group-hover:w-full" />
+            </Link>
+          ))}
+        </div>
+
+        {/* Desktop CTA */}
+        <a
+          href="#" // TODO: Link to checkout
+          className="hidden lg:inline-block font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
+          style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+        >
+          Get Your Pack — £149
+        </a>
+
+        {/* Mobile hamburger */}
+        <button
+          className="lg:hidden text-navy"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-navy z-40 flex flex-col items-center justify-center gap-8 lg:hidden">
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              to={link.to}
+              className="font-inter font-medium text-white text-2xl"
+              onClick={() => setMobileOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <a
+            href="#" // TODO: Link to checkout
+            className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
+            style={{ padding: '14px 32px', fontSize: '1rem' }}
+            onClick={() => setMobileOpen(false)}
+          >
+            Get Your Pack — £149
+          </a>
+        </div>
+      )}
+    </nav>
+  );
+}
