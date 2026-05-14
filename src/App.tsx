@@ -87,7 +87,6 @@ function App() {
         </Route>
       </Routes>
     </Router>
-    </BrowserRouter>
   );
 }
 
