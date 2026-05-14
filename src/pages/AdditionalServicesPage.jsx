@@ -178,7 +178,7 @@ function ServicesGrid() {
 
 function AddonsContext() {
   const points = [
-    'You don\'t need add-ons to be compliant or professional — the core pack covers that completely.',
+    "You don't need add-ons to be compliant or professional — the core pack covers that completely.",
     'The core pack is a standalone product. Everything in it works together without any extras.',
     'Add-ons are convenience and growth tools — they help you go further, not get started.',
   ];
@@ -191,7 +191,7 @@ function AddonsContext() {
           className="font-inter font-bold text-dark-text"
           style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}
         >
-          Add-ons extend. They don\'t complete.
+          Add-ons extend. They don't complete.
         </h2>
         <p
           className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
