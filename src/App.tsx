@@ -1,11 +1,25 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+
 import Layout from './components/Layout';
+import { Header } from './components/layout/Header';
+
+// Marketing pages
 import WhatsIncludedPage from './pages/WhatsIncludedPage';
 import PricingPage from './pages/PricingPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import AdditionalServicesPage from './pages/AdditionalServicesPage';
 import AboutPage from './pages/AboutPage';
+
+// App / Stripe flow pages
+import { Home } from './pages/Home';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
+import { Products } from './pages/Products';
+import { Dashboard } from './pages/Dashboard';
+import { Success } from './pages/Success';
+
+// Home sections
 import Hero from './components/Hero';
 import SocialProof from './components/SocialProof';
 import Problem from './components/Problem';
@@ -34,22 +48,14 @@ function PlaceholderPage({ title }: { title: string }) {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center">
-        <h1 className="font-inter font-bold text-navy" style={{ fontSize: '2rem' }}>{title}</h1>
-        <p className="font-inter font-normal text-secondary-text mt-3" style={{ fontSize: '1.05rem' }}>Coming soon.</p>
+        <h1 className="font-bold text-2xl">{title}</h1>
+        <p className="mt-3 text-gray-500">Coming soon.</p>
       </div>
     </div>
   );
 }
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Header } from './components/layout/Header';
-import { Home } from './pages/Home';
-import { Login } from './pages/Login';
-import { Signup } from './pages/Signup';
-import { Products } from './pages/Products';
-import { Dashboard } from './pages/Dashboard';
-import { Success } from './pages/Success';
 
-function App() {
+export default function App() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -64,18 +70,10 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/success" element={<Success />} />
-        </Routes>
-      </div>
+      <Header />
+
       <Routes>
+        {/* Marketing site */}
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/whats-included" element={<WhatsIncludedPage />} />
@@ -85,9 +83,14 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/faq" element={<PlaceholderPage title="FAQ" />} />
         </Route>
+
+        {/* Auth / Stripe flow */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/success" element={<Success />} />
       </Routes>
     </Router>
   );
 }
-
-export default App;
