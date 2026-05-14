@@ -75,7 +75,7 @@ function App() {
           <Route path="/success" element={<Success />} />
         </Routes>
       </div>
-    </Router>
+      <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/whats-included" element={<WhatsIncludedPage />} />
@@ -86,6 +86,7 @@ function App() {
           <Route path="/faq" element={<PlaceholderPage title="FAQ" />} />
         </Route>
       </Routes>
+    </Router>
     </BrowserRouter>
   );
 }
