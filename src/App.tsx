@@ -5,6 +5,7 @@ import WhatsIncludedPage from './pages/WhatsIncludedPage';
 import PricingPage from './pages/PricingPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import AdditionalServicesPage from './pages/AdditionalServicesPage';
+import AboutPage from './pages/AboutPage';
 import Hero from './components/Hero';
 import SocialProof from './components/SocialProof';
 import Problem from './components/Problem';
@@ -63,7 +64,7 @@ function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/additional-services" element={<AdditionalServicesPage />} />
-          <Route path="/about" element={<PlaceholderPage title="About" />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/faq" element={<PlaceholderPage title="FAQ" />} />
         </Route>
       </Routes>
