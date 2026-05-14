@@ -13,14 +13,18 @@ export default function CheckoutPage() {
     setError('');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured. Check your environment variables.');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           price_id: product.priceId,
-          mode: product.mode,
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/checkout`,
         }),
@@ -29,13 +33,16 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to start checkout');
+        throw new Error(data.error || `Checkout failed (status ${response.status})`);
       }
 
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned from server');
       }
     } catch (err) {
+      console.error('Checkout error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
