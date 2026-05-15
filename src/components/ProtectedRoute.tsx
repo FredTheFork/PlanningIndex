@@ -8,7 +8,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { profile, loading: profileLoading } = useClientProfile();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
 
-  if (authLoading || profileLoading || adminLoading) {
+  // Wait for all checks to complete before making any decisions
+  if (authLoading || adminLoading || (!isAdmin && profileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-off-white">
         <div className="text-center">

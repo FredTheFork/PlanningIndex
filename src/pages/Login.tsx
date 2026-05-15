@@ -33,6 +33,21 @@ export default function LoginPage() {
         return;
       }
 
+      // Check if this user is an admin and redirect accordingly
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: adminRecord } = await supabase
+          .from('admin_users')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (adminRecord) {
+          navigate('/personal/admin', { replace: true });
+          return;
+        }
+      }
+
       navigate('/personal', { replace: true });
     } catch {
       setError('Something went wrong. Please try again.');

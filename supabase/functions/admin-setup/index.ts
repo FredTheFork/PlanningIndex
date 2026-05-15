@@ -28,82 +28,109 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if admin already exists
-    const { data: existingAdmins } = await supabase
-      .from('admin_users')
-      .select('id')
-      .limit(1);
+    const body = await req.json().catch(() => ({}));
 
-    if (existingAdmins && existingAdmins.length > 0) {
-      return new Response(
-        JSON.stringify({ message: 'Admin account already exists', alreadyExists: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Handle force_reset: delete existing admin and recreate
+    if (body.action === 'force_reset') {
+      // Find and delete existing admin user
+      const { data: usersData } = await supabase.auth.admin.listUsers();
+      const existing = usersData?.users?.find((u: any) => u.email === ADMIN_EMAIL);
+
+      if (existing) {
+        // Delete from admin_users first (no FK cascade from auth side)
+        await supabase.from('admin_users').delete().eq('user_id', existing.id);
+        // Delete the auth user
+        await supabase.auth.admin.deleteUser(existing.id);
+      }
     }
 
-    // Create the auth user
+    // Check if admin already exists and is valid
+    if (body.action !== 'force_reset') {
+      const { data: existingAdmins } = await supabase
+        .from('admin_users')
+        .select('id, user_id')
+        .limit(1);
+
+      if (existingAdmins && existingAdmins.length > 0) {
+        // Verify the auth user actually works by checking they exist
+        const adminUserId = existingAdmins[0].user_id;
+        const { data: usersData } = await supabase.auth.admin.listUsers();
+        const authUser = usersData?.users?.find((u: any) => u.id === adminUserId);
+
+        if (authUser) {
+          // Also ensure password is correct by updating it
+          await supabase.auth.admin.updateUserById(adminUserId, {
+            password: ADMIN_PASSWORD,
+          });
+
+          return new Response(
+            JSON.stringify({
+              message: 'Admin account already exists, password refreshed',
+              alreadyExists: true,
+              email: ADMIN_EMAIL,
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Auth user doesn't exist but admin_users row does - clean up
+        await supabase.from('admin_users').delete().eq('id', existingAdmins[0].id);
+      }
+    }
+
+    // Create the auth user via the proper Auth API
     const { data: userData, error: createError } = await supabase.auth.admin.createUser({
       email: ADMIN_EMAIL,
       password: ADMIN_PASSWORD,
       email_confirm: true,
     });
 
+    let userId: string;
+
     if (createError) {
-      // User might already exist, try to find them
+      // User might already exist in auth - find them and update password
       const { data: usersData } = await supabase.auth.admin.listUsers();
       const existing = usersData?.users?.find((u: any) => u.email === ADMIN_EMAIL);
 
       if (!existing) {
         console.error('Failed to create admin user:', createError);
-        return new Response(JSON.stringify({ error: 'Failed to create admin user' }), {
+        return new Response(JSON.stringify({ error: 'Failed to create admin user: ' + createError.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Add to admin_users table
-      const { error: adminError } = await supabase
-        .from('admin_users')
-        .insert({ user_id: existing.id, role: 'super_admin' });
+      userId = existing.id;
 
-      if (adminError) {
-        console.error('Failed to create admin_users record:', adminError);
-        return new Response(JSON.stringify({ error: 'Failed to set admin role' }), {
+      // Update password to ensure it's correct
+      await supabase.auth.admin.updateUserById(userId, { password: ADMIN_PASSWORD });
+    } else {
+      if (!userData?.user) {
+        return new Response(JSON.stringify({ error: 'No user returned' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      return new Response(
-        JSON.stringify({ message: 'Admin role assigned to existing user', email: ADMIN_EMAIL }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      userId = userData.user.id;
     }
 
-    if (!userData?.user) {
-      return new Response(JSON.stringify({ error: 'No user returned' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Add to admin_users table
+    // Add to admin_users table (use upsert to handle duplicates)
     const { error: adminError } = await supabase
       .from('admin_users')
-      .insert({ user_id: userData.user.id, role: 'super_admin' });
+      .upsert({ user_id: userId, role: 'super_admin' }, { onConflict: 'user_id' });
 
     if (adminError) {
       console.error('Failed to create admin_users record:', adminError);
-      return new Response(JSON.stringify({ error: 'Failed to set admin role' }), {
+      return new Response(JSON.stringify({ error: 'Failed to set admin role: ' + adminError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.info(`Admin user created: ${userData.user.id}`);
+    console.info(`Admin user created/refreshed: ${userId}`);
 
     return new Response(
-      JSON.stringify({ message: 'Admin user created successfully', email: ADMIN_EMAIL }),
+      JSON.stringify({ message: 'Admin user created successfully', email: ADMIN_EMAIL, userId }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {

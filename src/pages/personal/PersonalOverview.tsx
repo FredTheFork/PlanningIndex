@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { useIsAdmin } from '../../hooks/useIsAdmin';
@@ -10,16 +9,12 @@ export default function PersonalOverview() {
   const { user } = useAuth();
   const { profile } = useClientProfile();
   const { isAdmin } = useIsAdmin();
-  const navigate = useNavigate();
 
-  // Redirect admin users to admin dashboard
-  useEffect(() => {
-    if (isAdmin) {
-      navigate('/personal/admin', { replace: true });
-    }
-  }, [isAdmin, navigate]);
+  // Admin users always go to admin dashboard
+  if (isAdmin) {
+    return <Navigate to="/personal/admin" replace />;
+  }
 
-  if (isAdmin) return null;
   if (!profile) return null;
 
   const getNextStep = () => {
