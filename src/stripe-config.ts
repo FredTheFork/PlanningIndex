@@ -16,7 +16,7 @@ const stripeMode = (import.meta.env.VITE_STRIPE_MODE ?? 'test') as 'test' | 'liv
 // You need to create the same product in both environments
 const priceIds: Record<string, { test: string; live: string }> = {
   business_foundations_pack: {
-    test: 'price_1TX34AGfxcDbzGRtxVtQN95g',
+    test: 'price_1TXLSaGfxcDbzGRtcNHEKwA7',
     live: 'price_1TX34AGfxcDbzGRtxVtQN95g', // Update this with your live price ID
   },
 };
