@@ -244,20 +244,5 @@ async function handleEvent(event: Stripe.Event) {
     }
   }
 
-  // Step 8: Send magic link
-  const { error: magicLinkError } = await supabase.auth.admin.generateLink({
-    type: 'magiclink',
-    email: customerEmail,
-    options: {
-      redirectTo: `${Deno.env.get('SITE_URL') ?? 'https://foundationary.co.uk'}/auth/callback`,
-    },
-  });
-
-  if (magicLinkError) {
-    console.error('Failed to send magic link:', magicLinkError);
-  } else {
-    console.info(`Magic link sent to ${customerEmail}`);
-  }
-
   console.info(`Successfully processed checkout for ${customerEmail}`);
 }
