@@ -23,6 +23,10 @@ import PersonalIntake from './pages/personal/PersonalIntake';
 import PersonalStatus from './pages/personal/PersonalStatus';
 import PersonalDocuments from './pages/personal/PersonalDocuments';
 
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminClientDetail from './pages/admin/AdminClientDetail';
+
 // Home sections
 import Hero from './components/Hero';
 import SocialProof from './components/SocialProof';
@@ -95,6 +99,8 @@ export default function App() {
           <Route path="intake" element={<PersonalIntake />} />
           <Route path="status" element={<PersonalStatus />} />
           <Route path="documents" element={<PersonalDocuments />} />
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin/:userId" element={<AdminClientDetail />} />
         </Route>
       </Routes>
     </Router>

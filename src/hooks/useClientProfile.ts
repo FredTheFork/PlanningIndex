@@ -11,6 +11,8 @@ export interface ClientProfile {
   delivery_status: 'not_started' | 'in_progress' | 'delivered';
   created_at: string;
   updated_at: string;
+  admin_notes: string;
+  purchased_upsells: string[];
 }
 
 export function useClientProfile() {

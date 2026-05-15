@@ -1,12 +1,25 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useClientProfile } from '../../hooks/useClientProfile';
+import { useIsAdmin } from '../../hooks/useIsAdmin';
+import { Link } from 'react-router-dom';
 import { FileText, ArrowRight, Clock, CheckCircle2, FolderOpen } from 'lucide-react';
 
 export default function PersonalOverview() {
   const { user } = useAuth();
   const { profile } = useClientProfile();
+  const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
 
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/personal/admin', { replace: true });
+    }
+  }, [isAdmin, navigate]);
+
+  if (isAdmin) return null;
   if (!profile) return null;
 
   const getNextStep = () => {
