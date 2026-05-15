@@ -408,7 +408,13 @@ export default function PersonalIntake() {
           />
         </div>
         {/* Section pills */}
-        <div className="flex gap-1 mt-3 overflow-x-auto pb-1">
+        <div
+          className="flex gap-1 mt-3 overflow-x-auto pb-1"
+          style={{
+            scrollbarWidth: 'none', // Firefox
+            msOverflowStyle: 'none', // IE/Edge
+          }}
+        >
           {formSections.map((s, i) => (
             <button
               key={s.id}
