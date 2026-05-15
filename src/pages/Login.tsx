@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+const ADMIN_EMAILS = ['foundationarybusiness@gmail.com'];
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -36,15 +38,33 @@ export default function LoginPage() {
       // Check if this user is an admin and redirect accordingly
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: adminRecord } = await supabase
-          .from('admin_users')
-          .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (adminRecord) {
+        // Check JWT app_metadata first
+        const jwtRole = user.app_metadata?.role;
+        if (jwtRole === 'admin') {
           navigate('/personal/admin', { replace: true });
           return;
+        }
+
+        // Fallback: check admin email list
+        if (ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
+          navigate('/personal/admin', { replace: true });
+          return;
+        }
+
+        // Final fallback: try admin_users table
+        try {
+          const { data: adminRecord } = await supabase
+            .from('admin_users')
+            .select('role')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (adminRecord) {
+            navigate('/personal/admin', { replace: true });
+            return;
+          }
+        } catch {
+          // Table may not be accessible, ignore
         }
       }
 

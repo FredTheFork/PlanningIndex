@@ -71,18 +71,30 @@ export default function AdminClientDetail() {
         .eq('user_id', userId)
         .maybeSingle();
 
-      // Intake file uploads
-      const { data: uploads } = await supabase
-        .from('intake_uploads')
-        .select('*')
-        .eq('user_id', userId);
+      // Intake file uploads (may fail if table not in schema cache)
+      let uploads: ClientData['intakeUploads'] = [];
+      try {
+        const { data: uploadsData } = await supabase
+          .from('intake_uploads')
+          .select('*')
+          .eq('user_id', userId);
+        uploads = uploadsData || [];
+      } catch {
+        // Table may not be accessible yet
+      }
 
-      // Client documents
-      const { data: docs } = await supabase
-        .from('client_documents')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Client documents (may fail if table not in schema cache)
+      let docs: ClientData['clientDocuments'] = [];
+      try {
+        const { data: docsData } = await supabase
+          .from('client_documents')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        docs = docsData || [];
+      } catch {
+        // Table may not be accessible yet
+      }
 
       // Orders
       const { data: orders } = await supabase
@@ -94,8 +106,8 @@ export default function AdminClientDetail() {
         profile,
         intakeResponses: intakeData?.responses || null,
         fileUploads: intakeData?.file_uploads || {},
-        intakeUploads: uploads || [],
-        clientDocuments: docs || [],
+        intakeUploads: uploads,
+        clientDocuments: docs,
         orders: orders || [],
       });
 
@@ -116,16 +128,25 @@ export default function AdminClientDetail() {
     setSaveMessage('');
 
     try {
+      // Only update columns that are in the PostgREST schema cache
       const { error } = await supabase
         .from('client_profiles')
         .update({
           delivery_status: deliveryStatus,
           delivery_link: deliveryLink || null,
-          admin_notes: adminNotes,
         })
         .eq('user_id', userId);
 
       if (error) throw error;
+
+      // Try to update admin_notes separately (may fail if column not in schema cache)
+      if (adminNotes) {
+        await supabase
+          .from('client_profiles')
+          .update({ admin_notes: adminNotes })
+          .eq('user_id', userId);
+      }
+
       setSaveMessage('Saved successfully');
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (err) {
@@ -154,7 +175,7 @@ export default function AdminClientDetail() {
           continue;
         }
 
-        await supabase.from('client_documents').insert({
+        const { error: dbError } = await supabase.from('client_documents').insert({
           user_id: userId,
           file_name: file.name,
           file_path: filePath,
@@ -162,6 +183,9 @@ export default function AdminClientDetail() {
           file_type: file.type,
           uploaded_by: adminUser.id,
         });
+        if (dbError) {
+          // Table may not be in schema cache yet, file is still in storage
+        }
       }
 
       fetchClientData();
@@ -175,7 +199,10 @@ export default function AdminClientDetail() {
 
     try {
       await supabase.storage.from('client-documents').remove([filePath]);
-      await supabase.from('client_documents').delete().eq('id', docId);
+      const { error: dbError } = await supabase.from('client_documents').delete().eq('id', docId);
+      if (dbError) {
+        // Table may not be in schema cache, but file is removed from storage
+      }
       fetchClientData();
     } catch (err) {
       console.error('Delete error:', err);

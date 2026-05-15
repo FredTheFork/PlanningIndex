@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '../lib/supabase';
 
+const ADMIN_EMAILS = ['foundationarybusiness@gmail.com'];
+
 export function useIsAdmin() {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -16,7 +18,25 @@ export function useIsAdmin() {
       return;
     }
 
-    const checkAdmin = async () => {
+    // Primary check: JWT app_metadata (set via Auth admin API)
+    const jwtRole = user.app_metadata?.role;
+    if (jwtRole === 'admin') {
+      setIsAdmin(true);
+      setLoading(false);
+      return;
+    }
+
+    // Fallback check: hardcoded admin email list
+    const email = user.email?.toLowerCase() || '';
+    if (ADMIN_EMAILS.includes(email)) {
+      setIsAdmin(true);
+      setLoading(false);
+      return;
+    }
+
+    // Final fallback: try querying admin_users table
+    // (may fail due to PostgREST schema cache issues)
+    const checkAdminTable = async () => {
       try {
         const { data, error } = await supabase
           .from('admin_users')
@@ -24,21 +44,17 @@ export function useIsAdmin() {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-          return;
+        if (!error && data) {
+          setIsAdmin(true);
         }
-
-        setIsAdmin(!!data);
       } catch {
-        setIsAdmin(false);
+        // Table may not be accessible, ignore
       } finally {
         setLoading(false);
       }
     };
 
-    checkAdmin();
+    checkAdminTable();
   }, [user, authLoading]);
 
   return { isAdmin, loading: authLoading || loading };

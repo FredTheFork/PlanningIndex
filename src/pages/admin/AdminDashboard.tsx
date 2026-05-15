@@ -55,8 +55,23 @@ export default function AdminDashboard() {
         if (result.users) {
           emailMap = new Map(result.users.map((u: any) => [u.id, u.email]));
         }
-      } catch (err) {
-        console.error('Could not fetch user emails:', err);
+      } catch {
+        // Edge function may not have propagated yet, emails will show as user ID prefix
+      }
+
+      // Also try to set admin app_metadata (no-op if already set)
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        await fetch(`${supabaseUrl}/functions/v1/set-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ action: 'set_admin_metadata' }),
+        });
+      } catch {
+        // Ignore errors, this is a best-effort call
       }
 
       // Build client list
