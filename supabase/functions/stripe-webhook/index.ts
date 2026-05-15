@@ -2,25 +2,33 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
-const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
-const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
-const stripe = new Stripe(stripeSecret, {
-  appInfo: {
-    name: 'Foundationary',
-    version: '1.0.0',
-  },
-});
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
+
+function getStripeAndSecret(mode: string): { stripe: Stripe; webhookSecret: string } {
+  if (mode === 'live') {
+    const key = Deno.env.get('STRIPE_SECRET_KEY_LIVE') ?? Deno.env.get('STRIPE_SECRET_KEY')!;
+    const secret = Deno.env.get('STRIPE_WEBHOOK_SECRET_LIVE') ?? Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+    return {
+      stripe: new Stripe(key, { appInfo: { name: 'Foundationary', version: '1.0.0' } }),
+      webhookSecret: secret,
+    };
+  }
+  const key = Deno.env.get('STRIPE_SECRET_KEY')!;
+  const secret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+  return {
+    stripe: new Stripe(key, { appInfo: { name: 'Foundationary', version: '1.0.0' } }),
+    webhookSecret: secret,
+  };
+}
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+);
 
 Deno.serve(async (req) => {
   try {
@@ -32,6 +40,11 @@ Deno.serve(async (req) => {
       return new Response('Method not allowed', { status: 405, headers: corsHeaders });
     }
 
+    // Determine mode from URL query param: /stripe-webhook?mode=live
+    const url = new URL(req.url);
+    const mode = url.searchParams.get('mode') === 'live' ? 'live' : 'test';
+    const { stripe, webhookSecret } = getStripeAndSecret(mode);
+
     const signature = req.headers.get('stripe-signature');
     if (!signature) {
       return new Response('No signature found', { status: 400, headers: corsHeaders });
@@ -41,7 +54,7 @@ Deno.serve(async (req) => {
 
     let event: Stripe.Event;
     try {
-      event = await stripe.webhooks.constructEventAsync(body, signature, stripeWebhookSecret);
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
     } catch (error: any) {
       console.error(`Webhook signature verification failed: ${error.message}`);
       return new Response(`Webhook signature verification failed: ${error.message}`, {
@@ -90,7 +103,7 @@ async function handleEvent(event: Stripe.Event) {
 
   console.info(`Processing paid checkout for email: ${customerEmail}`);
 
-  // Step 1: Check if user already exists (e.g. duplicate webhook)
+  // Step 1: Check if user already exists
   const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
 
   if (listError) {
@@ -106,14 +119,13 @@ async function handleEvent(event: Stripe.Event) {
     userId = existingUser.id;
     console.info(`User already exists: ${userId}`);
   } else {
-    // Step 2: Create Supabase Auth user with the Stripe email
-    // Generate a random password - user will log in via magic link
+    // Step 2: Create Supabase Auth user
     const tempPassword = crypto.randomUUID();
 
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: customerEmail,
       password: tempPassword,
-      email_confirm: true, // Auto-confirm since they just paid
+      email_confirm: true,
     });
 
     if (createError) {
@@ -208,7 +220,7 @@ async function handleEvent(event: Stripe.Event) {
     }
   }
 
-  // Step 7: Also record in stripe_orders for compatibility
+  // Step 7: Record in stripe_orders for compatibility
   const { data: existingStripeOrder } = await supabase
     .from('stripe_orders')
     .select('id')
@@ -232,7 +244,7 @@ async function handleEvent(event: Stripe.Event) {
     }
   }
 
-  // Step 8: Send magic link so user can log in
+  // Step 8: Send magic link
   const { error: magicLinkError } = await supabase.auth.admin.generateLink({
     type: 'magiclink',
     email: customerEmail,

@@ -1,19 +1,23 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 
-const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
-const stripe = new Stripe(stripeSecret, {
-  appInfo: {
-    name: 'Foundationary',
-    version: '1.0.0',
-  },
-});
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
+
+function getStripeClient(mode: string): Stripe {
+  const key = mode === 'live'
+    ? Deno.env.get('STRIPE_SECRET_KEY_LIVE') ?? Deno.env.get('STRIPE_SECRET_KEY')!
+    : Deno.env.get('STRIPE_SECRET_KEY')!;
+  return new Stripe(key, {
+    appInfo: {
+      name: 'Foundationary',
+      version: '1.0.0',
+    },
+  });
+}
 
 Deno.serve(async (req) => {
   try {
@@ -28,7 +32,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { price_id, success_url, cancel_url } = await req.json();
+    const { price_id, success_url, cancel_url, mode } = await req.json();
 
     if (!price_id || !success_url || !cancel_url) {
       return new Response(JSON.stringify({ error: 'Missing required parameters' }), {
@@ -37,8 +41,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create Stripe Checkout Session without requiring a customer
-    // The customer will be created by Stripe automatically from the email collected at checkout
+    const stripeMode = mode === 'live' ? 'live' : 'test';
+    const stripe = getStripeClient(stripeMode);
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -48,13 +53,12 @@ Deno.serve(async (req) => {
           quantity: 1,
         },
       ],
-      // Collect email at checkout - this email will be used to create the user account
       customer_creation: 'always',
       success_url,
       cancel_url,
     });
 
-    console.log(`Created checkout session ${session.id}`);
+    console.log(`Created checkout session ${session.id} (mode: ${stripeMode})`);
 
     return new Response(
       JSON.stringify({ sessionId: session.id, url: session.url }),

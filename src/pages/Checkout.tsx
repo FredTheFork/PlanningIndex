@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Clock, FileText, ArrowRight } from 'lucide-react';
-import { stripeProducts } from '../stripe-config';
+import { stripeProducts, stripeMode } from '../stripe-config';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           price_id: product.priceId,
+          mode: stripeMode,
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/checkout`,
         }),
