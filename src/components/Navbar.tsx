@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useClientProfile } from '../hooks/useClientProfile';
@@ -15,8 +15,11 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, signOut } = useAuth();
-  const { profile } = useClientProfile();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { profile, loading: profileLoading } = useClientProfile();
+  const navigate = useNavigate();
+
+  const isPaidUser = !authLoading && !profileLoading && !!user && !!profile;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -29,7 +32,11 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
-  const isPaidUser = user && profile;
+  const handleSignOut = async () => {
+    await signOut();
+    setMobileOpen(false);
+    navigate('/');
+  };
 
   return (
     <nav
@@ -89,7 +96,25 @@ export default function Navbar() {
                 Personal
               </Link>
               <button
-                onClick={signOut}
+                onClick={handleSignOut}
+                className="font-inter font-medium text-secondary-text hover:text-navy transition-colors duration-200"
+                style={{ fontSize: '0.85rem' }}
+                title="Sign out"
+              >
+                <LogOut size={18} />
+              </button>
+            </>
+          ) : user && !authLoading ? (
+            <>
+              <Link
+                to="/checkout"
+                className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
+                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              >
+                Get Your Pack — £149
+              </Link>
+              <button
+                onClick={handleSignOut}
                 className="font-inter font-medium text-secondary-text hover:text-navy transition-colors duration-200"
                 style={{ fontSize: '0.85rem' }}
                 title="Sign out"
@@ -98,13 +123,22 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <Link
-              to="/checkout"
-              className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
-              style={{ padding: '10px 20px', fontSize: '0.9rem' }}
-            >
-              Get Your Pack — £149
-            </Link>
+            <>
+              <Link
+                to="/login"
+                className="font-inter font-medium text-secondary-text hover:text-navy transition-colors duration-200"
+                style={{ fontSize: '0.9rem' }}
+              >
+                Log In
+              </Link>
+              <Link
+                to="/checkout"
+                className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
+                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              >
+                Get Your Pack — £149
+              </Link>
+            </>
           )}
         </div>
 
@@ -142,7 +176,25 @@ export default function Navbar() {
                 Personal
               </Link>
               <button
-                onClick={() => { setMobileOpen(false); signOut(); }}
+                onClick={handleSignOut}
+                className="font-inter font-medium text-white mt-2"
+                style={{ fontSize: '1rem' }}
+              >
+                Sign Out
+              </button>
+            </>
+          ) : user && !authLoading ? (
+            <>
+              <Link
+                to="/checkout"
+                className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
+                style={{ padding: '14px 32px', fontSize: '1rem' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Get Your Pack — £149
+              </Link>
+              <button
+                onClick={handleSignOut}
                 className="font-inter font-medium text-white mt-2"
                 style={{ fontSize: '1rem' }}
               >
@@ -150,14 +202,24 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <Link
-              to="/checkout"
-              className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
-              style={{ padding: '14px 32px', fontSize: '1rem' }}
-              onClick={() => setMobileOpen(false)}
-            >
-              Get Your Pack — £149
-            </Link>
+            <>
+              <Link
+                to="/login"
+                className="font-inter font-medium text-white"
+                style={{ fontSize: '1.2rem' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Log In
+              </Link>
+              <Link
+                to="/checkout"
+                className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
+                style={{ padding: '14px 32px', fontSize: '1rem' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Get Your Pack — £149
+              </Link>
+            </>
           )}
         </div>
       )}

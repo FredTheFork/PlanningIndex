@@ -13,6 +13,8 @@ import AboutPage from './pages/AboutPage';
 // Public flow pages
 import CheckoutPage from './pages/Checkout';
 import { Success } from './pages/Success';
+import LoginPage from './pages/Login';
+import AuthCallback from './pages/AuthCallback';
 
 // Personal area pages
 import PersonalLayout from './pages/personal/PersonalLayout';
@@ -71,6 +73,10 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/faq" element={<PlaceholderPage title="FAQ" />} />
         </Route>
+
+        {/* Auth flow (public) */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Checkout flow (public) */}
         <Route path="/checkout" element={<CheckoutPage />} />

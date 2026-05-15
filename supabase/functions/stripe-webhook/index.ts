@@ -249,7 +249,7 @@ async function handleEvent(event: Stripe.Event) {
     type: 'magiclink',
     email: customerEmail,
     options: {
-      redirectTo: `${Deno.env.get('SITE_URL') ?? 'https://foundationary.co.uk'}/personal`,
+      redirectTo: `${Deno.env.get('SITE_URL') ?? 'https://foundationary.co.uk'}/auth/callback`,
     },
   });
 

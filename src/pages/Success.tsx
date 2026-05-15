@@ -1,18 +1,62 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { CheckCircle, Mail } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CheckCircle, Mail, ArrowRight } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function Success() {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<'loading' | 'confirmed' | 'waiting'>('loading');
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    const sessionId = searchParams.get('session_id');
+    if (!sessionId) {
+      setStatus('waiting');
+      return;
+    }
 
-  if (loading) {
+    // Check if user is already logged in (e.g. they completed checkout while logged in)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // Already logged in, go straight to personal area
+        navigate('/personal', { replace: true });
+        return;
+      }
+
+      // Not logged in yet -- the webhook will have created their account
+      // and sent a magic link. Show the confirmation page.
+      setStatus('confirmed');
+    });
+  }, [searchParams, navigate]);
+
+  // Poll for session in case the user clicks the magic link on the same device
+  useEffect(() => {
+    if (status !== 'confirmed') return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        navigate('/personal', { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [status, navigate]);
+
+  const handleResendMagicLink = async () => {
+    if (!email) return;
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      console.error('Error resending magic link:', error);
+    }
+  };
+
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-off-white flex items-center justify-center">
         <div className="text-center">
@@ -37,7 +81,7 @@ export function Success() {
           Click the link to access your personal area and complete your intake form.
         </p>
 
-        <div className="bg-white rounded-lg border border-border p-6 mb-8 text-left">
+        <div className="bg-white rounded-lg border border-border p-6 mb-6 text-left">
           <div className="flex items-start gap-3">
             <Mail size={20} className="text-medium-blue mt-0.5 shrink-0" />
             <div>
@@ -50,27 +94,38 @@ export function Success() {
           </div>
         </div>
 
-        {user ? (
-          <Link
-            to="/personal"
-            className="inline-block font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
-            style={{ padding: '14px 32px', fontSize: '1rem' }}
-          >
-            Go to Personal Area
-          </Link>
-        ) : (
-          <p className="font-inter text-secondary-text text-sm">
-            Didn't receive the email? Check your spam folder, or{' '}
+        <div className="bg-white rounded-lg border border-border p-6 mb-8 text-left">
+          <p className="font-inter font-semibold text-navy text-sm mb-2">Didn't receive the email?</p>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email ?? ''}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-inter focus:outline-none focus:ring-2 focus:ring-medium-blue focus:border-medium-blue"
+            />
             <button
-              onClick={async () => {
-                // Will be handled by magic link flow
-              }}
-              className="text-medium-blue hover:underline font-medium"
+              onClick={handleResendMagicLink}
+              disabled={!email}
+              className="font-inter font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ padding: '8px 16px', fontSize: '0.85rem' }}
             >
-              contact support
-            </button>.
+              Resend
+            </button>
+          </div>
+          <p className="font-inter text-secondary-text text-xs mt-2">
+            Check your spam folder if you don't see it within a minute.
           </p>
-        )}
+        </div>
+
+        <button
+          onClick={() => navigate('/login')}
+          className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
+          style={{ padding: '14px 32px', fontSize: '1rem' }}
+        >
+          Log In
+          <ArrowRight size={18} />
+        </button>
       </div>
     </div>
   );
