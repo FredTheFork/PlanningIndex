@@ -12,8 +12,8 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-const ADMIN_EMAIL = 'admin@foundationary.co.uk';
-const ADMIN_PASSWORD = 'F0und@tionary2025!';
+const ADMIN_EMAIL = 'foundationarybusiness@gmail.com';
+const ADMIN_PASSWORD = 'FoundationaryBusiness123@@';
 
 Deno.serve(async (req) => {
   try {
