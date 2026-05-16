@@ -52,55 +52,99 @@ export default function AdminClientDetail() {
     fetchClientData();
   }, [userId]);
 
+  const fetchViaRestApi = async (table: string, query: string): Promise<any[] | null> => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !anonKey) return null;
+    try {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/${table}?${query}`,
+        {
+          headers: {
+            'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`,
+          },
+        }
+      );
+      if (res.ok) return await res.json();
+    } catch { /* ignore */ }
+    return null;
+  };
+
   const fetchClientData = async () => {
     if (!userId) return;
     setLoading(true);
 
     try {
       // Profile
-      const { data: profile } = await supabase
+      let profile: any = null;
+      const { data: profileData, error: profileError } = await supabase
         .from('client_profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
+      if (profileError && (profileError.code === 'PGRST205' || profileError.code === 'PGRST204')) {
+        const rows = await fetchViaRestApi('client_profiles', `user_id=eq.${userId}&select=*`);
+        profile = rows?.[0] || null;
+      } else {
+        profile = profileData;
+      }
+
       // Intake responses
-      const { data: intakeData } = await supabase
+      let intakeData: any = null;
+      const { data: intakeResult, error: intakeError } = await supabase
         .from('intake_responses')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      // Intake file uploads (may fail if table not in schema cache)
-      let uploads: ClientData['intakeUploads'] = [];
-      try {
-        const { data: uploadsData } = await supabase
-          .from('intake_uploads')
-          .select('*')
-          .eq('user_id', userId);
-        uploads = uploadsData || [];
-      } catch {
-        // Table may not be accessible yet
+      if (intakeError && (intakeError.code === 'PGRST205' || intakeError.code === 'PGRST204')) {
+        const rows = await fetchViaRestApi('intake_responses', `user_id=eq.${userId}&select=*`);
+        intakeData = rows?.[0] || null;
+      } else {
+        intakeData = intakeResult;
       }
 
-      // Client documents (may fail if table not in schema cache)
+      // Intake file uploads
+      let uploads: ClientData['intakeUploads'] = [];
+      const { data: uploadsData, error: uploadsError } = await supabase
+        .from('intake_uploads')
+        .select('*')
+        .eq('user_id', userId);
+      if (uploadsError && (uploadsError.code === 'PGRST205' || uploadsError.code === 'PGRST204')) {
+        const rows = await fetchViaRestApi('intake_uploads', `user_id=eq.${userId}&select=*`);
+        uploads = rows || [];
+      } else {
+        uploads = uploadsData || [];
+      }
+
+      // Client documents
       let docs: ClientData['clientDocuments'] = [];
-      try {
-        const { data: docsData } = await supabase
-          .from('client_documents')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+      const { data: docsData, error: docsError } = await supabase
+        .from('client_documents')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (docsError && (docsError.code === 'PGRST205' || docsError.code === 'PGRST204')) {
+        const rows = await fetchViaRestApi('client_documents', `user_id=eq.${userId}&select=*&order=created_at.desc`);
+        docs = rows || [];
+      } else {
         docs = docsData || [];
-      } catch {
-        // Table may not be accessible yet
       }
 
       // Orders
-      const { data: orders } = await supabase
+      let orders: any[] = [];
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .eq('user_id', userId);
+      if (ordersError && (ordersError.code === 'PGRST205' || ordersError.code === 'PGRST204')) {
+        const rows = await fetchViaRestApi('orders', `user_id=eq.${userId}&select=*`);
+        orders = rows || [];
+      } else {
+        orders = ordersData || [];
+      }
 
       setData({
         profile,
@@ -108,7 +152,7 @@ export default function AdminClientDetail() {
         fileUploads: intakeData?.file_uploads || {},
         intakeUploads: uploads,
         clientDocuments: docs,
-        orders: orders || [],
+        orders,
       });
 
       if (profile) {
@@ -128,23 +172,39 @@ export default function AdminClientDetail() {
     setSaveMessage('');
 
     try {
-      // Only update columns that are in the PostgREST schema cache
+      const payload = {
+        delivery_status: deliveryStatus,
+        delivery_link: deliveryLink || null,
+        admin_notes: adminNotes,
+      };
+
       const { error } = await supabase
         .from('client_profiles')
-        .update({
-          delivery_status: deliveryStatus,
-          delivery_link: deliveryLink || null,
-        })
+        .update(payload)
         .eq('user_id', userId);
 
-      if (error) throw error;
-
-      // Try to update admin_notes separately (may fail if column not in schema cache)
-      if (adminNotes) {
-        await supabase
-          .from('client_profiles')
-          .update({ admin_notes: adminNotes })
-          .eq('user_id', userId);
+      if (error && (error.code === 'PGRST205' || error.code === 'PGRST204')) {
+        // Fallback to direct REST API
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (supabaseUrl && anonKey) {
+          const res = await fetch(
+            `${supabaseUrl}/rest/v1/client_profiles?user_id=eq.${userId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': anonKey,
+                'Authorization': `Bearer ${anonKey}`,
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify(payload),
+            }
+          );
+          if (!res.ok) throw new Error('Failed to save via REST API');
+        }
+      } else if (error) {
+        throw error;
       }
 
       setSaveMessage('Saved successfully');

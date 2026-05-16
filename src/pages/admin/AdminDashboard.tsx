@@ -30,13 +30,37 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       // Get all client profiles
-      const { data: profiles, error: profileError } = await supabase
+      let profiles: any[] = [];
+      const { data, error: profileError } = await supabase
         .from('client_profiles')
         .select('*');
 
       if (profileError) {
-        console.error('Error fetching profiles:', profileError);
-        return;
+        // If schema cache error, try direct REST API
+        if (profileError.code === 'PGRST205' || profileError.code === 'PGRST204') {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          if (supabaseUrl && anonKey) {
+            try {
+              const res = await fetch(
+                `${supabaseUrl}/rest/v1/client_profiles?select=*`,
+                {
+                  headers: {
+                    'apikey': anonKey,
+                    'Authorization': `Bearer ${anonKey}`,
+                  },
+                }
+              );
+              if (res.ok) profiles = await res.json();
+            } catch { /* ignore */ }
+          }
+        }
+        if (profiles.length === 0) {
+          console.error('Error fetching profiles:', profileError);
+          return;
+        }
+      } else {
+        profiles = data || [];
       }
 
       // Fetch user emails via edge function (uses service role to list auth users)
@@ -75,7 +99,7 @@ export default function AdminDashboard() {
       }
 
       // Build client list
-      const clientRows: ClientRow[] = (profiles || []).map(p => ({
+      const clientRows: ClientRow[] = profiles.map(p => ({
         user_id: p.user_id,
         email: emailMap.get(p.user_id) || p.user_id.substring(0, 8) + '...',
         has_submitted_intake: p.has_submitted_intake,

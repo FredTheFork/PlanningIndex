@@ -51,6 +51,7 @@ export default function PersonalIntake() {
     if (!user) return;
 
     const fetchResponses = async () => {
+      // Try Supabase client first
       const { data, error } = await supabase
         .from('intake_responses')
         .select('*')
@@ -58,6 +59,40 @@ export default function PersonalIntake() {
         .maybeSingle();
 
       if (error) {
+        // If schema cache error, try direct REST API
+        if (error.code === 'PGRST205' || error.code === 'PGRST204') {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          if (supabaseUrl && anonKey) {
+            try {
+              const res = await fetch(
+                `${supabaseUrl}/rest/v1/intake_responses?user_id=eq.${user!.id}&select=*`,
+                {
+                  headers: {
+                    'apikey': anonKey,
+                    'Authorization': `Bearer ${anonKey}`,
+                  },
+                }
+              );
+              if (res.ok) {
+                const rows = await res.json();
+                if (rows && rows.length > 0) {
+                  const d = rows[0];
+                  setResponses(d.responses || {});
+                  setCurrentSection(d.current_section ?? 0);
+                  setLastSaved(new Date(d.last_saved_at));
+                  setRowExists(true);
+                  if (d.file_uploads) {
+                    setFileUploads(d.file_uploads || {});
+                  }
+                }
+                return;
+              }
+            } catch {
+              // REST API also failed
+            }
+          }
+        }
         console.error('Error fetching intake responses:', error);
         return;
       }
@@ -116,6 +151,70 @@ export default function PersonalIntake() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [rowExists, user]);
 
+  // Fallback: save via direct REST API call (bypasses PostgREST schema cache issues)
+  const saveViaRestApi = useCallback(async (
+    updatedResponses: Responses,
+    section: number,
+    fu: Record<string, FileUploadInfo[]>,
+    exists: boolean
+  ): Promise<boolean> => {
+    if (!user) return false;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !anonKey) return false;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'apikey': anonKey,
+      'Authorization': `Bearer ${anonKey}`,
+      'Prefer': 'return=minimal',
+    };
+
+    const payload = {
+      user_id: user.id,
+      form_version: 'v2',
+      responses: updatedResponses,
+      current_section: section,
+      last_saved_at: new Date().toISOString(),
+      file_uploads: fu,
+    };
+
+    try {
+      if (exists) {
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/intake_responses?user_id=eq.${user.id}`,
+          { method: 'PATCH', headers, body: JSON.stringify(payload) }
+        );
+        if (res.ok) return true;
+        // If PATCH returned 404 or PGRST205, try INSERT
+        if (res.status === 404 || res.status === 400) {
+          const res2 = await fetch(
+            `${supabaseUrl}/rest/v1/intake_responses`,
+            { method: 'POST', headers, body: JSON.stringify(payload) }
+          );
+          if (res2.ok) { setRowExists(true); return true; }
+        }
+      } else {
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/intake_responses`,
+          { method: 'POST', headers, body: JSON.stringify(payload) }
+        );
+        if (res.ok) { setRowExists(true); return true; }
+        // If INSERT failed due to duplicate, try PATCH
+        if (res.status === 409 || res.status === 400) {
+          const res2 = await fetch(
+            `${supabaseUrl}/rest/v1/intake_responses?user_id=eq.${user.id}`,
+            { method: 'PATCH', headers, body: JSON.stringify(payload) }
+          );
+          if (res2.ok) { setRowExists(true); return true; }
+        }
+      }
+    } catch {
+      // Network error
+    }
+    return false;
+  }, [user]);
+
   // Core save function - uses upsert to handle both create and update
   const saveResponses = useCallback(async (
     updatedResponses: Responses,
@@ -163,6 +262,12 @@ export default function PersonalIntake() {
       }
 
       if (error) {
+        // If schema cache error (PGRST205), try direct REST API
+        if (error.code === 'PGRST205' || error.code === 'PGRST204') {
+          const saved = await saveViaRestApi(updatedResponses, section, fu, rowExists);
+          if (saved) { setLastSaved(new Date()); return; }
+        }
+
         // If update failed because row doesn't exist, try insert
         if (rowExists && error.code === 'PGRST116') {
           const { error: insertError } = await supabase
@@ -182,7 +287,7 @@ export default function PersonalIntake() {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [user, rowExists]);
+  }, [user, rowExists, saveViaRestApi]);
 
   // Debounced save for field changes (saves 1 second after user stops typing)
   const scheduleSave = useCallback((updatedResponses: Responses, section: number) => {
@@ -361,6 +466,7 @@ export default function PersonalIntake() {
 
     setSubmitting(true);
     try {
+      // Try to update intake_responses via Supabase client
       const { error: responsesError } = await supabase
         .from('intake_responses')
         .update({
@@ -372,8 +478,37 @@ export default function PersonalIntake() {
         })
         .eq('user_id', user.id);
 
-      if (responsesError) throw responsesError;
+      // If schema cache error, try direct REST API
+      if (responsesError && (responsesError.code === 'PGRST205' || responsesError.code === 'PGRST204')) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (supabaseUrl && anonKey) {
+          const res = await fetch(
+            `${supabaseUrl}/rest/v1/intake_responses?user_id=eq.${user.id}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': anonKey,
+                'Authorization': `Bearer ${anonKey}`,
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify({
+                responses,
+                current_section: currentSection,
+                last_saved_at: new Date().toISOString(),
+                submitted_at: new Date().toISOString(),
+                file_uploads: fileUploads,
+              }),
+            }
+          );
+          if (!res.ok) throw new Error('Failed to submit intake form');
+        }
+      } else if (responsesError) {
+        throw responsesError;
+      }
 
+      // Update client_profiles
       const { error: profileError } = await supabase
         .from('client_profiles')
         .update({
@@ -383,7 +518,32 @@ export default function PersonalIntake() {
         })
         .eq('user_id', user.id);
 
-      if (profileError) throw profileError;
+      if (profileError && (profileError.code === 'PGRST205' || profileError.code === 'PGRST204')) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (supabaseUrl && anonKey) {
+          const res = await fetch(
+            `${supabaseUrl}/rest/v1/client_profiles?user_id=eq.${user.id}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': anonKey,
+                'Authorization': `Bearer ${anonKey}`,
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify({
+                has_submitted_intake: true,
+                intake_submitted_at: new Date().toISOString(),
+                delivery_status: 'in_progress',
+              }),
+            }
+          );
+          if (!res.ok) throw new Error('Failed to update profile');
+        }
+      } else if (profileError) {
+        throw profileError;
+      }
 
       setSubmitted(true);
     } catch (error) {

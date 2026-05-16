@@ -5,6 +5,28 @@ import { supabase } from '../lib/supabase';
 
 const ADMIN_EMAILS = ['foundationarybusiness@gmail.com'];
 
+async function callInitAdmin(): Promise<{ success: boolean; message: string }> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/init-admin`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${anonKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return { success: true, message: data.message || 'Admin setup complete' };
+    }
+    return { success: false, message: 'Edge function not available yet' };
+  } catch {
+    return { success: false, message: 'Network error' };
+  }
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -12,6 +34,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [setupStatus, setSetupStatus] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,6 +42,7 @@ export default function LoginPage() {
 
     setLoading(true);
     setError('');
+    setSetupStatus(null);
 
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -27,6 +51,36 @@ export default function LoginPage() {
       });
 
       if (signInError) {
+        // If email not confirmed, try to fix via edge function
+        if (signInError.message === 'Email not confirmed') {
+          setSetupStatus('Confirming your account...');
+          const result = await callInitAdmin();
+          if (result.success) {
+            // Retry login after edge function fixes the account
+            setSetupStatus('Account confirmed. Logging in...');
+            const { error: retryError } = await supabase.auth.signInWithPassword({
+              email: email.trim().toLowerCase(),
+              password,
+            });
+            if (!retryError) {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                const jwtRole = user.app_metadata?.role;
+                if (jwtRole === 'admin' || ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
+                  navigate('/personal/admin', { replace: true });
+                  return;
+                }
+              }
+              navigate('/personal', { replace: true });
+              return;
+            }
+            setError('Account confirmed but login failed. Please try again.');
+          } else {
+            setError('Your email needs confirmation. The setup service is starting up - please wait a minute and try again.');
+          }
+          return;
+        }
+
         if (signInError.message === 'Invalid login credentials') {
           setError('Invalid email or password. If you just purchased, set your password from the success page first.');
         } else {
@@ -73,6 +127,7 @@ export default function LoginPage() {
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+      setSetupStatus(null);
     }
   };
 
@@ -160,6 +215,15 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {setupStatus && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+              <p className="font-inter text-sm text-blue-700 flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700" />
+                {setupStatus}
+              </p>
+            </div>
+          )}
 
           <div className="mt-6 pt-4 border-t border-border text-center">
             <p className="font-inter text-secondary-text text-xs">
