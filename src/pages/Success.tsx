@@ -45,11 +45,20 @@ export function Success() {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const response = await fetch(`${supabaseUrl}/functions/v1/set-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+        },
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
+
+      if (response.status === 404) {
+        setError('The password service is starting up. Please wait 30 seconds and try again.');
+        return;
+      }
 
       const data = await response.json();
 
@@ -74,7 +83,8 @@ export function Success() {
       }
 
       navigate('/personal', { replace: true });
-    } catch {
+    } catch (err) {
+      console.error('Set password error:', err);
       setError('Something went wrong. Please try again.');
     } finally {
       setSettingPassword(false);

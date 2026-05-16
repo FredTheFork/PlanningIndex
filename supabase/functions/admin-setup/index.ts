@@ -7,11 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
-
 const ADMIN_EMAIL = 'foundationarybusiness@gmail.com';
 const ADMIN_PASSWORD = 'FoundationaryBusiness123@@';
 
@@ -28,111 +23,106 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
 
-    // Handle force_reset: delete existing admin and recreate
-    if (body.action === 'force_reset') {
-      // Find and delete existing admin user
-      const { data: usersData } = await supabase.auth.admin.listUsers();
-      const existing = usersData?.users?.find((u: any) => u.email === ADMIN_EMAIL);
-
-      if (existing) {
-        // Delete from admin_users first (no FK cascade from auth side)
-        await supabase.from('admin_users').delete().eq('user_id', existing.id);
-        // Delete the auth user
-        await supabase.auth.admin.deleteUser(existing.id);
-      }
-    }
-
-    // Check if admin already exists and is valid
-    if (body.action !== 'force_reset') {
-      const { data: existingAdmins } = await supabase
-        .from('admin_users')
-        .select('id, user_id')
-        .limit(1);
-
-      if (existingAdmins && existingAdmins.length > 0) {
-        // Verify the auth user actually works by checking they exist
-        const adminUserId = existingAdmins[0].user_id;
-        const { data: usersData } = await supabase.auth.admin.listUsers();
-        const authUser = usersData?.users?.find((u: any) => u.id === adminUserId);
-
-        if (authUser) {
-          // Also ensure password is correct by updating it
-          await supabase.auth.admin.updateUserById(adminUserId, {
-            password: ADMIN_PASSWORD,
-          });
-
-          return new Response(
-            JSON.stringify({
-              message: 'Admin account already exists, password refreshed',
-              alreadyExists: true,
-              email: ADMIN_EMAIL,
-            }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // Auth user doesn't exist but admin_users row does - clean up
-        await supabase.from('admin_users').delete().eq('id', existingAdmins[0].id);
-      }
-    }
-
-    // Create the auth user via the proper Auth API
-    const { data: userData, error: createError } = await supabase.auth.admin.createUser({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-      email_confirm: true,
-    });
+    // Find or create the admin user via Auth admin API
+    const { data: usersData } = await supabase.auth.admin.listUsers();
+    const existing = usersData?.users?.find((u: any) => u.email === ADMIN_EMAIL);
 
     let userId: string;
 
-    if (createError) {
-      // User might already exist in auth - find them and update password
-      const { data: usersData } = await supabase.auth.admin.listUsers();
-      const existing = usersData?.users?.find((u: any) => u.email === ADMIN_EMAIL);
+    if (existing) {
+      userId = existing.id;
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+        password: ADMIN_PASSWORD,
+        email_confirm: true,
+        app_metadata: { role: 'admin' },
+      });
+      if (updateError) {
+        return new Response(JSON.stringify({ error: 'Failed to update admin: ' + updateError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      const { data: userData, error: createError } = await supabase.auth.admin.createUser({
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        email_confirm: true,
+        app_metadata: { role: 'admin' },
+      });
 
-      if (!existing) {
-        console.error('Failed to create admin user:', createError);
-        return new Response(JSON.stringify({ error: 'Failed to create admin user: ' + createError.message }), {
+      if (createError) {
+        return new Response(JSON.stringify({ error: 'Failed to create admin: ' + createError.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      userId = existing.id;
-
-      // Update password to ensure it's correct
-      await supabase.auth.admin.updateUserById(userId, { password: ADMIN_PASSWORD });
-    } else {
       if (!userData?.user) {
         return new Response(JSON.stringify({ error: 'No user returned' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
       userId = userData.user.id;
     }
 
-    // Add to admin_users table (use upsert to handle duplicates)
-    const { error: adminError } = await supabase
+    // Ensure admin_users record exists
+    const { data: existingAdmin } = await supabase
       .from('admin_users')
-      .upsert({ user_id: userId, role: 'super_admin' }, { onConflict: 'user_id' });
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (adminError) {
-      console.error('Failed to create admin_users record:', adminError);
-      return new Response(JSON.stringify({ error: 'Failed to set admin role: ' + adminError.message }), {
-        status: 500,
+    if (!existingAdmin) {
+      const { error: adminError } = await supabase
+        .from('admin_users')
+        .insert({ user_id: userId, role: 'super_admin' });
+
+      if (adminError) {
+        return new Response(JSON.stringify({ error: 'Failed to create admin record: ' + adminError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Verify login works
+    const testClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!
+    );
+
+    const { error: loginError } = await testClient.auth.signInWithPassword({
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+    });
+
+    if (loginError) {
+      return new Response(JSON.stringify({
+        warning: 'Admin created but login verification failed',
+        error: loginError.message,
+        userId,
+      }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.info(`Admin user created/refreshed: ${userId}`);
-
-    return new Response(
-      JSON.stringify({ message: 'Admin user created successfully', email: ADMIN_EMAIL, userId }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({
+      message: 'Admin user created and login verified successfully',
+      email: ADMIN_EMAIL,
+      userId,
+      loginVerified: true,
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
     console.error('Admin setup error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {

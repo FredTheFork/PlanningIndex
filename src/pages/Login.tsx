@@ -5,11 +5,11 @@ import { supabase } from '../lib/supabase';
 
 const ADMIN_EMAILS = ['foundationarybusiness@gmail.com'];
 
-async function callInitAdmin(): Promise<{ success: boolean; message: string }> {
+async function callAdminSetup(): Promise<{ success: boolean; message: string }> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   try {
-    const res = await fetch(`${supabaseUrl}/functions/v1/init-admin`, {
+    const res = await fetch(`${supabaseUrl}/functions/v1/admin-setup`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${anonKey}`,
@@ -54,7 +54,7 @@ export default function LoginPage() {
         // If email not confirmed, try to fix via edge function
         if (signInError.message === 'Email not confirmed') {
           setSetupStatus('Confirming your account...');
-          const result = await callInitAdmin();
+          const result = await callAdminSetup();
           if (result.success) {
             // Retry login after edge function fixes the account
             setSetupStatus('Account confirmed. Logging in...');

@@ -22,6 +22,7 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           price_id: product.priceId,
@@ -30,6 +31,10 @@ export default function CheckoutPage() {
           cancel_url: `${window.location.origin}/checkout`,
         }),
       });
+
+      if (response.status === 404 || response.type === 'opaque') {
+        throw new Error('The checkout service is starting up. Please wait 30 seconds and try again.');
+      }
 
       const data = await response.json();
 
@@ -44,7 +49,8 @@ export default function CheckoutPage() {
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }
