@@ -38,31 +38,6 @@ export function useClientProfile() {
           .maybeSingle();
 
         if (error) {
-          // If schema cache error, try direct REST API
-          if (error.code === 'PGRST205' || error.code === 'PGRST204') {
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-            if (supabaseUrl && anonKey) {
-              try {
-                const res = await fetch(
-                  `${supabaseUrl}/rest/v1/client_profiles?user_id=eq.${user.id}&select=*`,
-                  {
-                    headers: {
-                      'apikey': anonKey,
-                      'Authorization': `Bearer ${anonKey}`,
-                    },
-                  }
-                );
-                if (res.ok) {
-                  const rows = await res.json();
-                  setProfile(rows?.[0] || null);
-                  return;
-                }
-              } catch {
-                // REST API also failed
-              }
-            }
-          }
           console.error('Error fetching client profile:', error);
           return;
         }

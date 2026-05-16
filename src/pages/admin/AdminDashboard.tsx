@@ -29,39 +29,16 @@ export default function AdminDashboard() {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      // Get all client profiles
-      let profiles: any[] = [];
       const { data, error: profileError } = await supabase
         .from('client_profiles')
         .select('*');
 
       if (profileError) {
-        // If schema cache error, try direct REST API
-        if (profileError.code === 'PGRST205' || profileError.code === 'PGRST204') {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-          if (supabaseUrl && anonKey) {
-            try {
-              const res = await fetch(
-                `${supabaseUrl}/rest/v1/client_profiles?select=*`,
-                {
-                  headers: {
-                    'apikey': anonKey,
-                    'Authorization': `Bearer ${anonKey}`,
-                  },
-                }
-              );
-              if (res.ok) profiles = await res.json();
-            } catch { /* ignore */ }
-          }
-        }
-        if (profiles.length === 0) {
-          console.error('Error fetching profiles:', profileError);
-          return;
-        }
-      } else {
-        profiles = data || [];
+        console.error('Error fetching profiles:', profileError);
+        return;
       }
+
+      const profiles = data || [];
 
       // Fetch user emails via edge function (uses service role to list auth users)
       let emailMap = new Map<string, string>();
@@ -80,25 +57,9 @@ export default function AdminDashboard() {
           emailMap = new Map(result.users.map((u: any) => [u.id, u.email]));
         }
       } catch {
-        // Edge function may not have propagated yet, emails will show as user ID prefix
+        // Edge function unavailable, emails will show as user ID prefix
       }
 
-      // Also try to set admin app_metadata (no-op if already set)
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        await fetch(`${supabaseUrl}/functions/v1/set-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ action: 'set_admin_metadata' }),
-        });
-      } catch {
-        // Ignore errors, this is a best-effort call
-      }
-
-      // Build client list
       const clientRows: ClientRow[] = profiles.map(p => ({
         user_id: p.user_id,
         email: emailMap.get(p.user_id) || p.user_id.substring(0, 8) + '...',

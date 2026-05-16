@@ -52,107 +52,46 @@ export default function AdminClientDetail() {
     fetchClientData();
   }, [userId]);
 
-  const fetchViaRestApi = async (table: string, query: string): Promise<any[] | null> => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !anonKey) return null;
-    try {
-      const res = await fetch(
-        `${supabaseUrl}/rest/v1/${table}?${query}`,
-        {
-          headers: {
-            'apikey': anonKey,
-            'Authorization': `Bearer ${anonKey}`,
-          },
-        }
-      );
-      if (res.ok) return await res.json();
-    } catch { /* ignore */ }
-    return null;
-  };
-
   const fetchClientData = async () => {
     if (!userId) return;
     setLoading(true);
 
     try {
-      // Profile
-      let profile: any = null;
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('client_profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (profileError && (profileError.code === 'PGRST205' || profileError.code === 'PGRST204')) {
-        const rows = await fetchViaRestApi('client_profiles', `user_id=eq.${userId}&select=*`);
-        profile = rows?.[0] || null;
-      } else {
-        profile = profileData;
-      }
-
-      // Intake responses
-      let intakeData: any = null;
-      const { data: intakeResult, error: intakeError } = await supabase
+      const { data: intakeResult } = await supabase
         .from('intake_responses')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (intakeError && (intakeError.code === 'PGRST205' || intakeError.code === 'PGRST204')) {
-        const rows = await fetchViaRestApi('intake_responses', `user_id=eq.${userId}&select=*`);
-        intakeData = rows?.[0] || null;
-      } else {
-        intakeData = intakeResult;
-      }
-
-      // Intake file uploads
-      let uploads: ClientData['intakeUploads'] = [];
-      const { data: uploadsData, error: uploadsError } = await supabase
+      const { data: uploadsData } = await supabase
         .from('intake_uploads')
         .select('*')
         .eq('user_id', userId);
-      if (uploadsError && (uploadsError.code === 'PGRST205' || uploadsError.code === 'PGRST204')) {
-        const rows = await fetchViaRestApi('intake_uploads', `user_id=eq.${userId}&select=*`);
-        uploads = rows || [];
-      } else {
-        uploads = uploadsData || [];
-      }
 
-      // Client documents
-      let docs: ClientData['clientDocuments'] = [];
-      const { data: docsData, error: docsError } = await supabase
+      const { data: docsData } = await supabase
         .from('client_documents')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      if (docsError && (docsError.code === 'PGRST205' || docsError.code === 'PGRST204')) {
-        const rows = await fetchViaRestApi('client_documents', `user_id=eq.${userId}&select=*&order=created_at.desc`);
-        docs = rows || [];
-      } else {
-        docs = docsData || [];
-      }
 
-      // Orders
-      let orders: any[] = [];
-      const { data: ordersData, error: ordersError } = await supabase
+      const { data: ordersData } = await supabase
         .from('orders')
         .select('*')
         .eq('user_id', userId);
-      if (ordersError && (ordersError.code === 'PGRST205' || ordersError.code === 'PGRST204')) {
-        const rows = await fetchViaRestApi('orders', `user_id=eq.${userId}&select=*`);
-        orders = rows || [];
-      } else {
-        orders = ordersData || [];
-      }
 
       setData({
         profile,
-        intakeResponses: intakeData?.responses || null,
-        fileUploads: intakeData?.file_uploads || {},
-        intakeUploads: uploads,
-        clientDocuments: docs,
-        orders,
+        intakeResponses: intakeResult?.responses || null,
+        fileUploads: intakeResult?.file_uploads || {},
+        intakeUploads: uploadsData || [],
+        clientDocuments: docsData || [],
+        orders: ordersData || [],
       });
 
       if (profile) {
@@ -172,40 +111,16 @@ export default function AdminClientDetail() {
     setSaveMessage('');
 
     try {
-      const payload = {
-        delivery_status: deliveryStatus,
-        delivery_link: deliveryLink || null,
-        admin_notes: adminNotes,
-      };
-
       const { error } = await supabase
         .from('client_profiles')
-        .update(payload)
+        .update({
+          delivery_status: deliveryStatus,
+          delivery_link: deliveryLink || null,
+          admin_notes: adminNotes,
+        })
         .eq('user_id', userId);
 
-      if (error && (error.code === 'PGRST205' || error.code === 'PGRST204')) {
-        // Fallback to direct REST API
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        if (supabaseUrl && anonKey) {
-          const res = await fetch(
-            `${supabaseUrl}/rest/v1/client_profiles?user_id=eq.${userId}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': anonKey,
-                'Authorization': `Bearer ${anonKey}`,
-                'Prefer': 'return=minimal',
-              },
-              body: JSON.stringify(payload),
-            }
-          );
-          if (!res.ok) throw new Error('Failed to save via REST API');
-        }
-      } else if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setSaveMessage('Saved successfully');
       setTimeout(() => setSaveMessage(''), 3000);
@@ -244,7 +159,7 @@ export default function AdminClientDetail() {
           uploaded_by: adminUser.id,
         });
         if (dbError) {
-          // Table may not be in schema cache yet, file is still in storage
+          console.error('Failed to record document in database:', dbError);
         }
       }
 
@@ -261,7 +176,7 @@ export default function AdminClientDetail() {
       await supabase.storage.from('client-documents').remove([filePath]);
       const { error: dbError } = await supabase.from('client_documents').delete().eq('id', docId);
       if (dbError) {
-        // Table may not be in schema cache, but file is removed from storage
+        console.error('Failed to delete document record:', dbError);
       }
       fetchClientData();
     } catch (err) {
