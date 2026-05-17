@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { intakeFormSections, upsellFormSections, FormField } from '../../lib/intakeFormDefinition';
 import {
   ArrowLeft, FileText, Upload, X,
-  Save, AlertCircle, FolderOpen
+  Save, AlertCircle, FolderOpen, Download, ExternalLink
 } from 'lucide-react';
 
 interface ClientData {
@@ -47,6 +47,7 @@ export default function AdminClientDetail() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -106,6 +107,34 @@ export default function AdminClientDetail() {
       setLoading(false);
     }
   };
+
+  const generateSignedUrls = async () => {
+    const urls: Record<string, string> = {};
+    const paths: string[] = [];
+
+    data.intakeUploads.forEach(f => paths.push(f.file_path));
+    Object.values(data.fileUploads).flat().forEach((f: any) => {
+      if (f.path) paths.push(f.path);
+    });
+    data.clientDocuments.forEach(d => paths.push(d.file_path));
+
+    for (const path of paths) {
+      const { data: urlData } = await supabase.storage
+        .from(path.startsWith(userId! + '/') && data.intakeUploads.some(f => f.file_path === path) ? 'intake-uploads' : 'client-documents')
+        .createSignedUrl(path, 3600);
+      if (urlData?.signedUrl) {
+        urls[path] = urlData.signedUrl;
+      }
+    }
+
+    setSignedUrls(urls);
+  };
+
+  useEffect(() => {
+    if (!loading && (data.intakeUploads.length > 0 || Object.keys(data.fileUploads).length > 0 || data.clientDocuments.length > 0)) {
+      generateSignedUrls();
+    }
+  }, [loading, data.intakeUploads.length, data.clientDocuments.length]);
 
   const handleSaveProfile = async () => {
     if (!userId) return;
@@ -479,25 +508,49 @@ export default function AdminClientDetail() {
                 <h4 className="font-inter font-semibold text-navy text-xs uppercase tracking-wider mb-2">
                   Uploaded Documents ({data.clientDocuments.length})
                 </h4>
-                {data.clientDocuments.map(doc => (
-                  <div key={doc.id} className="flex items-center gap-3 bg-off-white rounded-md px-4 py-3">
-                    <FolderOpen size={18} className="text-medium-blue shrink-0" />
-                    <span className="font-inter text-sm text-dark-text flex-1 truncate">{doc.file_name}</span>
-                    <span className="font-inter text-xs text-secondary-text">
-                      {(doc.file_size / 1024).toFixed(1)} KB
-                    </span>
-                    <span className="font-inter text-xs text-secondary-text">
-                      {new Date(doc.created_at).toLocaleDateString('en-GB')}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
-                      className="text-secondary-text hover:text-danger transition-colors"
-                      title="Delete"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
+                {data.clientDocuments.map(doc => {
+                  const url = signedUrls[doc.file_path];
+                  return (
+                    <div key={doc.id} className="flex items-center gap-3 bg-off-white rounded-md px-4 py-3">
+                      <FolderOpen size={18} className="text-medium-blue shrink-0" />
+                      <span className="font-inter text-sm text-dark-text flex-1 truncate">{doc.file_name}</span>
+                      <span className="font-inter text-xs text-secondary-text">
+                        {(doc.file_size / 1024).toFixed(1)} KB
+                      </span>
+                      <span className="font-inter text-xs text-secondary-text">
+                        {new Date(doc.created_at).toLocaleDateString('en-GB')}
+                      </span>
+                      {url && (
+                        <>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-medium-blue hover:text-navy transition-colors"
+                            title="View file"
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                          <a
+                            href={url}
+                            download={doc.file_name}
+                            className="text-medium-blue hover:text-navy transition-colors"
+                            title="Download file"
+                          >
+                            <Download size={16} />
+                          </a>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
+                        className="text-secondary-text hover:text-danger transition-colors"
+                        title="Delete"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -521,17 +574,92 @@ export default function AdminClientDetail() {
                     Client Uploaded Files ({data.intakeUploads.length})
                   </h3>
                   <div className="flex flex-col gap-2">
-                    {data.intakeUploads.map(file => (
-                      <div key={file.id} className="flex items-center gap-3 bg-off-white rounded-md px-4 py-3">
-                        <FileText size={18} className="text-medium-blue shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <span className="font-inter text-sm text-dark-text block truncate">{file.file_name}</span>
-                          <span className="font-inter text-xs text-secondary-text">
-                            Question: {file.question_id} | {(file.file_size / 1024).toFixed(1)} KB
-                          </span>
+                    {data.intakeUploads.map(file => {
+                      const url = signedUrls[file.file_path];
+                      return (
+                        <div key={file.id} className="flex items-center gap-3 bg-off-white rounded-md px-4 py-3">
+                          <FileText size={18} className="text-medium-blue shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <span className="font-inter text-sm text-dark-text block truncate">{file.file_name}</span>
+                            <span className="font-inter text-xs text-secondary-text">
+                              Question: {file.question_id} | {(file.file_size / 1024).toFixed(1)} KB | {file.file_type || 'unknown type'}
+                            </span>
+                          </div>
+                          {url && (
+                            <>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-medium-blue hover:text-navy transition-colors"
+                                title="View file"
+                              >
+                                <ExternalLink size={16} />
+                              </a>
+                              <a
+                                href={url}
+                                download={file.file_name}
+                                className="text-medium-blue hover:text-navy transition-colors"
+                                title="Download file"
+                              >
+                                <Download size={16} />
+                              </a>
+                            </>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* File uploads stored in intake_responses.file_uploads (legacy) */}
+              {Object.keys(data.fileUploads).length > 0 && (
+                <div className="bg-white rounded-lg border border-border p-6">
+                  <h3 className="font-inter font-semibold text-navy text-sm mb-4">
+                    Additional File References
+                  </h3>
+                  <p className="font-inter text-secondary-text text-xs mb-4">
+                    Files referenced in the intake response data.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {Object.entries(data.fileUploads).map(([fieldId, files]) =>
+                      files.map((file: any, i: number) => {
+                        const url = signedUrls[file.path];
+                        return (
+                          <div key={`${fieldId}-${i}`} className="flex items-center gap-3 bg-off-white rounded-md px-4 py-3">
+                            <FileText size={18} className="text-medium-blue shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="font-inter text-sm text-dark-text block truncate">{file.name}</span>
+                              <span className="font-inter text-xs text-secondary-text">
+                                Question: {fieldId} | {(file.size / 1024).toFixed(1)} KB
+                              </span>
+                            </div>
+                            {url && (
+                              <>
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-medium-blue hover:text-navy transition-colors"
+                                  title="View file"
+                                >
+                                  <ExternalLink size={16} />
+                                </a>
+                                <a
+                                  href={url}
+                                  download={file.name}
+                                  className="text-medium-blue hover:text-navy transition-colors"
+                                  title="Download file"
+                                >
+                                  <Download size={16} />
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               )}
