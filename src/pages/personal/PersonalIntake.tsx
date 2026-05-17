@@ -546,21 +546,29 @@ export default function PersonalIntake() {
           />
         </div>
         <div className="flex gap-1 mt-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {dataSections.filter(s => s.id !== 'intro').map((s, i) => (
-            <button
-              key={s.id}
-              onClick={() => goToSection(i + 1)}
-              className={`font-inter text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${
-                i + 1 === currentSection
-                  ? 'bg-navy text-white'
-                  : i + 1 < currentSection
-                  ? 'bg-medium-blue text-white'
-                  : 'bg-gray-100 text-secondary-text hover:bg-gray-200'
-              }`}
-            >
-              {s.title}
-            </button>
-          ))}
+          {dataSections.filter(s => s.id !== 'intro').map((s, i) => {
+            const isCurrentSection = i + 1 === currentSection;
+            const isCompletedSection = i + 1 < currentSection;
+            const isLastSection = i + 1 === totalSections - 1;
+
+            return (
+              <button
+                key={s.id}
+                onClick={() => goToSection(i + 1)}
+                className={`font-inter text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${
+                  isCurrentSection
+                    ? isLastSection
+                      ? 'bg-success text-white'
+                      : 'bg-navy text-white'
+                    : isCompletedSection
+                    ? 'bg-medium-blue text-white'
+                    : 'bg-gray-100 text-secondary-text hover:bg-gray-200'
+                }`}
+              >
+                {s.title}
+              </button>
+            );
+          })}
         </div>
       </div>
 

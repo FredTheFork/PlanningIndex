@@ -45,17 +45,10 @@ export default function Navbar() {
       }`}
       style={{ height: 'clamp(64px, 8vw, 72px)' }}
     >
-      <div className="max-w-[1200px] mx-auto px-6 h-full flex items-center justify-between">
+      <div className="max-w-full mx-0 px-6 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0" style={{ height: 40 }}>
-          <svg width="36" height="40" viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="20" width="8" height="18" rx="1.5" fill="#1B3F7A" />
-            <rect x="26" y="20" width="8" height="18" rx="1.5" fill="#1B3F7A" />
-            <rect x="2" y="16" width="32" height="5" rx="1.5" fill="#1B3F7A" />
-            <path d="M18 2L22 10H14L18 2Z" fill="#1B3F7A" />
-            <rect x="16.5" y="10" width="3" height="8" rx="1" fill="#1B3F7A" />
-            <path d="M15 14L18 18L21 14" stroke="#1B3F7A" strokeWidth="1.5" fill="none" />
-          </svg>
+        <Link to="/" className="flex items-center gap-3 shrink-0" style={{ height: 40 }}>
+          <img src="/image.png" alt="Foundationary" style={{ height: 40, width: 'auto' }} />
           <div className="flex flex-col">
             <span className="font-inter font-bold text-navy leading-none" style={{ fontSize: '1.15rem' }}>
               <span style={{ fontSize: '1.3rem' }}>F</span>oundationary
@@ -85,7 +78,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop CTA */}
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3 ml-auto pr-6">
           {isPaidUser ? (
             <>
               <Link
