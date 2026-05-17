@@ -9,6 +9,10 @@ import PricingPage from './pages/PricingPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import AdditionalServicesPage from './pages/AdditionalServicesPage';
 import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import FAQPage from './pages/FAQPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfUsePage from './pages/TermsOfUsePage';
 
 // Public flow pages
 import CheckoutPage from './pages/Checkout';
@@ -75,7 +79,10 @@ export default function App() {
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/additional-services" element={<AdditionalServicesPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/faq" element={<PlaceholderPage title="FAQ" />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfUsePage />} />
         </Route>
 
         {/* Auth flow (public) */}

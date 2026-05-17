@@ -10,12 +10,12 @@ const serviceLinks = [
 const companyLinks = [
   { label: 'About', to: '/about' },
   { label: 'FAQ', to: '/faq' },
-  { label: 'Contact', to: '#' },
+  { label: 'Contact', to: '/contact' },
 ];
 
 const legalLinks = [
-  { label: 'Privacy Policy', to: '#' },
-  { label: 'Terms of Use', to: '#' },
+  { label: 'Privacy Policy', to: '/privacy' },
+  { label: 'Terms of Use', to: '/terms' },
 ];
 
 export default function Footer() {
