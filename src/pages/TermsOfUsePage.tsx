@@ -161,7 +161,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            We typically deliver your complete document package within 5 business days of receiving your completed intake form. This timeline is a guideline, not a guarantee. We reserve the right to extend this period if issues arise during quality review.
+            We typically deliver your complete document package within 1 business day of receiving your completed intake form. This timeline is a guideline, not a guarantee. We reserve the right to extend this period if issues arise during quality review.
           </p>
 
           <h2
