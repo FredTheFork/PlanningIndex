@@ -20,6 +20,7 @@ interface ClientData {
     purchased_upsells: string[];
   } | null;
   intakeResponses: Record<string, any> | null;
+  additionalNotes: Record<string, string> | null;
   fileUploads: Record<string, any[]>;
   intakeUploads: { id: string; question_id: string; file_name: string; file_path: string; file_size: number; file_type: string }[];
   clientDocuments: { id: string; file_name: string; file_path: string; file_size: number; file_type: string; created_at: string }[];
@@ -32,6 +33,7 @@ export default function AdminClientDetail() {
   const [data, setData] = useState<ClientData>({
     profile: null,
     intakeResponses: null,
+    additionalNotes: null,
     fileUploads: {},
     intakeUploads: [],
     clientDocuments: [],
@@ -88,6 +90,7 @@ export default function AdminClientDetail() {
       setData({
         profile,
         intakeResponses: intakeResult?.responses || null,
+        additionalNotes: intakeResult?.additional_notes || null,
         fileUploads: intakeResult?.file_uploads || {},
         intakeUploads: uploadsData || [],
         clientDocuments: docsData || [],
@@ -376,10 +379,15 @@ export default function AdminClientDetail() {
                 const sectionResponses = section.fields
                   .filter(f => {
                     const val = data.intakeResponses?.[f.id];
+                    const otherVal = data.intakeResponses?.[f.id + '_other'];
+                    const noteVal = data.additionalNotes?.[f.id];
                     if (f.type === 'repeating_section') {
                       return val && Array.isArray(val) && val.length > 0;
                     }
-                    return val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0);
+                    const hasMain = val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0);
+                    const hasOther = otherVal && otherVal.trim() !== '';
+                    const hasNote = noteVal && noteVal.trim() !== '';
+                    return hasMain || hasOther || hasNote;
                   });
 
                 if (sectionResponses.length === 0) return null;
@@ -393,14 +401,31 @@ export default function AdminClientDetail() {
                     <div className="flex flex-col gap-4">
                       {section.fields.map(field => {
                         const val = data.intakeResponses?.[field.id];
-                        if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) return null;
+                        const otherVal = data.intakeResponses?.[field.id + '_other'];
+                        const noteVal = data.additionalNotes?.[field.id];
+                        const hasMain = val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0);
+                        const hasOther = otherVal && otherVal.trim() !== '';
+                        const hasNote = noteVal && noteVal.trim() !== '';
+                        if (!hasMain && !hasOther && !hasNote) return null;
 
                         return (
                           <div key={field.id} className="border-b border-border pb-4 last:border-0 last:pb-0">
                             <div className="font-inter font-medium text-dark-text text-sm mb-1">
                               {field.questionNumber}. {field.label}
                             </div>
-                            <FieldValue field={field} value={val} />
+                            {hasMain && <FieldValue field={field} value={val} />}
+                            {field.hasOtherOption && hasOther && (
+                              <div className="mt-2 ml-2 pl-3 border-l-2 border-medium-blue">
+                                <span className="font-inter text-xs text-medium-blue font-semibold">Other (specified):</span>
+                                <p className="font-inter text-secondary-text text-sm mt-0.5">{String(otherVal)}</p>
+                              </div>
+                            )}
+                            {hasNote && (
+                              <div className="mt-2 bg-amber-50 border border-amber-200 rounded-md p-3">
+                                <span className="font-inter text-xs text-amber-700 font-semibold">Additional note:</span>
+                                <p className="font-inter text-secondary-text text-sm mt-0.5 whitespace-pre-line">{String(noteVal)}</p>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
