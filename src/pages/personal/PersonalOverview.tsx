@@ -15,19 +15,7 @@ export default function PersonalOverview() {
     return <Navigate to="/personal/admin" replace />;
   }
 
-  // If profile is loading, show nothing (avoids flash of overview before redirect)
-  if (!profile) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy" />
-      </div>
-    );
-  }
-
-  // If intake form hasn't been submitted, go directly to it
-  if (!profile.has_submitted_intake) {
-    return <Navigate to="/personal/intake" replace />;
-  }
+  if (!profile) return null;
 
   const getNextStep = () => {
     if (!profile.has_submitted_intake) {
