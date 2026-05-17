@@ -28,15 +28,18 @@ export default function PersonalIntake() {
   const [uploading, setUploading] = useState(false);
   const [fileUploads, setFileUploads] = useState<Record<string, FileUploadInfo[]>>({});
   const [rowExists, setRowExists] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const responsesRef = useRef<Responses>(responses);
   const currentSectionRef = useRef(currentSection);
+  const currentFieldIndexRef = useRef(currentFieldIndex);
   const fileUploadsRef = useRef(fileUploads);
   const savingRef = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => { responsesRef.current = responses; }, [responses]);
   useEffect(() => { currentSectionRef.current = currentSection; }, [currentSection]);
+  useEffect(() => { currentFieldIndexRef.current = currentFieldIndex; }, [currentFieldIndex]);
   useEffect(() => { fileUploadsRef.current = fileUploads; }, [fileUploads]);
 
   const allSections = profile?.purchased_upsells && profile.purchased_upsells.length > 0
@@ -46,7 +49,7 @@ export default function PersonalIntake() {
   const dataSections = allSections.filter(s => s.fields.length > 0);
   const totalSections = dataSections.length;
 
-  // Load existing responses on mount
+  // Load existing responses on mount — restores exact position
   useEffect(() => {
     if (!user) return;
 
@@ -59,18 +62,21 @@ export default function PersonalIntake() {
 
       if (error) {
         console.error('Error fetching intake responses:', error);
+        setInitialLoadDone(true);
         return;
       }
 
       if (data) {
         setResponses(data.responses as Responses || {});
         setCurrentSection(data.current_section ?? 0);
+        setCurrentFieldIndex(data.current_field_index ?? 0);
         setLastSaved(new Date(data.last_saved_at));
         setRowExists(true);
         if (data.file_uploads) {
           setFileUploads(data.file_uploads as Record<string, FileUploadInfo[]> || {});
         }
       }
+      setInitialLoadDone(true);
     };
 
     fetchResponses();
@@ -82,7 +88,7 @@ export default function PersonalIntake() {
     }
   }, [profile]);
 
-  // Save on page unload / tab close
+  // Save on page unload / tab close — persists exact position
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (rowExists && responsesRef.current && Object.keys(responsesRef.current).length > 0) {
@@ -92,6 +98,7 @@ export default function PersonalIntake() {
           const payload = {
             responses: responsesRef.current,
             current_section: currentSectionRef.current,
+            current_field_index: currentFieldIndexRef.current,
             last_saved_at: new Date().toISOString(),
             file_uploads: fileUploadsRef.current,
           };
@@ -114,11 +121,12 @@ export default function PersonalIntake() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [rowExists, user]);
 
-  // Core save function
+  // Core save function — always persists position
   const saveResponses = useCallback(async (
     updatedResponses: Responses,
     section: number,
-    updatedFileUploads?: Record<string, FileUploadInfo[]>
+    updatedFileUploads?: Record<string, FileUploadInfo[]>,
+    fieldIndex?: number
   ) => {
     if (!user) return;
     if (savingRef.current) return;
@@ -127,11 +135,11 @@ export default function PersonalIntake() {
     setSaving(true);
     try {
       const fu = updatedFileUploads || fileUploadsRef.current;
-      const payload = {
-        user_id: user.id,
-        form_version: 'v2',
+      const fi = fieldIndex ?? currentFieldIndexRef.current;
+      const updatePayload = {
         responses: updatedResponses,
         current_section: section,
+        current_field_index: fi,
         last_saved_at: new Date().toISOString(),
         file_uploads: fu,
       };
@@ -140,18 +148,17 @@ export default function PersonalIntake() {
       if (rowExists) {
         const { error: updateError } = await supabase
           .from('intake_responses')
-          .update({
-            responses: updatedResponses,
-            current_section: section,
-            last_saved_at: new Date().toISOString(),
-            file_uploads: fu,
-          })
+          .update(updatePayload)
           .eq('user_id', user.id);
         error = updateError;
       } else {
         const { error: insertError } = await supabase
           .from('intake_responses')
-          .insert(payload);
+          .insert({
+            user_id: user.id,
+            form_version: 'v2',
+            ...updatePayload,
+          });
         error = insertError;
         if (!insertError) {
           setRowExists(true);
@@ -159,11 +166,14 @@ export default function PersonalIntake() {
       }
 
       if (error) {
-        // If update failed because row doesn't exist, try insert
         if (rowExists && error.code === 'PGRST116') {
           const { error: insertError } = await supabase
             .from('intake_responses')
-            .insert(payload);
+            .insert({
+              user_id: user.id,
+              form_version: 'v2',
+              ...updatePayload,
+            });
           if (!insertError) {
             setRowExists(true);
             setLastSaved(new Date());
@@ -180,7 +190,7 @@ export default function PersonalIntake() {
     }
   }, [user, rowExists]);
 
-  // Debounced save for field changes (saves 1 second after user stops typing)
+  // Debounced save for field changes
   const scheduleSave = useCallback((updatedResponses: Responses, section: number) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -190,13 +200,13 @@ export default function PersonalIntake() {
     }, 1000);
   }, [saveResponses]);
 
-  // Immediate save (for navigation, button clicks, etc.)
+  // Immediate save (for navigation, blur, etc.)
   const saveNow = useCallback(async () => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    await saveResponses(responsesRef.current, currentSectionRef.current);
+    await saveResponses(responsesRef.current, currentSectionRef.current, undefined, currentFieldIndexRef.current);
   }, [saveResponses]);
 
   const handleFieldChange = (fieldId: string, value: FieldValue) => {
@@ -206,12 +216,11 @@ export default function PersonalIntake() {
   };
 
   const handleFieldBlur = () => {
-    // Save immediately when user leaves a field
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    saveResponses(responses, currentSection);
+    saveResponses(responses, currentSection, undefined, currentFieldIndex);
   };
 
   const handleFileUpload = async (fieldId: string, files: FileList) => {
@@ -260,7 +269,6 @@ export default function PersonalIntake() {
         [fieldId]: JSON.stringify(updatedUploads[fieldId].map(f => f.name)),
       };
       setResponses(updatedResponses);
-      // Save immediately after file upload
       saveResponses(updatedResponses, currentSection, updatedUploads);
     } finally {
       setUploading(false);
@@ -282,7 +290,6 @@ export default function PersonalIntake() {
         [fieldId]: (fileUploads[fieldId] || []).filter(f => f.path !== filePath),
       };
       setFileUploads(updatedUploads);
-      // Save immediately after file removal
       saveResponses(responses, currentSection, updatedUploads);
     } catch (err) {
       console.error('Error removing file:', err);
@@ -309,7 +316,6 @@ export default function PersonalIntake() {
   };
 
   const goToSection = async (index: number) => {
-    // Save before navigating
     await saveNow();
     setCurrentSection(index);
     setCurrentFieldIndex(0);
@@ -361,6 +367,7 @@ export default function PersonalIntake() {
         .update({
           responses,
           current_section: currentSection,
+          current_field_index: currentFieldIndex,
           last_saved_at: new Date().toISOString(),
           submitted_at: new Date().toISOString(),
           file_uploads: fileUploads,
@@ -389,7 +396,8 @@ export default function PersonalIntake() {
     }
   };
 
-  if (profileLoading) {
+  // Wait for initial load to complete before rendering
+  if (profileLoading || !initialLoadDone) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy" />
@@ -420,8 +428,9 @@ export default function PersonalIntake() {
     );
   }
 
-  // Intro page
-  if (currentSection === 0 && dataSections[0]?.id === 'intro') {
+  // Intro page — only show if user has no saved responses (first visit)
+  const hasExistingResponses = Object.keys(responses).length > 0;
+  if (currentSection === 0 && dataSections[0]?.id === 'intro' && !hasExistingResponses) {
     const introSection = dataSections[0];
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -445,11 +454,23 @@ export default function PersonalIntake() {
     );
   }
 
+  // If user has existing responses but is still on intro section, skip to their saved section
+  if (currentSection === 0 && dataSections[0]?.id === 'intro' && hasExistingResponses) {
+    // This case is handled by the restore — currentSection will be > 0 from DB
+    // But as a safety net, advance to section 1
+    setCurrentSection(1);
+  }
+
   const section = dataSections[currentSection];
   if (!section) return null;
 
   const visibleFields = section.fields.filter(isFieldVisible);
-  const activeField = visibleFields[currentFieldIndex];
+  // Clamp field index to valid range (in case fields changed due to conditional logic)
+  const safeFieldIndex = Math.min(currentFieldIndex, Math.max(0, visibleFields.length - 1));
+  if (safeFieldIndex !== currentFieldIndex) {
+    setCurrentFieldIndex(safeFieldIndex);
+  }
+  const activeField = visibleFields[safeFieldIndex];
   const progress = (currentSection / (totalSections - 1)) * 100;
 
   return (
@@ -535,7 +556,7 @@ export default function PersonalIntake() {
           <div className="flex items-center justify-between mt-4">
             <button
               onClick={prevField}
-              disabled={currentFieldIndex === 0}
+              disabled={safeFieldIndex === 0}
               className="font-inter font-medium text-secondary-text hover:text-navy transition-colors flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ fontSize: '0.9rem' }}
             >
@@ -544,10 +565,10 @@ export default function PersonalIntake() {
             </button>
 
             <span className="font-inter text-xs text-secondary-text">
-              {currentFieldIndex + 1} / {visibleFields.length}
+              {safeFieldIndex + 1} / {visibleFields.length}
             </span>
 
-            {currentFieldIndex < visibleFields.length - 1 ? (
+            {safeFieldIndex < visibleFields.length - 1 ? (
               <button
                 onClick={() => { nextField(); handleFieldBlur(); }}
                 className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors flex items-center gap-1"
@@ -594,7 +615,7 @@ export default function PersonalIntake() {
               key={field.id}
               onClick={() => { setCurrentFieldIndex(i); handleFieldBlur(); }}
               className={`font-inter text-xs px-3 py-1.5 rounded-md transition-colors ${
-                i === currentFieldIndex
+                i === safeFieldIndex
                   ? 'bg-navy text-white'
                   : responses[field.id] || (field.type === 'repeating_section' && (responses[field.id] as Record<string, string>[])?.length)
                   ? 'bg-green-50 text-green-800 border border-green-200'
@@ -773,7 +794,6 @@ function FieldRenderer({
           updated = [...selected, opt];
         }
         onChange(updated);
-        // Save immediately on selection change
         onBlur();
       };
 

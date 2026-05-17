@@ -15,6 +15,11 @@ export default function PersonalOverview() {
     return <Navigate to="/personal/admin" replace />;
   }
 
+  // If intake form hasn't been submitted, go directly to it
+  if (profile && !profile.has_submitted_intake) {
+    return <Navigate to="/personal/intake" replace />;
+  }
+
   if (!profile) return null;
 
   const getNextStep = () => {
