@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { supabase } from '../../lib/supabase';
-import { intakeFormSections, upsellFormSections, FormField } from '../../lib/intakeFormDefinition';
+import { intakeFormSections, upsellFormSections, FormField, FormSection } from '../../lib/intakeFormDefinition';
 import { Save, CheckCircle2, ArrowRight, ArrowLeft, Upload, X, Plus, Trash2 } from 'lucide-react';
 
 type FieldValue = string | string[] | Record<string, string>[];
@@ -49,7 +49,36 @@ export default function PersonalIntake() {
   const dataSections = allSections.filter(s => s.fields.length > 0);
   const totalSections = dataSections.length;
 
-  // Load existing responses on mount — restores exact position
+  // Find the position of the last answered field across all sections
+  const findLastAnsweredPosition = useCallback((savedResponses: Responses, sections: FormSection[]): { section: number; fieldIndex: number } => {
+    let lastSection = 0;
+    let lastFieldIndex = 0;
+    let foundAny = false;
+
+    for (let s = 0; s < sections.length; s++) {
+      const section = sections[s];
+      if (section.fields.length === 0) continue;
+      for (let f = 0; f < section.fields.length; f++) {
+        const field = section.fields[f];
+        const val = savedResponses[field.id];
+        if (val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0)) {
+          lastSection = s;
+          lastFieldIndex = f;
+          foundAny = true;
+        }
+      }
+    }
+
+    if (!foundAny) {
+      // No answers yet — start at the beginning (skip intro if it exists)
+      if (sections[0]?.id === 'intro') return { section: 1, fieldIndex: 0 };
+      return { section: 0, fieldIndex: 0 };
+    }
+
+    return { section: lastSection, fieldIndex: lastFieldIndex };
+  }, []);
+
+  // Load existing responses on mount — restores to last answered question
   useEffect(() => {
     if (!user) return;
 
@@ -67,14 +96,18 @@ export default function PersonalIntake() {
       }
 
       if (data) {
-        setResponses(data.responses as Responses || {});
-        setCurrentSection(data.current_section ?? 0);
-        setCurrentFieldIndex(data.current_field_index ?? 0);
+        const savedResponses = data.responses as Responses || {};
+        setResponses(savedResponses);
         setLastSaved(new Date(data.last_saved_at));
         setRowExists(true);
         if (data.file_uploads) {
           setFileUploads(data.file_uploads as Record<string, FileUploadInfo[]> || {});
         }
+
+        // Compute position from actual responses — land on last answered question
+        const position = findLastAnsweredPosition(savedResponses, dataSections);
+        setCurrentSection(position.section);
+        setCurrentFieldIndex(position.fieldIndex);
       }
       setInitialLoadDone(true);
     };
@@ -428,7 +461,7 @@ export default function PersonalIntake() {
     );
   }
 
-  // Intro page — only show if user has no saved responses (first visit)
+  // Intro page — only show on first visit with no saved responses
   const hasExistingResponses = Object.keys(responses).length > 0;
   if (currentSection === 0 && dataSections[0]?.id === 'intro' && !hasExistingResponses) {
     const introSection = dataSections[0];
@@ -452,13 +485,6 @@ export default function PersonalIntake() {
         </div>
       </div>
     );
-  }
-
-  // If user has existing responses but is still on intro section, skip to their saved section
-  if (currentSection === 0 && dataSections[0]?.id === 'intro' && hasExistingResponses) {
-    // This case is handled by the restore — currentSection will be > 0 from DB
-    // But as a safety net, advance to section 1
-    setCurrentSection(1);
   }
 
   const section = dataSections[currentSection];
