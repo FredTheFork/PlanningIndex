@@ -5,7 +5,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { intakeFormSections, upsellFormSections, FormField } from '../../lib/intakeFormDefinition';
 import {
   ArrowLeft, FileText, Upload, X,
-  Save, AlertCircle, FolderOpen, Download, ExternalLink
+  Save, AlertCircle, FolderOpen, Download, ExternalLink,
+  Copy, RefreshCw, FileSearch
 } from 'lucide-react';
 
 interface ClientData {
@@ -40,7 +41,18 @@ export default function AdminClientDetail() {
     orders: [],
   });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'intake' | 'documents' | 'uploads'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'intake' | 'documents' | 'uploads' | 'brief'>('overview');
+  const [briefData, setBriefData] = useState<{
+    id: string;
+    status: string;
+    brief_content: string | null;
+    risk_level: string | null;
+    error_message: string | null;
+    generated_at: string | null;
+  } | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefTriggering, setBriefTriggering] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [deliveryStatus, setDeliveryStatus] = useState('');
   const [deliveryLink, setDeliveryLink] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
@@ -107,6 +119,91 @@ export default function AdminClientDetail() {
       setLoading(false);
     }
   };
+
+  const fetchBrief = async () => {
+    if (!userId) return;
+    setBriefLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('client_briefs')
+        .select('id, status, brief_content, risk_level, error_message, generated_at')
+        .eq('client_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching brief:', error);
+      } else {
+        setBriefData(data);
+      }
+    } finally {
+      setBriefLoading(false);
+    }
+  };
+
+  const handleTriggerBrief = async () => {
+    if (!userId) return;
+    setBriefTriggering(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/trigger-brief`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ clientId: userId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Trigger brief error:', data.error);
+        return;
+      }
+
+      // Insert a pending row locally so the UI updates immediately
+      if (!briefData) {
+        const { data: newBrief } = await supabase
+          .from('client_briefs')
+          .select('id, status, brief_content, risk_level, error_message, generated_at')
+          .eq('client_id', userId)
+          .maybeSingle();
+
+        if (newBrief) {
+          setBriefData(newBrief);
+        }
+      } else {
+        setBriefData(prev => prev ? { ...prev, status: 'generating' } : prev);
+      }
+    } catch (err) {
+      console.error('Trigger brief error:', err);
+    } finally {
+      setBriefTriggering(false);
+    }
+  };
+
+  const handleCopyBrief = () => {
+    if (briefData?.brief_content) {
+      navigator.clipboard.writeText(briefData.brief_content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Fetch brief when the brief tab is active
+  useEffect(() => {
+    if (activeTab === 'brief' && userId) {
+      fetchBrief();
+    }
+  }, [activeTab, userId]);
+
+  // Poll for brief updates when generating
+  useEffect(() => {
+    if (activeTab !== 'brief' || !briefData || briefData.status === 'completed' || briefData.status === 'failed') return;
+    if (briefData.status !== 'generating' && briefData.status !== 'pending') return;
+
+    const interval = setInterval(fetchBrief, 10000);
+    return () => clearInterval(interval);
+  }, [activeTab, briefData?.status]);
 
   const generateSignedUrls = async () => {
     const urls: Record<string, string> = {};
@@ -259,17 +356,17 @@ export default function AdminClientDetail() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-border">
-        {(['overview', 'intake', 'documents', 'uploads'] as const).map(tab => (
+        {(['overview', 'intake', 'documents', 'uploads', 'brief'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`font-inter text-sm px-4 py-2.5 border-b-2 transition-colors capitalize ${
+            className={`font-inter text-sm px-4 py-2.5 border-b-2 transition-colors ${
               activeTab === tab
                 ? 'border-navy text-navy font-semibold'
                 : 'border-transparent text-secondary-text hover:text-navy'
             }`}
           >
-            {tab === 'uploads' ? 'Client Uploads' : tab}
+            {tab === 'uploads' ? 'Client Uploads' : tab === 'brief' ? 'Master Brief' : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -665,6 +762,122 @@ export default function AdminClientDetail() {
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* Master Brief Tab */}
+      {activeTab === 'brief' && (
+        <div className="space-y-6">
+          {briefLoading && !briefData ? (
+            <div className="bg-white rounded-lg border border-border p-12 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy mx-auto mb-4" />
+              <p className="font-inter text-secondary-text">Loading brief...</p>
+            </div>
+          ) : !briefData ? (
+            <div className="bg-white rounded-lg border border-border p-12 text-center">
+              <FileSearch size={40} className="text-secondary-text mx-auto mb-4" />
+              <h3 className="font-inter font-semibold text-navy mb-2">No brief generated yet</h3>
+              <p className="font-inter text-secondary-text text-sm mb-6">
+                Generate a master brief from this client's intake responses.
+              </p>
+              <button
+                onClick={handleTriggerBrief}
+                disabled={briefTriggering}
+                className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              >
+                {briefTriggering ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                ) : (
+                  <FileSearch size={16} />
+                )}
+                Generate Brief
+              </button>
+            </div>
+          ) : briefData.status === 'pending' || briefData.status === 'generating' ? (
+            <div className="bg-white rounded-lg border border-border p-12 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy mx-auto mb-4" />
+              <h3 className="font-inter font-semibold text-navy mb-2">Brief is being generated</h3>
+              <p className="font-inter text-secondary-text text-sm">
+                Check back in 60 seconds
+              </p>
+            </div>
+          ) : briefData.status === 'failed' ? (
+            <div className="bg-white rounded-lg border border-border p-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-red-50 rounded-lg p-3 shrink-0">
+                  <AlertCircle size={24} className="text-danger" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-inter font-semibold text-navy mb-2">Brief generation failed</h3>
+                  {briefData.error_message && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                      <p className="font-inter text-sm text-danger">{briefData.error_message}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleTriggerBrief}
+                    disabled={briefTriggering}
+                    className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                    style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                  >
+                    {briefTriggering ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    ) : (
+                      <RefreshCw size={16} />
+                    )}
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : briefData.status === 'completed' ? (
+            <div className="space-y-4">
+              {/* Risk level badge */}
+              {briefData.risk_level && (
+                <div className="bg-white rounded-lg border border-border p-5 flex items-center gap-4">
+                  <span className="font-inter font-semibold text-navy text-sm">Risk Level:</span>
+                  <span
+                    className={`font-inter font-bold text-sm px-3 py-1 rounded-full ${
+                      briefData.risk_level === 'Low'
+                        ? 'bg-green-50 text-green-800 border border-green-200'
+                        : briefData.risk_level === 'Medium'
+                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}
+                  >
+                    {briefData.risk_level}
+                  </span>
+                  {briefData.generated_at && (
+                    <span className="font-inter text-xs text-secondary-text ml-auto">
+                      Generated {new Date(briefData.generated_at).toLocaleString('en-GB')}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Brief content */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-inter font-semibold text-navy text-sm">Brief Content</h3>
+                  <button
+                    onClick={handleCopyBrief}
+                    className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
+                    style={{ padding: '6px 14px', fontSize: '0.85rem' }}
+                  >
+                    <Copy size={14} />
+                    {copied ? 'Copied!' : 'Copy to Clipboard'}
+                  </button>
+                </div>
+                <div
+                  className="font-mono text-sm text-dark-text bg-off-white rounded-md p-5 overflow-y-auto whitespace-pre-wrap leading-[1.7]"
+                  style={{ maxHeight: 600 }}
+                >
+                  {briefData.brief_content || 'No content available.'}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
