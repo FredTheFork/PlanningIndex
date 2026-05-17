@@ -151,7 +151,7 @@ export default function AdminClientDetail() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({ clientId: userId }),
+        body: JSON.stringify({ user_id: userId }),
       });
 
       if (!response.ok) {
