@@ -103,13 +103,13 @@ const faqs: FAQItem[] = [
     id: 'how-works',
     category: 'How It Works',
     question: 'How do I get started?',
-    answer: 'You complete our structured intake form — it takes about 20-30 minutes and asks about your business, how you work, how you charge, how you handle data, and how you want to sound. We then generate your complete document package based on your answers. You\'ll receive everything within 1 business day. If we spot any red flags or inconsistencies, we let you know before delivery.',
+    answer: 'You complete our structured intake form — it takes about 20-30 minutes and asks about your business, how you work, how you charge, how you handle data, and how you want to sound. We then generate your complete document package based on your answers. You\'ll receive everything within 5 business days. If we spot any red flags or inconsistencies, we let you know before delivery.',
   },
   {
     id: 'timeline',
     category: 'How It Works',
     question: 'How long does it take?',
-    answer: 'From submitting your intake form to receiving your complete package is typically 1 business day. The form itself takes about 20-30 minutes to complete. We don\'t rush this process — every document is reviewed individually for accuracy and consistency before you receive it.',
+    answer: 'From submitting your intake form to receiving your complete package is typically 5 business days. The form itself takes about 20-30 minutes to complete. We don\'t rush this process — every document is reviewed individually for accuracy and consistency before you receive it.',
   },
   {
     id: 'revisions',
