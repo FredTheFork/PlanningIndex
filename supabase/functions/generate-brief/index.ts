@@ -7,7 +7,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+// ── Model Configuration ──
+// Primary model: gemini-2.5-flash (higher quality, ~500 RPD free tier)
+// Fallback model: gemini-3-flash-preview (also free tier, separate quota)
+// When 2.5 Flash hits its daily limit, we automatically switch to 3 Flash.
+// At midnight UTC each day, counts reset and we switch back to 2.5 Flash.
+
+const PRIMARY_MODEL = 'gemini-2.5-flash';
+const FALLBACK_MODEL = 'gemini-3-flash-preview';
+
+// Threshold: switch to fallback after this many requests to the primary model
+const PRIMARY_DAILY_LIMIT = 18;
 
 function formatValue(val: any): string {
   if (val === undefined || val === null || val === '') return 'Not provided';
@@ -197,6 +207,147 @@ FORMAT REQUIREMENTS:
 
 The brief should be thorough enough that a document drafter could create all 10 documents from it without needing to refer back to the raw questionnaire data.`;
 
+// ── API Usage Tracking ──
+
+async function getTodayRequestCount(supabase: any, model: string): Promise<number> {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD in UTC
+
+  const { data, error } = await supabase
+    .from('gemini_api_usage')
+    .select('request_count')
+    .eq('model', model)
+    .eq('request_date', today)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching API usage count:', error);
+    return 0;
+  }
+
+  return data?.request_count || 0;
+}
+
+async function incrementRequestCount(supabase: any, model: string): Promise<void> {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Try to update existing row first
+  const { data: existing, error: fetchError } = await supabase
+    .from('gemini_api_usage')
+    .select('id, request_count')
+    .eq('model', model)
+    .eq('request_date', today)
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error('Error checking existing usage:', fetchError);
+    // Attempt insert anyway
+    const { error: insertError } = await supabase
+      .from('gemini_api_usage')
+      .insert({
+        model,
+        request_date: today,
+        request_count: 1,
+        last_used_at: new Date().toISOString(),
+      });
+    if (insertError) {
+      console.error('Error inserting API usage:', insertError);
+    }
+    return;
+  }
+
+  if (existing) {
+    const { error: updateError } = await supabase
+      .from('gemini_api_usage')
+      .update({
+        request_count: existing.request_count + 1,
+        last_used_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id);
+
+    if (updateError) {
+      console.error('Error updating API usage:', updateError);
+    }
+  } else {
+    const { error: insertError } = await supabase
+      .from('gemini_api_usage')
+      .insert({
+        model,
+        request_date: today,
+        request_count: 1,
+        last_used_at: new Date().toISOString(),
+      });
+
+    if (insertError) {
+      console.error('Error inserting API usage:', insertError);
+    }
+  }
+}
+
+// ── Model Selection ──
+
+async function selectModel(supabase: any): Promise<string> {
+  const primaryCount = await getTodayRequestCount(supabase, PRIMARY_MODEL);
+
+  if (primaryCount < PRIMARY_DAILY_LIMIT) {
+    console.info(`Using primary model ${PRIMARY_MODEL} (${primaryCount}/${PRIMARY_DAILY_LIMIT} requests today)`);
+    return PRIMARY_MODEL;
+  }
+
+  // Primary model limit reached — switch to fallback
+  const fallbackCount = await getTodayRequestCount(supabase, FALLBACK_MODEL);
+  console.info(`Primary model limit reached (${primaryCount}/${PRIMARY_DAILY_LIMIT}). Switching to fallback ${FALLBACK_MODEL} (${fallbackCount} requests today)`);
+
+  return FALLBACK_MODEL;
+}
+
+// ── Gemini API Call ──
+
+async function callGemini(model: string, apiKey: string, structuredData: string): Promise<string> {
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const generationConfig: Record<string, any> = {
+    temperature: 0.3,
+    maxOutputTokens: 8192,
+  };
+
+  // gemini-3-flash-preview uses a different API structure for system instructions
+  const requestBody: Record<string, any> = {
+    system_instruction: {
+      parts: [{ text: BRIEF_SYSTEM_PROMPT }],
+    },
+    contents: [{
+      role: 'user',
+      parts: [{
+        text: `Here is the client's intake questionnaire data. Please generate the Master Client Brief:\n\n${structuredData}`,
+      }],
+    }],
+    generationConfig,
+  };
+
+  const geminiResponse = await fetch(geminiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!geminiResponse.ok) {
+    const errText = await geminiResponse.text();
+    console.error(`Gemini API error (${model}):`, geminiResponse.status, errText);
+    throw new Error(`Gemini API (${model}) returned ${geminiResponse.status}: ${errText.substring(0, 200)}`);
+  }
+
+  const geminiData = await geminiResponse.json();
+
+  if (geminiData.candidates?.[0]?.content?.parts?.[0]?.text) {
+    return geminiData.candidates[0].content.parts[0].text;
+  }
+
+  console.error('Unexpected Gemini response structure:', JSON.stringify(geminiData).substring(0, 500));
+  throw new Error('No text content in Gemini response');
+}
+
+// ── Main Handler ──
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -264,53 +415,47 @@ Deno.serve(async (req: Request) => {
 
     let briefContent: string;
     let riskLevel: string;
+    let modelUsed: string | null = null;
 
     if (geminiApiKey && geminiApiKey.trim() !== '') {
-      // Use Gemini API for professional brief generation
+      // Select model based on daily usage tracking
+      const selectedModel = await selectModel(supabase);
+      modelUsed = selectedModel;
+
       try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+        briefContent = await callGemini(selectedModel, geminiApiKey, structuredData);
 
-        const geminiResponse = await fetch(geminiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: BRIEF_SYSTEM_PROMPT }],
-            },
-            contents: [{
-              role: 'user',
-              parts: [{
-                text: `Here is the client's intake questionnaire data. Please generate the Master Client Brief:\n\n${structuredData}`,
-              }],
-            }],
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 8192,
-            },
-          }),
-        });
-
-        if (!geminiResponse.ok) {
-          const errText = await geminiResponse.text();
-          console.error('Gemini API error:', geminiResponse.status, errText);
-          throw new Error(`Gemini API returned ${geminiResponse.status}: ${errText.substring(0, 200)}`);
-        }
-
-        const geminiData = await geminiResponse.json();
-
-        if (geminiData.candidates?.[0]?.content?.parts?.[0]?.text) {
-          briefContent = geminiData.candidates[0].content.parts[0].text;
-        } else {
-          console.error('Unexpected Gemini response structure:', JSON.stringify(geminiData).substring(0, 500));
-          throw new Error('No text content in Gemini response');
-        }
+        // Track the successful request
+        await incrementRequestCount(supabase, selectedModel);
 
         // Determine risk level from the brief content
         riskLevel = determineRiskLevel(r, briefContent);
       } catch (geminiErr: any) {
-        console.error('Gemini generation failed, falling back to template:', geminiErr.message);
-        briefContent = generateFallbackBrief(r, notes, structuredData);
-        riskLevel = determineRiskLevel(r, null);
+        console.error(`Gemini generation failed with ${selectedModel}:`, geminiErr.message);
+
+        // If primary model failed and we were using it, try fallback
+        if (selectedModel === PRIMARY_MODEL) {
+          console.info(`Attempting fallback to ${FALLBACK_MODEL}...`);
+          try {
+            briefContent = await callGemini(FALLBACK_MODEL, geminiApiKey, structuredData);
+            modelUsed = FALLBACK_MODEL;
+
+            // Track the fallback request
+            await incrementRequestCount(supabase, FALLBACK_MODEL);
+
+            riskLevel = determineRiskLevel(r, briefContent);
+          } catch (fallbackErr: any) {
+            console.error(`Fallback model ${FALLBACK_MODEL} also failed:`, fallbackErr.message);
+            briefContent = generateFallbackBrief(r, notes, structuredData);
+            modelUsed = null;
+            riskLevel = determineRiskLevel(r, null);
+          }
+        } else {
+          // Fallback model also failed — use template
+          briefContent = generateFallbackBrief(r, notes, structuredData);
+          modelUsed = null;
+          riskLevel = determineRiskLevel(r, null);
+        }
       }
     } else {
       // No Gemini key — use fallback template
@@ -318,7 +463,7 @@ Deno.serve(async (req: Request) => {
       riskLevel = determineRiskLevel(r, null);
     }
 
-    // Update the brief with generated content — use capitalized risk level values
+    // Update the brief with generated content
     const { error: updateError } = await supabase
       .from('client_briefs')
       .update({
@@ -341,7 +486,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, status: 'completed' }),
+      JSON.stringify({ success: true, status: 'completed', model: modelUsed }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
