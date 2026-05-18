@@ -158,15 +158,19 @@ export default function AdminClientDetail() {
     setPollingActive(true);
 
     try {
-      const response = await fetch('/api/trigger-brief', {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-brief`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: userId }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ user_id: userId }),
       });
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         setBriefError(data.error || 'Failed to trigger brief generation');
         setBriefData(prev => prev ? { ...prev, status: 'failed' } : null);
         setPollingActive(false);
