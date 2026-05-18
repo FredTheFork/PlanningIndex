@@ -47,8 +47,23 @@ export default function Navbar() {
     >
       <div className="max-w-full mx-0 px-6 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 shrink-0" style={{ height: 40 }}>
-          <img src="/image.png" alt="Foundationary" style={{ height: 40, width: 'auto' }} />
+        <Link to="/" className="flex items-center gap-2.5 shrink-0" style={{ height: 40 }}>
+          {/* Rocket Icon */}
+          <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Rocket body */}
+            <path d="M16 2C16 2 12 8 12 14C12 18.4 14 22 16 22C18 22 20 18.4 20 14C20 8 16 2 16 2Z" fill="#1B3F7A" />
+            {/* Rocket nose cone */}
+            <path d="M16 0C14 3 12 6 12 9L20 9C20 6 18 3 16 0Z" fill="#1B3F7A" />
+            {/* Rocket window */}
+            <ellipse cx="16" cy="8" rx="2.5" ry="3" fill="white" />
+            {/* Left fin */}
+            <path d="M12 16C10 18 8 20 8 24C8 28 10 30 12 28V16Z" fill="#2C68C4" />
+            {/* Right fin */}
+            <path d="M20 16C22 18 24 20 24 24C24 28 22 30 20 28V16Z" fill="#2C68C4" />
+            {/* Flame - bottom of rocket */}
+            <path d="M14 22L16 28L18 22L16 24Z" fill="#FF6B35" opacity="0.8" />
+            <path d="M15 24L16 26L17 24L16 25Z" fill="#FFD500" />
+          </svg>
           <div className="flex flex-col">
             <span className="font-inter font-bold text-navy leading-none" style={{ fontSize: '1.15rem' }}>
               <span style={{ fontSize: '1.3rem' }}>F</span>oundationary
@@ -63,7 +78,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden lg:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-12">
           {navLinks.map((link) => (
             <Link
               key={link.label}

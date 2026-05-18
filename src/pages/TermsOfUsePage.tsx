@@ -463,14 +463,6 @@ function Content() {
 export default function TermsOfUsePage() {
   return (
     <>
-      <div className="mt-20" />
-      <Link
-        to="/"
-        className="font-inter text-sm text-medium-blue hover:underline flex items-center gap-1 px-6 pt-6"
-      >
-        <ArrowLeft size={16} />
-        Back to home
-      </Link>
       <PageHeader />
       <Content />
     </>

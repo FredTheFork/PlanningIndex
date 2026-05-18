@@ -125,7 +125,7 @@ function ContactForm() {
           <div className="bg-off-white rounded-2xl p-8">
             <div className="flex items-center gap-3 mb-4">
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0"
                 style={{ background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)' }}
               >
                 <Mail size={20} />
@@ -134,7 +134,7 @@ function ContactForm() {
                 Email
               </h3>
             </div>
-            <p className="font-inter text-secondary-text" style={{ fontSize: '0.95rem' }}>
+            <p className="font-inter text-secondary-text break-words" style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>
               foundationarybusiness@gmail.com
             </p>
             <p className="font-inter text-secondary-text mt-2" style={{ fontSize: '0.85rem' }}>
@@ -349,14 +349,6 @@ function Expectations() {
 export default function ContactPage() {
   return (
     <>
-      <div className="mt-20" />
-      <Link
-        to="/"
-        className="font-inter text-sm text-medium-blue hover:underline flex items-center gap-1 px-6 pt-6"
-      >
-        <ArrowLeft size={16} />
-        Back to home
-      </Link>
       <PageHeader />
       <ContactForm />
       <Expectations />
