@@ -48,52 +48,7 @@ export default function Navbar() {
       <div className="max-w-full mx-0 px-6 h-full flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 shrink-0" style={{ height: 40 }}>
-          {/* Rocket and Launch Tower SVG */}
-          <svg width="50" height="50" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ minWidth: 50, minHeight: 50 }}>
-            {/* Base platform */}
-            <rect x="20" y="190" width="160" height="12" fill="#1B3F7A" />
-
-            {/* Launch tower - vertical post */}
-            <rect x="115" y="30" width="12" height="160" fill="#1B3F7A" />
-
-            {/* Launch tower - top platform */}
-            <rect x="85" y="25" width="70" height="15" fill="#1B3F7A" />
-            <rect x="95" y="18" width="50" height="10" fill="#1B3F7A" />
-            <rect x="110" y="8" width="20" height="12" fill="#1B3F7A" />
-
-            {/* Tower braces - left side */}
-            <line x1="115" y1="50" x2="75" y2="75" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-            <line x1="115" y1="80" x2="70" y2="110" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-            <line x1="115" y1="110" x2="75" y2="140" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-            <line x1="115" y1="140" x2="80" y2="165" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-
-            {/* Tower braces - right side */}
-            <line x1="127" y1="50" x2="160" y2="75" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-            <line x1="127" y1="80" x2="165" y2="110" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-            <line x1="127" y1="110" x2="160" y2="140" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-            <line x1="127" y1="140" x2="155" y2="165" stroke="#1B3F7A" strokeWidth="6" strokeLinecap="round" />
-
-            {/* Connection arm from rocket to tower */}
-            <rect x="55" y="82" width="35" height="10" fill="#1B3F7A" />
-            <rect x="50" y="76" width="8" height="22" fill="#1B3F7A" />
-
-            {/* Rocket - main body */}
-            <path d="M 45 180 Q 35 160 35 120 Q 35 80 45 50 Q 45 40 50 35 Q 55 40 55 50 Q 55 80 55 120 Q 55 160 45 180 Z" fill="#1B3F7A" />
-            <path d="M 45 40 Q 40 35 45 15 Q 50 35 55 40 Z" fill="#1B3F7A" />
-
-            {/* Rocket window */}
-            <ellipse cx="45" cy="85" rx="5" ry="7" fill="white" />
-
-            {/* Rocket fins - left */}
-            <path d="M 35 120 Q 15 115 10 135 Q 20 140 35 135 Z" fill="#2C68C4" />
-
-            {/* Rocket fins - right */}
-            <path d="M 55 120 Q 75 115 80 135 Q 70 140 55 135 Z" fill="#2C68C4" />
-
-            {/* Rocket engine nozzle section */}
-            <rect x="40" y="172" width="10" height="8" fill="#1B3F7A" />
-            <path d="M 38 180 L 52 180 L 50 190 L 40 190 Z" fill="#1B3F7A" />
-          </svg>
+          <img src="/Foundationary.png" alt="Foundationary" style={{ height: 40, width: 'auto' }} />
 
           <div className="flex flex-col">
             <span className="font-inter font-bold text-navy leading-none" style={{ fontSize: '1.15rem' }}>
