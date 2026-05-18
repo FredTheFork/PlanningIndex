@@ -47,8 +47,8 @@ export default function Navbar() {
     >
       <div className="max-w-full mx-0 px-6 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 shrink-0" style={{ height: 40 }}>
-          <img src="/Foundationary.png" alt="Foundationary" style={{ height: 40, width: 'auto' }} />
+        <Link to="/" className="flex items-center gap-3 shrink-0" style={{ height: 52 }}>
+          <img src="/Foundationary.png" alt="Foundationary" style={{ height: 52, width: 'auto' }} />
 
           <div className="flex flex-col">
             <span className="font-inter font-bold text-navy leading-none" style={{ fontSize: '1.15rem' }}>
