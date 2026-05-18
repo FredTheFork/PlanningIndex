@@ -40,24 +40,27 @@ export default function AdminDashboard() {
 
       const profiles = data || [];
 
-      // Fetch user emails via edge function (uses service role to list auth users)
+      // Fetch emails from intake_responses (avoids querying auth.users which is blocked)
       let emailMap = new Map<string, string>();
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const response = await fetch(`${supabaseUrl}/functions/v1/set-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ action: 'list_users' }),
-        });
-        const result = await response.json();
-        if (result.users) {
-          emailMap = new Map(result.users.map((u: any) => [u.id, u.email]));
+        const userIds = profiles.map(p => p.user_id);
+        if (userIds.length > 0) {
+          const { data: intakeData } = await supabase
+            .from('intake_responses')
+            .select('user_id, responses')
+            .in('user_id', userIds);
+
+          if (intakeData) {
+            for (const row of intakeData) {
+              const email = row.responses?.q7_document_email;
+              if (email) {
+                emailMap.set(row.user_id, email);
+              }
+            }
+          }
         }
       } catch {
-        // Edge function unavailable, emails will show as user ID prefix
+        // intake_responses unavailable, emails will show as user ID prefix
       }
 
       const clientRows: ClientRow[] = profiles.map(p => ({
