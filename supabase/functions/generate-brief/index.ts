@@ -265,7 +265,7 @@ Deno.serve(async (req: Request) => {
     let briefContent: string;
     let riskLevel: string;
 
-    if (geminiApiKey) {
+    if (geminiApiKey && geminiApiKey.trim() !== '') {
       // Use Gemini API for professional brief generation
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
@@ -292,8 +292,8 @@ Deno.serve(async (req: Request) => {
 
         if (!geminiResponse.ok) {
           const errText = await geminiResponse.text();
-          console.error('Gemini API error:', errText);
-          throw new Error(`Gemini API returned ${geminiResponse.status}`);
+          console.error('Gemini API error:', geminiResponse.status, errText);
+          throw new Error(`Gemini API returned ${geminiResponse.status}: ${errText.substring(0, 200)}`);
         }
 
         const geminiData = await geminiResponse.json();
