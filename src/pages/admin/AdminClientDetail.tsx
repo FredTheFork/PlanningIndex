@@ -3,11 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { intakeFormSections, upsellFormSections, FormField } from '../../lib/intakeFormDefinition';
-import {
-  ArrowLeft, FileText, Upload, X,
-  Save, AlertCircle, FolderOpen, Download, ExternalLink,
-  Copy, RefreshCw, FileSearch
-} from 'lucide-react';
+import { ArrowLeft, FileText, Upload, X, Save, AlertCircle, FolderOpen, Download, ExternalLink, Copy, RefreshCw, FileSearch, FileOutput, Eye, CreditCard as Edit3, Check, Send } from 'lucide-react';
 
 interface ClientData {
   profile: {
@@ -41,7 +37,7 @@ export default function AdminClientDetail() {
     orders: [],
   });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'intake' | 'documents' | 'uploads' | 'brief'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'intake' | 'documents' | 'uploads' | 'brief' | 'generated'>('overview');
   const [briefData, setBriefData] = useState<{
     id: string;
     status: string;
@@ -63,6 +59,26 @@ export default function AdminClientDetail() {
   const [saveMessage, setSaveMessage] = useState('');
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Generated Documents State ──
+  const [generatedDocs, setGeneratedDocs] = useState<Record<string, {
+    id: string;
+    status: string;
+    content_text: string | null;
+    content_html: string | null;
+    error_message: string | null;
+    generated_at: string | null;
+    admin_edited: boolean;
+    delivered_to_client: boolean;
+  }>>({});
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [generatingDoc, setGeneratingDoc] = useState<string | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const [editingDoc, setEditingDoc] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [deliveringDoc, setDeliveringDoc] = useState<string | null>(null);
+  const [docsPollingActive, setDocsPollingActive] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -193,12 +209,227 @@ export default function AdminClientDetail() {
     }
   };
 
+  // ── Generated Documents Functions ──
+
+  const DOCUMENT_TYPES = [
+    { key: 'terms_and_conditions', label: 'Terms and Conditions', icon: FileText },
+    { key: 'bespoke_client_contract', label: 'Bespoke Client Contract', icon: FileText },
+    { key: 'gdpr_privacy_policy', label: 'GDPR Privacy Policy', icon: FileText },
+    { key: 'professional_bio', label: 'Professional Bio', icon: FileText },
+    { key: 'linkedin_script', label: 'LinkedIn Script', icon: FileText },
+    { key: 'elevator_pitch', label: 'Elevator Pitch - 3 Versions', icon: FileText },
+    { key: 'professional_invoice_template', label: 'Professional Invoice Template', icon: FileText },
+    { key: 'welcome_email', label: 'New Client Welcome Email - 3', icon: FileText },
+    { key: 'late_payment_letters', label: 'Late Payment Letters - 3', icon: FileText },
+  ];
+
+  const fetchGeneratedDocs = async () => {
+    if (!userId) return;
+    setDocsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('generated_documents')
+        .select('id, document_type, status, content_text, content_html, error_message, generated_at, admin_edited, delivered_to_client')
+        .eq('client_id', userId);
+
+      if (error) {
+        console.error('Error fetching generated docs:', error);
+      } else {
+        const map: Record<string, any> = {};
+        (data || []).forEach((d: any) => {
+          map[d.document_type] = d;
+        });
+        setGeneratedDocs(map);
+
+        // Stop polling if all generating docs are done
+        const anyGenerating = (data || []).some((d: any) => d.status === 'generating');
+        if (!anyGenerating) {
+          setDocsPollingActive(false);
+        }
+      }
+    } finally {
+      setDocsLoading(false);
+    }
+  };
+
+  const handleGenerateDocument = async (docType: string) => {
+    if (!userId) return;
+    setGeneratingDoc(docType);
+
+    // Optimistically set status
+    setGeneratedDocs(prev => ({
+      ...prev,
+      [docType]: {
+        ...(prev[docType] || { id: '', admin_edited: false, delivered_to_client: false, content_text: null, content_html: null, error_message: null, generated_at: null }),
+        status: 'generating',
+        error_message: null,
+      }
+    }));
+    setDocsPollingActive(true);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ user_id: userId, document_type: docType }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setGeneratedDocs(prev => ({
+          ...prev,
+          [docType]: { ...prev[docType], status: 'failed', error_message: data.error || 'Generation failed' }
+        }));
+        setDocsPollingActive(false);
+      }
+    } catch (err: any) {
+      setGeneratedDocs(prev => ({
+        ...prev,
+        [docType]: { ...prev[docType], status: 'failed', error_message: err.message || 'Network error' }
+      }));
+      setDocsPollingActive(false);
+    } finally {
+      setGeneratingDoc(null);
+    }
+  };
+
+  const handleEditDocument = (docType: string) => {
+    const doc = generatedDocs[docType];
+    if (doc?.content_text) {
+      setEditingDoc(docType);
+      setEditContent(doc.content_text);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!userId || !editingDoc) return;
+    setEditSaving(true);
+    try {
+      const businessName = data.intakeResponses?.q2_business_name || 'Unknown Business';
+      const label = DOCUMENT_TYPES.find(d => d.key === editingDoc)?.label || editingDoc;
+
+      // Re-render HTML from edited text
+      const htmlContent = textToSimpleHtml(editContent, label, businessName);
+
+      const { error } = await supabase
+        .from('generated_documents')
+        .update({
+          content_text: editContent,
+          content_html: htmlContent,
+          admin_edited: true,
+          admin_edited_at: new Date().toISOString(),
+        })
+        .eq('client_id', userId)
+        .eq('document_type', editingDoc);
+
+      if (error) throw error;
+
+      setGeneratedDocs(prev => ({
+        ...prev,
+        [editingDoc!]: {
+          ...prev[editingDoc!],
+          content_text: editContent,
+          content_html: htmlContent,
+          admin_edited: true,
+        }
+      }));
+      setEditingDoc(null);
+    } catch (err) {
+      console.error('Save edit error:', err);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeliverDocument = async (docType: string) => {
+    if (!userId) return;
+    setDeliveringDoc(docType);
+    try {
+      const autoDeleteAt = new Date();
+      autoDeleteAt.setDate(autoDeleteAt.getDate() + 14);
+
+      const { error } = await supabase
+        .from('generated_documents')
+        .update({
+          delivered_to_client: true,
+          delivered_at: new Date().toISOString(),
+          auto_delete_at: autoDeleteAt.toISOString(),
+        })
+        .eq('client_id', userId)
+        .eq('document_type', docType);
+
+      if (error) throw error;
+
+      setGeneratedDocs(prev => ({
+        ...prev,
+        [docType]: {
+          ...prev[docType],
+          delivered_to_client: true,
+        }
+      }));
+    } catch (err) {
+      console.error('Deliver error:', err);
+    } finally {
+      setDeliveringDoc(null);
+    }
+  };
+
+  const handleDeliverAll = async () => {
+    if (!userId) return;
+    const completedDocs = DOCUMENT_TYPES.filter(d => {
+      const doc = generatedDocs[d.key];
+      return doc?.status === 'completed' && !doc.delivered_to_client;
+    });
+    for (const d of completedDocs) {
+      await handleDeliverDocument(d.key);
+    }
+  };
+
+  // Simple HTML conversion for edited content (mirrors edge function logic)
+  function textToSimpleHtml(text: string, label: string, businessName: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    const formatted = escaped
+      .replace(/===\s*(.+?)\s*===/g, '<h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:6px;">$1</h2>')
+      .replace(/^(\d+(?:\.\d+)*)\.\s+(.+)$/gm, '<p style="margin:8px 0;padding-left:24px;text-indent:-24px;"><strong>$1.</strong> $2</p>')
+      .replace(/^[-•]\s+(.+)$/gm, '<p style="margin:4px 0 4px 24px;">&bull; $1</p>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '</p><p style="margin:8px 0;">')
+      .replace(/\n/g, '<br>');
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{margin:2.5cm;size:A4;}body{font-family:Georgia,serif;font-size:12pt;line-height:1.6;color:#1a1a2e;max-width:700px;margin:0 auto;padding:40px 0;}h1{font-size:22pt;font-weight:700;margin:0 0 8px;}h2{font-size:14pt;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #1a1a2e;padding-bottom:6px;}p{margin:8px 0;}.header{text-align:center;margin-bottom:40px;border-bottom:3px solid #1a1a2e;padding-bottom:20px;}.footer{margin-top:60px;padding-top:16px;border-top:1px solid #ccc;font-size:9pt;color:#888;text-align:center;}</style></head><body><div class="header"><h1>${label}</h1><div style="font-size:10pt;color:#555;">Prepared for ${businessName} | Foundationary</div></div><div style="margin-top:20px;">${formatted}</div><div class="footer">Generated by Foundationary | ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}<br>This document was AI-generated and should be reviewed by a qualified professional before use.</div></body></html>`;
+  }
+
   // Fetch brief when the brief tab is active
   useEffect(() => {
     if (activeTab === 'brief' && userId) {
       fetchBrief();
     }
   }, [activeTab, userId]);
+
+  // Fetch generated docs when the generated tab is active
+  useEffect(() => {
+    if (activeTab === 'generated' && userId) {
+      fetchGeneratedDocs();
+    }
+  }, [activeTab, userId]);
+
+  // Poll for generated doc updates when any are generating
+  useEffect(() => {
+    if (!docsPollingActive) return;
+    const interval = setInterval(async () => {
+      await fetchGeneratedDocs();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [docsPollingActive]);
 
   // Poll for brief updates when generating
   useEffect(() => {
@@ -364,18 +595,18 @@ export default function AdminClientDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-border">
-        {(['overview', 'intake', 'documents', 'uploads', 'brief'] as const).map(tab => (
+      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+        {(['overview', 'intake', 'documents', 'uploads', 'brief', 'generated'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`font-inter text-sm px-4 py-2.5 border-b-2 transition-colors ${
+            className={`font-inter text-sm px-4 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab
                 ? 'border-navy text-navy font-semibold'
                 : 'border-transparent text-secondary-text hover:text-navy'
             }`}
           >
-            {tab === 'uploads' ? 'Client Uploads' : tab === 'brief' ? 'Master Brief' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'uploads' ? 'Client Uploads' : tab === 'brief' ? 'Master Brief' : tab === 'generated' ? 'Generated Documents' : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -902,6 +1133,207 @@ export default function AdminClientDetail() {
               </div>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* Generated Documents Tab */}
+      {activeTab === 'generated' && (
+        <div className="space-y-6">
+          {/* Header with Deliver All button */}
+          <div className="bg-white rounded-lg border border-border p-5 flex items-center justify-between">
+            <div>
+              <h3 className="font-inter font-semibold text-navy text-sm">AI-Generated Documents</h3>
+              <p className="font-inter text-secondary-text text-xs mt-1">
+                Generate each document individually. The Master Brief is used as context for all generations.
+              </p>
+            </div>
+            <button
+              onClick={handleDeliverAll}
+              disabled={!DOCUMENT_TYPES.some(d => generatedDocs[d.key]?.status === 'completed' && !generatedDocs[d.key]?.delivered_to_client)}
+              className="font-inter font-semibold text-white bg-success rounded-md hover:bg-green-600 transition-colors inline-flex items-center gap-2 disabled:opacity-40"
+              style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+            >
+              <Send size={14} />
+              Deliver All
+            </button>
+          </div>
+
+          {/* Document list */}
+          {docsLoading && Object.keys(generatedDocs).length === 0 ? (
+            <div className="bg-white rounded-lg border border-border p-12 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy mx-auto mb-4" />
+              <p className="font-inter text-secondary-text">Loading documents...</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {DOCUMENT_TYPES.map(doc => {
+                const docState = generatedDocs[doc.key];
+                const isGenerating = docState?.status === 'generating' || generatingDoc === doc.key;
+                const isCompleted = docState?.status === 'completed';
+                const isFailed = docState?.status === 'failed';
+                const isDelivered = docState?.delivered_to_client;
+
+                return (
+                  <div key={doc.key} className="bg-white rounded-lg border border-border p-5">
+                    <div className="flex items-center gap-4">
+                      {/* Document icon */}
+                      <div className={`rounded-lg p-2.5 shrink-0 ${
+                        isCompleted ? 'bg-green-50' : isFailed ? 'bg-red-50' : isGenerating ? 'bg-amber-50' : 'bg-gray-50'
+                      }`}>
+                        <FileOutput size={20} className={
+                          isCompleted ? 'text-success' : isFailed ? 'text-danger' : isGenerating ? 'text-amber-600' : 'text-secondary-text'
+                        } />
+                      </div>
+
+                      {/* Document info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-inter font-semibold text-navy text-sm">{doc.label}</span>
+                          {docState?.admin_edited && (
+                            <span className="font-inter text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">Edited</span>
+                          )}
+                          {isDelivered && (
+                            <span className="font-inter text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">Delivered</span>
+                          )}
+                        </div>
+                        <div className="font-inter text-xs text-secondary-text mt-1">
+                          {isCompleted && docState.generated_at
+                            ? `Generated ${new Date(docState.generated_at).toLocaleString('en-GB')}`
+                            : isGenerating
+                            ? 'Generating...'
+                            : isFailed
+                            ? `Failed: ${docState.error_message?.substring(0, 80) || 'Unknown error'}`
+                            : 'Not yet generated'
+                          }
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Generate / Regenerate button */}
+                        <button
+                          onClick={() => handleGenerateDocument(doc.key)}
+                          disabled={isGenerating}
+                          className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                          style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                        >
+                          {isGenerating ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                          ) : isCompleted ? (
+                            <RefreshCw size={14} />
+                          ) : (
+                            <FileOutput size={14} />
+                          )}
+                          {isGenerating ? 'Generating...' : isCompleted ? 'Regenerate' : 'Generate'}
+                        </button>
+
+                        {/* View button */}
+                        {isCompleted && (
+                          <button
+                            onClick={() => setViewingDoc(viewingDoc === doc.key ? null : doc.key)}
+                            className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            <Eye size={14} />
+                            {viewingDoc === doc.key ? 'Hide' : 'View'}
+                          </button>
+                        )}
+
+                        {/* Edit button */}
+                        {isCompleted && (
+                          <button
+                            onClick={() => handleEditDocument(doc.key)}
+                            className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            <Edit3 size={14} />
+                            Edit
+                          </button>
+                        )}
+
+                        {/* Deliver button */}
+                        {isCompleted && !isDelivered && (
+                          <button
+                            onClick={() => handleDeliverDocument(doc.key)}
+                            disabled={deliveringDoc === doc.key}
+                            className="font-inter text-sm font-medium text-white bg-success rounded-md hover:bg-green-600 transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            {deliveringDoc === doc.key ? (
+                              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                            ) : (
+                              <Send size={14} />
+                            )}
+                            Deliver
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Document content viewer */}
+                    {viewingDoc === doc.key && docState?.content_text && (
+                      <div className="mt-4 border-t border-border pt-4">
+                        <div
+                          className="font-mono text-sm text-dark-text bg-off-white rounded-md p-5 overflow-y-auto whitespace-pre-wrap leading-[1.7]"
+                          style={{ maxHeight: 500 }}
+                        >
+                          {docState.content_text}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Edit modal */}
+          {editingDoc && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between p-5 border-b border-border">
+                  <h3 className="font-inter font-semibold text-navy">
+                    Edit: {DOCUMENT_TYPES.find(d => d.key === editingDoc)?.label}
+                  </h3>
+                  <button
+                    onClick={() => setEditingDoc(null)}
+                    className="text-secondary-text hover:text-navy transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-5">
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full h-[60vh] font-mono text-sm text-dark-text bg-off-white rounded-md p-5 border border-border focus:outline-none focus:ring-2 focus:ring-medium-blue focus:border-medium-blue resize-none leading-[1.7]"
+                  />
+                </div>
+                <div className="flex items-center justify-end gap-3 p-5 border-t border-border">
+                  <button
+                    onClick={() => setEditingDoc(null)}
+                    className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors"
+                    style={{ padding: '8px 20px' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={editSaving}
+                    className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                    style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                  >
+                    {editSaving ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    ) : (
+                      <Check size={16} />
+                    )}
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
