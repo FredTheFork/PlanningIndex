@@ -7,7 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
 function formatValue(val: any): string {
@@ -261,13 +260,15 @@ Deno.serve(async (req: Request) => {
     // Build structured data from intake responses
     const structuredData = buildStructuredData(r, notes);
 
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
     let briefContent: string;
     let riskLevel: string;
 
-    if (GEMINI_API_KEY) {
+    if (geminiApiKey) {
       // Use Gemini API for professional brief generation
       try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
 
         const geminiResponse = await fetch(geminiUrl, {
           method: 'POST',
@@ -378,7 +379,22 @@ function determineRiskLevel(r: Record<string, any>, briefContent: string | null)
 
 function generateFallbackBrief(r: Record<string, any>, notes: Record<string, string>, structuredData: string): string {
   const businessName = r.q2_business_name || 'Unknown Business';
-  const legalName = r.q1_legal_name || 'Not provided';
+
+  const missingFields: string[] = [];
+  if (!r.q1_legal_name) missingFields.push('Legal Name');
+  if (!r.q2_business_name) missingFields.push('Business Name');
+  if (!r.q3_business_registered) missingFields.push('Business Type');
+  if (!r.q5_jurisdiction) missingFields.push('Jurisdiction');
+  if (!r.q6_business_address) missingFields.push('Business Address');
+  if (!r.q7_document_email) missingFields.push('Document Email');
+  if (!r.q13_what_you_do) missingFields.push('Services Description');
+  if (!r.q14_flagship_service) missingFields.push('Flagship Service');
+  if (!r.q26_payment_terms) missingFields.push('Payment Terms');
+  if (!r.q36_data_collected) missingFields.push('GDPR Data Collected');
+
+  const riskSection = missingFields.length === 0
+    ? 'No critical fields are missing. The client has provided all essential information.'
+    : `The following critical fields are missing and should be obtained before document drafting:\n${missingFields.map(f => `- ${f}`).join('\n')}`;
 
   return `MASTER CLIENT BRIEF — ${businessName}
 Generated: ${new Date().toISOString()}
@@ -386,20 +402,5 @@ Generated: ${new Date().toISOString()}
 ${structuredData}
 
 === RISK ASSESSMENT ===
-This brief was generated using template-based extraction (Gemini API unavailable).
-A manual review of the raw intake data is recommended before document drafting begins.
-
-Critical fields check:
-- Legal Name: ${r.q1_legal_name ? 'Provided' : 'MISSING'}
-- Business Name: ${r.q2_business_name ? 'Provided' : 'MISSING'}
-- Business Type: ${r.q3_business_registered ? 'Provided' : 'MISSING'}
-- Jurisdiction: ${r.q5_jurisdiction ? 'Provided' : 'MISSING'}
-- Business Address: ${r.q6_business_address ? 'Provided' : 'MISSING'}
-- Document Email: ${r.q7_document_email ? 'Provided' : 'MISSING'}
-- Services Description: ${r.q13_what_you_do ? 'Provided' : 'MISSING'}
-- Flagship Service: ${r.q14_flagship_service ? 'Provided' : 'MISSING'}
-- Payment Terms: ${r.q26_payment_terms ? 'Provided' : 'MISSING'}
-- GDPR Data Collected: ${r.q36_data_collected ? 'Provided' : 'MISSING'}
-
-Note: For higher quality briefs, ensure the GEMINI_API_KEY secret is configured.`;
+${riskSection}`;
 }
