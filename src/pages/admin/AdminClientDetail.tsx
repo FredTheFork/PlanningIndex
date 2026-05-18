@@ -869,14 +869,29 @@ export default function AdminClientDetail() {
               <div className="bg-white rounded-lg border border-border p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-inter font-semibold text-navy text-sm">Brief Content</h3>
-                  <button
-                    onClick={handleCopyBrief}
-                    className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
-                    style={{ padding: '6px 14px', fontSize: '0.85rem' }}
-                  >
-                    <Copy size={14} />
-                    {copied ? 'Copied!' : 'Copy to Clipboard'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleTriggerBrief}
+                      disabled={briefTriggering}
+                      title="Regenerate Brief"
+                      className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                      style={{ padding: '6px 14px', fontSize: '0.85rem' }}
+                    >
+                      {briefTriggering ? (
+                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-navy" />
+                      ) : (
+                        <RefreshCw size={14} />
+                      )}
+                    </button>
+                    <button
+                      onClick={handleCopyBrief}
+                      className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
+                      style={{ padding: '6px 14px', fontSize: '0.85rem' }}
+                    >
+                      <Copy size={14} />
+                      {copied ? 'Copied!' : 'Copy to Clipboard'}
+                    </button>
+                  </div>
                 </div>
                 <div
                   className="font-mono text-sm text-dark-text bg-off-white rounded-md p-5 overflow-y-auto whitespace-pre-wrap leading-[1.7]"
