@@ -52,7 +52,9 @@ export default function AdminClientDetail() {
   } | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefTriggering, setBriefTriggering] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pollingActive, setPollingActive] = useState(false);
   const [deliveryStatus, setDeliveryStatus] = useState('');
   const [deliveryLink, setDeliveryLink] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
@@ -134,6 +136,9 @@ export default function AdminClientDetail() {
         console.error('Error fetching brief:', error);
       } else {
         setBriefData(data);
+        if (data?.status === 'completed' || data?.status === 'failed') {
+          setPollingActive(false);
+        }
       }
     } finally {
       setBriefLoading(false);
@@ -143,39 +148,34 @@ export default function AdminClientDetail() {
   const handleTriggerBrief = async () => {
     if (!userId) return;
     setBriefTriggering(true);
+    setBriefError(null);
+
+    // Set status to 'generating' immediately so UI updates instantly
+    setBriefData(prev => prev
+      ? { ...prev, status: 'generating' }
+      : { id: '', status: 'generating', brief_content: null, risk_level: null, error_message: null, generated_at: null }
+    );
+    setPollingActive(true);
+
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/trigger-brief`, {
+      const response = await fetch('/api/trigger-brief', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ user_id: userId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: userId }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        console.error('Trigger brief error:', data.error);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setBriefError(data.error || 'Failed to trigger brief generation');
+        setBriefData(prev => prev ? { ...prev, status: 'failed' } : null);
+        setPollingActive(false);
         return;
       }
-
-      // Insert a pending row locally so the UI updates immediately
-      if (!briefData) {
-        const { data: newBrief } = await supabase
-          .from('client_briefs')
-          .select('id, status, brief_content, risk_level, error_message, generated_at')
-          .eq('client_id', userId)
-          .maybeSingle();
-
-        if (newBrief) {
-          setBriefData(newBrief);
-        }
-      } else {
-        setBriefData(prev => prev ? { ...prev, status: 'generating' } : prev);
-      }
-    } catch (err) {
-      console.error('Trigger brief error:', err);
+    } catch (err: any) {
+      setBriefError(err.message || 'Network error triggering brief');
+      setBriefData(prev => prev ? { ...prev, status: 'failed' } : null);
+      setPollingActive(false);
     } finally {
       setBriefTriggering(false);
     }
@@ -198,12 +198,17 @@ export default function AdminClientDetail() {
 
   // Poll for brief updates when generating
   useEffect(() => {
-    if (activeTab !== 'brief' || !briefData || briefData.status === 'completed' || briefData.status === 'failed') return;
-    if (briefData.status !== 'generating' && briefData.status !== 'pending') return;
+    if (!pollingActive) return;
+    if (briefData?.status === 'completed' || briefData?.status === 'failed') {
+      setPollingActive(false);
+      return;
+    }
 
-    const interval = setInterval(fetchBrief, 10000);
+    const interval = setInterval(async () => {
+      await fetchBrief();
+    }, 5000);
     return () => clearInterval(interval);
-  }, [activeTab, briefData?.status]);
+  }, [pollingActive, briefData?.status]);
 
   const generateSignedUrls = async () => {
     const urls: Record<string, string> = {};
@@ -797,9 +802,9 @@ export default function AdminClientDetail() {
           ) : briefData.status === 'pending' || briefData.status === 'generating' ? (
             <div className="bg-white rounded-lg border border-border p-12 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy mx-auto mb-4" />
-              <h3 className="font-inter font-semibold text-navy mb-2">Brief is being generated</h3>
+              <h3 className="font-inter font-semibold text-navy mb-2">Generating brief...</h3>
               <p className="font-inter text-secondary-text text-sm">
-                Check back in 60 seconds
+                This takes up to 60 seconds
               </p>
             </div>
           ) : briefData.status === 'failed' ? (
@@ -810,9 +815,9 @@ export default function AdminClientDetail() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-inter font-semibold text-navy mb-2">Brief generation failed</h3>
-                  {briefData.error_message && (
+                  {(briefData.error_message || briefError) && (
                     <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-                      <p className="font-inter text-sm text-danger">{briefData.error_message}</p>
+                      <p className="font-inter text-sm text-danger">{briefData.error_message || briefError}</p>
                     </div>
                   )}
                   <button
@@ -826,7 +831,7 @@ export default function AdminClientDetail() {
                     ) : (
                       <RefreshCw size={16} />
                     )}
-                    Retry
+                    Regenerate Brief
                   </button>
                 </div>
               </div>
