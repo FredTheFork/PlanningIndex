@@ -70,6 +70,9 @@ export default function AdminClientDetail() {
     generated_at: string | null;
     admin_edited: boolean;
     delivered_to_client: boolean;
+    pdf_path: string | null;
+    docx_path: string | null;
+    files_generated_at: string | null;
   }>>({});
   const [docsLoading, setDocsLoading] = useState(false);
   const [generatingDoc, setGeneratingDoc] = useState<string | null>(null);
@@ -79,6 +82,7 @@ export default function AdminClientDetail() {
   const [editSaving, setEditSaving] = useState(false);
   const [deliveringDoc, setDeliveringDoc] = useState<string | null>(null);
   const [docsPollingActive, setDocsPollingActive] = useState(false);
+  const [generatingFiles, setGeneratingFiles] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -229,7 +233,7 @@ export default function AdminClientDetail() {
     try {
       const { data, error } = await supabase
         .from('generated_documents')
-        .select('id, document_type, status, content_text, content_html, error_message, generated_at, admin_edited, delivered_to_client')
+        .select('id, document_type, status, content_text, content_html, error_message, generated_at, admin_edited, delivered_to_client, pdf_path, docx_path, files_generated_at')
         .eq('client_id', userId);
 
       if (error) {
@@ -388,6 +392,43 @@ export default function AdminClientDetail() {
     for (const d of completedDocs) {
       await handleDeliverDocument(d.key);
     }
+  };
+
+  const handleGenerateFiles = async (docType: string) => {
+    if (!userId) return;
+    setGeneratingFiles(docType);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ user_id: userId, document_type: docType, generate_files: true }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Refresh docs to get updated paths
+        await fetchGeneratedDocs();
+      } else {
+        console.error('Generate files error:', result.error);
+      }
+    } catch (err: any) {
+      console.error('Generate files network error:', err.message);
+    } finally {
+      setGeneratingFiles(null);
+    }
+  };
+
+  const getFileDownloadUrl = async (filePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from('generated-documents')
+      .createSignedUrl(filePath, 3600);
+    if (error || !data) return null;
+    return data.signedUrl;
   };
 
   // Simple HTML conversion for edited content (mirrors edge function logic)
@@ -1270,6 +1311,50 @@ export default function AdminClientDetail() {
                       </div>
                     </div>
 
+                    {/* Second row: Generate Files + Download links */}
+                    {isCompleted && (
+                      <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3 flex-wrap">
+                        {/* Generate PDF/DOCX button */}
+                        <button
+                          onClick={() => handleGenerateFiles(doc.key)}
+                          disabled={generatingFiles === doc.key}
+                          className="font-inter text-xs font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+                          style={{ padding: '6px 12px' }}
+                        >
+                          {generatingFiles === doc.key ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-navy" />
+                          ) : (
+                            <FileOutput size={12} />
+                          )}
+                          {generatingFiles === doc.key ? 'Generating...' : docState?.pdf_path ? 'Regenerate PDF & DOCX' : 'Generate PDF & DOCX'}
+                        </button>
+
+                        {/* PDF download */}
+                        {docState?.pdf_path && (
+                          <StorageDownloadButton
+                            filePath={docState.pdf_path}
+                            label="PDF"
+                            fileName={`${doc.label.replace(/\s+/g, '_')}.pdf`}
+                          />
+                        )}
+
+                        {/* DOCX download */}
+                        {docState?.docx_path && (
+                          <StorageDownloadButton
+                            filePath={docState.docx_path}
+                            label="DOCX"
+                            fileName={`${doc.label.replace(/\s+/g, '_')}.docx`}
+                          />
+                        )}
+
+                        {docState?.files_generated_at && (
+                          <span className="font-inter text-xs text-secondary-text ml-auto">
+                            Files generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Document content viewer */}
                     {viewingDoc === doc.key && docState?.content_text && (
                       <div className="mt-4 border-t border-border pt-4">
@@ -1415,4 +1500,48 @@ function FieldValue({ field, value }: { field: FormField; value: any }) {
   }
 
   return <p className="font-inter text-secondary-text text-sm">{JSON.stringify(value)}</p>;
+}
+
+function StorageDownloadButton({ filePath, label, fileName }: { filePath: string; label: string; fileName: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('generated-documents')
+        .createSignedUrl(filePath, 3600);
+
+      if (error || !data) {
+        console.error('Download URL error:', error);
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = fileName;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="font-inter text-xs font-medium text-medium-blue border border-medium-blue/30 rounded-md hover:bg-medium-blue/5 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+      style={{ padding: '6px 12px' }}
+    >
+      {loading ? (
+        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-medium-blue" />
+      ) : (
+        <Download size={12} />
+      )}
+      {label}
+    </button>
+  );
 }

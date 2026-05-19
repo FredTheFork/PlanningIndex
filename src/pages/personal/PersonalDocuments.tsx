@@ -12,6 +12,8 @@ interface DeliveredDoc {
   delivered_at: string;
   auto_delete_at: string;
   admin_edited: boolean;
+  pdf_path: string | null;
+  docx_path: string | null;
 }
 
 export default function PersonalDocuments() {
@@ -32,7 +34,7 @@ export default function PersonalDocuments() {
     try {
       const { data, error } = await supabase
         .from('generated_documents')
-        .select('id, document_type, document_label, content_html, delivered_at, auto_delete_at, admin_edited')
+        .select('id, document_type, document_label, content_html, delivered_at, auto_delete_at, admin_edited, pdf_path, docx_path')
         .eq('client_id', user.id)
         .eq('delivered_to_client', true)
         .gt('auto_delete_at', new Date().toISOString())
@@ -59,6 +61,29 @@ export default function PersonalDocuments() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleStorageDownload = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('generated-documents')
+        .createSignedUrl(filePath, 3600);
+
+      if (error || !data) {
+        console.error('Download error:', error);
+        return;
+      }
+
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = fileName;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download error:', err);
+    }
   };
 
   const getTimeRemaining = (autoDeleteAt: string): string => {
@@ -137,14 +162,36 @@ export default function PersonalDocuments() {
                     >
                       {viewingDoc === doc.id ? 'Hide' : 'View'}
                     </button>
-                    <button
-                      onClick={() => handleDownloadHtml(doc)}
-                      className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2"
-                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                    >
-                      <Download size={14} />
-                      Download
-                    </button>
+                    {doc.pdf_path && (
+                      <button
+                        onClick={() => handleStorageDownload(doc.pdf_path!, `${doc.document_label.replace(/\s+/g, '_')}.pdf`)}
+                        className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2"
+                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                      >
+                        <Download size={14} />
+                        PDF
+                      </button>
+                    )}
+                    {doc.docx_path && (
+                      <button
+                        onClick={() => handleStorageDownload(doc.docx_path!, `${doc.document_label.replace(/\s+/g, '_')}.docx`)}
+                        className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
+                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                      >
+                        <Download size={14} />
+                        DOCX
+                      </button>
+                    )}
+                    {!doc.pdf_path && !doc.docx_path && (
+                      <button
+                        onClick={() => handleDownloadHtml(doc)}
+                        className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2"
+                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                      >
+                        <Download size={14} />
+                        HTML
+                      </button>
+                    )}
                   </div>
                 </div>
 
