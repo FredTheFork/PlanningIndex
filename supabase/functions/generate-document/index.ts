@@ -784,7 +784,7 @@ Generate the complete invoice template now.`,
   },
 
   welcome_email: {
-    apiKey: 'AIzaSyAV_L0-QKvaZ4y6z8-3ZFT5r5Wa1pExBXA',
+    apiKey: 'AIzaSyBML6AdJ2ESfbza8Z4qkUZ7fDFCRj-Mlhw',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an expert email copywriter specializing in client onboarding and first-impression communication.
 
