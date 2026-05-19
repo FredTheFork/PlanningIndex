@@ -200,10 +200,14 @@ Billing & Payment | Identity, Contact, Financial | Performance of a Contract, Le
 `;
 
 
+// Single unified API key for all document types (using the working Terms and Conditions project)
+const UNIFIED_API_KEY = 'AIzaSyB1Q7FtBCOQjD5ZSH-4dAmHR74WJDIYsB0';
+const UNIFIED_MODEL = 'gemini-2.5-flash';
+
 const DOCUMENT_CONFIGS: Record<string, DocumentConfig> = {
   terms_and_conditions: {
-    apiKey: 'AIzaSyB1Q7FtBCOQjD5ZSH-4dAmHR74WJDIYsB0',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are an expert legal document drafting assistant specializing in UK business law for small business services.
 
 Your task: Generate a comprehensive, professional, legally robust Terms and Conditions document based on the client brief provided.
@@ -325,8 +329,8 @@ Generate the document now.`,
   },
 
   bespoke_client_contract: {
-    apiKey: 'AIzaSyBt3APMr8-rRbexFnmgm-7nl7LkOQHquTY',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are an expert legal document drafting assistant specializing in UK business contracts.
 
 Your task: Generate a comprehensive Bespoke Client Contract (project-specific agreement) based on the client brief.
@@ -419,8 +423,8 @@ Generate the document now.`,
   },
 
   gdpr_privacy_policy: {
-    apiKey: 'AIzaSyAIcCl8IzLaLIOXGZusfES_vU12EHg0qAo',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are an expert legal document drafting assistant specializing in UK GDPR compliance.
 
 Your task: Generate a comprehensive, compliant Privacy Policy for a UK business based on the client brief.
@@ -550,8 +554,8 @@ Generate the document now.`,
   },
 
   professional_bio: {
-    apiKey: 'AIzaSyCiKbp7qJhnXaAxi3MFkdQhh4bK-opcwEQ',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are a professional copywriter specializing in personal branding for small business owners.
 
 Your task: Generate compelling professional bio content using the client's brand voice and story from the brief.
@@ -610,8 +614,8 @@ Generate all three versions now.`,
   },
 
   linkedin_script: {
-    apiKey: 'AIzaSyCh_PHT3_4GKJAaDbHt2XGZdVdxBB7Jgok',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are an expert LinkedIn strategist and copywriter specializing in optimizing profiles for small business owners.
 
 Your task: Generate a complete LinkedIn profile "script" using the client's business details from the brief.
@@ -663,8 +667,8 @@ Generate the complete LinkedIn profile script now.`,
   },
 
   elevator_pitch: {
-    apiKey: 'AIzaSyD7DTWfXH0p1Z3krq07XbrcWITv_9vHR6c',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are a professional speechwriter and pitch coach specializing in crafting compelling elevator pitches.
 
 Your task: Generate three versions of an elevator pitch for the client's business from their brief.
@@ -722,8 +726,8 @@ Generate all three pitches now.`,
   },
 
   professional_invoice_template: {
-    apiKey: 'AIzaSyCmmp_14EZUTNYxAvUbdv3sJZVyc0z3tlw',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are an expert in business document design, UK tax law, and professional invoicing standards.
 
 Your task: Generate a professional, reusable Invoice Template for the client using their business details from the brief.
@@ -784,8 +788,8 @@ Generate the complete invoice template now.`,
   },
 
   welcome_email: {
-    apiKey: 'AIzaSyAV_L0-QKvaZ4y6z8-3ZFT5r5Wa1pExBXA',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are an expert email copywriter specializing in client onboarding and first-impression communication.
 
 Your task: Generate three versions of a New Client Welcome Email for the client using their business details from the brief.
@@ -851,8 +855,8 @@ Generate all three email versions now.`,
   },
 
   late_payment_letters: {
-    apiKey: 'AIzaSyC3QNfx7IW2uVE6Lwic0OEx9DuJFJsr8tc',
-    model: 'gemini-2.5-flash',
+    apiKey: UNIFIED_API_KEY,
+    model: UNIFIED_MODEL,
     systemPrompt: `You are an expert legal document specialist in UK debt collection and commercial law.
 
 Your task: Generate three increasingly firm late payment reminder letters for the client's business.
