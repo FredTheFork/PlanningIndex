@@ -1,13 +1,169 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 import { PDFDocument, StandardFonts, rgb, PageSizes } from 'npm:pdf-lib@1.17.1';
-import { Document as DocxDocument, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType, BorderStyle, TabStopPosition, TabStopType, Header, Footer, PageNumber, NumberFormat } from 'npm:docx@9.1.1';
+import { Document as DocxDocument, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType, BorderStyle, Header, Footer, PageNumber, NumberFormat, TabStopType, TabStopPosition, PageBreak, ShadingType, Table, TableRow, TableCell, WidthType, VerticalAlign } from 'npm:docx@9.1.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
+
+// ── Client Design Preferences ──
+
+interface ClientDesign {
+  businessName: string;
+  legalName: string;
+  firstName: string;
+  brandColours: string; // hex codes or description
+  visualStyle: string; // Q68 answer
+  toneOfVoice: string[]; // Q62 answers
+  brandIdentity: string; // Q64 answer
+  jurisdiction: string;
+  documentEmail: string;
+  businessPhone: string;
+  businessAddress: string;
+  websiteUrl: string;
+}
+
+// Parse brand colours from intake response into usable hex values
+function parseBrandColours(colourInput: string): { primary: string; secondary: string; accent: string } {
+  // Default professional palette
+  const defaults = { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' };
+
+  if (!colourInput || colourInput.trim() === '') return defaults;
+
+  const input = colourInput.trim().toLowerCase();
+
+  // Try to extract hex codes
+  const hexPattern = /#([0-9a-f]{3}|[0-9a-f]{6})\b/gi;
+  const hexMatches = colourInput.match(hexPattern);
+
+  if (hexMatches && hexMatches.length >= 2) {
+    return {
+      primary: hexMatches[0],
+      secondary: hexMatches[1],
+      accent: hexMatches.length >= 3 ? hexMatches[2] : hexMatches[1],
+    };
+  }
+
+  if (hexMatches && hexMatches.length === 1) {
+    return { primary: hexMatches[0], secondary: defaults.secondary, accent: defaults.accent };
+  }
+
+  // Map common colour descriptions
+  const colourMap: Record<string, { primary: string; secondary: string; accent: string }> = {
+    'navy': { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' },
+    'blue': { primary: '#1E40AF', secondary: '#3B82F6', accent: '#60A5FA' },
+    'dark blue': { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' },
+    'green': { primary: '#065F46', secondary: '#059669', accent: '#34D399' },
+    'sage': { primary: '#4A6741', secondary: '#6B8F5B', accent: '#8FB87A' },
+    'gold': { primary: '#92400E', secondary: '#B45309', accent: '#D97706' },
+    'red': { primary: '#991B1B', secondary: '#DC2626', accent: '#EF4444' },
+    'black': { primary: '#1A1A2E', secondary: '#374151', accent: '#6B7280' },
+    'purple': { primary: '#5B21B6', secondary: '#7C3AED', accent: '#A78BFA' },
+    'teal': { primary: '#0F766E', secondary: '#14B8A6', accent: '#2DD4BF' },
+    'coral': { primary: '#9A3412', secondary: '#C2410C', accent: '#EA580C' },
+    'warm': { primary: '#78350F', secondary: '#A16207', accent: '#CA8A04' },
+    'luxury': { primary: '#1C1917', secondary: '#44403C', accent: '#78716C' },
+  };
+
+  for (const [key, value] of Object.entries(colourMap)) {
+    if (input.includes(key)) return value;
+  }
+
+  return defaults;
+}
+
+// Convert hex colour string to pdf-lib rgb
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3
+    ? clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2]
+    : clean;
+  return {
+    r: parseInt(full.substring(0, 2), 16) / 255,
+    g: parseInt(full.substring(2, 4), 16) / 255,
+    b: parseInt(full.substring(4, 6), 16) / 255,
+  };
+}
+
+// Get visual style config for document rendering
+function getVisualStyleConfig(style: string): {
+  headerFont: string;
+  bodyFont: string;
+  headerSize: number;
+  bodySize: number;
+  lineSpacing: number;
+  sectionGap: number;
+  decorativeElements: boolean;
+  borderStyle: 'solid' | 'double' | 'accent' | 'none';
+  cornerAccent: boolean;
+} {
+  switch (style) {
+    case 'Clean and modern / minimal':
+      return {
+        headerFont: 'Helvetica',
+        bodyFont: 'Helvetica',
+        headerSize: 14,
+        bodySize: 10,
+        lineSpacing: 14,
+        sectionGap: 20,
+        decorativeElements: false,
+        borderStyle: 'none',
+        cornerAccent: false,
+      };
+    case 'Corporate and formal':
+      return {
+        headerFont: 'Helvetica',
+        bodyFont: 'Helvetica',
+        headerSize: 13,
+        bodySize: 10,
+        lineSpacing: 14,
+        sectionGap: 18,
+        decorativeElements: true,
+        borderStyle: 'double',
+        cornerAccent: false,
+      };
+    case 'Warm and friendly':
+      return {
+        headerFont: 'Helvetica',
+        bodyFont: 'Helvetica',
+        headerSize: 14,
+        bodySize: 10.5,
+        lineSpacing: 15,
+        sectionGap: 16,
+        decorativeElements: true,
+        borderStyle: 'accent',
+        cornerAccent: false,
+      };
+    case 'Premium and luxury':
+      return {
+        headerFont: 'Helvetica',
+        bodyFont: 'Helvetica',
+        headerSize: 13,
+        bodySize: 10,
+        lineSpacing: 14,
+        sectionGap: 22,
+        decorativeElements: true,
+        borderStyle: 'solid',
+        cornerAccent: true,
+      };
+    case 'Simple — I just want it to work':
+    default:
+      return {
+        headerFont: 'Helvetica',
+        bodyFont: 'Helvetica',
+        headerSize: 13,
+        bodySize: 10,
+        lineSpacing: 14,
+        sectionGap: 16,
+        decorativeElements: false,
+        borderStyle: 'none',
+        cornerAccent: false,
+      };
+  }
+}
 
 // ── Document Type Configuration ──
 
@@ -16,6 +172,18 @@ interface DocumentConfig {
   model: string;
   systemPrompt: string;
 }
+
+const NO_MARKDOWN_INSTRUCTION = `
+
+CRITICAL FORMATTING RULES:
+- Do NOT use markdown formatting (no ##, ###, **, *, #, etc.)
+- Use === SECTION NAME === to denote major section headings
+- Use plain numbered clauses (1, 1.1, 1.2, etc.) for sub-sections
+- Use - (dash) for bullet points
+- Write in plain text with no bold, italic, or other markdown syntax
+- All text must be clean and ready for direct rendering into professional documents
+- Do NOT wrap any text in backticks, asterisks, or hash symbols
+`;
 
 const DOCUMENT_CONFIGS: Record<string, DocumentConfig> = {
   terms_and_conditions: {
@@ -71,7 +239,7 @@ MANDATORY SECTIONS (ALL must be included, complete, and detailed):
 
 7. INTELLECTUAL PROPERTY RIGHTS
    - Client-supplied IP ownership (client retains)
-   - PlanningIndex pre-existing IP (PlanningIndex retains templates, methodologies)
+   - Pre-existing IP (service provider retains templates, methodologies)
    - Project-specific IP (deliverables ownership: transfers to client on full payment)
    - Client indemnity for IP infringement claims
 
@@ -85,7 +253,7 @@ MANDATORY SECTIONS (ALL must be included, complete, and detailed):
 9. LIABILITY LIMITATION & WARRANTIES
    - Carve-outs (death, personal injury, fraud cannot be limited)
    - Disclaimer of specific outcomes (e.g., no guarantee of X leads, conversions, etc.)
-   - Limitation cap: Total liability ≤ fees paid in preceding 12 months
+   - Limitation cap: Total liability <= fees paid in preceding 12 months
    - Exclusion of indirect/consequential losses
    - Professional indemnity insurance status
 
@@ -130,7 +298,6 @@ CRITICAL REQUIREMENTS:
 - NO [REVIEW] markers, NO placeholder text, NO TBD sections
 - Complete sentences with full context; do not truncate
 - Include specific figures from the brief (e.g., payment terms, interest rates, notice periods)
-- Tables are acceptable and useful (e.g., pricing structure, service breakdown)
 - Each clause must be complete and self-contained
 - Assume this is a final, deliver-ready document
 
@@ -138,8 +305,7 @@ DOCUMENT QUALITY:
 - Length: 3000-4500 words (comprehensive but concise)
 - Structure: Logical flow from formation to termination
 - Language: Professional, precise, accessible to business owners (not overly legalistic)
-- Completeness: No missing sections, no cut-off text
-
+- Completeness: No missing sections, no cut-off text${NO_MARKDOWN_INSTRUCTION}
 Generate the document now.`,
   },
 
@@ -233,8 +399,7 @@ CRITICAL REQUIREMENTS:
 - Complete and polished (ready to sign)
 - Assume payment is structured (e.g., 50% deposit, 50% on completion)
 - Length: 1500-2500 words
-- Every clause must be detailed and complete
-
+- Every clause must be detailed and complete${NO_MARKDOWN_INSTRUCTION}
 Generate the document now.`,
   },
 
@@ -275,7 +440,7 @@ MANDATORY SECTIONS (ALL must be complete):
 
 4. HOW WE COLLECT DATA (METHODS)
    - Direct interactions (forms, email, phone, meetings)
-   - Automated collection (cookies, analytics) - state "we use [specify] cookies" or "we do not use cookies"
+   - Automated collection (cookies, analytics)
    - Third parties (payment processors, social media platforms mentioned in brief)
 
 5. LEGAL BASIS FOR PROCESSING (Article 6 UK GDPR)
@@ -283,24 +448,20 @@ MANDATORY SECTIONS (ALL must be complete):
    - Legal obligation (tax, accounting)
    - Legitimate interests (business administration, relationship management, fraud prevention)
    - Explicit consent (marketing)
-   - Create a detailed table:
-     | Purpose | Data Types | Legal Basis | Retention |
 
 6. HOW WE USE YOUR DATA (PURPOSES - DETAILED)
    - Service provision (fulfill contract)
    - Communication (send updates, confirmations)
-   - Billing & payment processing
-   - Administration & legal compliance
+   - Billing and payment processing
+   - Administration and legal compliance
    - Marketing (WITH consent note)
-   - Research & improvement
+   - Research and improvement
    - Fraud detection and security
-   - Any other specific purpose from the brief
 
 7. WHO WE SHARE DATA WITH (THIRD PARTIES)
    - Payment processors (Stripe - explicitly named)
-   - Email service providers (Mailchimp if mentioned in brief)
+   - Email service providers (if mentioned in brief)
    - Cloud storage (Google Drive, CRM platforms from brief)
-   - Web hosting (SiteGround if mentioned)
    - Professional advisors (accountants, lawyers - no data shared unless required)
    - Law enforcement (if legally required)
    - NO sharing for marketing purposes without consent
@@ -308,70 +469,56 @@ MANDATORY SECTIONS (ALL must be complete):
 8. INTERNATIONAL TRANSFERS
    - State whether data is transferred outside UK
    - If yes, describe safeguards (Standard Contractual Clauses, etc.)
-   - If no, state clearly
 
 9. DATA RETENTION (HOW LONG WE KEEP DATA)
-   - General retention period (e.g., "1 year after service ends")
+   - General retention period
    - Service data: retained during engagement + [X] years after
    - Financial data: as required by tax law (typically 6 years)
    - Marketing data: until consent withdrawn
-   - Clear, specific periods
 
 10. DATA SUBJECT RIGHTS (Article 15-22 UK GDPR)
-    - Right of access (request what data we hold)
-    - Right to rectification (correct inaccurate data)
-    - Right to erasure ("right to be forgotten")
+    - Right of access
+    - Right to rectification
+    - Right to erasure
     - Right to restrict processing
-    - Right to data portability (receive in machine-readable format)
-    - Right to object (marketing, processing on legitimate interests)
+    - Right to data portability
+    - Right to object
     - Rights related to automated decision-making
     - How to exercise rights (email, contact form)
     - Response timeline (30 days)
 
 11. COOKIES POLICY
-    - If cookies are used: specify types (essential, analytics, marketing)
-    - Cookie names and purposes
+    - If cookies are used: specify types
     - How to manage/refuse cookies
-    - Explicit consent for non-essential cookies
-    - OR if NO cookies: clearly state "We do not use cookies"
+    - OR if NO cookies: clearly state
 
 12. MARKETING & COMMUNICATIONS
-    - How we send marketing (email via Mailchimp, etc.)
+    - How we send marketing
     - Consent requirements
     - Unsubscribe link in every email
     - Right to withdraw consent anytime
-    - Frequency of communications
 
 13. SECURITY & DATA PROTECTION
     - Measures we take (encryption, access controls, staff training)
-    - Servers/storage locations (Google Drive, SiteGround, etc.)
     - Data breach notification (notify within 72 hours if required)
-    - Limitations: no system is 100% secure
 
 14. CHILDREN'S DATA
     - State we do not intentionally collect data from children <13
-    - If you provide child's data, we will delete it
-    - Parental consent requirements
 
 15. THIRD-PARTY LINKS & SERVICES
     - We are not responsible for third-party privacy policies
-    - Link to their privacy policies (Google, Facebook, Stripe, etc.)
 
 16. CHANGES TO THIS POLICY
     - We may update this policy
     - Will notify of material changes
-    - Continued use = acceptance
 
 17. YOUR RIGHTS & COMPLAINTS
     - Contact us with any questions or requests
     - Right to lodge complaint with ICO (Information Commissioner's Office)
     - ICO contact details
-    - Contact us first; we'll try to resolve
 
 18. CONTACT INFORMATION
     - Full contact details
-    - Email, phone, address
-    - Data Protection Officer (if applicable)
 
 CRITICAL REQUIREMENTS:
 
@@ -380,12 +527,10 @@ CRITICAL REQUIREMENTS:
 - EXPLICITLY reference specific tools they use (Stripe, Mailchimp, Google Drive, CRM names, etc.)
 - Use current date (May 2026)
 - NO placeholder text, NO [REVIEW] markers, NO generic copy
-- Tables for clarity (data types vs. legal basis vs. retention)
 - Specific retention periods (not vague "as long as necessary")
 - Address their ACTUAL data practices from the brief
 - Length: 2500-3500 words
-- Every section must be complete and specific
-
+- Every section must be complete and specific${NO_MARKDOWN_INSTRUCTION}
 Generate the document now.`,
   },
 
@@ -402,8 +547,7 @@ DELIVERABLES (3 VERSIONS):
    - One punchy paragraph
    - Name, what they do, who they help
    - Key differentiator or achievement
-   - Call-to-action implicit (how to engage)
-   - Suitable for: Email signatures, LinkedIn headline, Twitter bio, brief form fields
+   - Suitable for: Email signatures, LinkedIn headline, Twitter bio
 
 2. MEDIUM BIO (150 words)
    - 2-3 paragraphs
@@ -411,7 +555,7 @@ DELIVERABLES (3 VERSIONS):
    - What they do and for whom
    - Their approach/philosophy
    - Key achievement or result
-   - Suitable for: Website "About" page sidebar, PDF proposals, social media bios
+   - Suitable for: Website "About" page sidebar, PDF proposals
 
 3. LONG BIO (300-400 words)
    - 4-5 well-structured paragraphs
@@ -419,20 +563,20 @@ DELIVERABLES (3 VERSIONS):
    - The problem they solve
    - Their services and specialisms
    - Philosophy and approach
-   - Results/impact (specific examples from brief if available)
-   - Call-to-action (how clients can engage)
-   - Suitable for: Full "About" page, guest speaker bios, detailed proposals, media kit
+   - Results/impact
+   - Call-to-action
+   - Suitable for: Full "About" page, guest speaker bios, media kit
 
 CRITICAL REQUIREMENTS:
 
 - Use client's SPECIFIC business name, location, target audience from brief
-- Match the brand voice from the brief (e.g., professional, warm, energetic, technical, etc.)
+- Match the brand voice from the brief
 - Include their EXACT services/specialisms
 - Highlight their UNIQUE differentiator
 - Use ACTIVE, engaging language
 - NO jargon unless aligned with their industry
 - Personal touch (mention founder if single-person business)
-- Results-oriented (how they help clients achieve outcomes)
+- Results-oriented
 - Ready to copy-paste with minimal edits
 - Use current date context (May 2026)
 - Length: 50 + 150 + 300-400 words total
@@ -446,8 +590,7 @@ Format each version clearly with section headers:
 [bio here]
 
 === LONG BIO (300-400 WORDS) ===
-[bio here]
-
+[bio here]${NO_MARKDOWN_INSTRUCTION}
 Generate all three versions now.`,
   },
 
@@ -463,60 +606,44 @@ DELIVERABLES (ALL FIELDS, READY TO COPY-PASTE):
 1. HEADLINE (120 characters max - state the limit)
    - Keyword-rich
    - Includes: what they do + who they serve + key benefit
-   - Example structure: "Planning Application Lead Generation | Social Media Management | [Tagline]"
    - Avoid: Generic titles, excessive hashtags
 
 2. ABOUT/SUMMARY SECTION (2600 characters max - state the limit)
    - Opens with hook (who they serve, what problem they solve)
-   - 2-3 paragraphs covering:
-     * Their story/background
-     * What they do (all services from brief)
-     * Who they serve (target clients)
-     * Unique approach/differentiator
-     * Key results/achievements
+   - 2-3 paragraphs covering their story, services, differentiator, results
    - Includes: industry keywords, specific service names
-   - Calls out target audience explicitly
-   - Ends with clear CTA (how to connect, how to inquire)
-   - Formatted with line breaks for readability
-   - LinkedIn recognizes multiple line breaks
+   - Ends with clear CTA
 
 3. EXPERIENCE SECTION GUIDANCE
    - Current role title suggestion
-   - Bullet points for key responsibilities (each service as one bullet)
-   - Include keywords for searchability
-   - Metrics/results where applicable
+   - Bullet points for key responsibilities
 
 4. SPECIALTIES/SKILLS SECTION
    - List of skills to add (searchable keywords)
-   - Include service names, tools, industry terms
    - 10-15 key skills
 
 5. BANNER TEXT SUGGESTION
    - Short tagline/visual text for LinkedIn banner
-   - Reinforces unique value proposition
-   - Example: "[Service Name] | [Target Market] | [Key Benefit]"
 
 6. HASHTAG RECOMMENDATIONS
-   - 5-10 relevant hashtags for posts/engagement
-   - Include industry, service, target audience hashtags
+   - 5-10 relevant hashtags
 
 7. POST CADENCE RECOMMENDATION
    - Suggested posting frequency
-   - Types of content to share (case studies, tips, industry insights, etc.)
+   - Types of content to share
 
 CRITICAL REQUIREMENTS:
 
 - Use client's EXACT business name and details from brief
 - Include ALL services they offer
 - Use the BRAND VOICE from their brief
-- Keyword optimization for searchability (planningindex, planning applications, lead generation, etc.)
+- Keyword optimization for searchability
 - State character limits where applicable
 - Format with clear labels so they can copy each section
 - SPECIFIC to their industry and target audience
 - Actionable and ready to implement
 - Length: 1500-2000 words total
-- NO placeholder text, NO [REVIEW] sections
-
+- NO placeholder text, NO [REVIEW] sections${NO_MARKDOWN_INSTRUCTION}
 Generate the complete LinkedIn profile script now.`,
   },
 
@@ -530,59 +657,52 @@ Your task: Generate three versions of an elevator pitch for the client's busines
 DELIVERABLES (3 VERSIONS WITH CLEAR TIMING):
 
 1. 15-SECOND PITCH (40-45 words)
-   - Opening hook (who you are / what you do)
-   - Problem statement (what pain point you solve)
-   - Solution (what you do, briefly)
-   - Call-to-action (next step, how to connect)
-   - USE CASE: Quick greeting, networking event hallway conversation, phone pitch opener
-   - Pacing note: Aim for ~170 words/min speaking pace
+   - Opening hook
+   - Problem statement
+   - Solution
+   - Call-to-action
+   - USE CASE: Quick greeting, networking event
 
 2. 30-SECOND PITCH (75-85 words)
-   - Expanded version of 15-second
+   - Expanded version
    - Hook + problem + solution + brief benefit
    - One specific example or result
-   - Clear CTA with contact method
-   - USE CASE: Elevator pitch, networking events, podcast intro, initial client call
-   - Include: Target audience name, key service, main benefit
+   - Clear CTA
+   - USE CASE: Elevator pitch, networking events, podcast intro
 
 3. 60-SECOND PITCH (140-160 words)
    - Full narrative arc
-   - Story element (why they started / background)
-   - The problem they solve (specific pain)
+   - Story element
+   - The problem they solve
    - Their solution (detailed approach)
-   - Results/impact (specific examples from brief or typical outcomes)
-   - Why they're different (differentiator)
+   - Results/impact
+   - Why they're different
    - Clear next steps/CTA
-   - USE CASE: Sales call, webinar intro, speaking engagement, detailed pitch
-   - Can include: Client case study, specific metric, testimonial hint
+   - USE CASE: Sales call, webinar intro, speaking engagement
 
 CRITICAL REQUIREMENTS:
 
 - Use client's SPECIFIC business name and services from brief
-- Match their EXACT brand voice (professional, casual, technical, etc.)
-- Focus on TARGET AUDIENCE from brief (who they help)
+- Match their EXACT brand voice
+- Focus on TARGET AUDIENCE from brief
 - Include their MAIN DIFFERENTIATOR
 - Use ACTIVE, confident language
-- Avoid jargon unless it resonates with their audience
-- Each pitch stands alone (client can use any version)
 - Conversational tone (written as if spoken)
-- Clear CTAs (email, phone, website, meeting request)
+- Clear CTAs
 - NO placeholder text, NO [REVIEW] markers
 - State the word count and timing for each version
-- Client can practice reading each aloud
 - Length: Total 300-400 words across all three
 
 Format clearly:
 
-=== 15-SECOND PITCH (40-45 words, ~15 seconds at natural speaking pace) ===
+=== 15-SECOND PITCH (40-45 words, approximately 15 seconds at natural speaking pace) ===
 [pitch text]
 
-=== 30-SECOND PITCH (75-85 words, ~30 seconds at natural speaking pace) ===
+=== 30-SECOND PITCH (75-85 words, approximately 30 seconds at natural speaking pace) ===
 [pitch text]
 
-=== 60-SECOND PITCH (140-160 words, ~60 seconds at natural speaking pace) ===
-[pitch text]
-
+=== 60-SECOND PITCH (140-160 words, approximately 60 seconds at natural speaking pace) ===
+[pitch text]${NO_MARKDOWN_INSTRUCTION}
 Generate all three pitches now.`,
   },
 
@@ -602,85 +722,49 @@ MANDATORY SECTIONS (ALL complete with placeholder fields):
    - Phone number (from brief)
    - Email address (from brief)
    - Website (if applicable)
-   - Tax ID / VAT number (if registered, or state "Not VAT registered")
+   - Tax ID / VAT number (if registered)
 
 2. INVOICE DETAILS (TOP RIGHT)
    - Invoice number placeholder: "INV-[YYYY]-[####]"
-   - Invoice date placeholder: "Date: _____________"
-   - Due date placeholder: "Due date: _____________"
+   - Invoice date placeholder
+   - Due date placeholder
 
-3. "BILL TO" SECTION (BELOW HEADER)
+3. "BILL TO" SECTION
    - Placeholder fields for client name, company, address, email, phone
-   - Clear labels for readability
 
-4. LINE ITEMS TABLE (CENTER)
-   Columns:
-   - Description of service/product
-   - Quantity
-   - Unit price
-   - Total
-   - Footer note: "You may add/remove rows as needed"
+4. LINE ITEMS TABLE
+   - Description, Quantity, Unit price, Total columns
    - Include 3-5 blank sample rows
 
-5. SUBTOTAL & CALCULATIONS
-   - Subtotal calculation
-   - If applicable: VAT/Tax calculation (even if 0%, show clearly)
-   - Any discounts (if they offer them, with placeholder)
-   - Total amount due (PROMINENT)
+5. SUBTOTAL AND CALCULATIONS
+   - Subtotal, VAT/Tax, Total amount due
 
-6. PAYMENT TERMS & BANKING DETAILS (BELOW TOTAL)
-   - Payment deadline (from brief, e.g., "Due within 7 days")
-   - Payment method(s) accepted (Stripe, bank transfer, cash, etc. from brief)
-   - If bank transfer: Account holder name, sort code, account number (REDACTED for template)
-   - Bank name and address
-   - Payment reference format (e.g., "Use invoice number as reference")
-   - If Stripe: Link or instruction
+6. PAYMENT TERMS AND BANKING DETAILS
+   - Payment deadline
+   - Payment methods accepted
+   - Bank details (if applicable)
+   - Payment reference format
 
 7. LATE PAYMENT CLAUSE (MANDATORY)
-   - State: "Late payment interest will be charged at [X]% per annum above the Bank of England base rate per the Late Payment of Commercial Debts (Interest) Act 1998"
-   - Grace period (if any)
-   - Suspension of services clause (if applicable)
+   - Statutory interest wording per Late Payment of Commercial Debts Act 1998
 
-8. NOTES/ADDITIONAL TERMS (OPTIONAL SECTION)
-   - Space for any additional terms, notes, or conditions
-   - E.g., service delivery timeline, deposit already paid, refund policy reference
+8. NOTES/ADDITIONAL TERMS
 
 9. FOOTER
-   - Contact information (reiterate email/phone)
+   - Contact information
    - Thank you message
-   - Company website
-   - Optional: "Please retain this invoice for your records"
-
-10. PROFESSIONAL FORMATTING
-    - Clear hierarchy (headings, sections)
-    - Adequate white space
-    - Professional font (Arial, Calibri, or similar)
-    - All numbers aligned (right-aligned for clarity)
-    - Date format: DD Month YYYY (UK standard, e.g., "15 May 2026")
-    - Currency: £ (GBP)
 
 CRITICAL REQUIREMENTS:
 
 - Use client's SPECIFIC business details from brief
-- Include their EXACT payment terms (e.g., "7 days" from brief)
-- Include their EXACT payment methods (Stripe, bank transfer, etc.)
-- Show VAT calculation clearly (even if 0%, as they're not VAT registered)
+- Include their EXACT payment terms
+- Include their EXACT payment methods
+- Show VAT calculation clearly
 - Reference their late payment interest policy from brief
-- Deposit/advance payment note (if they require deposits)
-- Ready to copy and reuse (all variable fields marked with underscores or brackets)
+- Ready to copy and reuse
 - Professional, clean layout
-- UK compliant (Late Payment act, date format, currency, terms)
-- Multiple blank rows for line items (2026 may vary by client, show flexibility)
-- NO placeholder text like [INSERT], use underscores or blanks
-- Include guidance notes in italics if needed
-- Suitable for printing or PDF export
-- Length: ~500-800 words when rendered
-
-Format as a template that can be copied into Word/Google Docs:
-
-=== PROFESSIONAL INVOICE TEMPLATE ===
-[Full template with all sections]
-
+- UK compliant
+- Length: approximately 500-800 words when rendered${NO_MARKDOWN_INSTRUCTION}
 Generate the complete invoice template now.`,
   },
 
@@ -693,79 +777,61 @@ Your task: Generate three versions of a New Client Welcome Email for the client 
 
 DELIVERABLES (3 COMPLETE EMAIL VERSIONS):
 
-1. FORMAL & PROFESSIONAL VERSION
-   - Suitable for: B2B, corporate clients, legal/financial services
-   - Tone: Professional, structured, reassuring
-   - Structure:
-     * Subject line suggestion
-     * Formal greeting
-     * Welcome statement (thank them for choosing you)
-     * Brief overview of their engagement (reference their service)
-     * What happens next (timeline, next steps)
-     * Payment expectations (when invoice due, methods, etc.)
-     * Key contacts and support info
-     * Link to terms/privacy policy
-     * Professional closing
+1. FORMAL AND PROFESSIONAL VERSION
+   - Subject line suggestion
+   - Formal greeting
+   - Welcome statement
+   - Brief overview of engagement
+   - What happens next
+   - Payment expectations
+   - Key contacts and support info
+   - Professional closing
 
-2. WARM & FRIENDLY VERSION
-   - Suitable for: Creative services, coaching, personal brand
-   - Tone: Warm, personable, encouraging, approachable
-   - Structure:
-     * Subject line suggestion (casual/warm)
-     * Informal greeting (using first name if appropriate)
-     * Personal welcome (show genuine enthusiasm)
-     * What they can expect (timeline, communication)
-     * Your commitment to their success
-     * Quick overview of the service (without jargon)
-     * When to expect deliverables
-     * How to communicate (email, phone, availability)
-     * A bit of personality (maybe reference to why you do this work)
-     * Warm closing with name
+2. WARM AND FRIENDLY VERSION
+   - Subject line suggestion (casual/warm)
+   - Informal greeting
+   - Personal welcome
+   - What they can expect
+   - Your commitment to their success
+   - Quick overview of the service
+   - When to expect deliverables
+   - How to communicate
+   - Warm closing with name
 
-3. BRIEF & ACTION-ORIENTED VERSION
-   - Suitable for: Busy entrepreneurs, fast-paced industries
-   - Tone: Direct, efficient, results-focused
-   - Structure:
-     * Subject line suggestion (action-oriented)
-     * Quick greeting
-     * Confirmation of engagement (what service, cost, timeline)
-     * Next immediate action (what they need to do by when)
-     * Key dates/milestones (bullet points)
-     * Contact for questions (direct, quick)
-     * Brief signoff
+3. BRIEF AND ACTION-ORIENTED VERSION
+   - Subject line suggestion (action-oriented)
+   - Quick greeting
+   - Confirmation of engagement
+   - Next immediate action
+   - Key dates/milestones (bullet points)
+   - Contact for questions
+   - Brief signoff
 
 CRITICAL REQUIREMENTS FOR ALL VERSIONS:
 
-- Use client's SPECIFIC business name (e.g., "PlanningIndex")
+- Use client's SPECIFIC business name
 - Reference their EXACT service(s) from the brief
-- Include SPECIFIC payment details if applicable (e.g., "Invoice to follow within 24 hours; due within 7 days")
-- Include their CONTACT DETAILS (email, phone, website)
-- Set clear expectations (timeline, communication frequency, deliverables)
-- Thank them for their business
-- Mention any next steps CLEARLY (what they need to do, if anything)
-- Include link to terms, privacy policy, or relevant documentation
-- Suggest subject lines for each version
+- Include SPECIFIC payment details if applicable
+- Include their CONTACT DETAILS
+- Set clear expectations
 - Match their BRAND VOICE from the brief
-- Ready to send with minimal customization (only client name, specific project details)
-- Professional but appropriate tone for their industry
-- Length: 150-250 words each (email-appropriate)
+- Ready to send with minimal customization
+- Length: 150-250 words each
 - NO placeholder text, NO [REVIEW] markers
-- Include one subtle personalization opportunity (reference their service or industry)
 
 Format clearly:
 
-=== EMAIL VERSION 1: FORMAL & PROFESSIONAL ===
-**Subject line suggestion:** [subject]
+=== EMAIL VERSION 1: FORMAL AND PROFESSIONAL ===
+Subject line suggestion: [subject]
 [Email body]
 
-=== EMAIL VERSION 2: WARM & FRIENDLY ===
-**Subject line suggestion:** [subject]
+=== EMAIL VERSION 2: WARM AND FRIENDLY ===
+Subject line suggestion: [subject]
 [Email body]
 
-=== EMAIL VERSION 3: BRIEF & ACTION-ORIENTED ===
-**Subject line suggestion:** [subject]
-[Email body]
-
+=== EMAIL VERSION 3: BRIEF AND ACTION-ORIENTED ===
+Subject line suggestion: [subject]
+[Email body]${NO_MARKDOWN_INSTRUCTION}
 Generate all three email versions now.`,
   },
 
@@ -779,78 +845,37 @@ Your task: Generate three increasingly firm late payment reminder letters for th
 DELIVERABLES (3 LETTERS - PROGRESSION OF FIRMNESS):
 
 LETTER 1: FRIENDLY REMINDER (7 DAYS OVERDUE)
-- Tone: Professional, understanding, assumptive (assume it's an oversight)
-- Purpose: Gentle reminder; give them a chance to pay without friction
-- Structure:
-  * Formal letter header with date placeholder
-  * "Dear [Client Name],"
-  * Opening: "We hope this is a friendly reminder..." or "We wanted to follow up..."
-  * Invoice details: number, date, amount
-  * Due date that has passed
-  * Suggest it may be an oversight
-  * Request immediate payment
-  * Payment instructions (bank details, Stripe link, reference number format)
-  * Grace period: "Please settle by [DATE - typically 7 days from this letter]"
-  * Warm closing
-  * Signature line with business contact
+- Tone: Professional, understanding, assumptive
+- Include: Invoice details, due date, payment instructions, grace period
+- Warm closing
 
 LETTER 2: FIRM REMINDER (14 DAYS OVERDUE)
-- Tone: Professional, firm, business-like, no longer assuming oversight
-- Purpose: Clear that this is now a serious issue requiring immediate attention
-- Structure:
-  * Formal letter header with date
-  * "Dear [Client Name],"
-  * Opening: "We are writing regarding outstanding payment..."
-  * Recite the debt: invoice number, date, original due date, amount, days overdue
-  * State: "Despite our previous communication, payment remains outstanding"
-  * Warn of consequences: interest charges, suspension of services, legal action
-  * MANDATORY LEGAL CLAUSE: "Under the Late Payment of Commercial Debts (Interest) Act 1998, we are entitled to charge interest at 8% per annum above the Bank of England base rate. Interest will accrue from the original due date."
-  * Calculate and state: Accrued interest amount and any charges
-  * Final deadline: "Please remit payment in full by [DATE - typically 7-10 days]"
-  * Payment instructions (bank, Stripe, methods accepted)
-  * Suspension notice: "Please note that if payment is not received, we will suspend [Services] immediately"
-  * Professional closing
-  * Signature with title and business details
+- Tone: Professional, firm, business-like
+- Include: Debt recitation, consequences warning, MANDATORY LEGAL CLAUSE per Late Payment of Commercial Debts (Interest) Act 1998
+- Interest calculation example
+- Final deadline
+- Suspension notice
 
 LETTER 3: FINAL NOTICE BEFORE LEGAL ACTION (30 DAYS OVERDUE)
 - Tone: Formal, serious, legal, final warning
-- Purpose: Final demand; next step is legal/debt collection
-- Structure:
-  * Formal letter header with date
-  * "Dear [Client Name],"
-  * Opening: "FINAL DEMAND FOR PAYMENT"
-  * State facts: Invoice details, due date, original reminder letters sent, amount outstanding
-  * Days overdue and current interest accrued
-  * Calculate total owing: Principal + interest + any costs incurred to date
-  * CLEAR LEGAL LANGUAGE: Reference to Late Payment of Commercial Debts (Interest) Act 1998
-  * State: "This is a FINAL DEMAND for payment"
-  * Final payment deadline: "Payment in full must be received by [DATE - typically 7 days]"
-  * Payment instructions (all accepted methods)
-  * WARNING: "Failure to remit payment by this date will result in: (a) Further interest accrual; (b) Referral to a debt collection agency; (c) Commencement of legal proceedings in the County Court or Small Claims Court; (d) Recovery of all costs including legal fees, court fees, and debt collection agency fees"
-  * Reference to Terms and Conditions: "As set out in our Terms and Conditions of Business dated [DATE], you agreed to payment within 7 days. Late payment interest and associated costs are payable as per the statutory framework."
-  * Offer: "If you are experiencing difficulty with payment, please contact us immediately to discuss a payment plan" (optional, shows good faith)
-  * Signature and professional closing
-  * Contact details for payment queries
+- Include: FINAL DEMAND language, total owing calculation, legal action warning
+- Reference to Terms and Conditions
+- Payment plan offer (optional, shows good faith)
 
 CRITICAL REQUIREMENTS FOR ALL LETTERS:
 
 - Use client's SPECIFIC business name, address, contact details from brief
-- Use SPECIFIC payment terms from brief (e.g., "7 days" if that's their policy)
-- Use SPECIFIC late payment interest rate from brief (typically 8% + BoE base rate)
-- Reference their SPECIFIC payment methods (Stripe, bank transfer, etc.)
-- Include PLACEHOLDER FIELDS: [Client Name], [Invoice Number], [Amount], [Date], etc. - use brackets or underscores
-- Format as formal business letters with proper UK formatting (date, address, salutation, signature)
-- Each letter is STANDALONE (client can use just Letter 1, or escalate as needed)
-- Progression is clear: friendly → firm → final
+- Use SPECIFIC payment terms from brief
+- Use SPECIFIC late payment interest rate from brief
+- Reference their SPECIFIC payment methods
+- Include PLACEHOLDER FIELDS: [Client Name], [Invoice Number], [Amount], [Date], etc.
+- Format as formal business letters with proper UK formatting
+- Each letter is STANDALONE
 - Legal language is accurate and compliant with UK law
-- Each letter references previous communications (in Letter 2 & 3)
-- Calculation examples for interest (show the math in Letter 2 & 3)
+- Each letter references previous communications (in Letter 2 and 3)
 - All three letters are ready to customize and send
-- Professional letterhead format (can be adapted to PDF or Word)
-- Include signature lines and contact details at bottom
+- Professional letterhead format
 - Length: 200-300 words (Letter 1), 300-400 words (Letter 2), 400-500 words (Letter 3)
-- NO placeholder text like [INSERT], use [FIELD] format clearly
-- Grammar and tone: Professional, assertive but fair
 
 Format clearly:
 
@@ -861,326 +886,46 @@ Format clearly:
 [Full letter with all fields]
 
 === LETTER 3: FINAL NOTICE BEFORE LEGAL ACTION (30 DAYS OVERDUE) ===
-[Full letter with all fields]
-
+[Full letter with all fields]${NO_MARKDOWN_INSTRUCTION}
 Generate all three letters now, making them comprehensive, legal, and ready to customize.`,
   },
 };
 
-// ── PDF Generation using pdf-lib ──
-
-async function generatePdf(text: string, documentLabel: string, businessName: string): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-
-  const pageWidth = PageSizes.A4[0];
-  const pageHeight = PageSizes.A4[1];
-  const margin = 72; // 1 inch
-  const contentWidth = pageWidth - (margin * 2);
-  const lineHeight = 14;
-  const fontSize = 10;
-  const smallFontSize = 8;
-
-  // Colors
-  const navy = rgb(0.1, 0.1, 0.18);
-  const darkText = rgb(0.15, 0.15, 0.2);
-  const secondaryText = rgb(0.45, 0.45, 0.5);
-  const accentLine = rgb(0.1, 0.1, 0.18);
-
-  // Parse text into structured blocks
-  const blocks = parseTextToBlocks(text);
-
-  // Build pages
-  let page = pdfDoc.addPage(PageSizes.A4);
-  let y = pageHeight - margin;
-
-  // Draw header on first page
-  y = pageHeight - margin - 10;
-
-  // Title
-  const titleWidth = boldFont.widthOfTextAtSize(documentLabel, 18);
-  page.drawText(documentLabel, {
-    x: (pageWidth - titleWidth) / 2,
-    y: y,
-    size: 18,
-    font: boldFont,
-    color: navy,
-  });
-  y -= 22;
-
-  // Subtitle
-  const subtitle = `Prepared for ${businessName}`;
-  const subtitleWidth = font.widthOfTextAtSize(subtitle, 10);
-  page.drawText(subtitle, {
-    x: (pageWidth - subtitleWidth) / 2,
-    y: y,
-    size: 10,
-    font: italicFont,
-    color: secondaryText,
-  });
-  y -= 16;
-
-  // Foundationary branding
-  const branding = 'Foundationary';
-  const brandingWidth = font.widthOfTextAtSize(branding, 9);
-  page.drawText(branding, {
-    x: (pageWidth - brandingWidth) / 2,
-    y: y,
-    size: 9,
-    font: font,
-    color: secondaryText,
-  });
-  y -= 12;
-
-  // Header line
-  page.drawLine({
-    start: { x: margin, y: y },
-    end: { x: pageWidth - margin, y: y },
-    thickness: 2,
-    color: accentLine,
-  });
-  y -= 24;
-
-  // Render blocks
-  for (const block of blocks) {
-    if (block.type === 'heading') {
-      // Check if we need a new page (need at least 60px for heading + some content)
-      if (y < margin + 60) {
-        page = pdfDoc.addPage(PageSizes.A4);
-        y = pageHeight - margin;
-      }
-
-      // Draw heading underline
-      const headingText = block.text;
-      const headingWidth = boldFont.widthOfTextAtSize(headingText, 13);
-      page.drawText(headingText, {
-        x: margin,
-        y: y,
-        size: 13,
-        font: boldFont,
-        color: navy,
-      });
-      y -= 4;
-      page.drawLine({
-        start: { x: margin, y: y },
-        end: { x: margin + Math.min(headingWidth, contentWidth), y: y },
-        thickness: 1,
-        color: accentLine,
-      });
-      y -= 16;
-    } else if (block.type === 'clause') {
-      // Numbered clause like "1.1. Something"
-      const lines = wrapText(block.text, font, fontSize, contentWidth - 24);
-      for (let i = 0; i < lines.length; i++) {
-        if (y < margin + 20) {
-          page = pdfDoc.addPage(PageSizes.A4);
-          y = pageHeight - margin;
-        }
-        const x = i === 0 ? margin + 24 : margin + 24;
-        page.drawText(lines[i], {
-          x: x,
-          y: y,
-          size: fontSize,
-          font: font,
-          color: darkText,
-        });
-        y -= lineHeight;
-      }
-      y -= 4; // Extra space after clause
-    } else if (block.type === 'bullet') {
-      const lines = wrapText(block.text, font, fontSize, contentWidth - 36);
-      for (let i = 0; i < lines.length; i++) {
-        if (y < margin + 20) {
-          page = pdfDoc.addPage(PageSizes.A4);
-          y = pageHeight - margin;
-        }
-        if (i === 0) {
-          page.drawText('\u2022', {
-            x: margin + 12,
-            y: y,
-            size: fontSize,
-            font: font,
-            color: darkText,
-          });
-        }
-        page.drawText(lines[i], {
-          x: margin + 36,
-          y: y,
-          size: fontSize,
-          font: font,
-          color: darkText,
-        });
-        y -= lineHeight;
-      }
-      y -= 2;
-    } else {
-      // Regular paragraph
-      const lines = wrapText(block.text, font, fontSize, contentWidth);
-      for (const line of lines) {
-        if (y < margin + 20) {
-          page = pdfDoc.addPage(PageSizes.A4);
-          y = pageHeight - margin;
-        }
-        page.drawText(line, {
-          x: margin,
-          y: y,
-          size: fontSize,
-          font: font,
-          color: darkText,
-        });
-        y -= lineHeight;
-      }
-      y -= 6;
-    }
-  }
-
-  // Footer on each page
-  const pages = pdfDoc.getPages();
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  for (let i = 0; i < pages.length; i++) {
-    const p = pages[i];
-    const footerY = 40;
-
-    p.drawLine({
-      start: { x: margin, y: footerY + 12 },
-      end: { x: pageWidth - margin, y: footerY + 12 },
-      thickness: 0.5,
-      color: rgb(0.8, 0.8, 0.8),
-    });
-
-    p.drawText('Generated by Foundationary', {
-      x: margin,
-      y: footerY,
-      size: smallFontSize,
-      font: italicFont,
-      color: secondaryText,
-    });
-
-    const pageStr = `Page ${i + 1} of ${pages.length}`;
-    const pageStrWidth = font.widthOfTextAtSize(pageStr, smallFontSize);
-    p.drawText(pageStr, {
-      x: pageWidth - margin - pageStrWidth,
-      y: footerY,
-      size: smallFontSize,
-      font: font,
-      color: secondaryText,
-    });
-
-    const dateWidth = font.widthOfTextAtSize(dateStr, smallFontSize);
-    p.drawText(dateStr, {
-      x: (pageWidth - dateWidth) / 2,
-      y: footerY,
-      size: smallFontSize,
-      font: font,
-      color: secondaryText,
-    });
-  }
-
-  return pdfDoc.save();
-}
-
-// ── DOCX Generation using docx package ──
-
-async function generateDocx(text: string, documentLabel: string, businessName: string): Promise<Uint8Array> {
-  const blocks = parseTextToBlocks(text);
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  const children: Paragraph[] = [];
-
-  // Title
-  children.push(new Paragraph({
-    children: [new TextRun({ text: documentLabel, bold: true, size: 36, font: 'Calibri', color: '1A1A2E' })],
-    alignment: AlignmentType.CENTER,
-    spacing: { after: 100 },
-  }));
-
-  // Subtitle
-  children.push(new Paragraph({
-    children: [new TextRun({ text: `Prepared for ${businessName}`, italics: true, size: 20, font: 'Calibri', color: '737373' })],
-    alignment: AlignmentType.CENTER,
-    spacing: { after: 50 },
-  }));
-
-  children.push(new Paragraph({
-    children: [new TextRun({ text: 'Foundationary', size: 18, font: 'Calibri', color: '737373' })],
-    alignment: AlignmentType.CENTER,
-    spacing: { after: 200 },
-  }));
-
-  // Horizontal rule
-  children.push(new Paragraph({
-    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '1A1A2E' } },
-    spacing: { after: 400 },
-  }));
-
-  // Content blocks
-  for (const block of blocks) {
-    if (block.type === 'heading') {
-      children.push(new Paragraph({
-        children: [new TextRun({ text: block.text, bold: true, size: 26, font: 'Calibri', color: '1A1A2E' })],
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 360, after: 120 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '1A1A2E' } },
-      }));
-    } else if (block.type === 'clause') {
-      children.push(new Paragraph({
-        children: [new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' })],
-        spacing: { after: 80 },
-        indent: { left: 480 },
-      }));
-    } else if (block.type === 'bullet') {
-      children.push(new Paragraph({
-        children: [
-          new TextRun({ text: '\u2022  ', size: 20, font: 'Calibri', color: '262626' }),
-          new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' }),
-        ],
-        spacing: { after: 40 },
-        indent: { left: 720 },
-      }));
-    } else {
-      children.push(new Paragraph({
-        children: [new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' })],
-        spacing: { after: 120 },
-      }));
-    }
-  }
-
-  // Footer section
-  children.push(new Paragraph({
-    border: { top: { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' } },
-    spacing: { before: 600 },
-  }));
-  children.push(new Paragraph({
-    children: [new TextRun({ text: `Generated by Foundationary | ${dateStr}`, italics: true, size: 16, font: 'Calibri', color: '888888' })],
-    alignment: AlignmentType.CENTER,
-  }));
-  children.push(new Paragraph({
-    children: [new TextRun({ text: 'This document was AI-generated and should be reviewed by a qualified professional before use.', italics: true, size: 16, font: 'Calibri', color: '888888' })],
-    alignment: AlignmentType.CENTER,
-  }));
-
-  const doc = new DocxDocument({
-    sections: [{
-      properties: {
-        page: {
-          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
-        },
-      },
-      children,
-    }],
-  });
-
-  const buffer = await Packer.toBuffer(doc);
-  return new Uint8Array(buffer);
-}
-
-// ── Text Parsing ──
+// ── Text Parsing (handles ALL markdown variants) ──
 
 interface TextBlock {
-  type: 'heading' | 'paragraph' | 'clause' | 'bullet';
+  type: 'heading' | 'paragraph' | 'clause' | 'bullet' | 'subheading';
   text: string;
+  level: number; // 1 = main heading, 2 = sub-heading, 3 = sub-sub-heading
+}
+
+function stripMarkdown(text: string): string {
+  // Remove markdown bold/italic markers but keep the text
+  let cleaned = text;
+  // Handle **bold** and __bold__
+  cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, '$1');
+  cleaned = cleaned.replace(/__(.+?)__/g, '$1');
+  // Handle *italic* and _italic_ (but not within words)
+  cleaned = cleaned.replace(/(?<!\w)\*(.+?)\*(?!\w)/g, '$1');
+  cleaned = cleaned.replace(/(?<!\w)_(.+?)_(?!\w)/g, '$1');
+  // Remove ~~strikethrough~~
+  cleaned = cleaned.replace(/~~(.+?)~~/g, '$1');
+  // Remove inline code backticks
+  cleaned = cleaned.replace(/`(.+?)`/g, '$1');
+  // Remove markdown link syntax [text](url) -> text
+  cleaned = cleaned.replace(/\[(.+?)\]\(.+?\)/g, '$1');
+  // Remove image syntax ![alt](url)
+  cleaned = cleaned.replace(/!\[.*?\]\(.+?\)/g, '');
+  // Remove horizontal rules (---, ***, ___)
+  cleaned = cleaned.replace(/^-{3,}$/gm, '');
+  cleaned = cleaned.replace(/^\*{3,}$/gm, '');
+  cleaned = cleaned.replace(/^_{3,}$/gm, '');
+  // Remove blockquote markers
+  cleaned = cleaned.replace(/^>\s*/gm, '');
+  // Remove hashtag headers at start of lines (## Title, ### Title, # Title)
+  // These are handled in parseTextToBlocks, but clean any remaining
+  cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
+  return cleaned;
 }
 
 function parseTextToBlocks(text: string): TextBlock[] {
@@ -1191,12 +936,15 @@ function parseTextToBlocks(text: string): TextBlock[] {
   const flushParagraph = () => {
     const joined = currentParagraph.join(' ').trim();
     if (joined) {
-      // Check if it's a numbered clause
-      const clauseMatch = joined.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
-      if (clauseMatch) {
-        blocks.push({ type: 'clause', text: joined });
-      } else {
-        blocks.push({ type: 'paragraph', text: joined });
+      const cleaned = stripMarkdown(joined);
+      if (cleaned) {
+        // Check if it's a numbered clause
+        const clauseMatch = cleaned.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
+        if (clauseMatch) {
+          blocks.push({ type: 'clause', text: cleaned, level: 0 });
+        } else {
+          blocks.push({ type: 'paragraph', text: cleaned, level: 0 });
+        }
       }
     }
     currentParagraph = [];
@@ -1213,22 +961,39 @@ function parseTextToBlocks(text: string): TextBlock[] {
     // Section heading with === delimiters
     if (/^===\s*.+\s*===$/.test(trimmed)) {
       flushParagraph();
-      const headingText = trimmed.replace(/^===\s*/, '').replace(/\s*===$/, '').trim();
-      blocks.push({ type: 'heading', text: headingText });
+      const headingText = stripMarkdown(trimmed.replace(/^===\s*/, '').replace(/\s*===$/, '').trim());
+      blocks.push({ type: 'heading', text: headingText, level: 1 });
       continue;
     }
 
-    // Bullet point
-    if (/^[-•]\s+/.test(trimmed)) {
+    // Markdown heading: ## Title or ### Title or # Title
+    const mdHeadingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (mdHeadingMatch) {
       flushParagraph();
-      blocks.push({ type: 'bullet', text: trimmed.replace(/^[-•]\s+/, '') });
+      const level = Math.min(mdHeadingMatch[1].length, 3);
+      const headingText = stripMarkdown(mdHeadingMatch[2].trim());
+      if (level === 1) {
+        blocks.push({ type: 'heading', text: headingText, level: 1 });
+      } else if (level === 2) {
+        blocks.push({ type: 'heading', text: headingText, level: 2 });
+      } else {
+        blocks.push({ type: 'subheading', text: headingText, level: 3 });
+      }
       continue;
     }
 
-    // Numbered clause at start of line
+    // Bullet point: - item or * item or bullet character
+    if (/^[-*]\s+/.test(trimmed) || /^\u2022\s+/.test(trimmed)) {
+      flushParagraph();
+      const bulletText = stripMarkdown(trimmed.replace(/^[-*\u2022]\s+/, ''));
+      blocks.push({ type: 'bullet', text: bulletText, level: 0 });
+      continue;
+    }
+
+    // Numbered clause at start of line: 1. or 1.1. etc.
     if (/^\d+(?:\.\d+)*\.\s+/.test(trimmed)) {
       flushParagraph();
-      blocks.push({ type: 'clause', text: trimmed });
+      blocks.push({ type: 'clause', text: stripMarkdown(trimmed), level: 0 });
       continue;
     }
 
@@ -1266,6 +1031,476 @@ function wrapText(text: string, font: any, fontSize: number, maxWidth: number): 
   return lines;
 }
 
+// ── Professional PDF Generation ──
+
+async function generatePdf(
+  text: string,
+  documentLabel: string,
+  businessName: string,
+  design: ClientDesign
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  const pageWidth = PageSizes.A4[0];
+  const pageHeight = PageSizes.A4[1];
+  const margin = 72;
+  const contentWidth = pageWidth - (margin * 2);
+
+  // Parse brand colours
+  const colours = parseBrandColours(design.brandColours);
+  const primaryRgb = hexToRgb(colours.primary);
+  const secondaryRgb = hexToRgb(colours.secondary);
+  const accentRgb = hexToRgb(colours.accent);
+
+  // Get visual style config
+  const styleConfig = getVisualStyleConfig(design.visualStyle);
+
+  // Parse text into structured blocks (strips markdown)
+  const blocks = parseTextToBlocks(text);
+
+  // Colour constants
+  const primaryColour = rgb(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+  const secondaryColour = rgb(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
+  const accentColour = rgb(accentRgb.r, accentRgb.g, accentRgb.b);
+  const darkText = rgb(0.15, 0.15, 0.2);
+  const bodyText = rgb(0.2, 0.2, 0.25);
+  const lightText = rgb(0.5, 0.5, 0.55);
+  const ruleLine = rgb(primaryRgb.r * 0.3 + 0.7, primaryRgb.g * 0.3 + 0.7, primaryRgb.b * 0.3 + 0.7);
+
+  const lineHeight = styleConfig.lineSpacing;
+  const fontSize = styleConfig.bodySize;
+  const smallFontSize = 7.5;
+  const headingFontSize = styleConfig.headerSize;
+  const titleFontSize = 20;
+
+  // Build pages
+  let page = pdfDoc.addPage(PageSizes.A4);
+  let y = pageHeight - margin;
+
+  // ── First page header ──
+  // Decorative top bar
+  if (styleConfig.decorativeElements || styleConfig.cornerAccent) {
+    page.drawRectangle({
+      x: 0,
+      y: pageHeight - 6,
+      width: pageWidth,
+      height: 6,
+      color: primaryColour,
+    });
+  }
+
+  // Document title
+  y = pageHeight - margin - 20;
+  const titleWidth = boldFont.widthOfTextAtSize(documentLabel, titleFontSize);
+  page.drawText(documentLabel, {
+    x: (pageWidth - titleWidth) / 2,
+    y: y,
+    size: titleFontSize,
+    font: boldFont,
+    color: primaryColour,
+  });
+  y -= 24;
+
+  // Subtitle: Prepared for [Business Name]
+  const displayName = design.brandIdentity === 'My personal name is the brand — I want documents to feel personal'
+    ? `${design.firstName || businessName}`
+    : businessName;
+  const subtitle = `Prepared for ${displayName}`;
+  const subtitleWidth = italicFont.widthOfTextAtSize(subtitle, 10);
+  page.drawText(subtitle, {
+    x: (pageWidth - subtitleWidth) / 2,
+    y: y,
+    size: 10,
+    font: italicFont,
+    color: lightText,
+  });
+  y -= 16;
+
+  // Foundationary branding
+  const branding = 'Foundationary';
+  const brandingWidth = font.widthOfTextAtSize(branding, 9);
+  page.drawText(branding, {
+    x: (pageWidth - brandingWidth) / 2,
+    y: y,
+    size: 9,
+    font: font,
+    color: lightText,
+  });
+  y -= 14;
+
+  // Decorative header line
+  if (styleConfig.borderStyle === 'double') {
+    page.drawLine({
+      start: { x: margin, y: y },
+      end: { x: pageWidth - margin, y: y },
+      thickness: 2,
+      color: primaryColour,
+    });
+    y -= 4;
+    page.drawLine({
+      start: { x: margin, y: y },
+      end: { x: pageWidth - margin, y: y },
+      thickness: 0.5,
+      color: secondaryColour,
+    });
+    y -= 20;
+  } else if (styleConfig.borderStyle === 'solid') {
+    page.drawLine({
+      start: { x: margin, y: y },
+      end: { x: pageWidth - margin, y: y },
+      thickness: 2.5,
+      color: primaryColour,
+    });
+    y -= 20;
+  } else if (styleConfig.borderStyle === 'accent') {
+    // Left accent bar + thin line
+    page.drawRectangle({
+      x: margin,
+      y: y - 2,
+      width: 4,
+      height: 8,
+      color: accentColour,
+    });
+    page.drawLine({
+      start: { x: margin + 8, y: y },
+      end: { x: pageWidth - margin, y: y },
+      thickness: 1,
+      color: secondaryColour,
+    });
+    y -= 20;
+  } else {
+    // Minimal: thin line
+    page.drawLine({
+      start: { x: margin, y: y },
+      end: { x: pageWidth - margin, y: y },
+      thickness: 1,
+      color: ruleLine,
+    });
+    y -= 20;
+  }
+
+  // ── Render content blocks ──
+  for (const block of blocks) {
+    if (block.type === 'heading') {
+      // Check if we need a new page
+      if (y < margin + 80) {
+        page = pdfDoc.addPage(PageSizes.A4);
+        y = pageHeight - margin;
+      }
+
+      const headingText = block.text;
+      const headingSize = block.level === 1 ? headingFontSize : 11;
+      const headingFont = block.level === 1 ? boldFont : boldFont;
+      const headingColour = block.level === 1 ? primaryColour : secondaryColour;
+
+      // Section heading with decorative underline
+      page.drawText(headingText, {
+        x: margin,
+        y: y,
+        size: headingSize,
+        font: headingFont,
+        color: headingColour,
+      });
+      y -= 4;
+
+      // Decorative underline for headings
+      const headingWidth = boldFont.widthOfTextAtSize(headingText, headingSize);
+      if (styleConfig.decorativeElements) {
+        page.drawLine({
+          start: { x: margin, y: y },
+          end: { x: margin + Math.min(headingWidth + 10, contentWidth), y: y },
+          thickness: 1.5,
+          color: accentColour,
+        });
+      } else {
+        page.drawLine({
+          start: { x: margin, y: y },
+          end: { x: margin + Math.min(headingWidth, contentWidth), y: y },
+          thickness: 0.75,
+          color: ruleLine,
+        });
+      }
+      y -= styleConfig.sectionGap;
+
+    } else if (block.type === 'subheading') {
+      if (y < margin + 40) {
+        page = pdfDoc.addPage(PageSizes.A4);
+        y = pageHeight - margin;
+      }
+
+      page.drawText(block.text, {
+        x: margin,
+        y: y,
+        size: 10.5,
+        font: boldFont,
+        color: secondaryColour,
+      });
+      y -= 16;
+
+    } else if (block.type === 'clause') {
+      // Numbered clause like "1.1. Something"
+      const lines = wrapText(block.text, font, fontSize, contentWidth - 24);
+      for (let i = 0; i < lines.length; i++) {
+        if (y < margin + 20) {
+          page = pdfDoc.addPage(PageSizes.A4);
+          y = pageHeight - margin;
+        }
+        page.drawText(lines[i], {
+          x: margin + 24,
+          y: y,
+          size: fontSize,
+          font: font,
+          color: bodyText,
+        });
+        y -= lineHeight;
+      }
+      y -= 4;
+
+    } else if (block.type === 'bullet') {
+      const lines = wrapText(block.text, font, fontSize, contentWidth - 36);
+      for (let i = 0; i < lines.length; i++) {
+        if (y < margin + 20) {
+          page = pdfDoc.addPage(PageSizes.A4);
+          y = pageHeight - margin;
+        }
+        if (i === 0) {
+          // Draw bullet with brand accent colour
+          page.drawText('\u2022', {
+            x: margin + 12,
+            y: y,
+            size: fontSize,
+            font: font,
+            color: accentColour,
+          });
+        }
+        page.drawText(lines[i], {
+          x: margin + 36,
+          y: y,
+          size: fontSize,
+          font: font,
+          color: bodyText,
+        });
+        y -= lineHeight;
+      }
+      y -= 2;
+
+    } else {
+      // Regular paragraph
+      const lines = wrapText(block.text, font, fontSize, contentWidth);
+      for (const line of lines) {
+        if (y < margin + 20) {
+          page = pdfDoc.addPage(PageSizes.A4);
+          y = pageHeight - margin;
+        }
+        page.drawText(line, {
+          x: margin,
+          y: y,
+          size: fontSize,
+          font: font,
+          color: bodyText,
+        });
+        y -= lineHeight;
+      }
+      y -= 6;
+    }
+  }
+
+  // ── Footer on each page ──
+  const pages = pdfDoc.getPages();
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  for (let i = 0; i < pages.length; i++) {
+    const p = pages[i];
+    const footerY = 36;
+
+    // Footer line
+    p.drawLine({
+      start: { x: margin, y: footerY + 14 },
+      end: { x: pageWidth - margin, y: footerY + 14 },
+      thickness: 0.5,
+      color: ruleLine,
+    });
+
+    // Foundationary branding in footer
+    p.drawText('Generated by Foundationary', {
+      x: margin,
+      y: footerY,
+      size: smallFontSize,
+      font: italicFont,
+      color: lightText,
+    });
+
+    // Page number
+    const pageStr = `Page ${i + 1} of ${pages.length}`;
+    const pageStrWidth = font.widthOfTextAtSize(pageStr, smallFontSize);
+    p.drawText(pageStr, {
+      x: pageWidth - margin - pageStrWidth,
+      y: footerY,
+      size: smallFontSize,
+      font: font,
+      color: lightText,
+    });
+
+    // Date in centre
+    const dateWidth = font.widthOfTextAtSize(dateStr, smallFontSize);
+    p.drawText(dateStr, {
+      x: (pageWidth - dateWidth) / 2,
+      y: footerY,
+      size: smallFontSize,
+      font: font,
+      color: lightText,
+    });
+
+    // Bottom decorative bar on last page
+    if (i === pages.length - 1 && (styleConfig.decorativeElements || styleConfig.cornerAccent)) {
+      p.drawRectangle({
+        x: 0,
+        y: 0,
+        width: pageWidth,
+        height: 4,
+        color: primaryColour,
+      });
+    }
+  }
+
+  return pdfDoc.save();
+}
+
+// ── Professional DOCX Generation ──
+
+async function generateDocx(
+  text: string,
+  documentLabel: string,
+  businessName: string,
+  design: ClientDesign
+): Promise<Uint8Array> {
+  const blocks = parseTextToBlocks(text);
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Parse brand colours
+  const colours = parseBrandColours(design.brandColours);
+  const primaryHex = colours.primary.replace('#', '');
+  const secondaryHex = colours.secondary.replace('#', '');
+  const accentHex = colours.accent.replace('#', '');
+
+  // Get visual style config
+  const styleConfig = getVisualStyleConfig(design.visualStyle);
+
+  const displayName = design.brandIdentity === 'My personal name is the brand — I want documents to feel personal'
+    ? `${design.firstName || businessName}`
+    : businessName;
+
+  const children: Paragraph[] = [];
+
+  // Title
+  children.push(new Paragraph({
+    children: [new TextRun({ text: documentLabel, bold: true, size: 44, font: 'Calibri', color: primaryHex })],
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 100 },
+  }));
+
+  // Subtitle
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `Prepared for ${displayName}`, italics: true, size: 20, font: 'Calibri', color: '737373' })],
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 50 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'Foundationary', size: 18, font: 'Calibri', color: '737373' })],
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 200 },
+  }));
+
+  // Horizontal rule with brand colour
+  children.push(new Paragraph({
+    border: { bottom: { style: BorderStyle.SINGLE, size: styleConfig.decorativeElements ? 12 : 6, color: primaryHex } },
+    spacing: { after: 400 },
+  }));
+
+  // Content blocks
+  for (const block of blocks) {
+    if (block.type === 'heading') {
+      const isMainHeading = block.level === 1;
+      children.push(new Paragraph({
+        children: [new TextRun({
+          text: block.text,
+          bold: true,
+          size: isMainHeading ? 28 : 24,
+          font: 'Calibri',
+          color: isMainHeading ? primaryHex : secondaryHex,
+        })],
+        heading: isMainHeading ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
+        spacing: { before: isMainHeading ? 360 : 240, after: 120 },
+        border: {
+          bottom: {
+            style: styleConfig.decorativeElements ? BorderStyle.SINGLE : BorderStyle.NONE,
+            size: styleConfig.decorativeElements ? 4 : 0,
+            color: accentHex,
+          },
+        },
+      }));
+    } else if (block.type === 'subheading') {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: block.text, bold: true, size: 22, font: 'Calibri', color: secondaryHex })],
+        heading: HeadingLevel.HEADING_4,
+        spacing: { before: 200, after: 80 },
+      }));
+    } else if (block.type === 'clause') {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' })],
+        spacing: { after: 80 },
+        indent: { left: 480 },
+      }));
+    } else if (block.type === 'bullet') {
+      children.push(new Paragraph({
+        children: [
+          new TextRun({ text: '\u2022  ', size: 20, font: 'Calibri', color: accentHex }),
+          new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' }),
+        ],
+        spacing: { after: 40 },
+        indent: { left: 720 },
+      }));
+    } else {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' })],
+        spacing: { after: 120 },
+      }));
+    }
+  }
+
+  // Footer section
+  children.push(new Paragraph({
+    border: { top: { style: BorderStyle.SINGLE, size: 4, color: primaryHex } },
+    spacing: { before: 600 },
+  }));
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `Generated by Foundationary | ${dateStr}`, italics: true, size: 16, font: 'Calibri', color: '888888' })],
+    alignment: AlignmentType.CENTER,
+  }));
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'This document was AI-generated and should be reviewed by a qualified professional before use.', italics: true, size: 16, font: 'Calibri', color: '888888' })],
+    alignment: AlignmentType.CENTER,
+  }));
+
+  const doc = new DocxDocument({
+    sections: [{
+      properties: {
+        page: {
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+        },
+      },
+      children,
+    }],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  return new Uint8Array(buffer);
+}
+
 // ── Main Handler ──
 
 Deno.serve(async (req: Request) => {
@@ -1296,6 +1531,29 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Fetch client design preferences (used by both modes)
+    const { data: intakeData } = await supabase
+      .from('intake_responses')
+      .select('responses')
+      .eq('user_id', user_id)
+      .maybeSingle();
+
+    const r = intakeData?.responses || {};
+    const design: ClientDesign = {
+      businessName: r.q2_business_name || 'Unknown Business',
+      legalName: r.q1_legal_name || '',
+      firstName: r.q55_first_name || '',
+      brandColours: r.q67_brand_colours || '',
+      visualStyle: r.q68_visual_style || 'Simple — I just want it to work',
+      toneOfVoice: r.q62_tone_of_voice || [],
+      brandIdentity: r.q64_brand_identity || '',
+      jurisdiction: r.q5_jurisdiction || 'England & Wales',
+      documentEmail: r.q7_document_email || '',
+      businessPhone: r.q8_business_phone || '',
+      businessAddress: r.q6_business_address || '',
+      websiteUrl: r.q10_website_url || '',
+    };
 
     // ── Mode 1: Generate text via Gemini (initial generation) ──
     if (!generate_files) {
@@ -1342,15 +1600,6 @@ Deno.serve(async (req: Request) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
-      // Fetch business name
-      const { data: intakeData } = await supabase
-        .from('intake_responses')
-        .select('responses')
-        .eq('user_id', user_id)
-        .maybeSingle();
-
-      const businessName = intakeData?.responses?.q2_business_name || 'Unknown Business';
 
       // Call Gemini API
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
@@ -1405,8 +1654,8 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Convert to HTML
-      const contentHtml = textToHtml(contentText, getDocumentLabel(document_type), businessName);
+      // Convert to HTML (also strips markdown)
+      const contentHtml = textToHtml(contentText, getDocumentLabel(document_type), design);
 
       // Save text and HTML to database
       const { error: updateError } = await supabase
@@ -1456,17 +1705,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: intakeData } = await supabase
-      .from('intake_responses')
-      .select('responses')
-      .eq('user_id', user_id)
-      .maybeSingle();
-
-    const businessName = intakeData?.responses?.q2_business_name || 'Unknown Business';
     const label = docData.document_label || getDocumentLabel(document_type);
 
-    // Generate PDF
-    const pdfBytes = await generatePdf(docData.content_text, label, businessName);
+    // Generate PDF with client design preferences
+    const pdfBytes = await generatePdf(docData.content_text, label, design.businessName, design);
     const pdfPath = `${user_id}/${document_type}.pdf`;
     const { error: pdfUploadError } = await supabase.storage
       .from('generated-documents')
@@ -1480,8 +1722,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate DOCX
-    const docxBytes = await generateDocx(docData.content_text, label, businessName);
+    // Generate DOCX with client design preferences
+    const docxBytes = await generateDocx(docData.content_text, label, design.businessName, design);
     const docxPath = `${user_id}/${document_type}.docx`;
     const { error: docxUploadError } = await supabase.storage
       .from('generated-documents')
@@ -1539,19 +1781,37 @@ function getDocumentLabel(type: string): string {
   return labels[type] || type;
 }
 
-function textToHtml(text: string, documentLabel: string, businessName: string): string {
-  const escaped = text
+function textToHtml(text: string, documentLabel: string, design: ClientDesign): string {
+  // First strip all markdown from the text
+  const cleaned = stripMarkdown(text);
+
+  // Then escape HTML entities
+  const escaped = cleaned
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
+  const colours = parseBrandColours(design.brandColours);
+  const styleConfig = getVisualStyleConfig(design.visualStyle);
+
+  const displayName = design.brandIdentity === 'My personal name is the brand — I want documents to feel personal'
+    ? `${design.firstName || design.businessName}`
+    : design.businessName;
+
   const formatted = escaped
-    .replace(/===\s*(.+?)\s*===/g, '<h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:6px;">$1</h2>')
+    .replace(/===\s*(.+?)\s*===/g, `<h2 style="font-size:16px;font-weight:700;margin:24px 0 12px;color:${colours.primary};border-bottom:2px solid ${colours.accent};padding-bottom:6px;">$1</h2>`)
     .replace(/^(\d+(?:\.\d+)*)\.\s+(.+)$/gm, '<p style="margin:8px 0;padding-left:24px;text-indent:-24px;"><strong>$1.</strong> $2</p>')
-    .replace(/^[-•]\s+(.+)$/gm, '<p style="margin:4px 0 4px 24px;">&bull; $1</p>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^[-]\s+(.+)$/gm, `<p style="margin:4px 0 4px 24px;"><span style="color:${colours.accent};">\u2022</span> $1</p>`)
     .replace(/\n\n/g, '</p><p style="margin:8px 0;">')
     .replace(/\n/g, '<br>');
+
+  const borderStyle = styleConfig.borderStyle === 'double'
+    ? `border-bottom: 3px double ${colours.primary};`
+    : styleConfig.borderStyle === 'solid'
+    ? `border-bottom: 3px solid ${colours.primary};`
+    : styleConfig.borderStyle === 'accent'
+    ? `border-bottom: 1px solid ${colours.secondary}; border-left: 4px solid ${colours.accent}; padding-left: 8px;`
+    : `border-bottom: 1px solid #ccc;`;
 
   return `<!DOCTYPE html>
 <html>
@@ -1560,19 +1820,19 @@ function textToHtml(text: string, documentLabel: string, businessName: string): 
 <style>
   @page { margin: 2.5cm; size: A4; }
   body { font-family: 'Georgia', 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #1a1a2e; max-width: 700px; margin: 0 auto; padding: 40px 0; }
-  h1 { font-size: 22pt; font-weight: 700; margin: 0 0 8px; color: #1a1a2e; }
-  h2 { font-size: 14pt; font-weight: 700; margin: 24px 0 12px; color: #1a1a2e; border-bottom: 2px solid #1a1a2e; padding-bottom: 6px; }
+  h1 { font-size: 22pt; font-weight: 700; margin: 0 0 8px; color: ${colours.primary}; }
+  h2 { font-size: 14pt; font-weight: 700; margin: 24px 0 12px; color: ${colours.primary}; border-bottom: 2px solid ${colours.accent}; padding-bottom: 6px; }
   p { margin: 8px 0; }
-  .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #1a1a2e; padding-bottom: 20px; }
+  .header { text-align: center; margin-bottom: 40px; ${borderStyle} padding-bottom: 20px; }
   .header h1 { margin-bottom: 4px; }
   .header .subtitle { font-size: 10pt; color: #555; }
-  .footer { margin-top: 60px; padding-top: 16px; border-top: 1px solid #ccc; font-size: 9pt; color: #888; text-align: center; }
+  .footer { margin-top: 60px; padding-top: 16px; border-top: 1px solid ${colours.primary}; font-size: 9pt; color: #888; text-align: center; }
 </style>
 </head>
 <body>
 <div class="header">
   <h1>${documentLabel}</h1>
-  <div class="subtitle">Prepared for ${businessName} | Foundationary</div>
+  <div class="subtitle">Prepared for ${displayName} | Foundationary</div>
 </div>
 <div style="margin-top:20px;">
 ${formatted}

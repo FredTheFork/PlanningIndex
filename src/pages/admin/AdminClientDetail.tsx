@@ -431,22 +431,96 @@ export default function AdminClientDetail() {
     return data.signedUrl;
   };
 
-  // Simple HTML conversion for edited content (mirrors edge function logic)
+  // Strip markdown artifacts from text
+  function stripMarkdown(text: string): string {
+    return text
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/~~(.+?)~~/g, '$1')
+      .replace(/`(.+?)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/^[-]{3,}$/gm, '')
+      .replace(/^[*]{3,}$/gm, '')
+      .replace(/^>\s+/gm, '');
+  }
+
+  // Parse brand colours from intake response
+  function parseBrandColours(colourInput: string): { primary: string; secondary: string; accent: string } {
+    if (!colourInput) return { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' };
+    const lower = colourInput.toLowerCase();
+    const colourMap: Record<string, { primary: string; secondary: string; accent: string }> = {
+      navy: { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' },
+      blue: { primary: '#1E40AF', secondary: '#3B82F6', accent: '#93C5FD' },
+      green: { primary: '#166534', secondary: '#22C55E', accent: '#86EFAC' },
+      sage: { primary: '#4A6741', secondary: '#7C9A6E', accent: '#A8C49A' },
+      gold: { primary: '#92400E', secondary: '#D97706', accent: '#FCD34D' },
+      red: { primary: '#991B1B', secondary: '#DC2626', accent: '#FCA5A5' },
+      black: { primary: '#1A1A2E', secondary: '#374151', accent: '#6B7280' },
+      teal: { primary: '#0F766E', secondary: '#14B8A6', accent: '#5EEAD4' },
+      burgundy: { primary: '#7F1D1D', secondary: '#B91C1C', accent: '#E879A0' },
+      charcoal: { primary: '#1F2937', secondary: '#4B5563', accent: '#9CA3AF' },
+    };
+    for (const [key, val] of Object.entries(colourMap)) {
+      if (lower.includes(key)) return val;
+    }
+    const hexMatch = colourInput.match(/#[0-9a-fA-F]{6}/);
+    if (hexMatch) {
+      const h = hexMatch[0];
+      return { primary: h, secondary: '#2C68C4', accent: '#4A90E2' };
+    }
+    return { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' };
+  }
+
+  // Get visual style config from intake response
+  function getVisualStyleConfig(style: string): { headerFont: string; bodyFont: string; borderStyle: string } {
+    const s = (style || '').toLowerCase();
+    if (s.includes('corporate') || s.includes('formal'))
+      return { headerFont: "'Times New Roman', Georgia, serif", bodyFont: "'Times New Roman', Georgia, serif", borderStyle: 'double' };
+    if (s.includes('warm') || s.includes('friendly'))
+      return { headerFont: "Georgia, 'Palatino Linotype', serif", bodyFont: "Georgia, 'Palatino Linotype', serif", borderStyle: 'accent' };
+    if (s.includes('premium') || s.includes('luxury'))
+      return { headerFont: "'Playfair Display', Georgia, serif", bodyFont: "Georgia, 'Palatino Linotype', serif", borderStyle: 'solid' };
+    if (s.includes('simple'))
+      return { headerFont: "Georgia, serif", bodyFont: "Georgia, serif", borderStyle: 'minimal' };
+    return { headerFont: "Georgia, 'Palatino Linotype', serif", bodyFont: "Georgia, 'Palatino Linotype', serif", borderStyle: 'solid' };
+  }
+
+  // HTML conversion for edited content — mirrors edge function with client design
   function textToSimpleHtml(text: string, label: string, businessName: string): string {
-    const escaped = text
+    const r = data.intakeResponses || {};
+    const colours = parseBrandColours(r.q67_brand_colours || '');
+    const styleConfig = getVisualStyleConfig(r.q68_visual_style || '');
+    const firstName = r.q55_first_name || '';
+    const brandIdentity = r.q64_brand_identity || '';
+    const subtitleName = brandIdentity.includes('personal') && firstName
+      ? firstName
+      : brandIdentity.includes('business') && businessName
+      ? businessName
+      : businessName;
+
+    const stripped = stripMarkdown(text);
+    const escaped = stripped
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
+    const borderCSS = styleConfig.borderStyle === 'double'
+      ? `border-bottom:4px double ${colours.primary};`
+      : styleConfig.borderStyle === 'accent'
+      ? `border-bottom:3px solid ${colours.accent};`
+      : styleConfig.borderStyle === 'solid'
+      ? `border-bottom:3px solid ${colours.primary};`
+      : `border-bottom:1px solid ${colours.primary}40;`;
+
     const formatted = escaped
-      .replace(/===\s*(.+?)\s*===/g, '<h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:6px;">$1</h2>')
-      .replace(/^(\d+(?:\.\d+)*)\.\s+(.+)$/gm, '<p style="margin:8px 0;padding-left:24px;text-indent:-24px;"><strong>$1.</strong> $2</p>')
-      .replace(/^[-•]\s+(.+)$/gm, '<p style="margin:4px 0 4px 24px;">&bull; $1</p>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/===\s*(.+?)\s*===/g, `<h2 style="font-size:16px;font-weight:700;margin:28px 0 12px;color:${colours.primary};${borderCSS}padding-bottom:8px;letter-spacing:0.02em;">$1</h2>`)
+      .replace(/^(\d+(?:\.\d+)*)\.\s+(.+)$/gm, `<p style="margin:8px 0;padding-left:28px;text-indent:-28px;"><strong style="color:${colours.primary};">$1.</strong> $2</p>`)
+      .replace(/^[-•]\s+(.+)$/gm, `<p style="margin:4px 0 4px 28px;"><span style="color:${colours.secondary};font-weight:bold;">&#8226;</span> $1</p>`)
       .replace(/\n\n/g, '</p><p style="margin:8px 0;">')
       .replace(/\n/g, '<br>');
 
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{margin:2.5cm;size:A4;}body{font-family:Georgia,serif;font-size:12pt;line-height:1.6;color:#1a1a2e;max-width:700px;margin:0 auto;padding:40px 0;}h1{font-size:22pt;font-weight:700;margin:0 0 8px;}h2{font-size:14pt;font-weight:700;margin:24px 0 12px;border-bottom:2px solid #1a1a2e;padding-bottom:6px;}p{margin:8px 0;}.header{text-align:center;margin-bottom:40px;border-bottom:3px solid #1a1a2e;padding-bottom:20px;}.footer{margin-top:60px;padding-top:16px;border-top:1px solid #ccc;font-size:9pt;color:#888;text-align:center;}</style></head><body><div class="header"><h1>${label}</h1><div style="font-size:10pt;color:#555;">Prepared for ${businessName} | Foundationary</div></div><div style="margin-top:20px;">${formatted}</div><div class="footer">Generated by Foundationary | ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}<br>This document was AI-generated and should be reviewed by a qualified professional before use.</div></body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{margin:2.5cm;size:A4;}body{font-family:${styleConfig.bodyFont};font-size:12pt;line-height:1.6;color:#1a1a2e;max-width:700px;margin:0 auto;padding:40px 0;}h1{font-size:22pt;font-weight:700;margin:0 0 8px;color:${colours.primary};}h2{font-size:14pt;font-weight:700;margin:24px 0 12px;${borderCSS}padding-bottom:6px;color:${colours.primary};}p{margin:8px 0;}.header{text-align:center;margin-bottom:40px;${borderCSS}padding-bottom:24px;}.footer{margin-top:60px;padding-top:16px;border-top:1px solid #ccc;font-size:9pt;color:#888;text-align:center;}</style></head><body><div style="width:100%;height:4px;background:linear-gradient(90deg,${colours.primary},${colours.secondary},${colours.accent});margin-bottom:32px;border-radius:2px;"></div><div class="header"><h1>${label}</h1><div style="font-size:10pt;color:${colours.secondary};">Prepared for ${subtitleName} | Foundationary</div></div><div style="margin-top:20px;">${formatted}</div><div class="footer">Generated by Foundationary | ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}<br>This document was AI-generated and should be reviewed by a qualified professional before use.</div></body></html>`;
   }
 
   // Fetch brief when the brief tab is active
