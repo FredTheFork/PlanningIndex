@@ -550,7 +550,7 @@ Generate the document now.`,
   },
 
   professional_bio: {
-    apiKey: 'AIzaSyCiKbp7qJhnXaAxi3MFkdQhh4bK-opcwEQ',
+    apiKey: 'AIzaSyDNOQMQ6WkDn59E9oYomzRoC-Usssuocgo',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a professional copywriter specializing in personal branding for small business owners.
 
