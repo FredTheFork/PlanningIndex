@@ -663,7 +663,7 @@ Generate the complete LinkedIn profile script now.`,
   },
 
   elevator_pitch: {
-    apiKey: 'AIzaSyD7DTWfXH0p1Z3krq07XbrcWITv_9vHR6c',
+    apiKey: 'AIzaSyCZ9GYM4YS2fUoyETb3yclqfUpWYw79SoI',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a professional speechwriter and pitch coach specializing in crafting compelling elevator pitches.
 
