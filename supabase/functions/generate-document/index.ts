@@ -610,7 +610,7 @@ Generate all three versions now.`,
   },
 
   linkedin_script: {
-    apiKey: 'AIzaSyCh_PHT3_4GKJAaDbHt2XGZdVdxBB7Jgok',
+    apiKey: 'AIzaSyBT-jBdlIkmfopbow2MyLGPU4xJI3L7z_Q',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an expert LinkedIn strategist and copywriter specializing in optimizing profiles for small business owners.
 
