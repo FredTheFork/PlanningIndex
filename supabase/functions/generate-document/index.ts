@@ -1182,11 +1182,46 @@ async function generatePdf(
     y -= 20;
   }
 
-  // ── Render content blocks ──
-  for (const block of blocks) {
+  // ── Widow/orphan prevention: minimum remaining space to start a section ──
+  // If less than 1/3 of the content area remains, push to a new page
+  const contentAreaHeight = pageHeight - (margin * 2);
+  const minSectionStart = margin + (contentAreaHeight / 3);
+
+  // Helper: estimate block height before rendering
+  function estimateBlockHeight(block: TextBlock): number {
     if (block.type === 'heading') {
-      // Check if we need a new page
-      if (y < margin + 80) {
+      const hSize = block.level === 1 ? headingFontSize : 11;
+      return hSize + 4 + styleConfig.sectionGap;
+    }
+    if (block.type === 'subheading') {
+      return 10.5 + 16;
+    }
+    if (block.type === 'clause') {
+      const lines = wrapText(block.text, font, fontSize, contentWidth - 24);
+      return (lines.length * lineHeight) + 4;
+    }
+    if (block.type === 'bullet') {
+      const lines = wrapText(block.text, font, fontSize, contentWidth - 36);
+      return (lines.length * lineHeight) + 2;
+    }
+    // paragraph
+    const lines = wrapText(block.text, font, fontSize, contentWidth);
+    return (lines.length * lineHeight) + 6;
+  }
+
+  // ── Render content blocks ──
+  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
+    const block = blocks[blockIndex];
+    const blockHeight = estimateBlockHeight(block);
+
+    if (block.type === 'heading') {
+      // Widow/orphan check: if less than 1/3 page left OR the heading + next block won't fit
+      const nextBlock = blocks[blockIndex + 1];
+      const nextHeight = nextBlock ? estimateBlockHeight(nextBlock) : 0;
+      const combinedHeight = blockHeight + nextHeight;
+      const remainingSpace = y - margin;
+
+      if (y < minSectionStart || remainingSpace < combinedHeight) {
         page = pdfDoc.addPage(PageSizes.A4);
         y = pageHeight - margin;
       }
@@ -1226,7 +1261,13 @@ async function generatePdf(
       y -= styleConfig.sectionGap;
 
     } else if (block.type === 'subheading') {
-      if (y < margin + 40) {
+      // Widow/orphan check for subheadings too
+      const nextBlock = blocks[blockIndex + 1];
+      const nextHeight = nextBlock ? estimateBlockHeight(nextBlock) : 0;
+      const combinedHeight = blockHeight + nextHeight;
+      const remainingSpace = y - margin;
+
+      if (y < minSectionStart || remainingSpace < combinedHeight) {
         page = pdfDoc.addPage(PageSizes.A4);
         y = pageHeight - margin;
       }
