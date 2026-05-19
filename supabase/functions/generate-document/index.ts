@@ -183,7 +183,22 @@ CRITICAL FORMATTING RULES:
 - Write in plain text with no bold, italic, or other markdown syntax
 - All text must be clean and ready for direct rendering into professional documents
 - Do NOT wrap any text in backticks, asterisks, or hash symbols
+
+CRITICAL: DO NOT USE MARKDOWN TABLES
+- NEVER use | pipe-delimited markdown tables (| Column 1 | Column 2 |)
+- Instead, use a clean columnar text format with pipes for readability:
+
+EXAMPLE of CORRECT table format (NOT markdown, plain columnar text):
+Purpose of Processing | Data Types | Legal Basis | Retention
+Service Provision | Identity, Contact, Service, Financial | Performance of a Contract | During engagement + 1 year after
+Billing & Payment | Identity, Contact, Financial | Performance of a Contract, Legal Obligation | 6 years from end of financial year
+
+- Each row is ONE complete line of text with | separators (NOT markdown)
+- Use descriptive spacing and keep text concise
+- No header row separator (---) or markdown syntax
+- Do NOT create actual markdown tables with |---|
 `;
+
 
 const DOCUMENT_CONFIGS: Record<string, DocumentConfig> = {
   terms_and_conditions: {
@@ -899,9 +914,59 @@ interface TextBlock {
   level: number; // 1 = main heading, 2 = sub-heading, 3 = sub-sub-heading
 }
 
+function convertMarkdownTableToColumns(text: string): string {
+  // Convert markdown tables to clean columnar format
+  const lines = text.split('\n');
+  const result: string[] = [];
+  let inTable = false;
+  let headerRow: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Check if this is a markdown table line (starts and ends with |)
+    if (line.startsWith('|') && line.endsWith('|')) {
+      // Extract cells from markdown table row: | cell1 | cell2 | cell3 |
+      const cells = line
+        .split('|')
+        .slice(1, -1) // Remove empty strings from leading/trailing |
+        .map(cell => cell.trim());
+
+      // Skip separator rows (|---|---|---|)
+      if (cells.some(cell => /^-+$/.test(cell))) {
+        inTable = true;
+        continue;
+      }
+
+      // If this is the first non-separator row, it's the header
+      if (inTable && headerRow.length === 0) {
+        headerRow = cells;
+        // Add header row with pipe separators
+        result.push(cells.join(' | '));
+        result.push(''); // Empty line for spacing
+      } else if (inTable && cells.length > 0) {
+        // Regular data row - join with pipes
+        result.push(cells.join(' | '));
+      }
+    } else {
+      // Not a table line - if we were in a table, we've ended it
+      if (inTable && headerRow.length > 0) {
+        inTable = false;
+        headerRow = [];
+        result.push(''); // Add spacing after table
+      }
+      result.push(line);
+    }
+  }
+
+  return result.join('\n');
+}
+
 function stripMarkdown(text: string): string {
+  // First convert markdown tables to columnar format
+  let cleaned = convertMarkdownTableToColumns(text);
+
   // Remove markdown bold/italic markers but keep the text
-  let cleaned = text;
   // Handle **bold** and __bold__
   cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, '$1');
   cleaned = cleaned.replace(/__(.+?)__/g, '$1');
