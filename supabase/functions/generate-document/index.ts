@@ -851,7 +851,7 @@ Generate all three email versions now.`,
   },
 
   late_payment_letters: {
-    apiKey: 'AIzaSyC3QNfx7IW2uVE6Lwic0OEx9DuJFJsr8tc',
+    apiKey: 'AIzaSyDgIVttAJtekRQe15o8cmQhHNCAlphKDPo',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an expert legal document specialist in UK debt collection and commercial law.
 
