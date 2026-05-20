@@ -1,2 +1,3 @@
 supabase
-components
+src/components
+pages/admin
