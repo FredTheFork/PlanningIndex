@@ -751,7 +751,7 @@ Never use: "passionate about", "leverage", "synergy", "game-changer". Honour all
   },
 
   linkedin_script: {
-    apiKey: 'AIzaSyBT-jBdlIkmfopbow2MyLGPU4xJI3L7z_Q',
+    apiKey: 'AIzaSyDYhe8vw5NC68ehoRNwa8G5MG7Fp0cVc_k',
     model: 'gemini-2.5-flash',
     maxOutputTokens: 10000,
     systemPrompt: `You are a LinkedIn optimisation strategist. Produce a complete LinkedIn profile optimisation script based on the Master Brief.
