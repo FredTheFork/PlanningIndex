@@ -724,63 +724,80 @@ Generate all three pitches now.`,
   professional_invoice_template: {
     apiKey: 'AIzaSyB0oQ393qZc6hivOx-GPLIHRYxIWJwLWxk',
     model: 'gemini-2.5-flash',
-    systemPrompt: `You are an expert in business document design, UK tax law, and professional invoicing standards.
+    systemPrompt: `You are an expert in business document design, UK tax law, and professional invoicing standards with extensive experience creating perfectly formatted DOCX documents with beautifully styled tables.
 
-Your task: Generate a professional, reusable Invoice Template for the client using their business details from the brief.
+Your task: Generate a professional, reusable Invoice Template for the client as a complete DOCX structure using their business details from the brief.
+
+IMPORTANT: Format this as a complete DOCX structure with tables that will render perfectly when converted to DOCX format.
 
 MANDATORY SECTIONS (ALL complete with placeholder fields):
 
-1. HEADER/BUSINESS DETAILS (TOP LEFT)
-   - Business name (from brief)
-   - Legal/trading name (if different)
-   - Business address (from brief)
-   - Phone number (from brief)
-   - Email address (from brief)
-   - Website (if applicable)
-   - Tax ID / VAT number (if registered)
+1. HEADER/BUSINESS DETAILS (TOP LEFT - TABLE LAYOUT)
+   | Business name | Invoice #: INV-[YYYY]-[####] |
+   | Address line  | Date: [Date]                 |
+   | Phone/Email   | Due: [Due Date]              |
 
-2. INVOICE DETAILS (TOP RIGHT)
-   - Invoice number placeholder: "INV-[YYYY]-[####]"
-   - Invoice date placeholder
-   - Due date placeholder
+2. "BILL TO" SECTION
+   | Client Name |
+   | Company     |
+   | Address     |
+   | Email/Phone |
 
-3. "BILL TO" SECTION
-   - Placeholder fields for client name, company, address, email, phone
+3. LINE ITEMS TABLE (PERFECT PROFESSIONAL TABLE)
+   | Description | Quantity | Unit Price | Amount |
+   | [Item 1]    | [Qty]    | [Price]    | [Total]|
+   | [Item 2]    | [Qty]    | [Price]    | [Total]|
+   | [Item 3]    | [Qty]    | [Price]    | [Total]|
 
-4. LINE ITEMS TABLE
-   - Description, Quantity, Unit price, Total columns
-   - Include 3-5 blank sample rows
+   SUBTOTAL: [Amount]
+   VAT (20%): [Amount]
+   TOTAL DUE: [Amount]
 
-5. SUBTOTAL AND CALCULATIONS
-   - Subtotal, VAT/Tax, Total amount due
-
-6. PAYMENT TERMS AND BANKING DETAILS
+4. PAYMENT TERMS AND BANKING DETAILS
    - Payment deadline
    - Payment methods accepted
    - Bank details (if applicable)
    - Payment reference format
 
-7. LATE PAYMENT CLAUSE (MANDATORY)
+5. LATE PAYMENT CLAUSE (MANDATORY)
    - Statutory interest wording per Late Payment of Commercial Debts Act 1998
 
-8. NOTES/ADDITIONAL TERMS
+6. NOTES/ADDITIONAL TERMS
 
-9. FOOTER
+7. FOOTER
    - Contact information
    - Thank you message
+
+FORMATTING INSTRUCTIONS FOR PERFECT DOCX RENDERING:
+
+- Structure all data in clear TABLE format using | separators
+- Header tables should have distinct sections with clear alignment
+- Line items table MUST have:
+  * Header row with column names
+  * Data rows with consistent spacing
+  * Borders and shading for professional appearance
+  * Currency symbols where appropriate
+- Use === SECTION NAME === for major section headings
+- Use numbered lists (1. 2. 3.) for payment terms and conditions
+- Ensure tables have:
+  * Clear column alignment (right-aligned for numbers)
+  * Proper row spacing
+  * Professional borders
+  * Subtle background shading for headers
 
 CRITICAL REQUIREMENTS:
 
 - Use client's SPECIFIC business details from brief
 - Include their EXACT payment terms
 - Include their EXACT payment methods
-- Show VAT calculation clearly
+- Show VAT calculation clearly with proper formatting
 - Reference their late payment interest policy from brief
-- Ready to copy and reuse
-- Professional, clean layout
+- Tables must render beautifully in DOCX format
+- Professional, clean layout with perfect spacing
 - UK compliant
-- Length: approximately 500-800 words when rendered${NO_MARKDOWN_INSTRUCTION}
-Generate the complete invoice template now.`,
+- Length: approximately 500-800 words when rendered
+- ALL text is plain (no markdown), ready for direct DOCX insertion${NO_MARKDOWN_INSTRUCTION}
+Generate the complete invoice template now with perfect table formatting.`,
   },
 
   welcome_email: {
@@ -993,8 +1010,65 @@ function stripMarkdown(text: string): string {
   return cleaned;
 }
 
-function parseTextToBlocks(text: string): TextBlock[] {
-  const blocks: TextBlock[] = [];
+interface TableBlock {
+  type: 'table';
+  headers: string[];
+  rows: string[][];
+  level: number;
+}
+
+function isTableRow(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.includes('|'));
+}
+
+function parseTableBlock(lines: string[], startIndex: number): { table: TableBlock; endIndex: number } | null {
+  const rows: string[][] = [];
+  let i = startIndex;
+  let headers: string[] = [];
+  let isFirstRow = true;
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    if (!isTableRow(line)) {
+      break;
+    }
+
+    // Parse the row: split by | and clean up
+    const cells = line
+      .split('|')
+      .slice(1, -1)
+      .map(cell => cell.trim())
+      .filter(cell => !(/^-+$/.test(cell))); // Skip separator rows
+
+    if (cells.length === 0) {
+      i++;
+      continue;
+    }
+
+    if (isFirstRow) {
+      headers = cells;
+      isFirstRow = false;
+    } else {
+      rows.push(cells);
+    }
+
+    i++;
+  }
+
+  if (headers.length > 0 && rows.length > 0) {
+    return {
+      table: { type: 'table', headers, rows, level: 0 },
+      endIndex: i,
+    };
+  }
+
+  return null;
+}
+
+function parseTextToBlocks(text: string): (TextBlock | TableBlock)[] {
+  const blocks: (TextBlock | TableBlock)[] = [];
   const lines = text.split('\n');
   let currentParagraph: string[] = [];
 
@@ -1003,7 +1077,6 @@ function parseTextToBlocks(text: string): TextBlock[] {
     if (joined) {
       const cleaned = stripMarkdown(joined);
       if (cleaned) {
-        // Check if it's a numbered clause
         const clauseMatch = cleaned.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
         if (clauseMatch) {
           blocks.push({ type: 'clause', text: cleaned, level: 0 });
@@ -1015,12 +1088,26 @@ function parseTextToBlocks(text: string): TextBlock[] {
     currentParagraph = [];
   };
 
-  for (const line of lines) {
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
     const trimmed = line.trim();
 
     if (!trimmed) {
       flushParagraph();
+      i++;
       continue;
+    }
+
+    // Check for table block
+    if (isTableRow(trimmed)) {
+      flushParagraph();
+      const tableResult = parseTableBlock(lines, i);
+      if (tableResult) {
+        blocks.push(tableResult.table);
+        i = tableResult.endIndex;
+        continue;
+      }
     }
 
     // Section heading with === delimiters
@@ -1028,6 +1115,7 @@ function parseTextToBlocks(text: string): TextBlock[] {
       flushParagraph();
       const headingText = stripMarkdown(trimmed.replace(/^===\s*/, '').replace(/\s*===$/, '').trim());
       blocks.push({ type: 'heading', text: headingText, level: 1 });
+      i++;
       continue;
     }
 
@@ -1044,6 +1132,7 @@ function parseTextToBlocks(text: string): TextBlock[] {
       } else {
         blocks.push({ type: 'subheading', text: headingText, level: 3 });
       }
+      i++;
       continue;
     }
 
@@ -1052,6 +1141,7 @@ function parseTextToBlocks(text: string): TextBlock[] {
       flushParagraph();
       const bulletText = stripMarkdown(trimmed.replace(/^[-*\u2022]\s+/, ''));
       blocks.push({ type: 'bullet', text: bulletText, level: 0 });
+      i++;
       continue;
     }
 
@@ -1059,11 +1149,13 @@ function parseTextToBlocks(text: string): TextBlock[] {
     if (/^\d+(?:\.\d+)*\.\s+/.test(trimmed)) {
       flushParagraph();
       blocks.push({ type: 'clause', text: stripMarkdown(trimmed), level: 0 });
+      i++;
       continue;
     }
 
     // Continuation of previous paragraph
     currentParagraph.push(trimmed);
+    i++;
   }
 
   flushParagraph();
@@ -1555,6 +1647,61 @@ async function generateDocx(
         heading: HeadingLevel.HEADING_4,
         spacing: { before: 200, after: 80 },
       }));
+    } else if (block.type === 'table') {
+      const tableBlock = block as TableBlock;
+      const tableRows: TableRow[] = [];
+
+      // Header row
+      const headerCells = tableBlock.headers.map(header =>
+        new TableCell({
+          children: [new Paragraph({
+            children: [new TextRun({ text: header, bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })],
+            alignment: AlignmentType.CENTER,
+          })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          verticalAlign: VerticalAlign.CENTER,
+        })
+      );
+      tableRows.push(new TableRow({
+        children: headerCells,
+        height: { value: 400, rule: 'auto' },
+      }));
+
+      // Data rows with alternating background
+      tableBlock.rows.forEach((row, rowIndex) => {
+        const cells = row.map((cell, cellIndex) => {
+          const isNumeric = /^\d+(\.\d+)?$|[$£€]/.test(cell);
+          return new TableCell({
+            children: [new Paragraph({
+              children: [new TextRun({ text: cell, size: 20, font: 'Calibri', color: '262626' })],
+              alignment: isNumeric ? AlignmentType.RIGHT : AlignmentType.LEFT,
+            })],
+            shading: {
+              type: ShadingType.CLEAR,
+              fill: rowIndex % 2 === 0 ? 'F5F5F5' : 'FFFFFF',
+            },
+          });
+        });
+        tableRows.push(new TableRow({
+          children: cells,
+          height: { value: 300, rule: 'auto' },
+        }));
+      });
+
+      children.push(new Table({
+        rows: tableRows,
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+          bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+          left: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+          right: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+          insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+          insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+        },
+      }));
+
+      children.push(new Paragraph({ spacing: { after: 200 } }));
     } else if (block.type === 'clause') {
       children.push(new Paragraph({
         children: [new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' })],
@@ -1796,7 +1943,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── Mode 2: Generate PDF and DOCX from existing text (after admin review) ──
+    // ── Mode 2: Generate DOCX and PDF from existing text (after admin review) ──
     const { data: docData, error: docError } = await supabase
       .from('generated_documents')
       .select('id, content_text, document_label')
@@ -1813,6 +1960,21 @@ Deno.serve(async (req: Request) => {
 
     const label = docData.document_label || getDocumentLabel(document_type);
 
+    // Generate DOCX first with beautifully styled tables
+    const docxBytes = await generateDocx(docData.content_text, label, design.businessName, design);
+    const docxPath = `${user_id}/${document_type}.docx`;
+    const { error: docxUploadError } = await supabase.storage
+      .from('generated-documents')
+      .upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
+
+    if (docxUploadError) {
+      console.error('DOCX upload error:', docxUploadError);
+      return new Response(
+        JSON.stringify({ error: `DOCX upload failed: ${docxUploadError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Generate PDF with client design preferences
     const pdfBytes = await generatePdf(docData.content_text, label, design.businessName, design);
     const pdfPath = `${user_id}/${document_type}.pdf`;
@@ -1828,27 +1990,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate DOCX with client design preferences
-    const docxBytes = await generateDocx(docData.content_text, label, design.businessName, design);
-    const docxPath = `${user_id}/${document_type}.docx`;
-    const { error: docxUploadError } = await supabase.storage
-      .from('generated-documents')
-      .upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
-
-    if (docxUploadError) {
-      console.error('DOCX upload error:', docxUploadError);
-      return new Response(
-        JSON.stringify({ error: `DOCX upload failed: ${docxUploadError.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Update database with file paths
     const { error: updateError } = await supabase
       .from('generated_documents')
       .update({
-        pdf_path: pdfPath,
         docx_path: docxPath,
+        pdf_path: pdfPath,
         files_generated_at: new Date().toISOString(),
       })
       .eq('id', docData.id);
@@ -1858,7 +2005,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, status: 'files_generated', document_type, pdf_path: pdfPath, docx_path: docxPath }),
+      JSON.stringify({ success: true, status: 'files_generated', document_type, docx_path: docxPath, pdf_path: pdfPath }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
