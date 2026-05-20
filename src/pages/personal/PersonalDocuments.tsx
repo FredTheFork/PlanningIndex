@@ -219,7 +219,7 @@ function DocumentCard({ doc, isViewing, onToggleView, onDownload }: DocumentCard
   const baseName = doc.document_label.replace(/\s+/g, '_');
 
   return (
-    <div className="bg-white rounded-lg border border-border overflow-hidden">
+    <div className="bg-white rounded-lg border border-border">
       {/* Card header row */}
       <div className="p-5">
         <div className="flex items-start gap-4">
@@ -243,24 +243,24 @@ function DocumentCard({ doc, isViewing, onToggleView, onDownload }: DocumentCard
 
         {/* Action buttons — always on their own row below the title */}
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
-          {doc.docx_path && (
+          {doc.pdf_path && (
             <button
-              onClick={() => onDownload(doc.docx_path!, `${baseName}.docx`)}
+              onClick={() => onDownload(doc.pdf_path!, `${baseName}.pdf`)}
               className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-1.5"
               style={{ padding: '8px 14px' }}
             >
               <Download size={14} />
-              Download
+              Download PDF
             </button>
           )}
-          {doc.pdf_path && (
+          {doc.docx_path && (
             <button
-              onClick={() => onDownload(doc.pdf_path!, `${baseName}.pdf`)}
+              onClick={() => onDownload(doc.docx_path!, `${baseName}.docx`)}
               className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-1.5"
               style={{ padding: '8px 14px' }}
             >
               <Download size={14} />
-              PDF
+              Download DOCX
             </button>
           )}
           {doc.content_html && (
@@ -282,7 +282,7 @@ function DocumentCard({ doc, isViewing, onToggleView, onDownload }: DocumentCard
 
       {/* Sandboxed iframe preview — completely isolated from page styles */}
       {isViewing && doc.content_html && (
-        <div className="border-t border-border">
+        <div className="border-t border-border rounded-b-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 flex items-center justify-between">
             <span className="font-inter text-xs font-medium text-secondary-text uppercase tracking-wider">
               Document Preview
@@ -291,13 +291,24 @@ function DocumentCard({ doc, isViewing, onToggleView, onDownload }: DocumentCard
               Scroll inside the preview to read the full document
             </span>
           </div>
-          <iframe
-            ref={iframeRef}
-            sandbox="allow-same-origin"
-            className="w-full border-0 block"
-            style={{ height: 640, background: '#ffffff' }}
-            title={`Preview: ${doc.document_label}`}
-          />
+          <div style={{ height: 640, position: 'relative' }}>
+            <iframe
+              ref={iframeRef}
+              sandbox="allow-same-origin"
+              scrolling="yes"
+              className="border-0"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: '#ffffff',
+                display: 'block',
+              }}
+              title={`Preview: ${doc.document_label}`}
+            />
+          </div>
         </div>
       )}
     </div>
