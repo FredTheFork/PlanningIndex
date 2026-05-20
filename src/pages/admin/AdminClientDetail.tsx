@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { intakeFormSections, upsellFormSections, FormField } from '../../lib/intakeFormDefinition';
-import { ArrowLeft, FileText, Upload, X, Save, AlertCircle, FolderOpen, Download, ExternalLink, Copy, RefreshCw, FileSearch, FileOutput, Eye, CreditCard as Edit3, Check, Send } from 'lucide-react';
+import { ArrowLeft, FileText, Upload, X, Save, AlertCircle, FolderOpen, Download, ExternalLink, Copy, RefreshCw, FileSearch, Eye, CreditCard as Edit3, Check, Send } from 'lucide-react';
 
 interface ClientData {
   profile: {
@@ -82,7 +82,6 @@ export default function AdminClientDetail() {
   const [editSaving, setEditSaving] = useState(false);
   const [deliveringDoc, setDeliveringDoc] = useState<string | null>(null);
   const [docsPollingActive, setDocsPollingActive] = useState(false);
-  const [generatingFiles, setGeneratingFiles] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -391,35 +390,6 @@ export default function AdminClientDetail() {
     });
     for (const d of completedDocs) {
       await handleDeliverDocument(d.key);
-    }
-  };
-
-  const handleGenerateFiles = async (docType: string) => {
-    if (!userId) return;
-    setGeneratingFiles(docType);
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-document`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ user_id: userId, document_type: docType, generate_files: true }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        // Refresh docs to get updated paths
-        await fetchGeneratedDocs();
-      } else {
-        console.error('Generate files error:', result.error);
-      }
-    } catch (err: any) {
-      console.error('Generate files network error:', err.message);
-    } finally {
-      setGeneratingFiles(null);
     }
   };
 
@@ -1385,45 +1355,21 @@ export default function AdminClientDetail() {
                       </div>
                     </div>
 
-                    {/* Second row: Generate Files + Download links */}
-                    {isCompleted && (
+                    {/* Second row: DOCX download */}
+                    {isCompleted && (docState?.docx_path || docState?.files_generated_at) && (
                       <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3 flex-wrap">
-                        {/* Generate PDF/DOCX button */}
-                        <button
-                          onClick={() => handleGenerateFiles(doc.key)}
-                          disabled={generatingFiles === doc.key}
-                          className="font-inter text-xs font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
-                          style={{ padding: '6px 12px' }}
-                        >
-                          {generatingFiles === doc.key ? (
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-navy" />
-                          ) : (
-                            <FileOutput size={12} />
-                          )}
-                          {generatingFiles === doc.key ? 'Generating...' : docState?.pdf_path ? 'Regenerate PDF & DOCX' : 'Generate PDF & DOCX'}
-                        </button>
-
-                        {/* PDF download */}
-                        {docState?.pdf_path && (
-                          <StorageDownloadButton
-                            filePath={docState.pdf_path}
-                            label="PDF"
-                            fileName={`${doc.label.replace(/\s+/g, '_')}.pdf`}
-                          />
-                        )}
-
                         {/* DOCX download */}
                         {docState?.docx_path && (
                           <StorageDownloadButton
                             filePath={docState.docx_path}
-                            label="DOCX"
+                            label="Download DOCX"
                             fileName={`${doc.label.replace(/\s+/g, '_')}.docx`}
                           />
                         )}
 
                         {docState?.files_generated_at && (
                           <span className="font-inter text-xs text-secondary-text ml-auto">
-                            Files generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
+                            DOCX generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
                           </span>
                         )}
                       </div>

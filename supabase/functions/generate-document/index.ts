@@ -2383,17 +2383,45 @@ Deno.serve(async (req: Request) => {
         // Convert to HTML (also strips markdown)
         const contentHtml = textToHtml(contentText, getDocumentLabel(document_type), design);
 
-        // Save text and HTML to database
+        // Auto-generate DOCX immediately
+        let docxPath: string | null = null;
+        let docxGeneratedAt: string | null = null;
+        try {
+          const docxBytes = await generateDocx(contentText, getDocumentLabel(document_type), design.businessName, design);
+          docxPath = `${user_id}/${document_type}.docx`;
+          const { error: docxUploadError } = await supabase.storage
+            .from('generated-documents')
+            .upload(docxPath, docxBytes, {
+              contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              upsert: true,
+            });
+          if (docxUploadError) {
+            console.error('Auto DOCX upload error:', docxUploadError.message);
+            docxPath = null;
+          } else {
+            docxGeneratedAt = new Date().toISOString();
+          }
+        } catch (docxErr: any) {
+          console.error('Auto DOCX generation error:', docxErr.message);
+        }
+
+        // Save text, HTML, and DOCX path to database
+        const updatePayload: Record<string, any> = {
+          status: 'completed',
+          content_text: contentText,
+          content_html: contentHtml,
+          api_key_used: config.apiKey.substring(0, 10) + '...',
+          model_used: config.model,
+          generated_at: new Date().toISOString(),
+        };
+        if (docxPath) {
+          updatePayload.docx_path = docxPath;
+          updatePayload.files_generated_at = docxGeneratedAt;
+        }
+
         const { error: updateError } = await supabase
           .from('generated_documents')
-          .update({
-            status: 'completed',
-            content_text: contentText,
-            content_html: contentHtml,
-            api_key_used: config.apiKey.substring(0, 10) + '...',
-            model_used: config.model,
-            generated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq('client_id', user_id)
           .eq('document_type', document_type);
 
@@ -2411,7 +2439,7 @@ Deno.serve(async (req: Request) => {
         }
 
         return new Response(
-          JSON.stringify({ success: true, status: 'completed', document_type }),
+          JSON.stringify({ success: true, status: 'completed', document_type, docx_path: docxPath }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (apiErr: any) {
