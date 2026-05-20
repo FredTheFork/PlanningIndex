@@ -171,6 +171,55 @@ interface DocumentConfig {
   apiKey: string;
   model: string;
   systemPrompt: string;
+  structuredOutput?: boolean;
+}
+
+interface InvoiceData {
+  businessInfo: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
+  };
+  invoiceFields: {
+    invoiceNumberFormat: string;
+    dateFormat: string;
+    dueDateFormat: string;
+    poNumberFormat: string;
+  };
+  billToPlaceholders: {
+    clientName: string;
+    company: string;
+    addressLine1: string;
+    addressLine2: string;
+    email: string;
+    phone: string;
+  };
+  lineItems: Array<{
+    description: string;
+    quantity: string;
+    unitPrice: string;
+    amount: string;
+  }>;
+  totals: {
+    subtotal: string;
+    vatPercentage: number;
+    vatAmount: string;
+    totalDue: string;
+  };
+  paymentTerms: {
+    paymentDeadline: string;
+    paymentMethods: string[];
+    bankDetails: {
+      accountName: string;
+      sortCode: string;
+      accountNumber: string;
+    };
+    paymentReference: string;
+  };
+  latePaymentClause: string;
+  notes: string[];
 }
 
 const NO_MARKDOWN_INSTRUCTION = `
@@ -724,80 +773,91 @@ Generate all three pitches now.`,
   professional_invoice_template: {
     apiKey: 'AIzaSyB0oQ393qZc6hivOx-GPLIHRYxIWJwLWxk',
     model: 'gemini-2.5-flash',
-    systemPrompt: `You are an expert in business document design, UK tax law, and professional invoicing standards with extensive experience creating perfectly formatted DOCX documents with beautifully styled tables.
+    systemPrompt: `You are an expert in business document design, UK tax law, and professional invoicing standards.
 
-Your task: Generate a professional, reusable Invoice Template for the client as a complete DOCX structure using their business details from the brief.
+Your task: Generate a professional, reusable Invoice Template as STRUCTURED JSON. NO TEXT. ONLY JSON OUTPUT.
 
-IMPORTANT: Format this as a complete DOCX structure with tables that will render perfectly when converted to DOCX format.
+OUTPUT MUST BE VALID JSON (no markdown, no code blocks, just pure JSON). Use this exact structure:
 
-MANDATORY SECTIONS (ALL complete with placeholder fields):
-
-1. HEADER/BUSINESS DETAILS (TOP LEFT - TABLE LAYOUT)
-   | Business name | Invoice #: INV-[YYYY]-[####] |
-   | Address line  | Date: [Date]                 |
-   | Phone/Email   | Due: [Due Date]              |
-
-2. "BILL TO" SECTION
-   | Client Name |
-   | Company     |
-   | Address     |
-   | Email/Phone |
-
-3. LINE ITEMS TABLE (PERFECT PROFESSIONAL TABLE)
-   | Description | Quantity | Unit Price | Amount |
-   | [Item 1]    | [Qty]    | [Price]    | [Total]|
-   | [Item 2]    | [Qty]    | [Price]    | [Total]|
-   | [Item 3]    | [Qty]    | [Price]    | [Total]|
-
-   SUBTOTAL: [Amount]
-   VAT (20%): [Amount]
-   TOTAL DUE: [Amount]
-
-4. PAYMENT TERMS AND BANKING DETAILS
-   - Payment deadline
-   - Payment methods accepted
-   - Bank details (if applicable)
-   - Payment reference format
-
-5. LATE PAYMENT CLAUSE (MANDATORY)
-   - Statutory interest wording per Late Payment of Commercial Debts Act 1998
-
-6. NOTES/ADDITIONAL TERMS
-
-7. FOOTER
-   - Contact information
-   - Thank you message
-
-FORMATTING INSTRUCTIONS FOR PERFECT DOCX RENDERING:
-
-- Structure all data in clear TABLE format using | separators
-- Header tables should have distinct sections with clear alignment
-- Line items table MUST have:
-  * Header row with column names
-  * Data rows with consistent spacing
-  * Borders and shading for professional appearance
-  * Currency symbols where appropriate
-- Use === SECTION NAME === for major section headings
-- Use numbered lists (1. 2. 3.) for payment terms and conditions
-- Ensure tables have:
-  * Clear column alignment (right-aligned for numbers)
-  * Proper row spacing
-  * Professional borders
-  * Subtle background shading for headers
+{
+  "businessInfo": {
+    "name": "string",
+    "address": "string",
+    "phone": "string",
+    "email": "string",
+    "website": "string"
+  },
+  "invoiceFields": {
+    "invoiceNumberFormat": "INV-[YYYY]-[####]",
+    "dateFormat": "[DD/MM/YYYY]",
+    "dueDateFormat": "[DD/MM/YYYY]",
+    "poNumberFormat": "[PO-Number]"
+  },
+  "billToPlaceholders": {
+    "clientName": "Client Name",
+    "company": "Company Name",
+    "addressLine1": "Address Line 1",
+    "addressLine2": "Address Line 2",
+    "email": "[client.email@example.com]",
+    "phone": "[client.phone]"
+  },
+  "lineItems": [
+    {
+      "description": "[Service/Item 1]",
+      "quantity": "[1]",
+      "unitPrice": "[£0.00]",
+      "amount": "[£0.00]"
+    },
+    {
+      "description": "[Service/Item 2]",
+      "quantity": "[1]",
+      "unitPrice": "[£0.00]",
+      "amount": "[£0.00]"
+    },
+    {
+      "description": "[Service/Item 3]",
+      "quantity": "[1]",
+      "unitPrice": "[£0.00]",
+      "amount": "[£0.00]"
+    }
+  ],
+  "totals": {
+    "subtotal": "[£0.00]",
+    "vatPercentage": 20,
+    "vatAmount": "[£0.00]",
+    "totalDue": "[£0.00]"
+  },
+  "paymentTerms": {
+    "paymentDeadline": "7 days of invoice date",
+    "paymentMethods": ["Stripe (secure link)", "Bank Transfer"],
+    "bankDetails": {
+      "accountName": "Business Account Name",
+      "sortCode": "[XX-XX-XX]",
+      "accountNumber": "[XXXXXXXX]"
+    },
+    "paymentReference": "Use Invoice Number as reference"
+  },
+  "latePaymentClause": "In the event of late payment, [Business Name] reserves the right to charge statutory interest at 8% above the Bank of England base rate, as permitted under the Late Payment of Commercial Debts (Interest) Act 1998.",
+  "notes": [
+    "No refunds: Once work has commenced, all fees paid are non-refundable.",
+    "Your prompt provision of necessary information and approvals is crucial for timely completion.",
+    "This invoice is subject to our service agreement terms and conditions."
+  ]
+}
 
 CRITICAL REQUIREMENTS:
 
-- Use client's SPECIFIC business details from brief
-- Include their EXACT payment terms
-- Include their EXACT payment methods
-- Show VAT calculation clearly with proper formatting
-- Reference their late payment interest policy from brief
-- Tables must render beautifully in DOCX format
-- Professional, clean layout with perfect spacing
-- UK compliant
-- Length: approximately 500-800 words when rendered
-- ALL text is plain (no markdown), ready for direct DOCX insertion${NO_MARKDOWN_INSTRUCTION}
-Generate the complete invoice template now with perfect table formatting.`,
+- Use the client's EXACT business name, address, phone, email from their brief
+- Use their EXACT payment terms and methods
+- Use their EXACT VAT rate if provided
+- Generate VALID JSON only (parseable by JSON.parse)
+- NO markdown, NO code blocks, NO text before/after JSON
+- ALL CONTENT must be inside the JSON object
+- For any missing brief information, provide sensible UK-compliant defaults
+- Placeholders must be in format [LIKE-THIS] for easy client customization
+
+GENERATE VALID JSON NOW. NOTHING ELSE.`,
+    structuredOutput: true,
   },
 
   welcome_email: {
@@ -1567,6 +1627,379 @@ async function generatePdf(
   return pdfDoc.save();
 }
 
+// ── Invoice DOCX Generation from Structured Data ──
+
+async function generateInvoiceDocx(
+  invoiceData: InvoiceData,
+  design: ClientDesign
+): Promise<Uint8Array> {
+  const colours = parseBrandColours(design.brandColours);
+  const primaryHex = colours.primary.replace('#', '');
+  const accentHex = colours.accent.replace('#', '');
+
+  const children: Paragraph[] = [];
+
+  // Header with business info and invoice details side by side
+  const headerTable = new Table({
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.businessInfo.name, bold: true, size: 28, font: 'Calibri', color: primaryHex })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.businessInfo.address, size: 18, font: 'Calibri', color: '262626' })],
+                spacing: { before: 40 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.businessInfo.phone, size: 18, font: 'Calibri', color: '262626' })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.businessInfo.email, size: 18, font: 'Calibri', color: '262626' })],
+              }),
+            ],
+            verticalAlign: VerticalAlign.TOP,
+            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: 'Invoice Details', bold: true, size: 20, font: 'Calibri', color: primaryHex })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: `Invoice: ${invoiceData.invoiceFields.invoiceNumberFormat}`, size: 18, font: 'Calibri', color: '262626' })],
+                spacing: { before: 80 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: `Date: ${invoiceData.invoiceFields.dateFormat}`, size: 18, font: 'Calibri', color: '262626' })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: `Due: ${invoiceData.invoiceFields.dueDateFormat}`, size: 18, font: 'Calibri', color: '262626' })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: `PO: ${invoiceData.invoiceFields.poNumberFormat}`, size: 18, font: 'Calibri', color: '262626' })],
+              }),
+            ],
+            verticalAlign: VerticalAlign.TOP,
+            shading: { type: ShadingType.CLEAR, fill: 'F5F5F5' },
+          }),
+        ],
+      }),
+    ],
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+    },
+  });
+  children.push(headerTable);
+  children.push(new Paragraph({ spacing: { after: 200 } }));
+
+  // Bill To section
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'BILL TO', bold: true, size: 22, font: 'Calibri', color: primaryHex })],
+    spacing: { after: 100 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } },
+  }));
+
+  const billToTable = new Table({
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.billToPlaceholders.clientName, bold: true, size: 20, font: 'Calibri', color: '262626' })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.billToPlaceholders.company, size: 20, font: 'Calibri', color: '262626' })],
+                spacing: { before: 40 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.billToPlaceholders.addressLine1, size: 20, font: 'Calibri', color: '262626' })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.billToPlaceholders.addressLine2, size: 20, font: 'Calibri', color: '262626' })],
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.billToPlaceholders.email, size: 20, font: 'Calibri', color: '262626' })],
+                spacing: { before: 40 },
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: invoiceData.billToPlaceholders.phone, size: 20, font: 'Calibri', color: '262626' })],
+              }),
+            ],
+            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+          }),
+        ],
+      }),
+    ],
+    width: { size: 100, type: WidthType.PERCENTAGE },
+  });
+  children.push(billToTable);
+  children.push(new Paragraph({ spacing: { after: 300 } }));
+
+  // Services/Items table
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'SERVICES RENDERED', bold: true, size: 22, font: 'Calibri', color: primaryHex })],
+    spacing: { after: 100 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } },
+  }));
+
+  const lineItemsRows: TableRow[] = [
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: 'Description', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.LEFT })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          verticalAlign: VerticalAlign.CENTER,
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: 'Quantity', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.CENTER })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          verticalAlign: VerticalAlign.CENTER,
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: 'Unit Price', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          verticalAlign: VerticalAlign.CENTER,
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: 'Amount', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          verticalAlign: VerticalAlign.CENTER,
+        }),
+      ],
+      height: { value: 400, rule: 'auto' },
+    }),
+  ];
+
+  // Add line items
+  invoiceData.lineItems.forEach((item, idx) => {
+    lineItemsRows.push(
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: item.description, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.LEFT })],
+            shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : 'F5F5F5' },
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: item.quantity, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.CENTER })],
+            shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : 'F5F5F5' },
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: item.unitPrice, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })],
+            shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : 'F5F5F5' },
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: item.amount, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })],
+            shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : 'F5F5F5' },
+          }),
+        ],
+        height: { value: 300, rule: 'auto' },
+      })
+    );
+  });
+
+  const lineItemsTable = new Table({
+    rows: lineItemsRows,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+      bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+      left: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+      right: { style: BorderStyle.SINGLE, size: 6, color: primaryHex },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
+    },
+  });
+  children.push(lineItemsTable);
+  children.push(new Paragraph({ spacing: { after: 200 } }));
+
+  // Totals section (right-aligned)
+  const totalsRows = [
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: '', size: 20, font: 'Calibri' })], alignment: AlignmentType.LEFT })],
+          borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: 'Subtotal', size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })],
+          borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: invoiceData.totals.subtotal, size: 20, font: 'Calibri', bold: true, color: '262626' })], alignment: AlignmentType.RIGHT })],
+          borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: '', size: 20, font: 'Calibri' })], alignment: AlignmentType.LEFT })],
+          borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: `VAT (${invoiceData.totals.vatPercentage}%)`, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })],
+          borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: invoiceData.totals.vatAmount, size: 20, font: 'Calibri', bold: true, color: '262626' })], alignment: AlignmentType.RIGHT })],
+          borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: '', size: 20, font: 'Calibri' })], alignment: AlignmentType.LEFT })],
+          borders: { top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: 'TOTAL DUE', size: 22, font: 'Calibri', bold: true, color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          borders: { top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: invoiceData.totals.totalDue, size: 22, font: 'Calibri', bold: true, color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          borders: { top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+        }),
+      ],
+    }),
+  ];
+
+  const totalsTable = new Table({
+    rows: totalsRows,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+  });
+  children.push(totalsTable);
+  children.push(new Paragraph({ spacing: { after: 300 } }));
+
+  // Payment Terms
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'PAYMENT TERMS & METHODS', bold: true, size: 22, font: 'Calibri', color: primaryHex })],
+    spacing: { after: 100 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `Payment Deadline: ${invoiceData.paymentTerms.paymentDeadline}`, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 80 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'Accepted Payment Methods:', bold: true, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 40 },
+  }));
+
+  invoiceData.paymentTerms.paymentMethods.forEach(method => {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: method, size: 20, font: 'Calibri', color: '262626' })],
+      spacing: { after: 20 },
+      indent: { left: 720 },
+    }));
+  });
+
+  children.push(new Paragraph({ spacing: { after: 100 } }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'Bank Details:', bold: true, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 40 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `Account: ${invoiceData.paymentTerms.bankDetails.accountName}`, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 20 },
+    indent: { left: 720 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `Sort Code: ${invoiceData.paymentTerms.bankDetails.sortCode}`, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 20 },
+    indent: { left: 720 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `Account Number: ${invoiceData.paymentTerms.bankDetails.accountNumber}`, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 100 },
+    indent: { left: 720 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `Reference: ${invoiceData.paymentTerms.paymentReference}`, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 200 },
+  }));
+
+  // Late Payment Clause
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'LATE PAYMENT CLAUSE', bold: true, size: 22, font: 'Calibri', color: primaryHex })],
+    spacing: { after: 100 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: invoiceData.latePaymentClause, size: 20, font: 'Calibri', color: '262626' })],
+    spacing: { after: 200 },
+  }));
+
+  // Notes
+  if (invoiceData.notes && invoiceData.notes.length > 0) {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'NOTES & TERMS', bold: true, size: 22, font: 'Calibri', color: primaryHex })],
+      spacing: { after: 100 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } },
+    }));
+
+    invoiceData.notes.forEach(note => {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: note, size: 20, font: 'Calibri', color: '262626' })],
+        spacing: { after: 40 },
+        indent: { left: 720 },
+      }));
+    });
+
+    children.push(new Paragraph({ spacing: { after: 200 } }));
+  }
+
+  // Footer
+  children.push(new Paragraph({
+    border: { top: { style: BorderStyle.SINGLE, size: 4, color: primaryHex } },
+    spacing: { before: 400 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'Thank you for your business!', italics: true, size: 20, font: 'Calibri', color: '262626' })],
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 40 },
+  }));
+
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `${invoiceData.businessInfo.name} | ${invoiceData.businessInfo.email} | ${invoiceData.businessInfo.phone} | ${invoiceData.businessInfo.website}`, italics: true, size: 18, font: 'Calibri', color: '262626' })],
+    alignment: AlignmentType.CENTER,
+  }));
+
+  const doc = new DocxDocument({
+    sections: [{
+      properties: {
+        page: {
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+        },
+      },
+      children,
+    }],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  return new Uint8Array(buffer);
+}
+
 // ── Professional DOCX Generation ──
 
 async function generateDocx(
@@ -1808,7 +2241,7 @@ Deno.serve(async (req: Request) => {
       websiteUrl: r.q10_website_url || '',
     };
 
-    // ── Mode 1: Generate text via Gemini (initial generation) ──
+    // ── Mode 1: Generate via Gemini (initial generation) ──
     if (!generate_files) {
       // Set status to 'generating'
       const { data: existingDoc } = await supabase
@@ -1859,8 +2292,6 @@ Deno.serve(async (req: Request) => {
 
       const userMessage = `Here is the client's Master Brief:\n\n${briefData.brief_content}\n\nBased on this brief, please generate the document as instructed in your system prompt.`;
 
-      let contentText: string;
-
       try {
         const geminiResponse = await fetch(geminiUrl, {
           method: 'POST',
@@ -1888,12 +2319,101 @@ Deno.serve(async (req: Request) => {
 
         const geminiData = await geminiResponse.json();
 
-        if (geminiData.candidates?.[0]?.content?.parts?.[0]?.text) {
-          contentText = geminiData.candidates[0].content.parts[0].text;
-        } else {
+        if (!geminiData.candidates?.[0]?.content?.parts?.[0]?.text) {
           console.error('Unexpected Gemini response structure:', JSON.stringify(geminiData).substring(0, 500));
           throw new Error('No text content in Gemini response');
         }
+
+        const contentText = geminiData.candidates[0].content.parts[0].text;
+
+        // ── Check if structured output (for invoice template) ──
+        if (config.structuredOutput && document_type === 'professional_invoice_template') {
+          try {
+            // Parse JSON from Gemini response
+            const invoiceData: InvoiceData = JSON.parse(contentText);
+
+            // Generate DOCX directly from structured data
+            const docxBytes = await generateInvoiceDocx(invoiceData, design);
+            const docxPath = `${user_id}/${document_type}.docx`;
+
+            const { error: docxUploadError } = await supabase.storage
+              .from('generated-documents')
+              .upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
+
+            if (docxUploadError) {
+              throw new Error(`DOCX upload failed: ${docxUploadError.message}`);
+            }
+
+            // Update database with DOCX path, skip text/HTML storage
+            const { error: updateError } = await supabase
+              .from('generated_documents')
+              .update({
+                status: 'completed',
+                docx_path: docxPath,
+                api_key_used: config.apiKey.substring(0, 10) + '...',
+                model_used: config.model,
+                generated_at: new Date().toISOString(),
+              })
+              .eq('client_id', user_id)
+              .eq('document_type', document_type);
+
+            if (updateError) {
+              throw new Error(`Failed to update document: ${updateError.message}`);
+            }
+
+            return new Response(
+              JSON.stringify({ success: true, status: 'completed', document_type, docx_path: docxPath }),
+              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          } catch (structErr: any) {
+            console.error(`Structured document generation failed for ${document_type}:`, structErr.message);
+            await supabase
+              .from('generated_documents')
+              .update({ status: 'failed', error_message: structErr.message })
+              .eq('client_id', user_id)
+              .eq('document_type', document_type);
+            return new Response(
+              JSON.stringify({ error: structErr.message }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+
+        // ── Standard text-based document ──
+        // Convert to HTML (also strips markdown)
+        const contentHtml = textToHtml(contentText, getDocumentLabel(document_type), design);
+
+        // Save text and HTML to database
+        const { error: updateError } = await supabase
+          .from('generated_documents')
+          .update({
+            status: 'completed',
+            content_text: contentText,
+            content_html: contentHtml,
+            api_key_used: config.apiKey.substring(0, 10) + '...',
+            model_used: config.model,
+            generated_at: new Date().toISOString(),
+          })
+          .eq('client_id', user_id)
+          .eq('document_type', document_type);
+
+        if (updateError) {
+          console.error('Failed to save document:', updateError);
+          await supabase
+            .from('generated_documents')
+            .update({ status: 'failed', error_message: updateError.message })
+            .eq('client_id', user_id)
+            .eq('document_type', document_type);
+          return new Response(
+            JSON.stringify({ error: updateError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, status: 'completed', document_type }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       } catch (apiErr: any) {
         console.error(`Document generation failed for ${document_type}:`, apiErr.message);
         await supabase
@@ -1906,61 +2426,41 @@ Deno.serve(async (req: Request) => {
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
-      // Convert to HTML (also strips markdown)
-      const contentHtml = textToHtml(contentText, getDocumentLabel(document_type), design);
-
-      // Save text and HTML to database
-      const { error: updateError } = await supabase
-        .from('generated_documents')
-        .update({
-          status: 'completed',
-          content_text: contentText,
-          content_html: contentHtml,
-          api_key_used: config.apiKey.substring(0, 10) + '...',
-          model_used: config.model,
-          generated_at: new Date().toISOString(),
-        })
-        .eq('client_id', user_id)
-        .eq('document_type', document_type);
-
-      if (updateError) {
-        console.error('Failed to save document:', updateError);
-        await supabase
-          .from('generated_documents')
-          .update({ status: 'failed', error_message: updateError.message })
-          .eq('client_id', user_id)
-          .eq('document_type', document_type);
-        return new Response(
-          JSON.stringify({ error: updateError.message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, status: 'completed', document_type }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
-    // ── Mode 2: Generate DOCX and PDF from existing text (after admin review) ──
+    // ── Mode 2: Generate PDF from existing text (DOCX already created in Mode 1 for structured documents) ──
     const { data: docData, error: docError } = await supabase
       .from('generated_documents')
-      .select('id, content_text, document_label')
+      .select('id, content_text, docx_path, document_label')
       .eq('client_id', user_id)
       .eq('document_type', document_type)
       .maybeSingle();
 
-    if (docError || !docData?.content_text) {
+    if (docError || !docData) {
       return new Response(
-        JSON.stringify({ error: 'No text content found. Generate the document text first.' }),
+        JSON.stringify({ error: 'Document not found. Generate the document text first.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const label = docData.document_label || getDocumentLabel(document_type);
 
-    // Generate DOCX first with beautifully styled tables
+    // For structured documents (invoice), DOCX is already created in Mode 1
+    if (docData.docx_path) {
+      return new Response(
+        JSON.stringify({ success: true, status: 'already_generated', document_type, docx_path: docData.docx_path }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // For text-based documents, generate DOCX from text
+    if (!docData.content_text) {
+      return new Response(
+        JSON.stringify({ error: 'No text content found. Generate the document text first.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const docxBytes = await generateDocx(docData.content_text, label, design.businessName, design);
     const docxPath = `${user_id}/${document_type}.docx`;
     const { error: docxUploadError } = await supabase.storage

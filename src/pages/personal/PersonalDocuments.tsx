@@ -155,41 +155,33 @@ export default function PersonalDocuments() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => setViewingDoc(viewingDoc === doc.id ? null : doc.id)}
-                      className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
-                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                    >
-                      {viewingDoc === doc.id ? 'Hide' : 'View'}
-                    </button>
+                    {doc.docx_path && (
+                      <button
+                        onClick={() => handleStorageDownload(doc.docx_path!, `${doc.document_label.replace(/\s+/g, '_')}.docx`)}
+                        className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2"
+                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                      >
+                        <Download size={14} />
+                        Download
+                      </button>
+                    )}
                     {doc.pdf_path && (
                       <button
                         onClick={() => handleStorageDownload(doc.pdf_path!, `${doc.document_label.replace(/\s+/g, '_')}.pdf`)}
-                        className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2"
+                        className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
                         style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                       >
                         <Download size={14} />
                         PDF
                       </button>
                     )}
-                    {doc.docx_path && (
+                    {doc.content_html && (
                       <button
-                        onClick={() => handleStorageDownload(doc.docx_path!, `${doc.document_label.replace(/\s+/g, '_')}.docx`)}
+                        onClick={() => setViewingDoc(viewingDoc === doc.id ? null : doc.id)}
                         className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
                         style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                       >
-                        <Download size={14} />
-                        DOCX
-                      </button>
-                    )}
-                    {!doc.pdf_path && !doc.docx_path && (
-                      <button
-                        onClick={() => handleDownloadHtml(doc)}
-                        className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2"
-                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                      >
-                        <Download size={14} />
-                        HTML
+                        {viewingDoc === doc.id ? 'Hide' : 'Preview'}
                       </button>
                     )}
                   </div>
