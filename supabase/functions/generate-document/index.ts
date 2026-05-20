@@ -722,7 +722,7 @@ Generate all three pitches now.`,
   },
 
   professional_invoice_template: {
-    apiKey: 'AIzaSyC7OwlQ6YawrwbBCBhjXy_6fTa01aXEEkQ',
+    apiKey: 'AIzaSyB0oQ393qZc6hivOx-GPLIHRYxIWJwLWxk',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an expert in business document design, UK tax law, and professional invoicing standards.
 
