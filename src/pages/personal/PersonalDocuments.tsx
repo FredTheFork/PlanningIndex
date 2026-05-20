@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useClientProfile } from '../../hooks/useClientProfile';
-import { Lock, Download, Clock, FileText } from 'lucide-react';
+import { Lock, Download, Clock, FileText, Eye, EyeOff } from 'lucide-react';
 
 interface DeliveredDoc {
   id: string;
@@ -140,64 +140,13 @@ export default function PersonalDocuments() {
           {/* Document list */}
           <div className="flex flex-col gap-3">
             {documents.map(doc => (
-              <div key={doc.id} className="bg-white rounded-lg border border-border p-5">
-                <div className="flex items-center gap-4">
-                  <div className="bg-green-50 rounded-lg p-2.5 shrink-0">
-                    <FileText size={20} className="text-success" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-inter font-semibold text-navy text-sm">{doc.document_label}</span>
-                    {doc.admin_edited && (
-                      <span className="font-inter text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 ml-2">Reviewed</span>
-                    )}
-                    <div className="font-inter text-xs text-secondary-text mt-1">
-                      Delivered {new Date(doc.delivered_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {doc.docx_path && (
-                      <button
-                        onClick={() => handleStorageDownload(doc.docx_path!, `${doc.document_label.replace(/\s+/g, '_')}.docx`)}
-                        className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2"
-                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                      >
-                        <Download size={14} />
-                        Download
-                      </button>
-                    )}
-                    {doc.pdf_path && (
-                      <button
-                        onClick={() => handleStorageDownload(doc.pdf_path!, `${doc.document_label.replace(/\s+/g, '_')}.pdf`)}
-                        className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
-                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                      >
-                        <Download size={14} />
-                        PDF
-                      </button>
-                    )}
-                    {doc.content_html && (
-                      <button
-                        onClick={() => setViewingDoc(viewingDoc === doc.id ? null : doc.id)}
-                        className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
-                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                      >
-                        {viewingDoc === doc.id ? 'Hide' : 'Preview'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Document viewer */}
-                {viewingDoc === doc.id && doc.content_html && (
-                  <div className="mt-4 border-t border-border pt-4">
-                    <div
-                      className="bg-white rounded-md border border-border overflow-y-auto"
-                      style={{ maxHeight: 600 }}
-                      dangerouslySetInnerHTML={{ __html: doc.content_html }}
-                    />
-                  </div>
-                )}
-              </div>
+              <DocumentCard
+                key={doc.id}
+                doc={doc}
+                isViewing={viewingDoc === doc.id}
+                onToggleView={() => setViewingDoc(viewingDoc === doc.id ? null : doc.id)}
+                onDownload={handleStorageDownload}
+              />
             ))}
           </div>
         </div>
@@ -228,6 +177,127 @@ export default function PersonalDocuments() {
               )}
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Document Card with sandboxed iframe preview ──
+
+interface DocumentCardProps {
+  doc: DeliveredDoc;
+  isViewing: boolean;
+  onToggleView: () => void;
+  onDownload: (filePath: string, fileName: string) => void;
+}
+
+function DocumentCard({ doc, isViewing, onToggleView, onDownload }: DocumentCardProps) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const blobUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isViewing && doc.content_html && iframeRef.current) {
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+      }
+      const blob = new Blob([doc.content_html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      blobUrlRef.current = url;
+      iframeRef.current.src = url;
+    }
+  }, [isViewing, doc.content_html]);
+
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+      }
+    };
+  }, []);
+
+  const baseName = doc.document_label.replace(/\s+/g, '_');
+
+  return (
+    <div className="bg-white rounded-lg border border-border overflow-hidden">
+      {/* Card header row */}
+      <div className="p-5">
+        <div className="flex items-start gap-4">
+          <div className="bg-green-50 rounded-lg p-2.5 shrink-0 mt-0.5">
+            <FileText size={20} className="text-success" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-inter font-semibold text-navy text-sm">{doc.document_label}</span>
+              {doc.admin_edited && (
+                <span className="font-inter text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                  Reviewed
+                </span>
+              )}
+            </div>
+            <div className="font-inter text-xs text-secondary-text mt-1">
+              Delivered {new Date(doc.delivered_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons — always on their own row below the title */}
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+          {doc.docx_path && (
+            <button
+              onClick={() => onDownload(doc.docx_path!, `${baseName}.docx`)}
+              className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-1.5"
+              style={{ padding: '8px 14px' }}
+            >
+              <Download size={14} />
+              Download
+            </button>
+          )}
+          {doc.pdf_path && (
+            <button
+              onClick={() => onDownload(doc.pdf_path!, `${baseName}.pdf`)}
+              className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-1.5"
+              style={{ padding: '8px 14px' }}
+            >
+              <Download size={14} />
+              PDF
+            </button>
+          )}
+          {doc.content_html && (
+            <button
+              onClick={onToggleView}
+              className={`font-inter text-sm font-medium rounded-md border transition-colors inline-flex items-center gap-1.5 ${
+                isViewing
+                  ? 'text-navy bg-off-white border-navy'
+                  : 'text-navy border-border hover:bg-off-white'
+              }`}
+              style={{ padding: '8px 14px' }}
+            >
+              {isViewing ? <EyeOff size={14} /> : <Eye size={14} />}
+              {isViewing ? 'Hide Preview' : 'Preview'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Sandboxed iframe preview — completely isolated from page styles */}
+      {isViewing && doc.content_html && (
+        <div className="border-t border-border">
+          <div className="bg-gray-50 px-4 py-2 flex items-center justify-between">
+            <span className="font-inter text-xs font-medium text-secondary-text uppercase tracking-wider">
+              Document Preview
+            </span>
+            <span className="font-inter text-xs text-secondary-text">
+              Scroll inside the preview to read the full document
+            </span>
+          </div>
+          <iframe
+            ref={iframeRef}
+            sandbox="allow-same-origin"
+            className="w-full border-0 block"
+            style={{ height: 640, background: '#ffffff' }}
+            title={`Preview: ${doc.document_label}`}
+          />
         </div>
       )}
     </div>
