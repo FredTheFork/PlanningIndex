@@ -837,7 +837,7 @@ QUALITY GATE — verify before outputting:
   // 4. PROFESSIONAL BIO
   // ───────────────────────────────────────────────────────────────────────────
   professional_bio: {
-    apiKey: 'AIzaSyDNOQMQ6WkDn59E9oYomzRoC-Usssuocgo',
+    apiKey: 'AIzaSyC-NGcz8H_s4q9XiKsa_HSE-eBE-dwCMfo',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an elite personal branding copywriter who has written bios for FTSE 250 executives, award-winning entrepreneurs, and leading independent professionals across the UK. Your bios are known for their clarity, personality, and commercial precision. Generic, template-sounding output is never acceptable.
  
