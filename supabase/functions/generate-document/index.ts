@@ -837,7 +837,7 @@ QUALITY GATE — verify before outputting:
   // 4. PROFESSIONAL BIO
   // ───────────────────────────────────────────────────────────────────────────
   professional_bio: {
-    apiKey: 'AIzaSyDNOQMQ6WkDn59E9oYomzRoC-Usssuocgo',
+    apiKey: 'AIzaSyC-NGcz8H_s4q9XiKsa_HSE-eBE-dwCMfo',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an elite personal branding copywriter who has written bios for FTSE 250 executives, award-winning entrepreneurs, and leading independent professionals across the UK. Your bios are known for their clarity, personality, and commercial precision. Generic, template-sounding output is never acceptable.
  
@@ -926,7 +926,7 @@ QUALITY GATE — verify before outputting:
   // 5. ELEVATOR PITCH — THREE VERSIONS
   // ───────────────────────────────────────────────────────────────────────────
   elevator_pitch: {
-    apiKey: 'AIzaSyCZ9GYM4YS2fUoyETb3yclqfUpWYw79SoI',
+    apiKey: 'AIzaSyAysEwRDP0rEVed4pmjfAgV4XgeGi7K2-o',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a specialist pitch coach and commercial copywriter who has helped hundreds of UK small business owners develop pitches that convert — at networking events, on discovery calls, on podcasts, and in written proposals. You understand that a great elevator pitch is not a description of a business. It is a door-opening statement that makes the listener want to know more.
  
