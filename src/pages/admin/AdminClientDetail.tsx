@@ -1355,8 +1355,8 @@ export default function AdminClientDetail() {
                       </div>
                     </div>
 
-                    {/* Second row: DOCX download */}
-                    {isCompleted && (docState?.docx_path || docState?.files_generated_at) && (
+                    {/* Second row: DOCX download and timestamp */}
+                    {isCompleted && (docState?.docx_path || docState?.generated_at) && (
                       <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3 flex-wrap">
                         {/* DOCX download */}
                         {docState?.docx_path && (
@@ -1367,9 +1367,9 @@ export default function AdminClientDetail() {
                           />
                         )}
 
-                        {docState?.files_generated_at && (
+                        {docState?.generated_at && (
                           <span className="font-inter text-xs text-secondary-text ml-auto">
-                            DOCX generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
+                            Generated {new Date(docState.generated_at).toLocaleString('en-GB')}
                           </span>
                         )}
                       </div>
