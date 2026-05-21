@@ -91,7 +91,7 @@ const faqs: FAQItem[] = [
     id: 'what-included',
     category: 'What You Get',
     question: 'What documents do I actually get?',
-    answer: 'Your package includes: Terms & Conditions (tailored to your specific services), Privacy Policy (GDPR-compliant), Client Agreement (for project-based work), Invoice Template (branded to your business), Social Media Policy, Email Communications Guidelines, and a Intake Form Template. Everything is delivered as both editable Word documents and professional PDFs. You own all the documents outright — no licensing restrictions.',
+    answer: 'The Business Foundations Pack includes 10 tailored documents created from your completed questionnaire, covering legal protection, client communication, positioning, and admin essentials for UK sole traders. This includes a bespoke client contract, Terms and Conditions, GDPR-compliant Privacy Policy, professional bio, elevator pitches, LinkedIn profile copy, branded invoice template, client welcome emails, late payment letters, and service description sheets.',
   },
   {
     id: 'custom',
