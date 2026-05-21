@@ -72,7 +72,6 @@ export default function AdminClientDetail() {
     delivered_to_client: boolean;
     pdf_path: string | null;
     docx_path: string | null;
-    file_path: string | null;
     files_generated_at: string | null;
   }>>({});
   const [docsLoading, setDocsLoading] = useState(false);
@@ -297,41 +296,6 @@ export default function AdminClientDetail() {
         [docType]: { ...prev[docType], status: 'failed', error_message: err.message || 'Network error' }
       }));
       setDocsPollingActive(false);
-    } finally {
-      setGeneratingDoc(null);
-    }
-  };
-
-  const handleGenerateFiles = async (docType: string) => {
-    if (!userId) return;
-    setGeneratingDoc(docType);
-
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-document`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ user_id: userId, document_type: docType, generate_files: true }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        await fetchGeneratedDocs();
-      } else {
-        setGeneratedDocs(prev => ({
-          ...prev,
-          [docType]: { ...prev[docType], status: 'failed', error_message: data.error || 'File generation failed' }
-        }));
-      }
-    } catch (err: any) {
-      setGeneratedDocs(prev => ({
-        ...prev,
-        [docType]: { ...prev[docType], status: 'failed', error_message: err.message || 'Network error' }
-      }));
     } finally {
       setGeneratingDoc(null);
     }
@@ -1331,43 +1295,85 @@ export default function AdminClientDetail() {
 
                       {/* Action buttons */}
                       <div className="flex items-center gap-2 shrink-0">
-                        {docState?.status === 'completed' && docState?.file_path ? (
-                          <div className="flex items-center gap-2 mt-2">
-                            <StorageDownloadButton
-                              filePath={docState.file_path}
-                              fileName={`${doc.key}.docx`}
-                              label="Download DOCX"
-                            />
-                            <a
-                              href={`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
-                                supabase.storage.from('generated-documents').getPublicUrl(docState.file_path).data.publicUrl
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-inter text-xs font-medium text-slate-700 bg-slate-100 border border-slate-300 rounded-md px-3 py-1.5 hover:bg-slate-200 transition-colors inline-flex items-center gap-1.5"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              View Document
-                            </a>
-                          </div>
-                        ) : docState?.status === 'generating' || isGenerating ? (
-                          <div className="flex items-center gap-2 text-amber-600 text-xs font-inter animate-pulse">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            AI Engine is processing structure & building document format...
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => handleGenerateDocument(doc.key)}
-                            disabled={isGenerating}
-                            className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2 disabled:opacity-50"
-                            style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                          >
+                        {/* Generate / Regenerate button */}
+                        <button
+                          onClick={() => handleGenerateDocument(doc.key)}
+                          disabled={isGenerating}
+                          className="font-inter text-sm font-medium text-white bg-navy rounded-md hover:bg-medium-blue transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                          style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                        >
+                          {isGenerating ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                          ) : isCompleted ? (
+                            <RefreshCw size={14} />
+                          ) : (
                             <FileOutput size={14} />
-                            Generate
+                          )}
+                          {isGenerating ? 'Generating...' : isCompleted ? 'Regenerate' : 'Generate'}
+                        </button>
+
+                        {/* View button */}
+                        {isCompleted && (
+                          <button
+                            onClick={() => setViewingDoc(viewingDoc === doc.key ? null : doc.key)}
+                            className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            <Eye size={14} />
+                            {viewingDoc === doc.key ? 'Hide' : 'View'}
+                          </button>
+                        )}
+
+                        {/* Edit button */}
+                        {isCompleted && (
+                          <button
+                            onClick={() => handleEditDocument(doc.key)}
+                            className="font-inter text-sm font-medium text-navy border border-border rounded-md hover:bg-off-white transition-colors inline-flex items-center gap-2"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            <Edit3 size={14} />
+                            Edit
+                          </button>
+                        )}
+
+                        {/* Deliver button */}
+                        {isCompleted && !isDelivered && (
+                          <button
+                            onClick={() => handleDeliverDocument(doc.key)}
+                            disabled={deliveringDoc === doc.key}
+                            className="font-inter text-sm font-medium text-white bg-success rounded-md hover:bg-green-600 transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            {deliveringDoc === doc.key ? (
+                              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                            ) : (
+                              <Send size={14} />
+                            )}
+                            Deliver
                           </button>
                         )}
                       </div>
                     </div>
+
+                    {/* Second row: DOCX download */}
+                    {isCompleted && (docState?.docx_path || docState?.files_generated_at) && (
+                      <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3 flex-wrap">
+                        {/* DOCX download */}
+                        {docState?.docx_path && (
+                          <StorageDownloadButton
+                            filePath={docState.docx_path}
+                            label="Download DOCX"
+                            fileName={`${doc.label.replace(/\s+/g, '_')}.docx`}
+                          />
+                        )}
+
+                        {docState?.files_generated_at && (
+                          <span className="font-inter text-xs text-secondary-text ml-auto">
+                            DOCX generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Document content viewer */}
                     {viewingDoc === doc.key && docState?.content_text && (
