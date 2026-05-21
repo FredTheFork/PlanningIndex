@@ -1269,7 +1269,7 @@ OUTPUT: Valid JSON only. Nothing else.`,
   // 8. NEW CLIENT WELCOME EMAIL SEQUENCE
   // ───────────────────────────────────────────────────────────────────────────
   welcome_email: {
-    apiKey: 'AIzaSyBML6AdJ2ESfbza8Z4qkUZ7fDFCRj-Mlhw',
+    apiKey: 'AIzaSyApwJzuh0CY_5ChAUl-1hWbfG-9AV9DYuk',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an expert in client onboarding communications, customer experience strategy, and email copywriting. You understand that the first email a client receives after purchasing determines whether they feel they made the right decision — or whether they feel doubt. These emails must eliminate doubt, build confidence, and communicate professionalism so precisely that the client feels they hired a team, not a freelancer.
  
