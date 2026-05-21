@@ -225,6 +225,7 @@ export default function AdminClientDetail() {
     { key: 'professional_invoice_template', label: 'Professional Invoice Template', icon: FileText },
     { key: 'welcome_email', label: 'New Client Welcome Email - 3', icon: FileText },
     { key: 'late_payment_letters', label: 'Late Payment Letters - 3', icon: FileText },
+    { key: 'service_description_sheets', label: 'Service Description Sheets', icon: FileText },
   ];
 
   const fetchGeneratedDocs = async () => {
