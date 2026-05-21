@@ -138,8 +138,8 @@ const faqs: FAQItem[] = [
   {
     id: 'price',
     category: 'Pricing & Investment',
-    question: 'Why is it £149?',
-    answer: 'We\'ve priced Foundationary to be accessible to sole traders, but not so cheap that it suggests the work isn\'t serious. £149 covers bespoke document generation, individual review for your situation, and ownership of everything you receive. It\'s not a subscription trap — you pay once and own the work. Compared to solicitor quotes (£1,000+) or the DIY risk of generic templates, it represents genuine value.',
+    question: 'Why is it £79?',
+    answer: 'We\'ve priced Foundationary to be accessible to sole traders, but not so cheap that it suggests the work isn\'t serious. £79 covers bespoke document generation, individual review for your situation, and ownership of everything you receive. It\'s not a subscription trap — you pay once and own the work. Compared to solicitor quotes (£1,000+) or the DIY risk of generic templates, it represents genuine value.',
   },
   {
     id: 'add-ons',

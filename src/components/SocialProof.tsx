@@ -2,7 +2,7 @@ const stats = [
   { number: '4.2M', label: 'UK Sole Traders' },
   { number: '10', label: 'Documents Per Pack' },
   { number: '24hrs', label: 'Delivery Time' },
-  { number: '£149', label: 'One-Time, No Subscription' },
+  { number: '£79', label: 'One-Time, No Subscription' },
 ];
 
 export default function SocialProof() {

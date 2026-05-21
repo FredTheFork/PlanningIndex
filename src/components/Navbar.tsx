@@ -105,7 +105,7 @@ export default function Navbar() {
                 className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
                 style={{ padding: '10px 20px', fontSize: '0.9rem' }}
               >
-                Get Your Pack — £149
+                Get Your Pack — £79
               </Link>
               <button
                 onClick={handleSignOut}
@@ -130,7 +130,7 @@ export default function Navbar() {
                 className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
                 style={{ padding: '10px 20px', fontSize: '0.9rem' }}
               >
-                Get Your Pack — £149
+                Get Your Pack — £79
               </Link>
             </>
           )}
@@ -185,7 +185,7 @@ export default function Navbar() {
                 style={{ padding: '14px 32px', fontSize: '1rem' }}
                 onClick={() => setMobileOpen(false)}
               >
-                Get Your Pack — £149
+                Get Your Pack — £79
               </Link>
               <button
                 onClick={handleSignOut}
@@ -211,7 +211,7 @@ export default function Navbar() {
                 style={{ padding: '14px 32px', fontSize: '1rem' }}
                 onClick={() => setMobileOpen(false)}
               >
-                Get Your Pack — £149
+                Get Your Pack — £79
               </Link>
             </>
           )}

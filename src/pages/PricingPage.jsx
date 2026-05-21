@@ -47,7 +47,7 @@ const comparisonRows = [
   { feature: 'LinkedIn profile script', foundationary: 'check', solicitor: 'cross', diy: 'cross', ai: 'cross' },
   { feature: 'Invoice template included', foundationary: 'check', solicitor: 'cross', diy: 'cross', ai: 'cross' },
   { feature: 'Welcome & late payment emails', foundationary: 'check', solicitor: 'cross', diy: 'cross', ai: 'cross' },
-  { feature: 'Typical cost', foundationary: '£149', solicitor: '£500–£2,000+', diy: '£30–£80/yr', ai: 'Free*' },
+  { feature: 'Typical cost', foundationary: '£79', solicitor: '£500–£2,000+', diy: '£30–£80/yr', ai: 'Free*' },
 ];
 
 const upsells = [
@@ -89,7 +89,7 @@ const upsells = [
 const faqs = [
   {
     q: 'Is this really a one-time payment?',
-    a: 'Yes. £149 is the total cost for all 10 documents. There is no subscription, no monthly fee, and no further charges unless you choose to add an optional extra. The Quarterly Document Refresh is the only recurring option and it is entirely your choice.',
+    a: 'Yes. £79 is the total cost for all 10 documents. There is no subscription, no monthly fee, and no further charges unless you choose to add an optional extra. The Quarterly Document Refresh is the only recurring option and it is entirely your choice.',
   },
   {
     q: 'What if I only need some of the documents?',
@@ -185,7 +185,7 @@ function PageHeader() {
             maxWidth: 560,
           }}
         >
-          £149 once. Everything you need to run your business properly from day one — no subscription, no upsells required, no ongoing cost unless you want one.
+          £79 once. Everything you need to run your business properly from day one — no subscription, no upsells required, no ongoing cost unless you want one.
         </p>
       </div>
     </section>
@@ -397,7 +397,7 @@ function MainPricingSection() {
                   className="font-inter font-extrabold text-navy block"
                   style={{ fontSize: '3.5rem', lineHeight: 1 }}
                 >
-                  £149
+                  £79
                 </span>
                 <span
                   className="font-inter font-normal text-secondary-text block mt-1"
@@ -634,7 +634,7 @@ function FinalCTA() {
           className="font-inter font-normal mt-4 leading-[1.7]"
           style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
         >
-          One questionnaire. One payment of £149. Ten documents delivered to your inbox within 24 hours.
+          One questionnaire. One payment of £79. Ten documents delivered to your inbox within 24 hours.
         </p>
         <a
           href="#" // TODO: Link to checkout

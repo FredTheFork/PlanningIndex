@@ -6,7 +6,7 @@ const testimonials = [
     initials: 'SM',
   },
   {
-    quote: 'The contract alone has already saved me a dispute. A client tried to ask for significantly more than we\'d agreed, and I was able to point directly to the scope clause. They backed down immediately. £149 was one of the best things I\'ve spent on my business.',
+    quote: 'The contract alone has already saved me a dispute. A client tried to ask for significantly more than we\'d agreed, and I was able to point directly to the scope clause. They backed down immediately. £79 was one of the best things I\'ve spent on my business.',
     name: 'James T.',
     role: 'Freelance Marketing Consultant, Manchester',
     initials: 'JT',

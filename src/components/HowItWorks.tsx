@@ -2,7 +2,7 @@ const steps = [
   {
     num: '1',
     title: 'Pay Once',
-    desc: 'One payment of £149. No subscriptions, no hidden extras, no ongoing commitments.',
+    desc: 'One payment of £79. No subscriptions, no hidden extras, no ongoing commitments.',
   },
   {
     num: '2',

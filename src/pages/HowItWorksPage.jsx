@@ -328,7 +328,7 @@ function WhatThisIs() {
 /* ─── 5. Timeline & Expectations ─── */
 
 const timelineSteps = [
-  { label: 'Payment', desc: 'You pay £149 once. No subscription.' },
+  { label: 'Payment', desc: 'You pay £79 once. No subscription.' },
   { label: 'Questionnaire submitted', desc: 'The 24-hour clock starts here.' },
   { label: 'Work begins', desc: 'Your documents are created and reviewed.' },
   { label: 'Delivery within 24 hours', desc: 'Everything lands in your inbox.' },

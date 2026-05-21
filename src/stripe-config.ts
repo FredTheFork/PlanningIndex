@@ -27,7 +27,7 @@ export const stripeProducts: StripeProduct[] = [
     name: 'Business Foundations Pack',
     description: 'Complete business foundations pack for UK sole traders — 10 bespoke documents delivered in 24 hours',
     mode: 'payment',
-    price: 149.00,
+    price: 79.00,
     currency: 'gbp',
     currencySymbol: '£',
   },

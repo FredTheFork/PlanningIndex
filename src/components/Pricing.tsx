@@ -84,7 +84,7 @@ export default function Pricing() {
 
             <div className="flex items-baseline justify-center gap-2 mt-6">
               <span className="font-inter font-extrabold text-navy" style={{ fontSize: '3.5rem', lineHeight: 1 }}>
-                £149
+                £79
               </span>
               <span className="font-inter font-normal text-secondary-text" style={{ fontSize: '0.875rem' }}>
                 one-time payment
