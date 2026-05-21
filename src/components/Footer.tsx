@@ -25,14 +25,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between gap-10">
           {/* Logo (white version) */}
           <Link to="/" className="flex items-center gap-2 shrink-0" style={{ height: 40 }}>
-            <svg width="36" height="40" viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="20" width="8" height="18" rx="1.5" fill="#FFFFFF" />
-              <rect x="26" y="20" width="8" height="18" rx="1.5" fill="#FFFFFF" />
-              <rect x="2" y="16" width="32" height="5" rx="1.5" fill="#FFFFFF" />
-              <path d="M18 2L22 10H14L18 2Z" fill="#FFFFFF" />
-              <rect x="16.5" y="10" width="3" height="8" rx="1" fill="#FFFFFF" />
-              <path d="M15 14L18 18L21 14" stroke="#FFFFFF" strokeWidth="1.5" fill="none" />
-            </svg>
+            <img src="/Firefly_GeminiFlash_please_do_not_change_the_shape_of_the_rocket_or_stand_or_any_of_the_blue_currently_in_422366.png" alt="Foundationary" style={{ height: 40, width: 'auto' }} />
             <div className="flex flex-col">
               <span className="font-inter font-bold text-white leading-none" style={{ fontSize: '1.15rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>F</span>oundationary
