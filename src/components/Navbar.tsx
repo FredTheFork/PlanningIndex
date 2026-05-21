@@ -52,7 +52,7 @@ export default function Navbar() {
 
           <div className="flex flex-col">
             <span className="font-inter font-bold text-navy leading-none" style={{ fontSize: '1.15rem' }}>
-              <span style={{ fontSize: '1.3rem' }}>F</span>oundationary
+              <span style={{ fontSize: '1.2rem' }}>F</span>oundationary
             </span>
             <span
               className="font-inter font-semibold text-secondary-text"
