@@ -936,7 +936,7 @@ const MARGIN_BTM_DXA  = 1270;
 const MARGIN_H_DXA    = 1134;
 const CONTENT_W_DXA   = PAGE_WIDTH_DXA - (MARGIN_H_DXA * 2); // 9638
 
-function renderDocx(model: DocumentModel, ds: DesignSystem, displayName: string): Uint8Array {
+async function renderDocx(model: DocumentModel, ds: DesignSystem, displayName: string): Promise<Uint8Array> {
   const sections: Paragraph[] = [];
 
   // ── Cover / title block ──
@@ -1065,7 +1065,7 @@ function renderDocx(model: DocumentModel, ds: DesignSystem, displayName: string)
     ],
   });
 
-  return Packer.toBuffer(doc) as unknown as Uint8Array;
+  return (await Packer.toBuffer(doc)) as unknown as Uint8Array;
 }
 
 // ── Cover block ──

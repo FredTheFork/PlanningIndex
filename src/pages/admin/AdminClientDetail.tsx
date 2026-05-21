@@ -301,6 +301,41 @@ export default function AdminClientDetail() {
     }
   };
 
+  const handleGenerateFiles = async (docType: string) => {
+    if (!userId) return;
+    setGeneratingDoc(docType);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ user_id: userId, document_type: docType, generate_files: true }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await fetchGeneratedDocs();
+      } else {
+        setGeneratedDocs(prev => ({
+          ...prev,
+          [docType]: { ...prev[docType], status: 'failed', error_message: data.error || 'File generation failed' }
+        }));
+      }
+    } catch (err: any) {
+      setGeneratedDocs(prev => ({
+        ...prev,
+        [docType]: { ...prev[docType], status: 'failed', error_message: err.message || 'Network error' }
+      }));
+    } finally {
+      setGeneratingDoc(null);
+    }
+  };
+
   const handleEditDocument = (docType: string) => {
     const doc = generatedDocs[docType];
     if (doc?.content_text) {
@@ -1355,20 +1390,32 @@ export default function AdminClientDetail() {
                       </div>
                     </div>
 
-                    {/* Second row: DOCX download and file timestamp */}
-                    {isCompleted && docState?.docx_path && (
+                    {/* Second row: DOCX download / file generation */}
+                    {isCompleted && (
                       <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3 flex-wrap">
-                        {/* DOCX download */}
-                        <StorageDownloadButton
-                          filePath={docState.docx_path}
-                          label="Download DOCX"
-                          fileName={`${doc.label.replace(/\s+/g, '_')}.docx`}
-                        />
-
-                        {docState?.files_generated_at && (
-                          <span className="font-inter text-xs text-secondary-text ml-auto">
-                            Generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
-                          </span>
+                        {docState?.docx_path ? (
+                          <>
+                            <StorageDownloadButton
+                              filePath={docState.docx_path}
+                              label="Download DOCX"
+                              fileName={`${doc.label.replace(/\s+/g, '_')}.docx`}
+                            />
+                            {docState?.files_generated_at && (
+                              <span className="font-inter text-xs text-secondary-text ml-auto">
+                                Generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleGenerateFiles(doc.key)}
+                            disabled={isGenerating}
+                            className="font-inter text-sm font-medium text-white bg-medium-blue rounded-md hover:bg-navy transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                            style={{ padding: '8px 14px', fontSize: '0.85rem' }}
+                          >
+                            <FileOutput size={14} />
+                            {isGenerating ? 'Generating Files...' : 'Generate DOCX'}
+                          </button>
                         )}
                       </div>
                     )}
