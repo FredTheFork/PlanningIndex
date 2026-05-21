@@ -29,7 +29,7 @@ function PageHeader() {
             fontSize: '0.75rem',
             letterSpacing: '0.15em',
             color: 'rgba(255,255,255,0.7)',
-            marginTop: '0px',
+            marginTop: '72px',
           }}
         >
           GET IN TOUCH
