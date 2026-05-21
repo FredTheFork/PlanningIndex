@@ -1355,21 +1355,19 @@ export default function AdminClientDetail() {
                       </div>
                     </div>
 
-                    {/* Second row: DOCX download and timestamp */}
-                    {isCompleted && (docState?.docx_path || docState?.generated_at) && (
+                    {/* Second row: DOCX download and file timestamp */}
+                    {isCompleted && docState?.docx_path && (
                       <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-3 flex-wrap">
                         {/* DOCX download */}
-                        {docState?.docx_path && (
-                          <StorageDownloadButton
-                            filePath={docState.docx_path}
-                            label="Download DOCX"
-                            fileName={`${doc.label.replace(/\s+/g, '_')}.docx`}
-                          />
-                        )}
+                        <StorageDownloadButton
+                          filePath={docState.docx_path}
+                          label="Download DOCX"
+                          fileName={`${doc.label.replace(/\s+/g, '_')}.docx`}
+                        />
 
-                        {docState?.generated_at && (
+                        {docState?.files_generated_at && (
                           <span className="font-inter text-xs text-secondary-text ml-auto">
-                            Generated {new Date(docState.generated_at).toLocaleString('en-GB')}
+                            Generated {new Date(docState.files_generated_at).toLocaleString('en-GB')}
                           </span>
                         )}
                       </div>
