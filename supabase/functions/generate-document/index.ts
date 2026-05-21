@@ -734,7 +734,7 @@ QUALITY GATE: tone matches brief exactly; no forbidden words; each version works
   },
 
   elevator_pitch: {
-    apiKey: 'AIzaSyCZ9GYM4YS2fUoyETb3yclqfUpWYw79SoI',
+    apiKey: 'AIzaSyAysEwRDP0rEVed4pmjfAgV4XgeGi7K2-o',
     model: 'gemini-2.5-flash',
     maxOutputTokens: 8000,
     systemPrompt: `You are a specialist pitch coach and commercial copywriter. Produce four elevator pitches based on the Master Brief.
