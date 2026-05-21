@@ -37,7 +37,7 @@ export default function HowItWorks() {
           {/* Connecting line (desktop) */}
           <div
             className="hidden md:block absolute top-[26px] left-[calc(16.67%+26px)] right-[calc(16.67%+26px)] border-t border-dashed border-medium-blue"
-            style={{ borderWidth: 1 }}
+            style={{ borderWidth: 1, zIndex: -1 }}
           />
 
           {steps.map((step) => (
