@@ -36,17 +36,19 @@ export default function HowItWorks() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-10 md:gap-0 mt-14 relative">
           {/* Connecting line (desktop) */}
           <div
-            className="hidden md:block absolute top-[26px] left-[calc(16.67%+26px)] right-[calc(16.67%+26px)] border-t border-dashed border-medium-blue"
-            style={{ borderWidth: 1 }}
+            className="hidden md:block absolute top-[26px] left-[calc(16.67%+26px)] right-[calc(16.67%+26px)] border-t border-dashed border-medium-blue pointer-events-none"
+            style={{ borderWidth: 1, zIndex: 0 }}
           />
 
           {steps.map((step) => (
-            <div key={step.num} className="flex flex-col items-center text-center max-w-[260px]">
+            <div key={step.num} className="flex flex-col items-center text-center max-w-[260px] relative">
               <div
                 className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-white font-inter font-bold shrink-0"
                 style={{
                   fontSize: '1.1rem',
                   background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)',
+                  zIndex: 1,
+                  position: 'relative',
                 }}
               >
                 {step.num}
