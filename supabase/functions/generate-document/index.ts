@@ -1922,52 +1922,39 @@ Deno.serve(async (req: Request) => {
         return errorResponse(err.message, 500);
       }
 
-      // Render DOCX (primary format)
-      let docxPath: string | null = null;
       try {
-        const docxBuffer = await renderDocx(documentModel, ds, displayName);
-        docxPath = `${user_id}/${document_type}.docx`;
-        const { error: upErr } = await supabase.storage
+        const docxBuffer = await compileJsonToDocxBuffer(documentModel);
+        const storagePath = `${user_id}/${document_type}_${Date.now()}.docx`;
+        
+        const { error: uploadError } = await supabase.storage
           .from('generated-documents')
-          .upload(docxPath, docxBuffer, {
+          .upload(storagePath, docxBuffer, {
             contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            upsert: true,
+            upsert: true
           });
-        if (upErr) {
-          console.error('DOCX upload error:', upErr.message);
-          docxPath = null;
-        }
-      } catch (renderErr: any) {
-        console.error('DOCX render error:', renderErr.message);
+
+        if (uploadError) throw uploadError;
+
+        await supabase
+          .from('generated_documents')
+          .update({ 
+            status: 'completed',
+            file_path: storagePath,
+            content_text: JSON.stringify(documentModel),
+            api_key_used: config.apiKey.substring(0, 10) + '...',
+            model_used: config.model,
+            generated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('client_id', user_id)
+          .eq('document_type', document_type);
+
+        return jsonResponse({ success: true, status: 'completed', document_type, file_path: storagePath });
+      } catch (generationError: any) {
+        console.error("Failed handling automatic DOCX translation:", generationError);
+        await failDocument(supabase, user_id, document_type, generationError.message);
+        return errorResponse(generationError.message, 500);
       }
-
-      // Serialise DocumentModel as content_text (JSON), HTML summary optional
-      const modelJson = JSON.stringify(documentModel);
-
-      const updatePayload: Record<string, any> = {
-        status:          'completed',
-        content_text:    modelJson,
-        api_key_used:    config.apiKey.substring(0, 10) + '...',
-        model_used:      config.model,
-        generated_at:    new Date().toISOString(),
-      };
-      if (docxPath) {
-        updatePayload.docx_path = docxPath;
-        updatePayload.files_generated_at = new Date().toISOString();
-      }
-
-      const { error: updateErr } = await supabase
-        .from('generated_documents')
-        .update(updatePayload)
-        .eq('client_id', user_id)
-        .eq('document_type', document_type);
-
-      if (updateErr) {
-        await failDocument(supabase, user_id, document_type, updateErr.message);
-        return errorResponse(updateErr.message, 500);
-      }
-
-      return jsonResponse({ success: true, status: 'completed', document_type, docx_path: docxPath });
     }
 
     // ── MODE 2: Generate/regenerate files from existing DocumentModel ────────
@@ -2036,6 +2023,104 @@ Deno.serve(async (req: Request) => {
     return errorResponse(err.message ?? 'Unknown error', 500);
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 11.5: DOCX GENERATION HELPER
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function compileJsonToDocxBuffer(jsonModel: any): Promise<Uint8Array> {
+  const sections = jsonModel.sections || [];
+  const docChildren: any[] = [];
+
+  if (jsonModel.metadata?.title) {
+    docChildren.push(
+      new Paragraph({
+        text: jsonModel.metadata.title,
+        heading: HeadingLevel.TITLE,
+        spacing: { after: 200 },
+      })
+    );
+  }
+  if (jsonModel.metadata?.subtitle) {
+    docChildren.push(
+      new Paragraph({
+        text: jsonModel.metadata.subtitle,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { after: 400 },
+      })
+    );
+  }
+
+  for (const section of sections) {
+    if (section.heading) {
+      docChildren.push(
+        new Paragraph({
+          text: section.heading,
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 240, after: 120 },
+        })
+      );
+    }
+
+    for (const block of section.blocks || []) {
+      if (block.type === 'paragraph' || block.type === 'clause') {
+        const textRuns: TextRun[] = [];
+        const parts = block.text.split(/(\*\*.*?\*\*)/g);
+        for (const part of parts) {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            textRuns.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+          } else {
+            textRuns.push(new TextRun({ text: part }));
+          }
+        }
+
+        docChildren.push(
+          new Paragraph({
+            children: textRuns,
+            spacing: { after: 120 },
+          })
+        );
+      } else if (block.type === 'bullet') {
+        docChildren.push(
+          new Paragraph({
+            text: block.text,
+            bullet: { level: block.level || 0 },
+            spacing: { after: 60 },
+          })
+        );
+      } else if (block.type === 'callout') {
+        docChildren.push(
+          new Table({
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({ text: block.label || "Note", heading: HeadingLevel.HEADING_3 }),
+                      new Paragraph({ text: block.text })
+                    ],
+                    borders: {
+                      left: { style: BorderStyle.SINGLE, size: 24, color: "0052CC" },
+                      top: { style: BorderStyle.NONE },
+                      right: { style: BorderStyle.NONE },
+                      bottom: { style: BorderStyle.NONE },
+                    },
+                  })
+                ]
+              })
+            ]
+          })
+        );
+      }
+    }
+  }
+
+  const doc = new DocxDocument({
+    sections: [{ children: docChildren }],
+  });
+
+  return await Packer.toUint8Array(doc);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION 12: SUPABASE HELPERS
