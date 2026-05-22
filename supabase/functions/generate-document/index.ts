@@ -1018,7 +1018,7 @@ QUALITY GATE:
   // 6. LINKEDIN PROFILE OPTIMISATION SCRIPT
   // ───────────────────────────────────────────────────────────────────────────
   linkedin_script: {
-    apiKey: 'AIzaSyBT-jBdlIkmfopbow2MyLGPU4xJI3L7z_Q',
+    apiKey: 'AIzaSyDYhe8vw5NC68ehoRNwa8G5MG7Fp0cVc_k',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a LinkedIn optimisation strategist who has managed profile rewrites for professionals across the UK and grown accounts from zero to significant inbound pipeline. You understand that LinkedIn operates on keyword relevance, profile completeness, and post engagement — and that every field in a LinkedIn profile is either working for or against the profile's search visibility.
  
