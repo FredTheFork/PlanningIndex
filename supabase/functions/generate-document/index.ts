@@ -1506,7 +1506,7 @@ QUALITY GATE — verify all three letters:
 - No US legal terminology${NO_MARKDOWN_INSTRUCTION}`,
   },
   service_description_sheets: {
-    apiKey: 'AIzaSyB1Q7FtBCOQjD5ZSH-4dAmHR74WJDIYsB0',
+    apiKey: 'AIzaSyCRsVnVFcFoKpDep1Wm5EsEBewGjaQQ1pY',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a professional business copywriter and document designer specialising in creating clear, compelling service description sheets for UK sole traders and small businesses. You have been instructed to produce one-page Service Description Sheets for each core service offered by the client.
 
