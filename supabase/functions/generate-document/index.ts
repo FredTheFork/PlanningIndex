@@ -1269,7 +1269,7 @@ OUTPUT: Valid JSON only. Nothing else.`,
   // 8. NEW CLIENT WELCOME EMAIL SEQUENCE
   // ───────────────────────────────────────────────────────────────────────────
   welcome_email: {
-    apiKey: 'AIzaSyCRsSMAhd0EWT4NpMaUzn8eHhDV1SF1YTA',
+    apiKey: 'AIzaSyApwJzuh0CY_5ChAUl-1hWbfG-9AV9DYuk',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are an expert in client onboarding communications, customer experience strategy, and email copywriting. You understand that the first email a client receives after purchasing determines whether they feel they made the right decision — or whether they feel doubt. These emails must eliminate doubt, build confidence, and communicate professionalism so precisely that the client feels they hired a team, not a freelancer.
  
@@ -1356,7 +1356,7 @@ QUALITY GATE:
   // 9. LATE PAYMENT LETTER SEQUENCE
   // ───────────────────────────────────────────────────────────────────────────
   late_payment_letters: {
-    apiKey: 'AIzaSyDvNfgWF6IVb5xGBDBkRaHWs_-KzFTrD-Q',
+    apiKey: 'AIzaSyDgIVttAJtekRQe15o8cmQhHNCAlphKDPo',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a UK commercial debt recovery specialist and legal document drafter with expertise in small business debt collection, the Late Payment of Commercial Debts (Interest) Act 1998, and the Pre-Action Protocol for Debt Claims under the Civil Procedure Rules. You have been instructed to draft a three-letter graduated late payment sequence for a UK sole trader or small business.
  
