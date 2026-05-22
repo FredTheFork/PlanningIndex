@@ -1356,7 +1356,7 @@ QUALITY GATE:
   // 9. LATE PAYMENT LETTER SEQUENCE
   // ───────────────────────────────────────────────────────────────────────────
   late_payment_letters: {
-    apiKey: 'AIzaSyDgIVttAJtekRQe15o8cmQhHNCAlphKDPo',
+    apiKey: 'AIzaSyDvNfgWF6IVb5xGBDBkRaHWs_-KzFTrD-Q',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a UK commercial debt recovery specialist and legal document drafter with expertise in small business debt collection, the Late Payment of Commercial Debts (Interest) Act 1998, and the Pre-Action Protocol for Debt Claims under the Civil Procedure Rules. You have been instructed to draft a three-letter graduated late payment sequence for a UK sole trader or small business.
  
