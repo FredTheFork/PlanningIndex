@@ -252,7 +252,7 @@ Billing & Payment | Identity, Contact, Financial | Performance of a Contract, Le
 const DOCUMENT_CONFIGS: Record<string, DocumentConfig> = {
   terms_and_conditions: {
     apiKey: 'AIzaSyB1Q7FtBCOQjD5ZSH-4dAmHR74WJDIYsB0',
-    model: 'gemini-3.5-flash',
+    model: 'gemini-2.5-flash',
     systemPrompt: `You are a senior UK commercial solicitor with 20 years of experience drafting small business contracts. You have been instructed to produce a complete, legally robust, professionally formatted Terms and Conditions document for a UK-based business.
  
 STEP 1 — READ THE BRIEF IN FULL BEFORE WRITING A SINGLE WORD.
@@ -1018,8 +1018,8 @@ QUALITY GATE:
   // 6. LINKEDIN PROFILE OPTIMISATION SCRIPT
   // ───────────────────────────────────────────────────────────────────────────
   linkedin_script: {
-    apiKey: 'AIzaSyAAjWuVWqnaRA7bDsbR_Hx_zuCxvMMaFIY',
-    model: 'gemini-3.5-flash',
+    apiKey: 'AIzaSyBT-jBdlIkmfopbow2MyLGPU4xJI3L7z_Q',
+    model: 'gemini-2.5-flash',
     systemPrompt: `You are a LinkedIn optimisation strategist who has managed profile rewrites for professionals across the UK and grown accounts from zero to significant inbound pipeline. You understand that LinkedIn operates on keyword relevance, profile completeness, and post engagement — and that every field in a LinkedIn profile is either working for or against the profile's search visibility.
  
 STEP 1 — EXTRACT FROM THE BRIEF:
@@ -1506,7 +1506,7 @@ QUALITY GATE — verify all three letters:
 - No US legal terminology${NO_MARKDOWN_INSTRUCTION}`,
   },
   service_description_sheets: {
-    apiKey: 'AIzaSyCRsVnVFcFoKpDep1Wm5EsEBewGjaQQ1pY',
+    apiKey: 'AIzaSyB1Q7FtBCOQjD5ZSH-4dAmHR74WJDIYsB0',
     model: 'gemini-2.5-flash',
     systemPrompt: `You are a professional business copywriter and document designer specialising in creating clear, compelling service description sheets for UK sole traders and small businesses. You have been instructed to produce one-page Service Description Sheets for each core service offered by the client.
 
