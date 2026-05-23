@@ -1140,115 +1140,14 @@ UK INVOICE LEGAL REQUIREMENTS (apply all):
 - Late payment interest notice (Late Payment of Commercial Debts (Interest) Act 1998)
  
 OUTPUT RULES:
-- Output ONLY valid JSON. No markdown, no code fences, no explanatory text, no comments.
-- The JSON must be parseable by JSON.parse() with no modification.
-- All placeholder fields that the client will fill in must use the format [PLACEHOLDER_NAME]
-- All business details from the brief must be populated as real values (not placeholders)
-- The latePaymentClause must correctly state "8% per annum above the Bank of England base rate" — never a fixed percentage
- 
-JSON SCHEMA (output exactly this structure, populated from the brief):
- 
-{
-  "businessInfo": {
-    "name": "[Business trading name from brief]",
-    "legalName": "[Full legal name from brief]",
-    "address": "[Full address from brief, line-broken with commas]",
-    "phone": "[Phone from brief or empty string]",
-    "email": "[Email from brief]",
-    "website": "[Website from brief or empty string]",
-    "vatNumber": "[VAT number if VAT registered, or empty string if not]",
-    "vatRegistered": false
-  },
-  "invoiceFields": {
-    "invoiceNumberFormat": "INV-[YEAR]-[0001]",
-    "dateLabel": "Invoice Date",
-    "dueDateLabel": "Payment Due",
-    "taxPointLabel": "Tax Point Date",
-    "poNumberLabel": "Purchase Order Number",
-    "showPoNumber": true
-  },
-  "billTo": {
-    "clientNameLabel": "Bill To",
-    "placeholders": {
-      "name": "[Client Name]",
-      "companyName": "[Company Name]",
-      "addressLine1": "[Address Line 1]",
-      "addressLine2": "[City, Postcode]",
-      "email": "[Client Email]",
-      "phone": "[Client Phone]"
-    }
-  },
-  "lineItemHeaders": {
-    "description": "Description of Services",
-    "quantity": "Qty / Units",
-    "unitPrice": "Unit Price",
-    "amount": "Amount"
-  },
-  "lineItemPlaceholders": [
-    {
-      "id": "item1",
-      "description": "[Service or product description — e.g. Monthly Retainer: Social Media Management]",
-      "quantity": "[1]",
-      "unitPrice": "[£0.00]",
-      "amount": "[£0.00]"
-    },
-    {
-      "id": "item2",
-      "description": "[Additional service or item]",
-      "quantity": "[1]",
-      "unitPrice": "[£0.00]",
-      "amount": "[£0.00]"
-    },
-    {
-      "id": "item3",
-      "description": "[Additional service or item]",
-      "quantity": "[1]",
-      "unitPrice": "[£0.00]",
-      "amount": "[£0.00]"
-    }
-  ],
-  "totalsSection": {
-    "subtotalLabel": "Subtotal",
-    "vatLabel": "VAT (20%)",
-    "showVat": false,
-    "vatRate": 0,
-    "totalLabel": "TOTAL DUE",
-    "currency": "GBP",
-    "currencySymbol": "£"
-  },
-  "paymentInstructions": {
-    "paymentDueDays": 7,
-    "paymentDueLabel": "Payment is due within 7 days of the invoice date.",
-    "acceptedMethods": ["[Payment method 1 from brief]", "[Payment method 2 from brief]"],
-    "bankTransferDetails": {
-      "show": true,
-      "accountName": "[Account Name from brief or PLACEHOLDER]",
-      "sortCode": "[XX-XX-XX]",
-      "accountNumber": "[XXXXXXXX]",
-      "paymentReference": "Please use the Invoice Number as your payment reference."
-    },
-    "stripeDetails": {
-      "show": false,
-      "link": "[Stripe payment link if applicable]"
-    },
-    "paypalDetails": {
-      "show": false,
-      "email": "[PayPal email if applicable]"
-    }
-  },
-  "latePaymentClause": "Invoices unpaid after the due date will accrue interest at 8% per annum above the Bank of England base rate, calculated daily, in accordance with the Late Payment of Commercial Debts (Interest) Act 1998. A statutory debt recovery charge of £40 (invoices under £1,000), £70 (£1,000–£9,999), or £100 (£10,000+) may also apply.",
-  "termsAndConditionsNote": "This invoice is issued subject to [Business Name]'s Terms and Conditions, available at [website URL from brief]. By accepting these services, the Client agrees to those terms.",
-  "disclaimerNote": "If you have any questions about this invoice, please contact us at [email from brief] before the payment due date.",
-  "optionalFields": {
-    "showSignatureField": false,
-    "showNotesField": true,
-    "notesPlaceholder": "[Any additional notes, project references, or messages to the client]",
-    "showPaymentTermsSummary": true
-  },
-  "footerText": "Thank you for your business. We look forward to continuing to work with you.",
-  "generatedBy": "Foundationary",
-  "version": "May 2026"
-}
+CRITICAL: Start your response with { and end with }. NEVER use markdown code fences.
+- DO NOT write \`\`\`json or \`\`\` or any code fence syntax
+- DO NOT write "Here is the JSON" or any introductory text
+- Output ONLY the raw JSON object starting with { and ending with }
+- The JSON must be parseable by JSON.parse() directly with no modification
+- All placeholder fields must use the format [PLACEHOLDER_NAME]
+- All business details from the brief must be populated as real values
+- The latePaymentClause must state "8% per annum above the Bank of England base rate"
  
 POPULATION RULES:
 - vatRegistered: set to true only if the brief confirms VAT registration; if true, populate vatNumber; set showVat to true and vatRate to 20
@@ -1271,85 +1170,65 @@ OUTPUT: Valid JSON only. Nothing else.`,
   welcome_email: {
     apiKey: 'AIzaSyApwJzuh0CY_5ChAUl-1hWbfG-9AV9DYuk',
     model: 'gemini-2.5-flash',
-    systemPrompt: `You are an expert in client onboarding communications, customer experience strategy, and email copywriting. You understand that the first email a client receives after purchasing determines whether they feel they made the right decision — or whether they feel doubt. These emails must eliminate doubt, build confidence, and communicate professionalism so precisely that the client feels they hired a team, not a freelancer.
- 
-STEP 1 — BRIEF EXTRACTION.
-Read the entire Master Brief. Record:
-- Business name and trading name
-- Services the client has purchased (read SERVICES OFFERED — this determines the email content)
-- Pricing model (subscription, project, retainer) — this determines what onboarding looks like
-- Payment terms: what has already been paid, what remains outstanding
-- Typical timeline for delivery
-- What the client needs to provide before work begins (client obligations from the brief)
-- Brand tone of voice — this governs every word of these emails
-- Business email address and any support/contact channels
-- Business owner's first name (or business name, per brand identity preference)
-- Words to avoid
- 
-STEP 2 — ONBOARDING LOGIC.
-Determine what onboarding looks like for this specific business:
-- If project-based: Email 1 = welcome + confirmation + what they need to send. Email 2 = contract reminder + intake materials. Email 3 = pre-project value-add.
-- If retainer/subscription: Email 1 = welcome + account setup + what happens next. Email 2 = first reporting period expectations / introduction to working rhythm. Email 3 = check-in and resources.
-- If digital product / platform access: Email 1 = access details + getting started. Email 2 = feature walkthrough or tips. Email 3 = check-in + next steps.
-Adapt the content and structure of all three emails to the correct model.
- 
-STEP 3 — PRODUCE THREE EMAILS.
-Each email must include:
-- A ready-to-send subject line
-- A greeting
-- A complete email body (not a template with gaps)
-- A sign-off with the name/business name as per brand identity preference
- 
-=== EMAIL 1 — IMMEDIATE WELCOME AND CONFIRMATION ===
-Send: immediately upon purchase or contract signing
-Purpose: confirm the engagement is live; eliminate any buyer's remorse; make the client feel that engaging this business was the best decision they've made this month
-Requirements:
-- Subject line: specific, warm, and confirmatory — not generic ("Your welcome email" is not acceptable)
-- Open with a genuine, warm acknowledgement of the client's decision — not sycophantic, just human
-- Confirm exactly what the client has engaged [Business Name] to do (reference the specific service from brief)
-- Confirm what happens next — the exact sequence of events in the next 24–72 hours
-- State what the client needs to provide and by when, if anything is required from their side
-- Mention payment: confirm deposit received (if applicable) or state when the first invoice will be issued
-- Provide the primary contact details for questions
-- Tone: confident, warm, professional — client should feel they're in safe hands
-- Length: 180–250 words
- 
-=== EMAIL 2 — CONTRACT, ONBOARDING, AND NEXT STEPS ===
-Send: 24 hours after Email 1 (or triggered by contract signature if not yet signed)
-Purpose: formally begin the working relationship; attach or reference the contract; collect anything needed from the client
-Requirements:
-- Subject line: action-oriented — client should know exactly what this email requires of them
-- Short confirmation that you're ready to begin
-- Reference the contract/agreement: state where it has been sent, how to sign, and the deadline for return
-- Onboarding checklist: list, clearly and without ambiguity, everything the client needs to provide before work can begin (adapt entirely from the brief's client obligations)
-- State the timeline: when work will begin, when they can expect the first update or milestone
-- Include any relevant links, forms, or tools (adapt from brief — e.g. questionnaire link, shared folder, CRM access)
-- End with reassurance and an invitation to ask questions
-- Tone: professional, clear, action-focused
-- Length: 200–280 words
- 
-=== EMAIL 3 — VALUE-ADD AND RELATIONSHIP DEEPENER ===
-Send: 5–7 days after Email 1, once the engagement is underway
-Purpose: reinforce the client's confidence; demonstrate expertise before delivering the first major output; begin building a relationship that extends beyond a single project
-Requirements:
-- Subject line: intriguing, value-focused — not administrative
-- Open with a brief, genuine observation relevant to their industry or situation (drawn from the brief — e.g. a challenge their industry faces, something relevant to their ideal client type)
-- Share one genuinely useful insight, resource, or piece of advice relevant to their business or the work you're doing for them — something they didn't pay for but which demonstrates your depth of knowledge
-- Update on progress: brief status note on where the work stands
-- Invite conversation: a low-friction prompt (a question, an observation, an offer to review something) that keeps the relationship warm without demanding anything
-- End warmly, reinforcing your commitment to the outcome
-- Tone: expert, engaged, human — this email should feel like it came from someone who is genuinely thinking about the client's business
-- Length: 180–220 words
- 
-QUALITY GATE:
-- All three emails are complete — no template gaps, no [INSERT HERE] placeholders
-- Service names are exactly as stated in the brief
-- Payment structure referenced correctly (deposit confirmation / invoice timing as per brief)
-- Tone matches the brief's BRAND VOICE section exactly
-- Words to avoid are not used in any of the three emails
-- Each email has a distinct purpose and does not duplicate the others
-- Subject lines are specific and compelling — not generic
-- Sign-off uses the correct name format per brand identity preference${NO_MARKDOWN_INSTRUCTION}`,
+    structuredOutput: true,
+    systemPrompt: `You are an expert in client onboarding communications and email copywriting. Produce a three-email welcome sequence as a single valid JSON object.
+
+STEP 1 - BRIEF EXTRACTION:
+Read the entire Master Brief. Record: business name, services purchased, pricing model, payment terms, timeline, client obligations, brand tone of voice, contact details, words to avoid.
+
+STEP 2 - ONBOARDING LOGIC:
+Adapt content based on pricing model (project-based, retainer/subscription, or digital product).
+
+OUTPUT RULES:
+CRITICAL: Start your response with { and end with }. NEVER use markdown code fences.
+- DO NOT write backticks or any code fence syntax
+- DO NOT write Here is the JSON or any introductory text
+- Output ONLY the raw JSON object starting with { and ending with }
+
+JSON STRUCTURE - output a valid JSON object with this structure:
+{
+  "metadata": {
+    "documentType": "welcome_email",
+    "businessName": "[from brief]",
+    "businessEmail": "[from brief]",
+    "businessPhone": "[from brief]",
+    "businessWebsite": "[from brief]",
+    "pricingModel": "[project/retainer/subscription from brief]",
+    "serviceEngaged": "[service name from brief]",
+    "toneOfVoice": "[from brief]"
+  },
+  "emails": [
+    {
+      "id": "email1",
+      "emailType": "immediate_welcome",
+      "sendTiming": "Immediately upon purchase or contract signing",
+      "subject": "Specific, warm, confirmatory subject line",
+      "greeting": "Hi [Client Name],",
+      "body": "Complete email body (180-250 words): warm acknowledgement, confirm service engaged, next steps, client obligations if any, payment mention, contact details.",
+      "signOff": "[Business Name or first name per brand identity]"
+    },
+    {
+      "id": "email2",
+      "emailType": "contract_onboarding",
+      "sendTiming": "24 hours after Email 1",
+      "subject": "Action-oriented subject line",
+      "greeting": "Hi [Client Name],",
+      "body": "Complete email body (200-280 words): ready to begin, contract reference, onboarding checklist, timeline, links/forms, reassurance.",
+      "signOff": "[Business Name or first name per brand identity]"
+    },
+    {
+      "id": "email3",
+      "emailType": "value_add",
+      "sendTiming": "5-7 days after Email 1",
+      "subject": "Intriguing, value-focused subject line",
+      "greeting": "Hi [Client Name],",
+      "body": "Complete email body (180-220 words): genuine observation about their industry, useful insight/resource, progress update, conversation invitation.",
+      "signOff": "[Business Name or first name per brand identity]"
+    }
+  ]
+}
+
+Write complete emails matching the briefs brand tone. No template gaps. Specific subject lines. OUTPUT: Valid JSON only.`,
   },
  
   // ───────────────────────────────────────────────────────────────────────────
@@ -1358,7 +1237,8 @@ QUALITY GATE:
   late_payment_letters: {
     apiKey: 'AIzaSyDgIVttAJtekRQe15o8cmQhHNCAlphKDPo',
     model: 'gemini-2.5-flash',
-    systemPrompt: `You are a UK commercial debt recovery specialist and legal document drafter with expertise in small business debt collection, the Late Payment of Commercial Debts (Interest) Act 1998, and the Pre-Action Protocol for Debt Claims under the Civil Procedure Rules. You have been instructed to draft a three-letter graduated late payment sequence for a UK sole trader or small business.
+    structuredOutput: true,
+    systemPrompt: `You are a UK commercial debt recovery specialist with expertise in the Late Payment of Commercial Debts (Interest) Act 1998 and the Pre-Action Protocol for Debt Claims. Produce a three-letter graduated late payment sequence as a single valid JSON object.
  
 STEP 1 — EXTRACT FROM THE BRIEF:
 - Business legal name, trading name, full address, email, phone
@@ -1397,7 +1277,54 @@ Letter 1: Professional and courteous. Assumes an oversight. No accusation.
 Letter 2: Firm, formal, and factual. References terms and statute. Introduces consequences. No threats — statements of right.
 Letter 3: Final and unambiguous. Legal Pre-Action notice. States exact amounts including accrued interest and recovery costs. States specific next steps. Must not contain any unlawful threat (no threats of criminal action, no defamatory statements, no harassment).
  
-STEP 4 — DOCUMENT STRUCTURE.
+OUTPUT RULES:
+CRITICAL: Start your response with { and end with }. NEVER use markdown code fences.
+- DO NOT write backticks or any code fence syntax
+- DO NOT write Here is the JSON or any introductory text
+- Output ONLY the raw JSON object
+
+JSON STRUCTURE - output a valid JSON object with this structure:
+{
+  "metadata": {
+    "documentType": "late_payment_letters",
+    "businessName": "[from brief]",
+    "businessAddress": "[from brief]",
+    "businessEmail": "[from brief]",
+    "businessPhone": "[from brief]",
+    "jurisdiction": "[from brief]",
+    "acceptedPaymentMethods": ["[from brief]"]
+  },
+  "letters": [
+    {
+      "id": "letter1",
+      "letterType": "friendly_reminder",
+      "timingNote": "3-5 working days after payment due date",
+      "subject": "Invoice [Invoice Number] - Payment Reminder",
+      "body": "Full letter body text here with [placeholders] for variable fields",
+      "signOff": "[Business Name]"
+    },
+    {
+      "id": "letter2",
+      "letterType": "formal_demand",
+      "timingNote": "7-10 working days after Letter 1",
+      "subject": "Invoice [Invoice Number] - Formal Payment Request - [Amount] OVERDUE",
+      "body": "Full letter body text here with [placeholders]. Include statutory interest notice (8% above Bank of England base rate) and recovery charge notice.",
+      "signOff": "[Business Name]"
+    },
+    {
+      "id": "letter3",
+      "letterType": "letter_before_action",
+      "timingNote": "14+ working days after Letter 2",
+      "subject": "Outstanding Debt - Invoice [Invoice Number] - [Amount]",
+      "heading": "LETTER BEFORE ACTION - NOTICE OF INTENTION TO COMMENCE LEGAL PROCEEDINGS",
+      "body": "Full letter body text with 7 paragraphs: (1) The debt, (2) Basis of claim, (3) Amount claimed with breakdown, (4) Pre-Action Protocol compliance, (5) Consequences, (6) Payment instructions, (7) Dispute note. Reference County Court (England/Wales) or Sheriff Court (Scotland).",
+      "closeStatement": "Please treat this matter with urgency. This is our final correspondence before legal action.",
+      "signOff": "[Full legal name], [Business Name]"
+    }
+  ]
+}
+
+Populate business details from brief. Use [bracketed placeholders] for client-specific values. Step 4 - DOCUMENT STRUCTURE:
  
 === LETTER 1 — FRIENDLY PAYMENT REMINDER ===
 Timing: 3–5 Working Days after payment due date
@@ -1503,7 +1430,9 @@ QUALITY GATE — verify all three letters:
 - Payment instructions appear in all three letters
 - Business name and contact details are consistent across all three
 - Tone escalates correctly: courteous → firm → formal/legal
-- No US legal terminology${NO_MARKDOWN_INSTRUCTION}`,
+- No US legal terminology
+
+OUTPUT: Valid JSON only. No markdown, no code fences. Start with { end with }.`,
   },
   service_description_sheets: {
     apiKey: 'AIzaSyB1Q7FtBCOQjD5ZSH-4dAmHR74WJDIYsB0',
@@ -2911,30 +2840,34 @@ Deno.serve(async (req: Request) => {
 
         const contentText = geminiData.candidates[0].content.parts[0].text;
 
-        // ── Check if structured output (for invoice template) ──
-        if (config.structuredOutput && document_type === 'professional_invoice_template') {
+        // ── Check if structured output (for invoice template, welcome email, late payment letters) ──
+        if (config.structuredOutput && (document_type === 'professional_invoice_template' || document_type === 'late_payment_letters' || document_type === 'welcome_email')) {
           try {
-            // Parse JSON from Gemini response
-            const invoiceData: InvoiceData = JSON.parse(contentText);
-
-            // Generate DOCX directly from structured data
-            const docxBytes = await generateInvoiceDocx(invoiceData, design);
-            const docxPath = `${user_id}/${document_type}.docx`;
-
-            const { error: docxUploadError } = await supabase.storage
-              .from('generated-documents')
-              .upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
-
-            if (docxUploadError) {
-              throw new Error(`DOCX upload failed: ${docxUploadError.message}`);
+            // Strip markdown code fences if present (Gemini sometimes wraps JSON in ```json ... ```)
+            let jsonText = contentText.trim();
+            if (jsonText.startsWith('```json')) {
+              jsonText = jsonText.slice(7);
+            } else if (jsonText.startsWith('```')) {
+              jsonText = jsonText.slice(3);
             }
+            if (jsonText.endsWith('```')) {
+              jsonText = jsonText.slice(0, -3);
+            }
+            jsonText = jsonText.trim();
 
-            // Update database with DOCX path, skip text/HTML storage
+            // Parse JSON from Gemini response
+            const structuredData = JSON.parse(jsonText);
+
+            // Store the JSON as text and HTML for frontend display
+            const contentHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:20px;}</style></head><body><pre style="white-space:pre-wrap;word-break:break-word;">${JSON.stringify(structuredData, null, 2)}</pre></body></html>`;
+
+            // Update database with structured JSON data
             const { error: updateError } = await supabase
               .from('generated_documents')
               .update({
                 status: 'completed',
-                docx_path: docxPath,
+                content_text: JSON.stringify(structuredData, null, 2),
+                content_html: contentHtml,
                 api_key_used: config.apiKey.substring(0, 10) + '...',
                 model_used: config.model,
                 generated_at: new Date().toISOString(),
@@ -2947,11 +2880,12 @@ Deno.serve(async (req: Request) => {
             }
 
             return new Response(
-              JSON.stringify({ success: true, status: 'completed', document_type, docx_path: docxPath }),
+              JSON.stringify({ success: true, status: 'completed', document_type, data: structuredData }),
               { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           } catch (structErr: any) {
             console.error(`Structured document generation failed for ${document_type}:`, structErr.message);
+            console.error('Raw response:', contentText.substring(0, 500));
             await supabase
               .from('generated_documents')
               .update({ status: 'failed', error_message: structErr.message })
