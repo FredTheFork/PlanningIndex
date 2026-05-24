@@ -74,7 +74,7 @@ export default function PersonalIntake() {
     }
 
     if (!foundAny) {
-      if (sections[0]?.id === 'intro') return { section: 1, fieldIndex: 0 };
+      // If no responses exist, start at the first data section (index 0)
       return { section: 0, fieldIndex: 0 };
     }
 
@@ -484,21 +484,21 @@ export default function PersonalIntake() {
     );
   }
 
-  // Intro page
+  // Intro page - show if no responses yet and first section is business_identity
   const hasExistingResponses = Object.keys(responses).length > 0;
-  if (currentSection === 0 && dataSections[0]?.id === 'intro' && !hasExistingResponses) {
-    const introSection = dataSections[0];
+  const showIntro = currentSection === 0 && !hasExistingResponses;
+  if (showIntro) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="max-w-lg text-center">
           <h1 className="font-inter font-bold text-navy text-3xl mb-4">
-            {introSection.title}
+            Welcome to Foundationary
           </h1>
           <div className="font-inter text-secondary-text leading-[1.7] text-sm whitespace-pre-line mb-8">
-            {introSection.description}
+            This questionnaire is the only information we will use to build your Business Foundations Pack. Please answer every question as fully and honestly as you can — the more detail you give us, the more tailored and precise your documents will be.{'\n\n'}Estimated time: 20-30 minutes.{'\n\n'}There are no wrong answers. Write the way you speak. We will turn it into something professional.{'\n\n'}Your documents will be ready within 24 hours of submission.
           </div>
           <button
-            onClick={() => goToSection(1)}
+            onClick={() => { setCurrentSection(0); setCurrentFieldIndex(0); }}
             className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors flex items-center gap-2 mx-auto"
             style={{ padding: '14px 32px', fontSize: '1rem' }}
           >
@@ -527,7 +527,7 @@ export default function PersonalIntake() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="font-inter text-sm font-medium text-navy">
-            Section {currentSection} of {totalSections - 1}
+            Section {currentSection + 1} of {totalSections}
           </span>
           <span className="font-inter text-xs text-secondary-text flex items-center gap-1">
             {saving && <span className="text-amber-600">Saving...</span>}
@@ -546,15 +546,15 @@ export default function PersonalIntake() {
           />
         </div>
         <div className="flex gap-1 mt-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {dataSections.filter(s => s.id !== 'intro').map((s, i) => {
-            const isCurrentSection = i + 1 === currentSection;
-            const isCompletedSection = i + 1 < currentSection;
-            const isLastSection = i + 1 === totalSections - 1;
+          {dataSections.map((s, i) => {
+            const isCurrentSection = i === currentSection;
+            const isCompletedSection = i < currentSection;
+            const isLastSection = i === totalSections - 1;
 
             return (
               <button
                 key={s.id}
-                onClick={() => goToSection(i + 1)}
+                onClick={() => goToSection(i)}
                 className={`font-inter text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${
                   isCurrentSection
                     ? isLastSection
