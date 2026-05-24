@@ -1,79 +1,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
-import { PDFDocument, StandardFonts, rgb, PageSizes } from 'npm:pdf-lib@1.17.1';
-import { Document as DocxDocument, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType, BorderStyle, Header, Footer, PageNumber, NumberFormat, TabStopType, TabStopPosition, PageBreak, ShadingType, Table, TableRow, TableCell, WidthType, VerticalAlign } from 'npm:docx@9.1.1';
+import { generatePdf, textToHtml, structuredToHtml, generateDocx, getDocumentLabel, ClientDesign } from './rendering.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
-
-// ── Client Design Preferences ──
-
-interface ClientDesign {
-  businessName: string;
-  legalName: string;
-  firstName: string;
-  brandColours: string;
-  visualStyle: string;
-  toneOfVoice: string[];
-  brandIdentity: string;
-  jurisdiction: string;
-  documentEmail: string;
-  businessPhone: string;
-  businessAddress: string;
-  websiteUrl: string;
-}
-
-function parseBrandColours(colourInput: string): { primary: string; secondary: string; accent: string } {
-  const defaults = { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' };
-  if (!colourInput || colourInput.trim() === '') return defaults;
-  const input = colourInput.trim().toLowerCase();
-  const hexPattern = /#([0-9a-f]{3}|[0-9a-f]{6})\b/gi;
-  const hexMatches = colourInput.match(hexPattern);
-  if (hexMatches && hexMatches.length >= 2) {
-    return { primary: hexMatches[0], secondary: hexMatches[1], accent: hexMatches.length >= 3 ? hexMatches[2] : hexMatches[1] };
-  }
-  if (hexMatches && hexMatches.length === 1) {
-    return { primary: hexMatches[0], secondary: defaults.secondary, accent: defaults.accent };
-  }
-  const colourMap: Record<string, { primary: string; secondary: string; accent: string }> = {
-    'navy': { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' },
-    'blue': { primary: '#1E40AF', secondary: '#3B82F6', accent: '#60A5FA' },
-    'dark blue': { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#4A90E2' },
-    'green': { primary: '#065F46', secondary: '#059669', accent: '#34D399' },
-    'sage': { primary: '#4A6741', secondary: '#6B8F5B', accent: '#8FB87A' },
-    'gold': { primary: '#92400E', secondary: '#B45309', accent: '#D97706' },
-    'red': { primary: '#991B1B', secondary: '#DC2626', accent: '#EF4444' },
-    'black': { primary: '#1A1A2E', secondary: '#374151', accent: '#6B7280' },
-    'purple': { primary: '#5B21B6', secondary: '#7C3AED', accent: '#A78BFA' },
-    'teal': { primary: '#0F766E', secondary: '#14B8A6', accent: '#2DD4BF' },
-    'coral': { primary: '#9A3412', secondary: '#C2410C', accent: '#EA580C' },
-    'warm': { primary: '#78350F', secondary: '#A16207', accent: '#CA8A04' },
-    'luxury': { primary: '#1C1917', secondary: '#44403C', accent: '#78716C' },
-  };
-  for (const [key, value] of Object.entries(colourMap)) {
-    if (input.includes(key)) return value;
-  }
-  return defaults;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const clean = hex.replace('#', '');
-  const full = clean.length === 3 ? clean[0]+clean[0]+clean[1]+clean[1]+clean[2]+clean[2] : clean;
-  return { r: parseInt(full.substring(0,2),16)/255, g: parseInt(full.substring(2,4),16)/255, b: parseInt(full.substring(4,6),16)/255 };
-}
-
-function getVisualStyleConfig(style: string): { headerFont: string; bodyFont: string; headerSize: number; bodySize: number; lineSpacing: number; sectionGap: number; decorativeElements: boolean; borderStyle: 'solid'|'double'|'accent'|'none'; cornerAccent: boolean } {
-  switch (style) {
-    case 'Clean and modern / minimal': return { headerFont:'Helvetica',bodyFont:'Helvetica',headerSize:14,bodySize:10,lineSpacing:14,sectionGap:20,decorativeElements:false,borderStyle:'none',cornerAccent:false };
-    case 'Corporate and formal': return { headerFont:'Helvetica',bodyFont:'Helvetica',headerSize:13,bodySize:10,lineSpacing:14,sectionGap:18,decorativeElements:true,borderStyle:'double',cornerAccent:false };
-    case 'Warm and friendly': return { headerFont:'Helvetica',bodyFont:'Helvetica',headerSize:14,bodySize:10.5,lineSpacing:15,sectionGap:16,decorativeElements:true,borderStyle:'accent',cornerAccent:false };
-    case 'Premium and luxury': return { headerFont:'Helvetica',bodyFont:'Helvetica',headerSize:13,bodySize:10,lineSpacing:14,sectionGap:22,decorativeElements:true,borderStyle:'solid',cornerAccent:true };
-    default: return { headerFont:'Helvetica',bodyFont:'Helvetica',headerSize:13,bodySize:10,lineSpacing:14,sectionGap:16,decorativeElements:false,borderStyle:'none',cornerAccent:false };
-  }
-}
 
 // ── Document Type Configuration ──
 
@@ -84,16 +17,6 @@ interface DocumentConfig {
   structuredOutput?: boolean;
 }
 
-interface InvoiceData {
-  businessInfo: { name:string; address:string; phone:string; email:string; website:string };
-  invoiceFields: { invoiceNumberFormat:string; dateFormat:string; dueDateFormat:string; poNumberFormat:string };
-  billToPlaceholders: { clientName:string; company:string; addressLine1:string; addressLine2:string; email:string; phone:string };
-  lineItems: Array<{ description:string; quantity:string; unitPrice:string; amount:string }>;
-  totals: { subtotal:string; vatPercentage:number; vatAmount:string; totalDue:string };
-  paymentTerms: { paymentDeadline:string; paymentMethods:string[]; bankDetails:{ accountName:string; sortCode:string; accountNumber:string }; paymentReference:string };
-  latePaymentClause: string;
-  notes: string[];
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FORMATTING RULESET — INJECTED INTO EVERY PROMPT
@@ -2840,335 +2763,29 @@ For each sheet:
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TEXT PARSING (handles ALL markdown variants)
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface TextBlock {
-  type: 'heading' | 'paragraph' | 'clause' | 'bullet' | 'subheading';
-  text: string;
-  level: number;
-}
-
-function convertMarkdownTableToColumns(text: string): string {
-  const lines = text.split('\n');
-  const result: string[] = [];
-  let inTable = false;
-  let headerRow: string[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.startsWith('|') && line.endsWith('|')) {
-      const cells = line.split('|').slice(1,-1).map(cell => cell.trim());
-      if (cells.some(cell => /^-+$/.test(cell))) { inTable = true; continue; }
-      if (inTable && headerRow.length === 0) { headerRow = cells; result.push(cells.join(' | ')); result.push(''); }
-      else if (inTable && cells.length > 0) { result.push(cells.join(' | ')); }
-    } else {
-      if (inTable && headerRow.length > 0) { inTable = false; headerRow = []; result.push(''); }
-      result.push(line);
-    }
-  }
-  return result.join('\n');
-}
-
-function stripMarkdown(text: string): string {
-  let cleaned = convertMarkdownTableToColumns(text);
-  cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, '$1');
-  cleaned = cleaned.replace(/__(.+?)__/g, '$1');
-  cleaned = cleaned.replace(/(?<!\w)\*(.+?)\*(?!\w)/g, '$1');
-  cleaned = cleaned.replace(/(?<!\w)_(.+?)_(?!\w)/g, '$1');
-  cleaned = cleaned.replace(/~~(.+?)~~/g, '$1');
-  cleaned = cleaned.replace(/`(.+?)`/g, '$1');
-  cleaned = cleaned.replace(/\[(.+?)\]\(.+?\)/g, '$1');
-  cleaned = cleaned.replace(/!\[.*?\]\(.+?\)/g, '');
-  cleaned = cleaned.replace(/^-{3,}$/gm, '');
-  cleaned = cleaned.replace(/^\*{3,}$/gm, '');
-  cleaned = cleaned.replace(/^_{3,}$/gm, '');
-  cleaned = cleaned.replace(/^>\s*/gm, '');
-  cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
-  return cleaned;
-}
-
-interface TableBlock { type: 'table'; headers: string[]; rows: string[][]; level: number; }
-
-function isTableRow(line: string): boolean {
-  const trimmed = line.trim();
-  return trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.includes('|'));
-}
-
-function parseTableBlock(lines: string[], startIndex: number): { table: TableBlock; endIndex: number } | null {
-  const rows: string[][] = []; let i = startIndex; let headers: string[] = []; let isFirstRow = true;
-  while (i < lines.length) {
-    const line = lines[i].trim();
-    if (!isTableRow(line)) break;
-    const cells = line.split('|').slice(1,-1).map(cell => cell.trim()).filter(cell => !(/^-+$/.test(cell)));
-    if (cells.length === 0) { i++; continue; }
-    if (isFirstRow) { headers = cells; isFirstRow = false; } else { rows.push(cells); }
-    i++;
-  }
-  if (headers.length > 0 && rows.length > 0) { return { table: { type: 'table', headers, rows, level: 0 }, endIndex: i }; }
-  return null;
-}
-
-function parseTextToBlocks(text: string): (TextBlock | TableBlock)[] {
-  const blocks: (TextBlock | TableBlock)[] = [];
-  const lines = text.split('\n');
-  let currentParagraph: string[] = [];
-
-  const flushParagraph = () => {
-    const joined = currentParagraph.join(' ').trim();
-    if (joined) {
-      const cleaned = stripMarkdown(joined);
-      if (cleaned) {
-        const clauseMatch = cleaned.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
-        if (clauseMatch) { blocks.push({ type: 'clause', text: cleaned, level: 0 }); }
-        else { blocks.push({ type: 'paragraph', text: cleaned, level: 0 }); }
-      }
-    }
-    currentParagraph = [];
-  };
-
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i]; const trimmed = line.trim();
-    if (!trimmed) { flushParagraph(); i++; continue; }
-    if (isTableRow(trimmed)) { flushParagraph(); const tableResult = parseTableBlock(lines, i); if (tableResult) { blocks.push(tableResult.table); i = tableResult.endIndex; continue; } }
-    if (/^===\s*.+\s*===$/.test(trimmed)) { flushParagraph(); const headingText = stripMarkdown(trimmed.replace(/^===\s*/,'').replace(/\s*===$/,'').trim()); blocks.push({ type: 'heading', text: headingText, level: 1 }); i++; continue; }
-    const mdHeadingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
-    if (mdHeadingMatch) { flushParagraph(); const level = Math.min(mdHeadingMatch[1].length,3); const headingText = stripMarkdown(mdHeadingMatch[2].trim()); if (level === 1) { blocks.push({ type: 'heading', text: headingText, level: 1 }); } else if (level === 2) { blocks.push({ type: 'heading', text: headingText, level: 2 }); } else { blocks.push({ type: 'subheading', text: headingText, level: 3 }); } i++; continue; }
-    if (/^[-*]\s+/.test(trimmed) || /^\u2022\s+/.test(trimmed)) { flushParagraph(); const bulletText = stripMarkdown(trimmed.replace(/^[-*\u2022]\s+/,'')); blocks.push({ type: 'bullet', text: bulletText, level: 0 }); i++; continue; }
-    if (/^\d+(?:\.\d+)*\.\s+/.test(trimmed)) { flushParagraph(); blocks.push({ type: 'clause', text: stripMarkdown(trimmed), level: 0 }); i++; continue; }
-    currentParagraph.push(trimmed); i++;
-  }
-  flushParagraph();
-  return blocks;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TEXT WRAPPING
-// ─────────────────────────────────────────────────────────────────────────────
-
-function wrapText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
-  const words = text.split(/\s+/); const lines: string[] = []; let currentLine = '';
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-    if (testWidth > maxWidth && currentLine) { lines.push(currentLine); currentLine = word; }
-    else { currentLine = testLine; }
-  }
-  if (currentLine) lines.push(currentLine);
-  return lines;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PDF GENERATION
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function generatePdf(text: string, documentLabel: string, businessName: string, design: ClientDesign): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  const pageWidth = PageSizes.A4[0]; const pageHeight = PageSizes.A4[1]; const margin = 72; const contentWidth = pageWidth-(margin*2);
-  const colours = parseBrandColours(design.brandColours);
-  const primaryRgb = hexToRgb(colours.primary); const secondaryRgb = hexToRgb(colours.secondary); const accentRgb = hexToRgb(colours.accent);
-  const styleConfig = getVisualStyleConfig(design.visualStyle);
-  const blocks = parseTextToBlocks(text);
-  const primaryColour = rgb(primaryRgb.r,primaryRgb.g,primaryRgb.b);
-  const secondaryColour = rgb(secondaryRgb.r,secondaryRgb.g,secondaryRgb.b);
-  const accentColour = rgb(accentRgb.r,accentRgb.g,accentRgb.b);
-  const darkText = rgb(0.15,0.15,0.2); const bodyText = rgb(0.2,0.2,0.25); const lightText = rgb(0.5,0.5,0.55);
-  const ruleLine = rgb(primaryRgb.r*0.3+0.7,primaryRgb.g*0.3+0.7,primaryRgb.b*0.3+0.7);
-  const lineHeight = styleConfig.lineSpacing; const fontSize = styleConfig.bodySize; const smallFontSize = 7.5;
-  const headingFontSize = styleConfig.headerSize; const titleFontSize = 20;
-
-  let page = pdfDoc.addPage(PageSizes.A4); let y = pageHeight-margin;
-
-  if (styleConfig.decorativeElements||styleConfig.cornerAccent) { page.drawRectangle({ x:0,y:pageHeight-6,width:pageWidth,height:6,color:primaryColour }); }
-  y = pageHeight-margin-20;
-  const titleWidth = boldFont.widthOfTextAtSize(documentLabel,titleFontSize);
-  page.drawText(documentLabel,{x:(pageWidth-titleWidth)/2,y,size:titleFontSize,font:boldFont,color:primaryColour});
-  y -= 24;
-  const displayName = design.brandIdentity==='My personal name is the brand — I want documents to feel personal' ? (design.firstName||businessName) : businessName;
-  const subtitle = `Prepared for ${displayName}`;
-  const subtitleWidth = italicFont.widthOfTextAtSize(subtitle,10);
-  page.drawText(subtitle,{x:(pageWidth-subtitleWidth)/2,y,size:10,font:italicFont,color:lightText});
-  y -= 16;
-  const branding = design.businessName;
-  const brandingWidth = font.widthOfTextAtSize(branding,9);
-  page.drawText(branding,{x:(pageWidth-brandingWidth)/2,y,size:9,font,color:lightText});
-  y -= 14;
-
-  if (styleConfig.borderStyle==='double') { page.drawLine({start:{x:margin,y},end:{x:pageWidth-margin,y},thickness:2,color:primaryColour}); y-=4; page.drawLine({start:{x:margin,y},end:{x:pageWidth-margin,y},thickness:0.5,color:secondaryColour}); y-=20; }
-  else if (styleConfig.borderStyle==='solid') { page.drawLine({start:{x:margin,y},end:{x:pageWidth-margin,y},thickness:2.5,color:primaryColour}); y-=20; }
-  else if (styleConfig.borderStyle==='accent') { page.drawRectangle({x:margin,y:y-2,width:4,height:8,color:accentColour}); page.drawLine({start:{x:margin+8,y},end:{x:pageWidth-margin,y},thickness:1,color:secondaryColour}); y-=20; }
-  else { page.drawLine({start:{x:margin,y},end:{x:pageWidth-margin,y},thickness:1,color:ruleLine}); y-=20; }
-
-  const contentAreaHeight = pageHeight-(margin*2); const minSectionStart = margin+(contentAreaHeight/3);
-
-  function estimateBlockHeight(block: TextBlock): number {
-    if (block.type==='heading') { const hSize = block.level===1?headingFontSize:11; return hSize+4+styleConfig.sectionGap; }
-    if (block.type==='subheading') return 10.5+16;
-    if (block.type==='clause') { const lines = wrapText(block.text,font,fontSize,contentWidth-24); return (lines.length*lineHeight)+4; }
-    if (block.type==='bullet') { const lines = wrapText(block.text,font,fontSize,contentWidth-36); return (lines.length*lineHeight)+2; }
-    const lines = wrapText(block.text,font,fontSize,contentWidth); return (lines.length*lineHeight)+6;
-  }
-
-  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
-    const block = blocks[blockIndex];
-    const blockHeight = estimateBlockHeight(block);
-
-    if (block.type==='heading') {
-      const nextBlock = blocks[blockIndex+1]; const nextHeight = nextBlock?estimateBlockHeight(nextBlock):0;
-      if (y<minSectionStart||y-margin<blockHeight+nextHeight) { page = pdfDoc.addPage(PageSizes.A4); y = pageHeight-margin; }
-      const headingText = block.text; const headingSize = block.level===1?headingFontSize:11;
-      page.drawText(headingText,{x:margin,y,size:headingSize,font:boldFont,color:block.level===1?primaryColour:secondaryColour});
-      y -= 4;
-      const headingWidth = boldFont.widthOfTextAtSize(headingText,headingSize);
-      if (styleConfig.decorativeElements) { page.drawLine({start:{x:margin,y},end:{x:margin+Math.min(headingWidth+10,contentWidth),y},thickness:1.5,color:accentColour}); }
-      else { page.drawLine({start:{x:margin,y},end:{x:margin+Math.min(headingWidth,contentWidth),y},thickness:0.75,color:ruleLine}); }
-      y -= styleConfig.sectionGap;
-    } else if (block.type==='subheading') {
-      const nextBlock = blocks[blockIndex+1]; const nextHeight = nextBlock?estimateBlockHeight(nextBlock):0;
-      if (y<minSectionStart||y-margin<blockHeight+nextHeight) { page = pdfDoc.addPage(PageSizes.A4); y = pageHeight-margin; }
-      page.drawText(block.text,{x:margin,y,size:10.5,font:boldFont,color:secondaryColour}); y -= 16;
-    } else if (block.type==='clause') {
-      const lines = wrapText(block.text,font,fontSize,contentWidth-24);
-      for (let i=0;i<lines.length;i++) { if (y<margin+20) { page=pdfDoc.addPage(PageSizes.A4); y=pageHeight-margin; } page.drawText(lines[i],{x:margin+24,y,size:fontSize,font,color:bodyText}); y-=lineHeight; }
-      y -= 4;
-    } else if (block.type==='bullet') {
-      const lines = wrapText(block.text,font,fontSize,contentWidth-36);
-      for (let i=0;i<lines.length;i++) { if (y<margin+20) { page=pdfDoc.addPage(PageSizes.A4); y=pageHeight-margin; } if (i===0) { page.drawText('\u2022',{x:margin+12,y,size:fontSize,font,color:accentColour}); } page.drawText(lines[i],{x:margin+36,y,size:fontSize,font,color:bodyText}); y-=lineHeight; }
-      y -= 2;
-    } else {
-      const lines = wrapText(block.text,font,fontSize,contentWidth);
-      for (const line of lines) { if (y<margin+20) { page=pdfDoc.addPage(PageSizes.A4); y=pageHeight-margin; } page.drawText(line,{x:margin,y,size:fontSize,font,color:bodyText}); y-=lineHeight; }
-      y -= 6;
-    }
-  }
-
-  const pages = pdfDoc.getPages();
-  const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  for (let i=0;i<pages.length;i++) {
-    const p = pages[i]; const footerY = 36;
-    p.drawLine({start:{x:margin,y:footerY+14},end:{x:pageWidth-margin,y:footerY+14},thickness:0.5,color:ruleLine});
-    p.drawText(design.businessName,{x:margin,y:footerY,size:smallFontSize,font:italicFont,color:lightText});
-    const pageStr = `Page ${i+1} of ${pages.length}`; const pageStrWidth = font.widthOfTextAtSize(pageStr,smallFontSize);
-    p.drawText(pageStr,{x:pageWidth-margin-pageStrWidth,y:footerY,size:smallFontSize,font,color:lightText});
-    const dateWidth = font.widthOfTextAtSize(dateStr,smallFontSize);
-    p.drawText(dateStr,{x:(pageWidth-dateWidth)/2,y:footerY,size:smallFontSize,font,color:lightText});
-    if (i===pages.length-1&&(styleConfig.decorativeElements||styleConfig.cornerAccent)) { p.drawRectangle({x:0,y:0,width:pageWidth,height:4,color:primaryColour}); }
-  }
-  return pdfDoc.save();
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INVOICE DOCX GENERATION
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function generateInvoiceDocx(invoiceData: InvoiceData, design: ClientDesign): Promise<Uint8Array> {
-  const colours = parseBrandColours(design.brandColours);
-  const primaryHex = colours.primary.replace('#',''); const accentHex = colours.accent.replace('#','');
-  const children: Paragraph[] = [];
-
-  const headerTable = new Table({ rows: [ new TableRow({ children: [ new TableCell({ children: [ new Paragraph({ children: [new TextRun({text:invoiceData.businessInfo.name,bold:true,size:28,font:'Calibri',color:primaryHex})] }), new Paragraph({ children: [new TextRun({text:invoiceData.businessInfo.address,size:18,font:'Calibri',color:'262626'})], spacing:{before:40} }), new Paragraph({ children: [new TextRun({text:invoiceData.businessInfo.phone,size:18,font:'Calibri',color:'262626'})] }), new Paragraph({ children: [new TextRun({text:invoiceData.businessInfo.email,size:18,font:'Calibri',color:'262626'})] }) ], verticalAlign:VerticalAlign.TOP, borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}} }), new TableCell({ children: [ new Paragraph({ children: [new TextRun({text:'Invoice Details',bold:true,size:20,font:'Calibri',color:primaryHex})] }), new Paragraph({ children: [new TextRun({text:`Invoice: ${invoiceData.invoiceFields.invoiceNumberFormat}`,size:18,font:'Calibri',color:'262626'})], spacing:{before:80} }), new Paragraph({ children: [new TextRun({text:`Date: ${invoiceData.invoiceFields.dateFormat}`,size:18,font:'Calibri',color:'262626'})] }), new Paragraph({ children: [new TextRun({text:`Due: ${invoiceData.invoiceFields.dueDateFormat}`,size:18,font:'Calibri',color:'262626'})] }), new Paragraph({ children: [new TextRun({text:`PO: ${invoiceData.invoiceFields.poNumberFormat}`,size:18,font:'Calibri',color:'262626'})] }) ], verticalAlign:VerticalAlign.TOP, shading:{type:ShadingType.CLEAR,fill:'F5F5F5'} }) ] }) ], width:{size:100,type:WidthType.PERCENTAGE}, borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.SINGLE,size:6,color:primaryHex},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE},insideVertical:{style:BorderStyle.SINGLE,size:1,color:'CCCCCC'}} });
-  children.push(headerTable); children.push(new Paragraph({spacing:{after:200}}));
-  children.push(new Paragraph({children:[new TextRun({text:'BILL TO',bold:true,size:22,font:'Calibri',color:primaryHex})],spacing:{after:100},border:{bottom:{style:BorderStyle.SINGLE,size:4,color:accentHex}}}));
-  const billToTable = new Table({ rows: [ new TableRow({ children: [ new TableCell({ children: [ new Paragraph({children:[new TextRun({text:invoiceData.billToPlaceholders.clientName,bold:true,size:20,font:'Calibri',color:'262626'})]}), new Paragraph({children:[new TextRun({text:invoiceData.billToPlaceholders.company,size:20,font:'Calibri',color:'262626'})],spacing:{before:40}}), new Paragraph({children:[new TextRun({text:invoiceData.billToPlaceholders.addressLine1,size:20,font:'Calibri',color:'262626'})]}), new Paragraph({children:[new TextRun({text:invoiceData.billToPlaceholders.addressLine2,size:20,font:'Calibri',color:'262626'})]}), new Paragraph({children:[new TextRun({text:invoiceData.billToPlaceholders.email,size:20,font:'Calibri',color:'262626'})],spacing:{before:40}}), new Paragraph({children:[new TextRun({text:invoiceData.billToPlaceholders.phone,size:20,font:'Calibri',color:'262626'})]}) ], borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}} }) ] }) ], width:{size:100,type:WidthType.PERCENTAGE} });
-  children.push(billToTable); children.push(new Paragraph({spacing:{after:300}}));
-  children.push(new Paragraph({children:[new TextRun({text:'SERVICES RENDERED',bold:true,size:22,font:'Calibri',color:primaryHex})],spacing:{after:100},border:{bottom:{style:BorderStyle.SINGLE,size:4,color:accentHex}}}));
-  const lineItemsRows: TableRow[] = [ new TableRow({ children: [ new TableCell({children:[new Paragraph({children:[new TextRun({text:'Description',bold:true,size:20,font:'Calibri',color:'FFFFFF'})],alignment:AlignmentType.LEFT})],shading:{type:ShadingType.CLEAR,fill:primaryHex},verticalAlign:VerticalAlign.CENTER}), new TableCell({children:[new Paragraph({children:[new TextRun({text:'Quantity',bold:true,size:20,font:'Calibri',color:'FFFFFF'})],alignment:AlignmentType.CENTER})],shading:{type:ShadingType.CLEAR,fill:primaryHex},verticalAlign:VerticalAlign.CENTER}), new TableCell({children:[new Paragraph({children:[new TextRun({text:'Unit Price',bold:true,size:20,font:'Calibri',color:'FFFFFF'})],alignment:AlignmentType.RIGHT})],shading:{type:ShadingType.CLEAR,fill:primaryHex},verticalAlign:VerticalAlign.CENTER}), new TableCell({children:[new Paragraph({children:[new TextRun({text:'Amount',bold:true,size:20,font:'Calibri',color:'FFFFFF'})],alignment:AlignmentType.RIGHT})],shading:{type:ShadingType.CLEAR,fill:primaryHex},verticalAlign:VerticalAlign.CENTER}) ], height:{value:400,rule:'auto'} }) ];
-  invoiceData.lineItems.forEach((item,idx) => { lineItemsRows.push(new TableRow({ children: [ new TableCell({children:[new Paragraph({children:[new TextRun({text:item.description,size:20,font:'Calibri',color:'262626'})],alignment:AlignmentType.LEFT})],shading:{type:ShadingType.CLEAR,fill:idx%2===0?'FFFFFF':'F5F5F5'}}), new TableCell({children:[new Paragraph({children:[new TextRun({text:item.quantity,size:20,font:'Calibri',color:'262626'})],alignment:AlignmentType.CENTER})],shading:{type:ShadingType.CLEAR,fill:idx%2===0?'FFFFFF':'F5F5F5'}}), new TableCell({children:[new Paragraph({children:[new TextRun({text:item.unitPrice,size:20,font:'Calibri',color:'262626'})],alignment:AlignmentType.RIGHT})],shading:{type:ShadingType.CLEAR,fill:idx%2===0?'FFFFFF':'F5F5F5'}}), new TableCell({children:[new Paragraph({children:[new TextRun({text:item.amount,size:20,font:'Calibri',color:'262626'})],alignment:AlignmentType.RIGHT})],shading:{type:ShadingType.CLEAR,fill:idx%2===0?'FFFFFF':'F5F5F5'}}) ], height:{value:300,rule:'auto'} })); });
-  const lineItemsTable = new Table({ rows:lineItemsRows, width:{size:100,type:WidthType.PERCENTAGE}, borders:{top:{style:BorderStyle.SINGLE,size:6,color:primaryHex},bottom:{style:BorderStyle.SINGLE,size:6,color:primaryHex},left:{style:BorderStyle.SINGLE,size:6,color:primaryHex},right:{style:BorderStyle.SINGLE,size:6,color:primaryHex},insideHorizontal:{style:BorderStyle.SINGLE,size:1,color:'CCCCCC'},insideVertical:{style:BorderStyle.SINGLE,size:1,color:'CCCCCC'}} });
-  children.push(lineItemsTable); children.push(new Paragraph({spacing:{after:200}}));
-  const totalsRows = [ new TableRow({children:[new TableCell({children:[new Paragraph({children:[new TextRun({text:'',size:20,font:'Calibri'})],alignment:AlignmentType.LEFT})],borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:'Subtotal',size:20,font:'Calibri',color:'262626'})],alignment:AlignmentType.RIGHT})],borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:invoiceData.totals.subtotal,size:20,font:'Calibri',bold:true,color:'262626'})],alignment:AlignmentType.RIGHT})],borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}})]}), new TableRow({children:[new TableCell({children:[new Paragraph({children:[new TextRun({text:'',size:20,font:'Calibri'})],alignment:AlignmentType.LEFT})],borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:`VAT (${invoiceData.totals.vatPercentage}%)`,size:20,font:'Calibri',color:'262626'})],alignment:AlignmentType.RIGHT})],borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:invoiceData.totals.vatAmount,size:20,font:'Calibri',bold:true,color:'262626'})],alignment:AlignmentType.RIGHT})],borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}})]}), new TableRow({children:[new TableCell({children:[new Paragraph({children:[new TextRun({text:'',size:20,font:'Calibri'})],alignment:AlignmentType.LEFT})],borders:{top:{style:BorderStyle.SINGLE,size:6,color:primaryHex},bottom:{style:BorderStyle.SINGLE,size:6,color:primaryHex},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:'TOTAL DUE',size:22,font:'Calibri',bold:true,color:'FFFFFF'})],alignment:AlignmentType.RIGHT})],shading:{type:ShadingType.CLEAR,fill:primaryHex},borders:{top:{style:BorderStyle.SINGLE,size:6,color:primaryHex},bottom:{style:BorderStyle.SINGLE,size:6,color:primaryHex},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:invoiceData.totals.totalDue,size:22,font:'Calibri',bold:true,color:'FFFFFF'})],alignment:AlignmentType.RIGHT})],shading:{type:ShadingType.CLEAR,fill:primaryHex},borders:{top:{style:BorderStyle.SINGLE,size:6,color:primaryHex},bottom:{style:BorderStyle.SINGLE,size:6,color:primaryHex},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE}}})]})] ;
-  const totalsTable = new Table({ rows:totalsRows, width:{size:100,type:WidthType.PERCENTAGE} });
-  children.push(totalsTable); children.push(new Paragraph({spacing:{after:300}}));
-  children.push(new Paragraph({children:[new TextRun({text:'PAYMENT TERMS & METHODS',bold:true,size:22,font:'Calibri',color:primaryHex})],spacing:{after:100},border:{bottom:{style:BorderStyle.SINGLE,size:4,color:accentHex}}}));
-  children.push(new Paragraph({children:[new TextRun({text:`Payment Deadline: ${invoiceData.paymentTerms.paymentDeadline}`,size:20,font:'Calibri',color:'262626'})],spacing:{after:80}}));
-  children.push(new Paragraph({children:[new TextRun({text:'Accepted Payment Methods:',bold:true,size:20,font:'Calibri',color:'262626'})],spacing:{after:40}}));
-  invoiceData.paymentTerms.paymentMethods.forEach(method => { children.push(new Paragraph({children:[new TextRun({text:method,size:20,font:'Calibri',color:'262626'})],spacing:{after:20},indent:{left:720}})); });
-  children.push(new Paragraph({spacing:{after:100}}));
-  children.push(new Paragraph({children:[new TextRun({text:'Bank Details:',bold:true,size:20,font:'Calibri',color:'262626'})],spacing:{after:40}}));
-  children.push(new Paragraph({children:[new TextRun({text:`Account: ${invoiceData.paymentTerms.bankDetails.accountName}`,size:20,font:'Calibri',color:'262626'})],spacing:{after:20},indent:{left:720}}));
-  children.push(new Paragraph({children:[new TextRun({text:`Sort Code: ${invoiceData.paymentTerms.bankDetails.sortCode}`,size:20,font:'Calibri',color:'262626'})],spacing:{after:20},indent:{left:720}}));
-  children.push(new Paragraph({children:[new TextRun({text:`Account Number: ${invoiceData.paymentTerms.bankDetails.accountNumber}`,size:20,font:'Calibri',color:'262626'})],spacing:{after:100},indent:{left:720}}));
-  children.push(new Paragraph({children:[new TextRun({text:`Reference: ${invoiceData.paymentTerms.paymentReference}`,size:20,font:'Calibri',color:'262626'})],spacing:{after:200}}));
-  children.push(new Paragraph({children:[new TextRun({text:'LATE PAYMENT NOTICE',bold:true,size:22,font:'Calibri',color:primaryHex})],spacing:{after:100},border:{bottom:{style:BorderStyle.SINGLE,size:4,color:accentHex}}}));
-  children.push(new Paragraph({children:[new TextRun({text:invoiceData.latePaymentClause,size:20,font:'Calibri',color:'262626'})],spacing:{after:200}}));
-  if (invoiceData.notes&&invoiceData.notes.length>0) { children.push(new Paragraph({children:[new TextRun({text:'NOTES',bold:true,size:22,font:'Calibri',color:primaryHex})],spacing:{after:100},border:{bottom:{style:BorderStyle.SINGLE,size:4,color:accentHex}}})); invoiceData.notes.forEach(note => { children.push(new Paragraph({children:[new TextRun({text:note,size:20,font:'Calibri',color:'262626'})],spacing:{after:40},indent:{left:720}})); }); children.push(new Paragraph({spacing:{after:200}})); }
-  children.push(new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:4,color:primaryHex}},spacing:{before:400}}));
-  children.push(new Paragraph({children:[new TextRun({text:'Thank you for your business.',italics:true,size:20,font:'Calibri',color:'262626'})],alignment:AlignmentType.CENTER,spacing:{after:40}}));
-  children.push(new Paragraph({children:[new TextRun({text:`${invoiceData.businessInfo.name} | ${invoiceData.businessInfo.email} | ${invoiceData.businessInfo.phone} | ${invoiceData.businessInfo.website}`,italics:true,size:18,font:'Calibri',color:'262626'})],alignment:AlignmentType.CENTER}));
-  const doc = new DocxDocument({ sections:[{ properties:{page:{margin:{top:1440,right:1440,bottom:1440,left:1440}}}, children }] });
-  const buffer = await Packer.toBuffer(doc); return new Uint8Array(buffer);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DOCX GENERATION
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function generateDocx(text: string, documentLabel: string, businessName: string, design: ClientDesign): Promise<Uint8Array> {
-  const blocks = parseTextToBlocks(text);
-  const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  const colours = parseBrandColours(design.brandColours);
-  const primaryHex = colours.primary.replace('#',''); const secondaryHex = colours.secondary.replace('#',''); const accentHex = colours.accent.replace('#','');
-  const styleConfig = getVisualStyleConfig(design.visualStyle);
-  const displayName = design.brandIdentity==='My personal name is the brand — I want documents to feel personal' ? (design.firstName||businessName) : businessName;
-  const children: Paragraph[] = [];
-
-  children.push(new Paragraph({children:[new TextRun({text:documentLabel,bold:true,size:44,font:'Calibri',color:primaryHex})],alignment:AlignmentType.CENTER,spacing:{after:100}}));
-  children.push(new Paragraph({children:[new TextRun({text:`Prepared for ${displayName}`,italics:true,size:20,font:'Calibri',color:'737373'})],alignment:AlignmentType.CENTER,spacing:{after:50}}));
-  children.push(new Paragraph({children:[new TextRun({text:design.businessName,size:18,font:'Calibri',color:'737373'})],alignment:AlignmentType.CENTER,spacing:{after:200}}));
-  children.push(new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:styleConfig.decorativeElements?12:6,color:primaryHex}},spacing:{after:400}}));
-
-  for (const block of blocks) {
-    if (block.type==='heading') {
-      const isMainHeading = block.level===1;
-      children.push(new Paragraph({children:[new TextRun({text:block.text,bold:true,size:isMainHeading?28:24,font:'Calibri',color:isMainHeading?primaryHex:secondaryHex})],heading:isMainHeading?HeadingLevel.HEADING_2:HeadingLevel.HEADING_3,spacing:{before:isMainHeading?360:240,after:120},border:{bottom:{style:styleConfig.decorativeElements?BorderStyle.SINGLE:BorderStyle.NONE,size:styleConfig.decorativeElements?4:0,color:accentHex}}}));
-    } else if (block.type==='subheading') {
-      children.push(new Paragraph({children:[new TextRun({text:block.text,bold:true,size:22,font:'Calibri',color:secondaryHex})],heading:HeadingLevel.HEADING_4,spacing:{before:200,after:80}}));
-    } else if (block.type==='table') {
-      const tableBlock = block as TableBlock; const tableRows: TableRow[] = [];
-      const headerCells = tableBlock.headers.map(header => new TableCell({children:[new Paragraph({children:[new TextRun({text:header,bold:true,size:20,font:'Calibri',color:'FFFFFF'})],alignment:AlignmentType.CENTER})],shading:{type:ShadingType.CLEAR,fill:primaryHex},verticalAlign:VerticalAlign.CENTER}));
-      tableRows.push(new TableRow({children:headerCells,height:{value:400,rule:'auto'}}));
-      tableBlock.rows.forEach((row,rowIndex) => { const cells = row.map((cell) => { const isNumeric = /^\d+(\.\d+)?$|[$£€]/.test(cell); return new TableCell({children:[new Paragraph({children:[new TextRun({text:cell,size:20,font:'Calibri',color:'262626'})],alignment:isNumeric?AlignmentType.RIGHT:AlignmentType.LEFT})],shading:{type:ShadingType.CLEAR,fill:rowIndex%2===0?'F5F5F5':'FFFFFF'}}); }); tableRows.push(new TableRow({children:cells,height:{value:300,rule:'auto'}})); });
-      children.push(new Table({rows:tableRows,width:{size:100,type:WidthType.PERCENTAGE},borders:{top:{style:BorderStyle.SINGLE,size:6,color:primaryHex},bottom:{style:BorderStyle.SINGLE,size:6,color:primaryHex},left:{style:BorderStyle.SINGLE,size:6,color:primaryHex},right:{style:BorderStyle.SINGLE,size:6,color:primaryHex},insideHorizontal:{style:BorderStyle.SINGLE,size:1,color:'CCCCCC'},insideVertical:{style:BorderStyle.SINGLE,size:1,color:'CCCCCC'}}}));
-      children.push(new Paragraph({spacing:{after:200}}));
-    } else if (block.type==='clause') {
-      children.push(new Paragraph({children:[new TextRun({text:block.text,size:20,font:'Calibri',color:'262626'})],spacing:{after:80},indent:{left:480}}));
-    } else if (block.type==='bullet') {
-      children.push(new Paragraph({children:[new TextRun({text:'\u2022  ',size:20,font:'Calibri',color:accentHex}),new TextRun({text:block.text,size:20,font:'Calibri',color:'262626'})],spacing:{after:40},indent:{left:720}}));
-    } else {
-      children.push(new Paragraph({children:[new TextRun({text:block.text,size:20,font:'Calibri',color:'262626'})],spacing:{after:120}}));
-    }
-  }
-
-  children.push(new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:4,color:primaryHex}},spacing:{before:600}}));
-  children.push(new Paragraph({children:[new TextRun({text:`${design.businessName} | ${dateStr}`,italics:true,size:16,font:'Calibri',color:'888888'})],alignment:AlignmentType.CENTER}));
-
-  const doc = new DocxDocument({ sections:[{ properties:{page:{margin:{top:1440,right:1440,bottom:1440,left:1440}}}, children }] });
-  const buffer = await Packer.toBuffer(doc); return new Uint8Array(buffer);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
-  if (req.method==='OPTIONS') { return new Response(null,{status:200,headers:corsHeaders}); }
+  if (req.method === 'OPTIONS') { return new Response(null, { status: 200, headers: corsHeaders }); }
 
   try {
     const body = await req.json();
     const { user_id, document_type, generate_files } = body;
 
-    if (!user_id||!document_type) { return new Response(JSON.stringify({error:'Missing user_id or document_type'}),{status:400,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
+    if (!user_id || !document_type) {
+      return new Response(JSON.stringify({ error: 'Missing user_id or document_type' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     const config = DOCUMENT_CONFIGS[document_type];
-    if (!config) { return new Response(JSON.stringify({error:`Unknown document type: ${document_type}. Valid types: ${Object.keys(DOCUMENT_CONFIGS).join(', ')}`}),{status:400,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
+    if (!config) {
+      return new Response(JSON.stringify({ error: `Unknown document type: ${document_type}. Valid types: ${Object.keys(DOCUMENT_CONFIGS).join(', ')}` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    const { data: intakeData } = await supabase.from('intake_responses').select('responses, file_uploads').eq('user_id',user_id).maybeSingle();
-    const r = intakeData?.responses||{};
+    const { data: intakeData } = await supabase.from('intake_responses').select('responses, file_uploads').eq('user_id', user_id).maybeSingle();
+    const r = intakeData?.responses || {};
     const fileUploads = intakeData?.file_uploads || {};
 
     // Build file upload info for the prompt
@@ -3206,138 +2823,145 @@ Deno.serve(async (req: Request) => {
     }
 
     const design: ClientDesign = {
-      businessName: r.q2_business_name||'Unknown Business',
-      legalName: r.q1_legal_name||'',
-      firstName: r.q55_first_name||'',
-      brandColours: r.q67_brand_colours||'',
-      visualStyle: r.q68_visual_style||'Simple — I just want it to work',
-      toneOfVoice: r.q62_tone_of_voice||[],
-      brandIdentity: r.q64_brand_identity||'',
-      jurisdiction: r.q5_jurisdiction||'England & Wales',
-      documentEmail: r.q7_document_email||'',
-      businessPhone: r.q8_business_phone||'',
-      businessAddress: r.q6_business_address||'',
-      websiteUrl: r.q10_website_url||'',
+      businessName: r.q2_business_name || 'Unknown Business',
+      legalName: r.q1_legal_name || '',
+      firstName: r.q55_first_name || '',
+      brandColours: r.q67_brand_colours || '',
+      visualStyle: r.q68_visual_style || 'Simple — I just want it to work',
+      toneOfVoice: r.q62_tone_of_voice || [],
+      brandIdentity: r.q64_brand_identity || '',
+      jurisdiction: r.q5_jurisdiction || 'England & Wales',
+      documentEmail: r.q7_document_email || '',
+      businessPhone: r.q8_business_phone || '',
+      businessAddress: r.q6_business_address || '',
+      websiteUrl: r.q10_website_url || '',
     };
 
     if (!generate_files) {
-      const { data: existingDoc } = await supabase.from('generated_documents').select('id').eq('client_id',user_id).eq('document_type',document_type).maybeSingle();
-      if (existingDoc) { await supabase.from('generated_documents').update({status:'generating',error_message:null,content_text:null,content_html:null}).eq('id',existingDoc.id); }
-      else { await supabase.from('generated_documents').insert({client_id:user_id,document_type,document_label:getDocumentLabel(document_type),status:'generating'}); }
+      const { data: existingDoc } = await supabase.from('generated_documents').select('id').eq('client_id', user_id).eq('document_type', document_type).maybeSingle();
+      if (existingDoc) { await supabase.from('generated_documents').update({ status: 'generating', error_message: null, content_text: null, content_html: null }).eq('id', existingDoc.id); }
+      else { await supabase.from('generated_documents').insert({ client_id: user_id, document_type, document_label: getDocumentLabel(document_type), status: 'generating' }); }
 
-      const { data: briefData, error: briefError } = await supabase.from('client_briefs').select('brief_content').eq('client_id',user_id).maybeSingle();
-      if (briefError||!briefData?.brief_content) {
-        const errMsg = briefError?.message||'No client brief found. Generate the Master Brief first before generating documents.';
-        await supabase.from('generated_documents').update({status:'failed',error_message:errMsg}).eq('client_id',user_id).eq('document_type',document_type);
-        return new Response(JSON.stringify({error:errMsg}),{status:400,headers:{...corsHeaders,'Content-Type':'application/json'}});
+      const { data: briefData, error: briefError } = await supabase.from('client_briefs').select('brief_content').eq('client_id', user_id).maybeSingle();
+      if (briefError || !briefData?.brief_content) {
+        const errMsg = briefError?.message || 'No client brief found. Generate the Master Brief first before generating documents.';
+        await supabase.from('generated_documents').update({ status: 'failed', error_message: errMsg }).eq('client_id', user_id).eq('document_type', document_type);
+        return new Response(JSON.stringify({ error: errMsg }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
       const userMessage = `Here is the client's Master Brief:\n\n${briefData.brief_content}\n\n${fileUploadInfo}\n\nBased on this brief, please generate the document as instructed in your system prompt. Populate every field with actual data from the brief. Do not leave placeholder text except in signature fields and editable client-facing fields. Apply the Consistency Contract rigorously — the business name, payment terms, and jurisdiction must match the brief exactly.`;
 
       try {
-        const geminiResponse = await fetch(geminiUrl,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ system_instruction:{parts:[{text:config.systemPrompt}]}, contents:[{role:'user',parts:[{text:userMessage}]}], generationConfig:{temperature:0.2,maxOutputTokens:16000} }) });
+        const geminiResponse = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: config.systemPrompt }] },
+            contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 16000 },
+          }),
+        });
 
-        if (!geminiResponse.ok) { const errText = await geminiResponse.text(); throw new Error(`Gemini API returned ${geminiResponse.status}: ${errText.substring(0,300)}`); }
+        if (!geminiResponse.ok) {
+          const errText = await geminiResponse.text();
+          throw new Error(`Gemini API returned ${geminiResponse.status}: ${errText.substring(0, 300)}`);
+        }
 
         const geminiData = await geminiResponse.json();
-        if (!geminiData.candidates?.[0]?.content?.parts?.[0]?.text) { throw new Error('No text content in Gemini response'); }
+        if (!geminiData.candidates?.[0]?.content?.parts?.[0]?.text) {
+          throw new Error('No text content in Gemini response');
+        }
         const contentText = geminiData.candidates[0].content.parts[0].text;
 
-        if (config.structuredOutput&&(document_type==='professional_invoice_template'||document_type==='late_payment_letters'||document_type==='welcome_email')) {
+        if (config.structuredOutput && (document_type === 'professional_invoice_template' || document_type === 'late_payment_letters' || document_type === 'welcome_email')) {
           try {
             let jsonText = contentText.trim();
             if (jsonText.startsWith('```json')) { jsonText = jsonText.slice(7); }
             else if (jsonText.startsWith('```')) { jsonText = jsonText.slice(3); }
-            if (jsonText.endsWith('```')) { jsonText = jsonText.slice(0,-3); }
+            if (jsonText.endsWith('```')) { jsonText = jsonText.slice(0, -3); }
             jsonText = jsonText.trim();
             const structuredData = JSON.parse(jsonText);
-            const contentHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:20px;}</style></head><body><pre style="white-space:pre-wrap;word-break:break-word;">${JSON.stringify(structuredData,null,2)}</pre></body></html>`;
-            const { error: updateError } = await supabase.from('generated_documents').update({status:'completed',content_text:JSON.stringify(structuredData,null,2),content_html:contentHtml,api_key_used:config.apiKey.substring(0,10)+'...',model_used:config.model,generated_at:new Date().toISOString()}).eq('client_id',user_id).eq('document_type',document_type);
+            const contentHtml = structuredToHtml(structuredData, document_type, design);
+            const { error: updateError } = await supabase.from('generated_documents').update({
+              status: 'completed',
+              content_text: JSON.stringify(structuredData, null, 2),
+              content_html: contentHtml,
+              api_key_used: config.apiKey.substring(0, 10) + '...',
+              model_used: config.model,
+              generated_at: new Date().toISOString(),
+            }).eq('client_id', user_id).eq('document_type', document_type);
             if (updateError) throw new Error(`Failed to update document: ${updateError.message}`);
-            return new Response(JSON.stringify({success:true,status:'completed',document_type,data:structuredData}),{status:200,headers:{...corsHeaders,'Content-Type':'application/json'}});
+            return new Response(JSON.stringify({ success: true, status: 'completed', document_type, data: structuredData }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           } catch (structErr: any) {
-            await supabase.from('generated_documents').update({status:'failed',error_message:structErr.message}).eq('client_id',user_id).eq('document_type',document_type);
-            return new Response(JSON.stringify({error:structErr.message}),{status:500,headers:{...corsHeaders,'Content-Type':'application/json'}});
+            await supabase.from('generated_documents').update({ status: 'failed', error_message: structErr.message }).eq('client_id', user_id).eq('document_type', document_type);
+            return new Response(JSON.stringify({ error: structErr.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
         }
 
-        const contentHtml = textToHtml(contentText,getDocumentLabel(document_type),design);
-        let docxPath: string|null = null; let docxGeneratedAt: string|null = null;
+        const contentHtml = textToHtml(contentText, getDocumentLabel(document_type), design);
+        let docxPath: string | null = null;
+        let docxGeneratedAt: string | null = null;
         try {
-          const docxBytes = await generateDocx(contentText,getDocumentLabel(document_type),design.businessName,design);
+          const docxBytes = await generateDocx(contentText, getDocumentLabel(document_type), design.businessName, design);
           docxPath = `${user_id}/${document_type}.docx`;
-          const { error: docxUploadError } = await supabase.storage.from('generated-documents').upload(docxPath,docxBytes,{contentType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',upsert:true});
+          const { error: docxUploadError } = await supabase.storage.from('generated-documents').upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
           if (docxUploadError) { docxPath = null; } else { docxGeneratedAt = new Date().toISOString(); }
-        } catch (docxErr: any) { console.error('Auto DOCX generation error:',docxErr.message); }
+        } catch (docxErr: any) { console.error('Auto DOCX generation error:', docxErr.message); }
 
-        const updatePayload: Record<string,any> = {status:'completed',content_text:contentText,content_html:contentHtml,api_key_used:config.apiKey.substring(0,10)+'...',model_used:config.model,generated_at:new Date().toISOString()};
-        if (docxPath) { updatePayload.docx_path=docxPath; updatePayload.files_generated_at=docxGeneratedAt; }
-        const { error: updateError } = await supabase.from('generated_documents').update(updatePayload).eq('client_id',user_id).eq('document_type',document_type);
-        if (updateError) { await supabase.from('generated_documents').update({status:'failed',error_message:updateError.message}).eq('client_id',user_id).eq('document_type',document_type); return new Response(JSON.stringify({error:updateError.message}),{status:500,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
-        return new Response(JSON.stringify({success:true,status:'completed',document_type,docx_path:docxPath}),{status:200,headers:{...corsHeaders,'Content-Type':'application/json'}});
+        const updatePayload: Record<string, any> = {
+          status: 'completed',
+          content_text: contentText,
+          content_html: contentHtml,
+          api_key_used: config.apiKey.substring(0, 10) + '...',
+          model_used: config.model,
+          generated_at: new Date().toISOString(),
+        };
+        if (docxPath) { updatePayload.docx_path = docxPath; updatePayload.files_generated_at = docxGeneratedAt; }
+        const { error: updateError } = await supabase.from('generated_documents').update(updatePayload).eq('client_id', user_id).eq('document_type', document_type);
+        if (updateError) {
+          await supabase.from('generated_documents').update({ status: 'failed', error_message: updateError.message }).eq('client_id', user_id).eq('document_type', document_type);
+          return new Response(JSON.stringify({ error: updateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        return new Response(JSON.stringify({ success: true, status: 'completed', document_type, docx_path: docxPath }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (apiErr: any) {
-        await supabase.from('generated_documents').update({status:'failed',error_message:apiErr.message}).eq('client_id',user_id).eq('document_type',document_type);
-        return new Response(JSON.stringify({error:apiErr.message}),{status:500,headers:{...corsHeaders,'Content-Type':'application/json'}});
+        await supabase.from('generated_documents').update({ status: 'failed', error_message: apiErr.message }).eq('client_id', user_id).eq('document_type', document_type);
+        return new Response(JSON.stringify({ error: apiErr.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
 
-    const { data: docData, error: docError } = await supabase.from('generated_documents').select('id,content_text,docx_path,document_label').eq('client_id',user_id).eq('document_type',document_type).maybeSingle();
-    if (docError||!docData) { return new Response(JSON.stringify({error:'Document not found. Generate the document text first.'}),{status:400,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
-    const label = docData.document_label||getDocumentLabel(document_type);
-    if (docData.docx_path) { return new Response(JSON.stringify({success:true,status:'already_generated',document_type,docx_path:docData.docx_path}),{status:200,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
-    if (!docData.content_text) { return new Response(JSON.stringify({error:'No text content found.'}),{status:400,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
+    // ── generate_files path ──
+    const { data: docData, error: docError } = await supabase.from('generated_documents').select('id, content_text, docx_path, document_label').eq('client_id', user_id).eq('document_type', document_type).maybeSingle();
+    if (docError || !docData) {
+      return new Response(JSON.stringify({ error: 'Document not found. Generate the document text first.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const label = docData.document_label || getDocumentLabel(document_type);
+    if (docData.docx_path) {
+      return new Response(JSON.stringify({ success: true, status: 'already_generated', document_type, docx_path: docData.docx_path }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    if (!docData.content_text) {
+      return new Response(JSON.stringify({ error: 'No text content found.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
-    const docxBytes = await generateDocx(docData.content_text,label,design.businessName,design);
+    const docxBytes = await generateDocx(docData.content_text, label, design.businessName, design);
     const docxPath = `${user_id}/${document_type}.docx`;
-    const { error: docxUploadError } = await supabase.storage.from('generated-documents').upload(docxPath,docxBytes,{contentType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',upsert:true});
-    if (docxUploadError) { return new Response(JSON.stringify({error:`DOCX upload failed: ${docxUploadError.message}`}),{status:500,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
+    const { error: docxUploadError } = await supabase.storage.from('generated-documents').upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
+    if (docxUploadError) {
+      return new Response(JSON.stringify({ error: `DOCX upload failed: ${docxUploadError.message}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
-    const pdfBytes = await generatePdf(docData.content_text,label,design.businessName,design);
+    const pdfBytes = await generatePdf(docData.content_text, label, design.businessName, design);
     const pdfPath = `${user_id}/${document_type}.pdf`;
-    const { error: pdfUploadError } = await supabase.storage.from('generated-documents').upload(pdfPath,pdfBytes,{contentType:'application/pdf',upsert:true});
-    if (pdfUploadError) { return new Response(JSON.stringify({error:`PDF upload failed: ${pdfUploadError.message}`}),{status:500,headers:{...corsHeaders,'Content-Type':'application/json'}}); }
+    const { error: pdfUploadError } = await supabase.storage.from('generated-documents').upload(pdfPath, pdfBytes, { contentType: 'application/pdf', upsert: true });
+    if (pdfUploadError) {
+      return new Response(JSON.stringify({ error: `PDF upload failed: ${pdfUploadError.message}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
-    await supabase.from('generated_documents').update({docx_path:docxPath,pdf_path:pdfPath,files_generated_at:new Date().toISOString()}).eq('id',docData.id);
-    return new Response(JSON.stringify({success:true,status:'files_generated',document_type,docx_path:docxPath,pdf_path:pdfPath}),{status:200,headers:{...corsHeaders,'Content-Type':'application/json'}});
+    await supabase.from('generated_documents').update({ docx_path: docxPath, pdf_path: pdfPath, files_generated_at: new Date().toISOString() }).eq('id', docData.id);
+    return new Response(JSON.stringify({ success: true, status: 'files_generated', document_type, docx_path: docxPath, pdf_path: pdfPath }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error: any) {
-    return new Response(JSON.stringify({error:error.message||'Unknown error'}),{status:500,headers:{...corsHeaders,'Content-Type':'application/json'}});
+    return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-function getDocumentLabel(type: string): string {
-  const labels: Record<string,string> = {
-    terms_and_conditions: 'Terms and Conditions',
-    bespoke_client_contract: 'Bespoke Client Contract',
-    gdpr_privacy_policy: 'GDPR Privacy Policy',
-    professional_bio: 'Professional Bio',
-    linkedin_script: 'LinkedIn Profile Optimisation Script',
-    elevator_pitch: 'Elevator Pitch — 3 Versions',
-    professional_invoice_template: 'Professional Invoice Template',
-    welcome_email: 'New Client Welcome Email Sequence',
-    late_payment_letters: 'Late Payment Letter Sequence',
-    service_description_sheets: 'Service Description Sheets',
-  };
-  return labels[type]||type;
-}
-
-function textToHtml(text: string, documentLabel: string, design: ClientDesign): string {
-  const cleaned = stripMarkdown(text);
-  const escaped = cleaned.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const colours = parseBrandColours(design.brandColours);
-  const styleConfig = getVisualStyleConfig(design.visualStyle);
-  const displayName = design.brandIdentity==='My personal name is the brand — I want documents to feel personal' ? (design.firstName||design.businessName) : design.businessName;
-  const formatted = escaped
-    .replace(/===\s*(.+?)\s*===/g,`<h2 style="font-size:16px;font-weight:700;margin:24px 0 12px;color:${colours.primary};border-bottom:2px solid ${colours.accent};padding-bottom:6px;">$1</h2>`)
-    .replace(/^(\d+(?:\.\d+)*)\.\s+(.+)$/gm,'<p style="margin:8px 0;padding-left:24px;text-indent:-24px;"><strong>$1.</strong> $2</p>')
-    .replace(/^[-]\s+(.+)$/gm,`<p style="margin:4px 0 4px 24px;"><span style="color:${colours.accent};">\u2022</span> $1</p>`)
-    .replace(/\n\n/g,'</p><p style="margin:8px 0;">')
-    .replace(/\n/g,'<br>');
-  const borderStyle = styleConfig.borderStyle==='double' ? `border-bottom:3px double ${colours.primary};` : styleConfig.borderStyle==='solid' ? `border-bottom:3px solid ${colours.primary};` : styleConfig.borderStyle==='accent' ? `border-bottom:1px solid ${colours.secondary};border-left:4px solid ${colours.accent};padding-left:8px;` : `border-bottom:1px solid #ccc;`;
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{margin:2.5cm;size:A4;}body{font-family:'Georgia','Times New Roman',serif;font-size:12pt;line-height:1.6;color:#1a1a2e;max-width:700px;margin:0 auto;padding:40px 0;}h1{font-size:22pt;font-weight:700;margin:0 0 8px;color:${colours.primary};}h2{font-size:14pt;font-weight:700;margin:24px 0 12px;color:${colours.primary};border-bottom:2px solid ${colours.accent};padding-bottom:6px;}p{margin:8px 0;}.header{text-align:center;margin-bottom:40px;${borderStyle}padding-bottom:20px;}.header h1{margin-bottom:4px;}.header .subtitle{font-size:10pt;color:#555;}.footer{margin-top:60px;padding-top:16px;border-top:1px solid ${colours.primary};font-size:9pt;color:#888;text-align:center;}</style></head><body><div class="header"><h1>${documentLabel}</h1><div class="subtitle">${displayName}</div></div><div style="margin-top:20px;">${formatted}</div><div class="footer">${displayName} | ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div></body></html>`;
-}
