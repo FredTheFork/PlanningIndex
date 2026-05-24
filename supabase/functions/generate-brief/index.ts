@@ -389,7 +389,7 @@ Deno.serve(async (req: Request) => {
     // Fetch intake responses
     const { data: intake, error: intakeError } = await supabase
       .from('intake_responses')
-      .select('responses, additional_notes')
+      .select('responses, additional_notes, file_uploads')
       .eq('user_id', user_id)
       .maybeSingle();
 
@@ -407,9 +407,47 @@ Deno.serve(async (req: Request) => {
 
     const r = intake.responses || {};
     const notes = intake.additional_notes || {};
+    const fileUploads = intake.file_uploads || {};
+
+    // Build file upload summary
+    let fileUploadInfo = '';
+    const hasLogo = r.q65_has_logo === 'Yes';
+    const logoFiles = fileUploads['q66_logo_upload'] || [];
+    const existingDocs = fileUploads['q76_existing_docs_upload'] || [];
+    const writingSamples = fileUploads['q77_writing_samples_upload'] || [];
+
+    if (hasLogo && logoFiles.length > 0) {
+      fileUploadInfo += `\nLOGO UPLOADED: Yes\n`;
+      logoFiles.forEach((f: any) => {
+        fileUploadInfo += `  - ${f.name} (${f.type}, ${Math.round(f.size / 1024)}KB) - Path: ${f.path}\n`;
+      });
+    } else {
+      fileUploadInfo += '\nLOGO UPLOADED: No\n';
+    }
+
+    if (existingDocs.length > 0) {
+      fileUploadInfo += '\nEXISTING DOCUMENTS UPLOADED:\n';
+      existingDocs.forEach((f: any) => {
+        fileUploadInfo += `  - ${f.name} (${f.type}) - Path: ${f.path}\n`;
+      });
+    } else {
+      fileUploadInfo += '\nEXISTING DOCUMENTS UPLOADED: None\n';
+    }
+
+    if (writingSamples.length > 0) {
+      fileUploadInfo += '\nWRITING SAMPLES UPLOADED:\n';
+      writingSamples.forEach((f: any) => {
+        fileUploadInfo += `  - ${f.name} (${f.type}) - Path: ${f.path}\n`;
+      });
+    } else {
+      fileUploadInfo += '\nWRITING SAMPLES UPLOADED: None\n';
+    }
 
     // Build structured data from intake responses
     const structuredData = buildStructuredData(r, notes);
+
+    // Append file upload info to structured data
+    const fullStructuredData = structuredData + '\n\n=== CLIENT FILE UPLOADS ===' + fileUploadInfo;
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
@@ -423,7 +461,7 @@ Deno.serve(async (req: Request) => {
       modelUsed = selectedModel;
 
       try {
-        briefContent = await callGemini(selectedModel, geminiApiKey, structuredData);
+        briefContent = await callGemini(selectedModel, geminiApiKey, fullStructuredData);
 
         // Track the successful request
         await incrementRequestCount(supabase, selectedModel);
@@ -437,7 +475,7 @@ Deno.serve(async (req: Request) => {
         if (selectedModel === PRIMARY_MODEL) {
           console.info(`Attempting fallback to ${FALLBACK_MODEL}...`);
           try {
-            briefContent = await callGemini(FALLBACK_MODEL, geminiApiKey, structuredData);
+            briefContent = await callGemini(FALLBACK_MODEL, geminiApiKey, fullStructuredData);
             modelUsed = FALLBACK_MODEL;
 
             // Track the fallback request
@@ -446,13 +484,13 @@ Deno.serve(async (req: Request) => {
             riskLevel = determineRiskLevel(r, briefContent);
           } catch (fallbackErr: any) {
             console.error(`Fallback model ${FALLBACK_MODEL} also failed:`, fallbackErr.message);
-            briefContent = generateFallbackBrief(r, notes, structuredData);
+            briefContent = generateFallbackBrief(r, notes, fullStructuredData);
             modelUsed = null;
             riskLevel = determineRiskLevel(r, null);
           }
         } else {
           // Fallback model also failed — use template
-          briefContent = generateFallbackBrief(r, notes, structuredData);
+          briefContent = generateFallbackBrief(r, notes, fullStructuredData);
           modelUsed = null;
           riskLevel = determineRiskLevel(r, null);
         }

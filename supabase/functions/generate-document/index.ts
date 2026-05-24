@@ -2376,7 +2376,10 @@ JSON STRUCTURE:
     "vatRate": [20 if registered, 0 if not],
     "paymentDueDays": [exact number from Q70 — 7, 14, or 30],
     "currency": "GBP",
-    "jurisdiction": "[from Q5]"
+    "jurisdiction": "[from Q5]",
+    "hasLogo": [true if CLIENT LOGO section indicates a logo was uploaded, false if not],
+    "logoFileName": "[logo file name from CLIENT LOGO section if exists, empty string if not]",
+    "logoStoragePath": "[storage path from CLIENT LOGO section if exists, empty string if not]"
   },
   "businessInfo": {
     "legalName": "[from Q1]",
@@ -3164,8 +3167,44 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    const { data: intakeData } = await supabase.from('intake_responses').select('responses').eq('user_id',user_id).maybeSingle();
+    const { data: intakeData } = await supabase.from('intake_responses').select('responses, file_uploads').eq('user_id',user_id).maybeSingle();
     const r = intakeData?.responses||{};
+    const fileUploads = intakeData?.file_uploads || {};
+
+    // Build file upload info for the prompt
+    let fileUploadInfo = '';
+    const hasLogo = r.q65_has_logo === 'Yes';
+    const logoFiles = fileUploads['q66_logo_upload'] || [];
+    const existingDocs = fileUploads['q76_existing_docs_upload'] || [];
+    const writingSamples = fileUploads['q77_writing_samples_upload'] || [];
+
+    if (hasLogo && logoFiles.length > 0) {
+      fileUploadInfo += '\n\n=== CLIENT LOGO ===\nThe client has uploaded their logo. File details:\n';
+      logoFiles.forEach((f: any) => {
+        fileUploadInfo += `- ${f.name} (${f.type}, ${Math.round(f.size / 1024)}KB)\n`;
+        fileUploadInfo += `  Storage path: ${f.path}\n`;
+      });
+      fileUploadInfo += 'NOTE: The logo should be included on the invoice template, letterheads, and other branded documents.\n';
+    }
+
+    if (existingDocs.length > 0) {
+      fileUploadInfo += '\n=== EXISTING DOCUMENTS PROVIDED ===\nThe client has uploaded existing documents for reference:\n';
+      existingDocs.forEach((f: any) => {
+        fileUploadInfo += `- ${f.name} (${f.type})\n`;
+        fileUploadInfo += `  Storage path: ${f.path}\n`;
+      });
+      fileUploadInfo += 'Use these as reference for style, terminology, and existing terms where relevant.\n';
+    }
+
+    if (writingSamples.length > 0) {
+      fileUploadInfo += '\n=== WRITING SAMPLES PROVIDED ===\nThe client has uploaded writing samples to match their voice:\n';
+      writingSamples.forEach((f: any) => {
+        fileUploadInfo += `- ${f.name} (${f.type})\n`;
+        fileUploadInfo += `  Storage path: ${f.path}\n`;
+      });
+      fileUploadInfo += 'Use these to match the clients natural writing style and tone.\n';
+    }
+
     const design: ClientDesign = {
       businessName: r.q2_business_name||'Unknown Business',
       legalName: r.q1_legal_name||'',
@@ -3194,7 +3233,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
-      const userMessage = `Here is the client's Master Brief:\n\n${briefData.brief_content}\n\nBased on this brief, please generate the document as instructed in your system prompt. Populate every field with actual data from the brief. Do not leave placeholder text except in signature fields and editable client-facing fields. Apply the Consistency Contract rigorously — the business name, payment terms, and jurisdiction must match the brief exactly.`;
+      const userMessage = `Here is the client's Master Brief:\n\n${briefData.brief_content}\n\n${fileUploadInfo}\n\nBased on this brief, please generate the document as instructed in your system prompt. Populate every field with actual data from the brief. Do not leave placeholder text except in signature fields and editable client-facing fields. Apply the Consistency Contract rigorously — the business name, payment terms, and jurisdiction must match the brief exactly.`;
 
       try {
         const geminiResponse = await fetch(geminiUrl,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ system_instruction:{parts:[{text:config.systemPrompt}]}, contents:[{role:'user',parts:[{text:userMessage}]}], generationConfig:{temperature:0.2,maxOutputTokens:16000} }) });
