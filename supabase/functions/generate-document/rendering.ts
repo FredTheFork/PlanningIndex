@@ -412,3 +412,476 @@ export async function generateInvoiceDocx(invoiceData: InvoiceData, design: Clie
   const buffer = await Packer.toBuffer(doc);
   return new Uint8Array(buffer);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JSON-DRIVEN DOCX GENERATION — Consumes structured JSON directly
+// ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  AnyDocument, StructuredDocument, InvoiceDocument, LatePaymentDocument,
+  WelcomeEmailDocument, DocumentSection, ContentItem, detectDocumentKind,
+  ClauseContent, ParagraphContent, BulletContent, HeadingContent,
+  SignatureBlockContent, TableContent,
+} from './document-types.ts';
+
+function buildDocxCoverPage(design: ClientDesign, docLabel: string, primaryHex: string, accentHex: string): Paragraph[] {
+  const displayName = design.brandIdentity === 'My personal name is the brand — I want documents to feel personal'
+    ? (design.firstName || design.businessName) : design.businessName;
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const paras: Paragraph[] = [
+    new Paragraph({ spacing: { before: 2400 } }),
+    new Paragraph({
+      children: [new TextRun({ text: docLabel, bold: true, size: 52, font: 'Calibri', color: primaryHex })],
+      alignment: AlignmentType.CENTER, spacing: { after: 120 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `Prepared for ${displayName}`, italics: true, size: 22, font: 'Calibri', color: '999999' })],
+      alignment: AlignmentType.CENTER, spacing: { after: 60 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: design.businessName, size: 20, font: 'Calibri', color: 'AAAAAA' })],
+      alignment: AlignmentType.CENTER, spacing: { after: 40 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: dateStr, size: 18, font: 'Calibri', color: 'BBBBBB' })],
+      alignment: AlignmentType.CENTER, spacing: { after: 100 },
+    }),
+    new Paragraph({
+      children: [], spacing: { after: 200 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 16, color: primaryHex } },
+    }),
+    new Paragraph({
+      children: [], spacing: { after: 0 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } },
+    }),
+    new Paragraph({ children: [new TextRun({ text: '', break: 1 })] }),
+  ];
+  return paras;
+}
+
+function buildDocxSection(section: DocumentSection, primaryHex: string, secondaryHex: string, accentHex: string): Paragraph[] {
+  const paras: Paragraph[] = [];
+
+  if (section.title) {
+    paras.push(new Paragraph({
+      children: [new TextRun({ text: section.title, bold: true, size: 28, font: 'Calibri', color: primaryHex })],
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 360, after: 120 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex } },
+      shading: { type: ShadingType.CLEAR, fill: primaryHex + '10' },
+    }));
+  }
+
+  for (const item of section.content) {
+    paras.push(...buildDocxContentItem(item, primaryHex, secondaryHex, accentHex));
+  }
+
+  return paras;
+}
+
+function buildDocxContentItem(item: ContentItem, primaryHex: string, secondaryHex: string, accentHex: string): Paragraph[] {
+  switch (item.type) {
+    case 'clause': {
+      const clause = item as ClauseContent;
+      const match = clause.text.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
+      if (match) {
+        return [new Paragraph({
+          children: [
+            new TextRun({ text: match[1] + '.', bold: true, size: 20, font: 'Calibri', color: primaryHex }),
+            new TextRun({ text: ' ' + match[2], size: 20, font: 'Calibri', color: '262626' }),
+          ],
+          indent: { left: 480, hanging: 480 }, spacing: { after: 60 },
+        })];
+      }
+      return [new Paragraph({
+        children: [new TextRun({ text: clause.text, size: 20, font: 'Calibri', color: '262626' })],
+        indent: { left: 240 }, spacing: { after: 60 },
+      })];
+    }
+    case 'paragraph':
+      return [new Paragraph({
+        children: [new TextRun({ text: (item as ParagraphContent).text, size: 20, font: 'Calibri', color: '262626' })],
+        spacing: { after: 100 },
+      })];
+    case 'bullet':
+      return [new Paragraph({
+        children: [
+          new TextRun({ text: '\u2022 ', bold: true, size: 20, font: 'Calibri', color: accentHex }),
+          new TextRun({ text: (item as BulletContent).text, size: 20, font: 'Calibri', color: '262626' }),
+        ],
+        bullet: { level: 0 }, spacing: { after: 40 },
+      })];
+    case 'heading':
+      return [new Paragraph({
+        children: [new TextRun({ text: (item as HeadingContent).text, bold: true, italics: true, size: 22, font: 'Calibri', color: secondaryHex })],
+        spacing: { before: 200, after: 80 },
+      })];
+    case 'signature_block': {
+      const sig = item as SignatureBlockContent;
+      const sigParas: Paragraph[] = [
+        new Paragraph({
+          children: [new TextRun({ text: sig.party, bold: true, size: 20, font: 'Calibri', color: primaryHex })],
+          spacing: { before: 200, after: 60 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: sig.signLine || 'Signed:', size: 18, font: 'Calibri', color: '999999' })],
+          border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: 'CCCCCC' } },
+          spacing: { after: 80 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: sig.dateLine || 'Date:', size: 18, font: 'Calibri', color: '999999' })],
+          border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: 'CCCCCC' } },
+          spacing: { after: 60 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `${sig.nameLabel}: `, size: 18, font: 'Calibri', color: '999999' }), new TextRun({ text: sig.nameValue, size: 20, font: 'Calibri', color: '262626' })],
+          spacing: { after: 40 },
+        }),
+      ];
+      if (sig.extraFields) {
+        for (const f of sig.extraFields) {
+          sigParas.push(new Paragraph({
+            children: [new TextRun({ text: `${f.label}: `, size: 18, font: 'Calibri', color: '999999' }), new TextRun({ text: f.value, size: 20, font: 'Calibri', color: '262626' })],
+            spacing: { after: 20 },
+          }));
+        }
+      }
+      return sigParas;
+    }
+    case 'table': {
+      const tbl = item as TableContent;
+      const headerRow = new TableRow({
+        children: tbl.headers.map(h => new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })] })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          verticalAlign: VerticalAlign.CENTER,
+        })),
+      });
+      const dataRows = tbl.rows.map((row, idx) => new TableRow({
+        children: row.map(cell => new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: cell, size: 20, font: 'Calibri', color: '262626' })] })],
+          shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : primaryHex + '08' },
+        })),
+      }));
+      return [
+        new Table({ rows: [headerRow, ...dataRows], width: { size: 100, type: WidthType.PERCENTAGE } }),
+        new Paragraph({ spacing: { after: 100 } }),
+      ];
+    }
+    default:
+      return [];
+  }
+}
+
+function buildDocxFooter(design: ClientDesign, primaryHex: string): Paragraph[] {
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  return [
+    new Paragraph({
+      children: [], spacing: { before: 400 },
+      border: { top: { style: BorderStyle.SINGLE, size: 12, color: primaryHex } },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: design.businessName, italics: true, size: 18, font: 'Calibri', color: '999999' }),
+        new TextRun({ text: '  |  ', size: 18, font: 'Calibri', color: 'CCCCCC' }),
+        new TextRun({ text: dateStr, italics: true, size: 18, font: 'Calibri', color: '999999' }),
+      ],
+      alignment: AlignmentType.CENTER, spacing: { before: 80 },
+    }),
+  ];
+}
+
+async function buildStructuredDocx(doc: StructuredDocument, design: ClientDesign, docLabel: string): Promise<Uint8Array> {
+  const colours = parseBrandColours(design.brandColours);
+  const primaryHex = colours.primary.replace('#', '');
+  const secondaryHex = colours.secondary.replace('#', '');
+  const accentHex = colours.accent.replace('#', '');
+
+  const coverParas = buildDocxCoverPage(design, docLabel, primaryHex, accentHex);
+  const contentParas = doc.sections.flatMap(s => buildDocxSection(s, primaryHex, secondaryHex, accentHex));
+  const footerParas = buildDocxFooter(design, primaryHex);
+
+  const allChildren = [...coverParas, ...contentParas, ...footerParas];
+
+  const d = new DocxDocument({
+    sections: [{
+      properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+      children: allChildren,
+    }],
+  });
+  const buffer = await Packer.toBuffer(d);
+  return new Uint8Array(buffer);
+}
+
+async function buildInvoiceDocxFromJson(doc: InvoiceDocument, design: ClientDesign): Promise<Uint8Array> {
+  const colours = parseBrandColours(design.brandColours);
+  const primaryHex = colours.primary.replace('#', '');
+  const accentHex = colours.accent.replace('#', '');
+  const children: Paragraph[] = [];
+
+  // Header
+  const leftCellParas: Paragraph[] = [
+    new Paragraph({ children: [new TextRun({ text: doc.businessInfo.tradingName, bold: true, size: 28, font: 'Calibri', color: primaryHex })] }),
+    new Paragraph({ children: [new TextRun({ text: doc.businessInfo.address, size: 18, font: 'Calibri', color: '262626' })], spacing: { before: 40 } }),
+    new Paragraph({ children: [new TextRun({ text: doc.businessInfo.phone, size: 18, font: 'Calibri', color: '262626' })] }),
+    new Paragraph({ children: [new TextRun({ text: doc.businessInfo.email, size: 18, font: 'Calibri', color: '262626' })] }),
+  ];
+  if (doc.metadata.vatRegistered) {
+    leftCellParas.push(new Paragraph({ children: [new TextRun({ text: `VAT No: ${doc.metadata.vatNumber}`, size: 16, font: 'Calibri', color: '888888' })] }));
+  }
+
+  const rightCellParas: Paragraph[] = [
+    new Paragraph({ children: [new TextRun({ text: 'Invoice Details', bold: true, size: 20, font: 'Calibri', color: primaryHex })] }),
+    new Paragraph({ children: [new TextRun({ text: `Invoice: ${doc.invoiceFields.invoiceNumberFormat}`, size: 18, font: 'Calibri', color: '262626' })], spacing: { before: 80 } }),
+    new Paragraph({ children: [new TextRun({ text: `Date: ${doc.invoiceFields.dateFormat}`, size: 18, font: 'Calibri', color: '262626' })] }),
+    new Paragraph({ children: [new TextRun({ text: `Due: ${doc.invoiceFields.dueDateFormat}`, size: 18, font: 'Calibri', color: '262626' })] }),
+  ];
+  if (doc.invoiceFields.showPoNumber) {
+    rightCellParas.push(new Paragraph({ children: [new TextRun({ text: `PO: ${doc.invoiceFields.poNumberFormat}`, size: 18, font: 'Calibri', color: '262626' })] }));
+  }
+
+  const headerTable = new Table({
+    rows: [new TableRow({ children: [
+      new TableCell({ children: leftCellParas, verticalAlign: VerticalAlign.TOP, borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+      new TableCell({ children: rightCellParas, verticalAlign: VerticalAlign.TOP, shading: { type: ShadingType.CLEAR, fill: primaryHex + '08' } }),
+    ] })],
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' } },
+  });
+  children.push(headerTable, new Paragraph({ spacing: { after: 200 } }));
+
+  // Bill To
+  children.push(new Paragraph({ children: [new TextRun({ text: 'BILL TO', bold: true, size: 22, font: 'Calibri', color: primaryHex })], spacing: { after: 100 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } } }));
+  const billToParas: Paragraph[] = [
+    new Paragraph({ children: [new TextRun({ text: doc.billToPlaceholders.clientName, bold: true, size: 20, font: 'Calibri', color: '262626' })] }),
+  ];
+  if (doc.billToPlaceholders.company) {
+    billToParas.push(new Paragraph({ children: [new TextRun({ text: doc.billToPlaceholders.company, size: 20, font: 'Calibri', color: '262626' })], spacing: { before: 40 } }));
+  }
+  billToParas.push(
+    new Paragraph({ children: [new TextRun({ text: doc.billToPlaceholders.addressLine1, size: 20, font: 'Calibri', color: '262626' })] }),
+    new Paragraph({ children: [new TextRun({ text: doc.billToPlaceholders.addressLine2, size: 20, font: 'Calibri', color: '262626' })] }),
+    new Paragraph({ children: [new TextRun({ text: doc.billToPlaceholders.email, size: 20, font: 'Calibri', color: '262626' })], spacing: { before: 40 } }),
+  );
+  const billToTable = new Table({ rows: [new TableRow({ children: [new TableCell({ children: billToParas, borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } })] })], width: { size: 100, type: WidthType.PERCENTAGE } });
+  children.push(billToTable, new Paragraph({ spacing: { after: 300 } }));
+
+  // Line items
+  children.push(new Paragraph({ children: [new TextRun({ text: 'SERVICES RENDERED', bold: true, size: 22, font: 'Calibri', color: primaryHex })], spacing: { after: 100 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } } }));
+  const lineItemsRows: TableRow[] = [new TableRow({ children: [
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Description', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.LEFT })], shading: { type: ShadingType.CLEAR, fill: primaryHex }, verticalAlign: VerticalAlign.CENTER }),
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Quantity', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.CENTER })], shading: { type: ShadingType.CLEAR, fill: primaryHex }, verticalAlign: VerticalAlign.CENTER }),
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Unit Price', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })], shading: { type: ShadingType.CLEAR, fill: primaryHex }, verticalAlign: VerticalAlign.CENTER }),
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Amount', bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })], shading: { type: ShadingType.CLEAR, fill: primaryHex }, verticalAlign: VerticalAlign.CENTER }),
+  ], height: { value: 400, rule: 'auto' } })];
+  doc.lineItems.forEach((item, idx) => {
+    lineItemsRows.push(new TableRow({ children: [
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.description, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.LEFT })], shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : primaryHex + '08' } }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.quantity, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.CENTER })], shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : primaryHex + '08' } }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.unitPrice, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })], shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : primaryHex + '08' } }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.amount, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })], shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : primaryHex + '08' } }),
+    ] }));
+  });
+  children.push(new Table({ rows: lineItemsRows, width: { size: 100, type: WidthType.PERCENTAGE }, borders: { top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, right: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' }, insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' } } }));
+  children.push(new Paragraph({ spacing: { after: 200 } }));
+
+  // Totals
+  const totalsChildren: TableRow[] = [
+    new TableRow({ children: [
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '' })] })], borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Subtotal', size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })], borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: doc.totals.subtotal, size: 20, font: 'Calibri', bold: true, color: '262626' })], alignment: AlignmentType.RIGHT })], borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+    ] }),
+  ];
+  if (doc.totals.showVatLine) {
+    totalsChildren.push(new TableRow({ children: [
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '' })] })], borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `VAT (${doc.totals.vatPercentage}%)`, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.RIGHT })], borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: doc.totals.vatAmount, size: 20, font: 'Calibri', bold: true, color: '262626' })], alignment: AlignmentType.RIGHT })], borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+    ] }));
+  }
+  totalsChildren.push(new TableRow({ children: [
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '' })] })], borders: { top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'TOTAL DUE', size: 22, font: 'Calibri', bold: true, color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })], shading: { type: ShadingType.CLEAR, fill: primaryHex }, borders: { top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: doc.totals.totalDue, size: 22, font: 'Calibri', bold: true, color: 'FFFFFF' })], alignment: AlignmentType.RIGHT })], shading: { type: ShadingType.CLEAR, fill: primaryHex }, borders: { top: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 6, color: primaryHex }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } } }),
+  ] }));
+  children.push(new Table({ rows: totalsChildren, width: { size: 100, type: WidthType.PERCENTAGE } }));
+  children.push(new Paragraph({ spacing: { after: 300 } }));
+
+  // Payment terms
+  children.push(new Paragraph({ children: [new TextRun({ text: 'PAYMENT TERMS & METHODS', bold: true, size: 22, font: 'Calibri', color: primaryHex })], spacing: { after: 100 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } } }));
+  children.push(new Paragraph({ children: [new TextRun({ text: doc.paymentTerms.paymentDeadline, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 80 } }));
+  children.push(new Paragraph({ children: [new TextRun({ text: 'Accepted Payment Methods:', bold: true, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 40 } }));
+  doc.paymentTerms.paymentMethods.forEach(method => { children.push(new Paragraph({ children: [new TextRun({ text: method, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 20 }, indent: { left: 720 } })); });
+  children.push(new Paragraph({ spacing: { after: 100 } }));
+
+  if (doc.paymentTerms.bankTransferDetails.show) {
+    children.push(new Paragraph({ children: [new TextRun({ text: 'Bank Details:', bold: true, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 40 } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: `Account: ${doc.paymentTerms.bankTransferDetails.accountName}`, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 20 }, indent: { left: 720 } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: `Sort Code: ${doc.paymentTerms.bankTransferDetails.sortCode}`, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 20 }, indent: { left: 720 } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: `Account Number: ${doc.paymentTerms.bankTransferDetails.accountNumber}`, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 100 }, indent: { left: 720 } }));
+  }
+  children.push(new Paragraph({ children: [new TextRun({ text: `Reference: ${doc.paymentTerms.paymentReference}`, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 200 } }));
+
+  // Late payment
+  children.push(new Paragraph({ children: [new TextRun({ text: 'LATE PAYMENT NOTICE', bold: true, size: 22, font: 'Calibri', color: primaryHex })], spacing: { after: 100 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } } }));
+  children.push(new Paragraph({ children: [new TextRun({ text: doc.latePaymentClause, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 200 } }));
+
+  // Notes
+  if (doc.optionalFields.showNotesSection) {
+    children.push(new Paragraph({ children: [new TextRun({ text: 'NOTES', bold: true, size: 22, font: 'Calibri', color: primaryHex })], spacing: { after: 100 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: doc.optionalFields.notesPlaceholder, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 200 } }));
+  }
+
+  // Footer
+  children.push(new Paragraph({ border: { top: { style: BorderStyle.SINGLE, size: 4, color: primaryHex } }, spacing: { before: 400 } }));
+  children.push(new Paragraph({ children: [new TextRun({ text: 'Thank you for your business.', italics: true, size: 20, font: 'Calibri', color: '262626' })], alignment: AlignmentType.CENTER, spacing: { after: 40 } }));
+  children.push(new Paragraph({ children: [new TextRun({ text: `${doc.businessInfo.legalName} | ${doc.businessInfo.email} | ${doc.businessInfo.phone}`, italics: true, size: 18, font: 'Calibri', color: '262626' })], alignment: AlignmentType.CENTER }));
+
+  const d = new DocxDocument({ sections: [{ properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }] });
+  const buffer = await Packer.toBuffer(d);
+  return new Uint8Array(buffer);
+}
+
+async function buildLatePaymentDocx(doc: LatePaymentDocument, design: ClientDesign): Promise<Uint8Array> {
+  const colours = parseBrandColours(design.brandColours);
+  const primaryHex = colours.primary.replace('#', '');
+  const secondaryHex = colours.secondary.replace('#', '');
+  const accentHex = colours.accent.replace('#', '');
+  const children: Paragraph[] = [];
+
+  for (const letter of doc.letters) {
+    // Letterhead
+    children.push(new Paragraph({
+      children: [new TextRun({ text: letter.letterhead.replace(/\n/g, ' | '), bold: true, size: 24, font: 'Calibri', color: primaryHex })],
+      spacing: { after: 60 },
+    }));
+    children.push(new Paragraph({
+      children: [], spacing: { after: 120 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: primaryHex } },
+    }));
+
+    // Heading (Letter 3)
+    if (letter.heading) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: letter.heading, bold: true, size: 22, font: 'Calibri', color: primaryHex })],
+        alignment: AlignmentType.CENTER, spacing: { before: 200, after: 120 },
+        shading: { type: ShadingType.CLEAR, fill: primaryHex + '10' },
+        border: { top: { style: BorderStyle.SINGLE, size: 4, color: primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 4, color: primaryHex } },
+      }));
+    }
+
+    // Addressee
+    const addrLines = letter.addresseeBlock.split('\n').filter(Boolean);
+    addrLines.forEach(l => children.push(new Paragraph({ children: [new TextRun({ text: l, size: 20, font: 'Calibri', color: '666666' })], spacing: { after: 20 } })));
+    children.push(new Paragraph({ children: [new TextRun({ text: letter.date, size: 18, font: 'Calibri', color: '999999' })], spacing: { before: 60, after: 60 } }));
+
+    // Salutation
+    children.push(new Paragraph({ children: [new TextRun({ text: letter.salutation, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 80 } }));
+
+    // Body
+    if (letter.body) {
+      letter.body.split('\n').filter(Boolean).forEach(l => children.push(new Paragraph({ children: [new TextRun({ text: l, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 60 } })));
+    }
+
+    // Structured paragraphs
+    if (letter.paragraphs) {
+      for (const [key, val] of Object.entries(letter.paragraphs)) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: key.replace(/_/g, ' ').toUpperCase(), bold: true, size: 16, font: 'Calibri', color: primaryHex })],
+          spacing: { before: 160, after: 40 },
+        }));
+        val.split('\n').filter(Boolean).forEach(l => children.push(new Paragraph({ children: [new TextRun({ text: l, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 40 } })));
+      }
+    }
+
+    // Close statement
+    if (letter.closeStatement) {
+      children.push(new Paragraph({ children: [new TextRun({ text: letter.closeStatement, bold: true, size: 20, font: 'Calibri', color: '262626' })], spacing: { before: 120, after: 80 } }));
+    }
+
+    // Close
+    children.push(new Paragraph({ spacing: { before: 200 } }));
+    letter.close.split('\n').forEach(l => children.push(new Paragraph({ children: [new TextRun({ text: l, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 20 } })));
+
+    // Page break between letters
+    children.push(new Paragraph({ children: [new TextRun({ text: '', break: 1 })] }));
+  }
+
+  // Usage notes
+  children.push(new Paragraph({
+    children: [new TextRun({ text: 'Usage Notes', bold: true, size: 24, font: 'Calibri', color: primaryHex })],
+    spacing: { before: 200, after: 120 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: accentHex } },
+  }));
+  const notes = [doc.usageNotes.calculatingInterest, doc.usageNotes.recoveryChargeNote, doc.usageNotes.recordKeeping, doc.usageNotes.legalAdvice];
+  notes.forEach(note => {
+    children.push(new Paragraph({
+      children: [
+        new TextRun({ text: '\u2022 ', bold: true, size: 20, font: 'Calibri', color: accentHex }),
+        new TextRun({ text: note, size: 20, font: 'Calibri', color: '262626' }),
+      ],
+      spacing: { after: 40 },
+    }));
+  });
+
+  const d = new DocxDocument({ sections: [{ properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }] });
+  const buffer = await Packer.toBuffer(d);
+  return new Uint8Array(buffer);
+}
+
+async function buildWelcomeEmailDocx(doc: WelcomeEmailDocument, design: ClientDesign): Promise<Uint8Array> {
+  const colours = parseBrandColours(design.brandColours);
+  const primaryHex = colours.primary.replace('#', '');
+  const accentHex = colours.accent.replace('#', '');
+  const children: Paragraph[] = [];
+
+  for (const email of doc.emails) {
+    // Email header
+    children.push(new Paragraph({
+      children: [new TextRun({ text: email.emailType.replace(/_/g, ' ').toUpperCase(), bold: true, size: 20, font: 'Calibri', color: primaryHex })],
+      spacing: { before: 200, after: 20 },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `Send: ${email.sendTiming}`, size: 16, font: 'Calibri', color: '999999' })],
+      spacing: { after: 60 },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `Subject: ${email.subject}`, bold: true, size: 20, font: 'Calibri', color: primaryHex })],
+      spacing: { after: 60 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: accentHex } },
+    }));
+
+    // Greeting
+    children.push(new Paragraph({ children: [new TextRun({ text: email.greeting, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 60 } }));
+
+    // Body
+    email.body.split('\n').filter(Boolean).forEach(l => children.push(new Paragraph({ children: [new TextRun({ text: l, size: 20, font: 'Calibri', color: '262626' })], spacing: { after: 40 } })));
+
+    // Sign-off
+    children.push(new Paragraph({ spacing: { before: 120 } }));
+    email.signOff.split('\n').forEach(l => children.push(new Paragraph({ children: [new TextRun({ text: l, size: 18, font: 'Calibri', color: '666666' })], spacing: { after: 20 } })));
+
+    // Page break
+    children.push(new Paragraph({ children: [new TextRun({ text: '', break: 1 })] }));
+  }
+
+  const d = new DocxDocument({ sections: [{ properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }] });
+  const buffer = await Packer.toBuffer(d);
+  return new Uint8Array(buffer);
+}
+
+export async function generateDocxFromJson(jsonDoc: AnyDocument, design: ClientDesign, docLabel: string): Promise<Uint8Array> {
+  const kind = detectDocumentKind(jsonDoc);
+  switch (kind) {
+    case 'invoice':
+      return buildInvoiceDocxFromJson(jsonDoc as InvoiceDocument, design);
+    case 'late_payment':
+      return buildLatePaymentDocx(jsonDoc as LatePaymentDocument, design);
+    case 'welcome_email':
+      return buildWelcomeEmailDocx(jsonDoc as WelcomeEmailDocument, design);
+    default:
+      return buildStructuredDocx(jsonDoc as StructuredDocument, design, docLabel);
+  }
+}

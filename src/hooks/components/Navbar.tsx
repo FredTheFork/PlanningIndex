@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useClientProfile } from '../hooks/useClientProfile';
+import { useAuth } from '../useAuth';
+import { useClientProfile } from '../useClientProfile';
 
 const navLinks = [
   { label: "What's Included", to: '/whats-included' },

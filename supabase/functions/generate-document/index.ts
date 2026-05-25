@@ -1,7 +1,10 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 import { DOCUMENT_CONFIGS, DocumentConfig, getDocumentLabel } from './document-configs.ts';
-import { generateDocx, ClientDesign } from './rendering.ts';
+import { generateDocx, generateDocxFromJson, ClientDesign } from './rendering.ts';
+import { renderDocumentHtml } from './html-templates.ts';
+import { generatePdf } from './pdf-renderer.ts';
+import { detectDocumentKind, AnyDocument } from './document-types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,6 +39,15 @@ async function fetchLogoAsBase64(supabase: any, fileUploads: any): Promise<strin
   }
 }
 
+function parseJsonFromText(text: string): any {
+  let jsonText = text.trim();
+  if (jsonText.startsWith('```json')) { jsonText = jsonText.slice(7); }
+  else if (jsonText.startsWith('```')) { jsonText = jsonText.slice(3); }
+  if (jsonText.endsWith('```')) { jsonText = jsonText.slice(0, -3); }
+  jsonText = jsonText.trim();
+  return JSON.parse(jsonText);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') { return new Response(null, { status: 200, headers: corsHeaders }); }
 
@@ -58,7 +70,6 @@ Deno.serve(async (req: Request) => {
     const r = intakeData?.responses || {};
     const fileUploads = intakeData?.file_uploads || {};
 
-    // Build file upload info for the prompt
     let fileUploadInfo = '';
     const hasLogo = r.q65_has_logo === 'Yes';
     const logoFiles = fileUploads['q66_logo_upload'] || [];
@@ -110,10 +121,13 @@ Deno.serve(async (req: Request) => {
       logoBase64,
     };
 
+    const docLabel = getDocumentLabel(document_type);
+
+    // ── Generation path: AI generates content ──
     if (!generate_files) {
       const { data: existingDoc } = await supabase.from('generated_documents').select('id').eq('client_id', user_id).eq('document_type', document_type).maybeSingle();
       if (existingDoc) { await supabase.from('generated_documents').update({ status: 'generating', error_message: null, content_text: null, content_html: null }).eq('id', existingDoc.id); }
-      else { await supabase.from('generated_documents').insert({ client_id: user_id, document_type, document_label: getDocumentLabel(document_type), status: 'generating' }); }
+      else { await supabase.from('generated_documents').insert({ client_id: user_id, document_type, document_label: docLabel, status: 'generating' }); }
 
       const { data: briefData, error: briefError } = await supabase.from('client_briefs').select('brief_content').eq('client_id', user_id).maybeSingle();
       if (briefError || !briefData?.brief_content) {
@@ -147,87 +161,141 @@ Deno.serve(async (req: Request) => {
         }
         const contentText = geminiData.candidates[0].content.parts[0].text;
 
-        if (config.structuredOutput && (document_type === 'professional_invoice_template' || document_type === 'late_payment_letters' || document_type === 'welcome_email')) {
+        // Try to parse as JSON (all document types now output JSON)
+        let jsonDoc: AnyDocument | null = null;
+        let isJson = false;
+        try {
+          jsonDoc = parseJsonFromText(contentText);
+          isJson = true;
+        } catch { /* not JSON — use legacy text rendering */ }
+
+        let contentHtml: string | null = null;
+        let docxPath: string | null = null;
+        let pdfPath: string | null = null;
+        let docxGeneratedAt: string | null = null;
+
+        // Generate HTML preview from JSON or raw text
+        if (isJson && jsonDoc) {
           try {
-            let jsonText = contentText.trim();
-            if (jsonText.startsWith('```json')) { jsonText = jsonText.slice(7); }
-            else if (jsonText.startsWith('```')) { jsonText = jsonText.slice(3); }
-            if (jsonText.endsWith('```')) { jsonText = jsonText.slice(0, -3); }
-            jsonText = jsonText.trim();
-            const structuredData = JSON.parse(jsonText);
-            // HTML rendering to be implemented in html-templates.ts
-            const contentHtml: string | null = null;
-            const { error: updateError } = await supabase.from('generated_documents').update({
-              status: 'completed',
-              content_text: JSON.stringify(structuredData, null, 2),
-              content_html: contentHtml,
-              api_key_used: config.apiKey.substring(0, 10) + '...',
-              model_used: config.model,
-              generated_at: new Date().toISOString(),
-            }).eq('client_id', user_id).eq('document_type', document_type);
-            if (updateError) throw new Error(`Failed to update document: ${updateError.message}`);
-            return new Response(JSON.stringify({ success: true, status: 'completed', document_type, data: structuredData }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          } catch (structErr: any) {
-            await supabase.from('generated_documents').update({ status: 'failed', error_message: structErr.message }).eq('client_id', user_id).eq('document_type', document_type);
-            return new Response(JSON.stringify({ error: structErr.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            contentHtml = renderDocumentHtml(jsonDoc, design, docLabel);
+          } catch (htmlErr: any) {
+            console.error('HTML rendering error:', htmlErr.message);
           }
         }
 
-        // HTML rendering to be implemented in html-templates.ts
-        const contentHtml: string | null = null;
-        let docxPath: string | null = null;
-        let docxGeneratedAt: string | null = null;
+        // Generate DOCX from JSON or raw text
         try {
-          const docxBytes = await generateDocx(contentText, getDocumentLabel(document_type), design.businessName, design);
+          let docxBytes: Uint8Array;
+          if (isJson && jsonDoc) {
+            docxBytes = await generateDocxFromJson(jsonDoc, design, docLabel);
+          } else {
+            docxBytes = await generateDocx(contentText, docLabel, design.businessName, design);
+          }
           docxPath = `${user_id}/${document_type}.docx`;
           const { error: docxUploadError } = await supabase.storage.from('generated-documents').upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
           if (docxUploadError) { docxPath = null; } else { docxGeneratedAt = new Date().toISOString(); }
-        } catch (docxErr: any) { console.error('Auto DOCX generation error:', docxErr.message); }
+        } catch (docxErr: any) { console.error('DOCX generation error:', docxErr.message); }
+
+        // Generate PDF from JSON
+        if (isJson && jsonDoc) {
+          try {
+            const pdfBytes = generatePdf(jsonDoc, design, docLabel);
+            pdfPath = `${user_id}/${document_type}.pdf`;
+            const { error: pdfUploadError } = await supabase.storage.from('generated-documents').upload(pdfPath, pdfBytes, { contentType: 'application/pdf', upsert: true });
+            if (pdfUploadError) { pdfPath = null; }
+          } catch (pdfErr: any) { console.error('PDF generation error:', pdfErr.message); }
+        }
 
         const updatePayload: Record<string, any> = {
           status: 'completed',
-          content_text: contentText,
+          content_text: isJson ? JSON.stringify(jsonDoc, null, 2) : contentText,
           content_html: contentHtml,
           api_key_used: config.apiKey.substring(0, 10) + '...',
           model_used: config.model,
           generated_at: new Date().toISOString(),
         };
         if (docxPath) { updatePayload.docx_path = docxPath; updatePayload.files_generated_at = docxGeneratedAt; }
+        if (pdfPath) { updatePayload.pdf_path = pdfPath; }
+
         const { error: updateError } = await supabase.from('generated_documents').update(updatePayload).eq('client_id', user_id).eq('document_type', document_type);
         if (updateError) {
           await supabase.from('generated_documents').update({ status: 'failed', error_message: updateError.message }).eq('client_id', user_id).eq('document_type', document_type);
           return new Response(JSON.stringify({ error: updateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
-        return new Response(JSON.stringify({ success: true, status: 'completed', document_type, docx_path: docxPath }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ success: true, status: 'completed', document_type, docx_path: docxPath, pdf_path: pdfPath }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (apiErr: any) {
         await supabase.from('generated_documents').update({ status: 'failed', error_message: apiErr.message }).eq('client_id', user_id).eq('document_type', document_type);
         return new Response(JSON.stringify({ error: apiErr.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
 
-    // ── generate_files path ──
-    const { data: docData, error: docError } = await supabase.from('generated_documents').select('id, content_text, docx_path, document_label').eq('client_id', user_id).eq('document_type', document_type).maybeSingle();
+    // ── generate_files path: regenerate files from stored content ──
+    const { data: docData, error: docError } = await supabase.from('generated_documents').select('id, content_text, docx_path, pdf_path, document_label').eq('client_id', user_id).eq('document_type', document_type).maybeSingle();
     if (docError || !docData) {
       return new Response(JSON.stringify({ error: 'Document not found. Generate the document text first.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const label = docData.document_label || getDocumentLabel(document_type);
-    if (docData.docx_path) {
-      return new Response(JSON.stringify({ success: true, status: 'already_generated', document_type, docx_path: docData.docx_path }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const label = docData.document_label || docLabel;
+    if (docData.docx_path && docData.pdf_path) {
+      return new Response(JSON.stringify({ success: true, status: 'already_generated', document_type, docx_path: docData.docx_path, pdf_path: docData.pdf_path }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     if (!docData.content_text) {
       return new Response(JSON.stringify({ error: 'No text content found.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const docxBytes = await generateDocx(docData.content_text, label, design.businessName, design);
-    const docxPath = `${user_id}/${document_type}.docx`;
-    const { error: docxUploadError } = await supabase.storage.from('generated-documents').upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
-    if (docxUploadError) {
-      return new Response(JSON.stringify({ error: `DOCX upload failed: ${docxUploadError.message}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Parse stored content as JSON or raw text
+    let jsonDoc: AnyDocument | null = null;
+    let isJson = false;
+    try {
+      jsonDoc = parseJsonFromText(docData.content_text);
+      isJson = true;
+    } catch { /* not JSON */ }
+
+    // Generate DOCX
+    let docxPath: string | null = docData.docx_path;
+    if (!docxPath) {
+      try {
+        let docxBytes: Uint8Array;
+        if (isJson && jsonDoc) {
+          docxBytes = await generateDocxFromJson(jsonDoc, design, label);
+        } else {
+          docxBytes = await generateDocx(docData.content_text, label, design.businessName, design);
+        }
+        docxPath = `${user_id}/${document_type}.docx`;
+        const { error: docxUploadError } = await supabase.storage.from('generated-documents').upload(docxPath, docxBytes, { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', upsert: true });
+        if (docxUploadError) { docxPath = null; }
+      } catch (docxErr: any) {
+        return new Response(JSON.stringify({ error: `DOCX generation failed: ${docxErr.message}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     }
 
-    // PDF generation removed — will be reimplemented separately
-    await supabase.from('generated_documents').update({ docx_path: docxPath, files_generated_at: new Date().toISOString() }).eq('id', docData.id);
-    return new Response(JSON.stringify({ success: true, status: 'files_generated', document_type, docx_path: docxPath }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Generate PDF
+    let pdfPath: string | null = docData.pdf_path;
+    if (!pdfPath && isJson && jsonDoc) {
+      try {
+        const pdfBytes = generatePdf(jsonDoc, design, label);
+        pdfPath = `${user_id}/${document_type}.pdf`;
+        const { error: pdfUploadError } = await supabase.storage.from('generated-documents').upload(pdfPath, pdfBytes, { contentType: 'application/pdf', upsert: true });
+        if (pdfUploadError) { pdfPath = null; }
+      } catch (pdfErr: any) {
+        console.error('PDF generation error:', pdfErr.message);
+      }
+    }
+
+    // Generate HTML if missing
+    let contentHtml: string | null = null;
+    if (isJson && jsonDoc) {
+      try {
+        contentHtml = renderDocumentHtml(jsonDoc, design, label);
+      } catch { /* skip */ }
+    }
+
+    const updatePayload: Record<string, any> = { files_generated_at: new Date().toISOString() };
+    if (docxPath) updatePayload.docx_path = docxPath;
+    if (pdfPath) updatePayload.pdf_path = pdfPath;
+    if (contentHtml) updatePayload.content_html = contentHtml;
+
+    await supabase.from('generated_documents').update(updatePayload).eq('id', docData.id);
+    return new Response(JSON.stringify({ success: true, status: 'files_generated', document_type, docx_path: docxPath, pdf_path: pdfPath }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

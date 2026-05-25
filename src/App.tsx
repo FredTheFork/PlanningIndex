@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-import Layout from './components/Layout';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import Layout from './hooks/components/Layout';
+import { ProtectedRoute } from './hooks/components/ProtectedRoute';
 
 // Marketing pages
 import WhatsIncludedPage from './pages/WhatsIncludedPage';
@@ -32,14 +32,14 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminClientDetail from './pages/admin/AdminClientDetail';
 
 // Home sections
-import Hero from './components/Hero';
-import SocialProof from './components/SocialProof';
-import Problem from './components/Problem';
-import WhatYouGet from './components/WhatYouGet';
-import HowItWorks from './components/HowItWorks';
-import Testimonials from './components/Testimonials';
-import Pricing from './components/Pricing';
-import CTABanner from './components/CTABanner';
+import Hero from './hooks/components/Hero';
+import SocialProof from './hooks/components/SocialProof';
+import Problem from './hooks/components/Problem';
+import WhatYouGet from './hooks/components/WhatYouGet';
+import HowItWorks from './hooks/components/HowItWorks';
+import Testimonials from './hooks/components/Testimonials';
+import Pricing from './hooks/components/Pricing';
+import CTABanner from './hooks/components/CTABanner';
 
 function HomePage() {
   return (
