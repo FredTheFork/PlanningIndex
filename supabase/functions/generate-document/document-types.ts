@@ -1,82 +1,121 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// SHARED DOCUMENT JSON TYPES — Used by all renderers (HTML, PDF, DOCX)
+// DOCUMENT TYPES — Render-agnostic semantic document model
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface DocumentMetadata {
-  businessName: string;
-  legalName: string;
-  address: string;
-  email: string;
-  phone: string;
-  website: string;
-  jurisdiction: string;
-  generatedDate: string;
-  version: string;
+// ── Density & Emphasis ──
+
+export type BlockDensity = 'compact' | 'normal' | 'airy';
+export type EmphasisLevel = 'high' | 'normal' | 'subdued';
+export type HeadingVariant = 'section' | 'subsection' | 'minor';
+export type TableStyleHint = 'data' | 'comparative' | 'definition' | 'financial';
+
+// ── Block Base ──
+
+export interface BlockBase {
+  id: string;
+  density?: BlockDensity;
+  emphasis?: EmphasisLevel;
 }
 
-export interface ClauseContent {
-  type: 'clause';
-  clauseNumber: string;
+// ── Block Types ──
+
+export interface HeadingBlock extends BlockBase {
+  type: 'heading';
+  variant: HeadingVariant;
   text: string;
 }
 
-export interface ParagraphContent {
+export interface ParagraphBlock extends BlockBase {
   type: 'paragraph';
   text: string;
 }
 
-export interface BulletContent {
+export interface ClauseBlock extends BlockBase {
+  type: 'clause';
+  number: string;
+  text: string;
+}
+
+export interface BulletBlock extends BlockBase {
   type: 'bullet';
   text: string;
+  level?: number;
 }
 
-export interface HeadingContent {
-  type: 'heading';
-  text: string;
-}
-
-export interface SignatureBlockContent {
-  type: 'signature_block';
-  party: string;
-  signLine: string;
-  dateLine: string;
-  nameLabel: string;
-  nameValue: string;
-  extraFields?: { label: string; value: string }[];
-}
-
-export interface TableContent {
+export interface TableBlock extends BlockBase {
   type: 'table';
+  styleHint: TableStyleHint;
+  caption?: string;
   headers: string[];
   rows: string[][];
 }
 
-export type ContentItem =
-  | ClauseContent
-  | ParagraphContent
-  | BulletContent
-  | HeadingContent
-  | SignatureBlockContent
-  | TableContent;
+export interface CalloutBlock extends BlockBase {
+  type: 'callout';
+  label?: string;
+  text: string;
+}
 
-export type SectionType = 'legal' | 'narrative' | 'list' | 'signature' | 'table' | 'letter';
+export interface SignatureBlock extends BlockBase {
+  type: 'signature';
+  parties: Array<{
+    label: string;
+    nameField: string;
+    dateField: string;
+    companyField?: string;
+  }>;
+}
+
+export interface DividerBlock extends BlockBase {
+  type: 'divider';
+  weight: 'light' | 'heavy';
+}
+
+export type DocumentBlock =
+  | HeadingBlock
+  | ParagraphBlock
+  | ClauseBlock
+  | BulletBlock
+  | TableBlock
+  | CalloutBlock
+  | SignatureBlock
+  | DividerBlock;
+
+// ── Section ──
 
 export interface DocumentSection {
   id: string;
-  title: string;
-  type: SectionType;
-  content: ContentItem[];
+  heading?: string;
+  headingVariant?: HeadingVariant;
+  density?: BlockDensity;
+  blocks: DocumentBlock[];
 }
 
-// ── Generic structured document (T&Cs, Contract, Privacy, Bio, Pitch, LinkedIn, Service Sheets) ──
+// ── Document Metadata ──
 
-export interface StructuredDocument {
+export interface DocumentMetadata {
+  title: string;
+  subtitle?: string;
   documentType: string;
+  businessName: string;
+  legalName?: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  jurisdiction?: string;
+  version?: string;
+  date: string;
+}
+
+// ── Document Model ──
+
+export interface DocumentModel {
   metadata: DocumentMetadata;
   sections: DocumentSection[];
 }
 
-// ── Invoice document ──
+// ── Invoice Document ──
 
 export interface InvoiceDocument {
   documentType: 'invoice_template';
@@ -159,7 +198,7 @@ export interface InvoiceDocument {
   disclaimer: string;
 }
 
-// ── Late payment letters document ──
+// ── Late Payment Letters Document ──
 
 export interface LatePaymentLetter {
   id: string;
@@ -197,7 +236,7 @@ export interface LatePaymentDocument {
   };
 }
 
-// ── Welcome email document ──
+// ── Welcome Email Document ──
 
 export interface WelcomeEmailItem {
   id: string;
@@ -223,23 +262,86 @@ export interface WelcomeEmailDocument {
   emails: WelcomeEmailItem[];
 }
 
-// ── Union type for any document ──
+// ── Union ──
 
-export type AnyDocument =
-  | StructuredDocument
-  | InvoiceDocument
-  | LatePaymentDocument
-  | WelcomeEmailDocument;
+export type AnyDocument = DocumentModel | InvoiceDocument | LatePaymentDocument | WelcomeEmailDocument;
 
-// ── Helper: detect document kind from parsed JSON ──
+// ── Detection ──
 
-export function detectDocumentKind(doc: any): 'structured' | 'invoice' | 'late_payment' | 'welcome_email' {
-  if (!doc || !doc.documentType) return 'structured';
-  if (doc.documentType === 'invoice_template') return 'invoice';
-  if (doc.documentType === 'late_payment_letters') return 'late_payment';
-  if (doc.documentType === 'welcome_email') return 'welcome_email';
-  if (doc.letters) return 'late_payment';
-  if (doc.emails) return 'welcome_email';
-  if (doc.businessInfo && doc.lineItems) return 'invoice';
-  return 'structured';
+export function detectDocumentKind(doc: unknown): 'model' | 'invoice' | 'late_payment' | 'welcome_email' {
+  if (!doc || typeof doc !== 'object') return 'model';
+  const d = doc as Record<string, unknown>;
+  const dt = d.documentType;
+  if (dt === 'invoice_template') return 'invoice';
+  if (dt === 'late_payment_letters') return 'late_payment';
+  if (dt === 'welcome_email') return 'welcome_email';
+  if (Array.isArray(d.letters)) return 'late_payment';
+  if (Array.isArray(d.emails)) return 'welcome_email';
+  if (Array.isArray(d.lineItems) && d.businessInfo) return 'invoice';
+  return 'model';
+}
+
+// ── Validation ──
+
+const VALID_BLOCK_TYPES = new Set([
+  'heading', 'paragraph', 'clause', 'bullet', 'table', 'callout', 'signature', 'divider',
+]);
+
+export function validateDocumentModel(doc: unknown): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!doc || typeof doc !== 'object') {
+    return { valid: false, errors: ['Document is not an object'] };
+  }
+
+  const d = doc as Record<string, unknown>;
+
+  // Metadata
+  const md = d.metadata;
+  if (!md || typeof md !== 'object') {
+    errors.push('Missing or invalid metadata');
+  } else {
+    const m = md as Record<string, unknown>;
+    if (!m.title) errors.push('metadata.title is required');
+    if (!m.documentType) errors.push('metadata.documentType is required');
+    if (!m.businessName) errors.push('metadata.businessName is required');
+    if (!m.date) errors.push('metadata.date is required');
+  }
+
+  // Sections
+  const sections = d.sections;
+  if (!Array.isArray(sections)) {
+    errors.push('sections must be an array');
+    return { valid: false, errors };
+  }
+
+  for (let si = 0; si < sections.length; si++) {
+    const sec = sections[si];
+    if (!sec || typeof sec !== 'object') {
+      errors.push(`sections[${si}] is not an object`);
+      continue;
+    }
+    const s = sec as Record<string, unknown>;
+    if (typeof s.id !== 'string') errors.push(`sections[${si}].id is missing or not a string`);
+    if (!Array.isArray(s.blocks)) errors.push(`sections[${si}].blocks is missing or not an array`);
+
+    if (Array.isArray(s.blocks)) {
+      for (let bi = 0; bi < s.blocks.length; bi++) {
+        const blk = s.blocks[bi];
+        if (!blk || typeof blk !== 'object') {
+          errors.push(`sections[${si}].blocks[${bi}] is not an object`);
+          continue;
+        }
+        const b = blk as Record<string, unknown>;
+        if (typeof b.id !== 'string') errors.push(`sections[${si}].blocks[${bi}].id is missing or not a string`);
+        if (typeof b.type !== 'string' || !VALID_BLOCK_TYPES.has(b.type)) {
+          errors.push(`sections[${si}].blocks[${bi}].type is missing or invalid: "${b.type}"`);
+        }
+      }
+    }
+  }
+
+  // Only invalid if top-level structure is broken
+  const topLevelValid = (md && typeof md === 'object') && Array.isArray(sections);
+  return { valid: !!topLevelValid, errors };
 }
