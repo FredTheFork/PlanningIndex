@@ -1,10 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// DOCUMENT RENDERING — Professional quality PDF, HTML, and DOCX generation
-// with branded headers, accent bars, coloured section headings, and
-// proper clause numbering
+// DOCUMENT RENDERING — DOCX generation with branded headers and styling
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { PDFDocument, StandardFonts, rgb, PageSizes } from 'npm:pdf-lib@1.17.1';
 import { Document as DocxDocument, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType, BorderStyle, ShadingType, Table, TableRow, TableCell, WidthType, VerticalAlign } from 'npm:docx@9.1.1';
 
 // ── Shared Types ──
@@ -22,6 +19,7 @@ export interface ClientDesign {
   businessPhone: string;
   businessAddress: string;
   websiteUrl: string;
+  logoBase64: string | null;
 }
 
 export interface TextBlock {
@@ -79,7 +77,7 @@ interface StyleConfig {
   borderStyle: 'solid' | 'double' | 'accent' | 'none'; cornerAccent: boolean;
 }
 
-function getVisualStyleConfig(style: string): StyleConfig {
+export function getVisualStyleConfig(style: string): StyleConfig {
   switch (style) {
     case 'Clean and modern / minimal': return { headerFont: 'Helvetica', bodyFont: 'Helvetica', headerSize: 14, bodySize: 10, lineSpacing: 14, sectionGap: 20, decorativeElements: false, borderStyle: 'none', cornerAccent: false };
     case 'Corporate and formal': return { headerFont: 'Helvetica', bodyFont: 'Helvetica', headerSize: 13, bodySize: 10, lineSpacing: 14, sectionGap: 18, decorativeElements: true, borderStyle: 'double', cornerAccent: false };
@@ -182,507 +180,6 @@ export function parseTextToBlocks(text: string): (TextBlock | TableBlock)[] {
   return blocks;
 }
 
-function wrapText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
-  const words = text.split(/\s+/); const lines: string[] = []; let currentLine = '';
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-    if (testWidth > maxWidth && currentLine) { lines.push(currentLine); currentLine = word; }
-    else { currentLine = testLine; }
-  }
-  if (currentLine) lines.push(currentLine);
-  return lines;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PDF GENERATION
-// ─────────────────────────────────────────────────────────────────────────────
-
-export async function generatePdf(text: string, documentLabel: string, businessName: string, design: ClientDesign): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  const boldItalicFont = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
-  const pageWidth = PageSizes.A4[0]; const pageHeight = PageSizes.A4[1];
-  const margin = 60; const contentWidth = pageWidth - margin * 2;
-  const colours = parseBrandColours(design.brandColours);
-  const primaryRgb = hexToRgb(colours.primary); const secondaryRgb = hexToRgb(colours.secondary); const accentRgb = hexToRgb(colours.accent);
-  const styleConfig = getVisualStyleConfig(design.visualStyle);
-  const blocks = parseTextToBlocks(text);
-  const primaryColour = rgb(primaryRgb.r, primaryRgb.g, primaryRgb.b);
-  const secondaryColour = rgb(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
-  const accentColour = rgb(accentRgb.r, accentRgb.g, accentRgb.b);
-  const bodyTextColour = rgb(0.18, 0.18, 0.22);
-  const lightText = rgb(0.45, 0.45, 0.50);
-  const veryLightText = rgb(0.62, 0.62, 0.66);
-  const ruleLine = rgb(primaryRgb.r * 0.3 + 0.7, primaryRgb.g * 0.3 + 0.7, primaryRgb.b * 0.3 + 0.7);
-  const accentLine = rgb(accentRgb.r * 0.5 + 0.5, accentRgb.g * 0.5 + 0.5, accentRgb.b * 0.5 + 0.5);
-  const primaryBg = rgb(primaryRgb.r * 0.08 + 0.92, primaryRgb.g * 0.08 + 0.92, primaryRgb.b * 0.08 + 0.92);
-  const fontSize = 10; const lineHeight = 14; const titleFontSize = 22;
-  const headingFontSize = 14; const subheadingFontSize = 11.5;
-  const smallFontSize = 7.5; const clauseNumWidth = 28;
-  const displayName = design.brandIdentity === 'My personal name is the brand — I want documents to feel personal' ? (design.firstName || businessName) : businessName;
-
-  let page = pdfDoc.addPage(PageSizes.A4); let y = pageHeight - margin;
-
-  // Decorative top gradient bar
-  if (styleConfig.decorativeElements || styleConfig.cornerAccent) {
-    page.drawRectangle({ x: 0, y: pageHeight - 8, width: pageWidth, height: 8, color: primaryColour });
-    page.drawRectangle({ x: 0, y: pageHeight - 12, width: pageWidth, height: 4, color: accentColour });
-  }
-  y = pageHeight - margin - 32;
-
-  // Title
-  const titleWidth = boldFont.widthOfTextAtSize(documentLabel, titleFontSize);
-  page.drawText(documentLabel, { x: (pageWidth - titleWidth) / 2, y, size: titleFontSize, font: boldFont, color: primaryColour });
-  y -= 20;
-
-  // Subtitle
-  const subtitle = `Prepared for ${displayName}`;
-  const subtitleWidth = italicFont.widthOfTextAtSize(subtitle, 10);
-  page.drawText(subtitle, { x: (pageWidth - subtitleWidth) / 2, y, size: 10, font: italicFont, color: lightText });
-  y -= 14;
-
-  // Branding
-  const brandingWidth = font.widthOfTextAtSize(design.businessName, 8.5);
-  page.drawText(design.businessName, { x: (pageWidth - brandingWidth) / 2, y, size: 8.5, font, color: veryLightText });
-  y -= 18;
-
-  // Separator line under title area
-  if (styleConfig.borderStyle === 'double') {
-    page.drawLine({ start: { x: margin, y }, end: { x: pageWidth - margin, y }, thickness: 2.5, color: primaryColour });
-    y -= 5;
-    page.drawLine({ start: { x: margin, y }, end: { x: pageWidth - margin, y }, thickness: 0.5, color: accentColour });
-    y -= 24;
-  } else if (styleConfig.borderStyle === 'solid') {
-    page.drawLine({ start: { x: margin, y }, end: { x: pageWidth - margin, y }, thickness: 3, color: primaryColour });
-    y -= 24;
-  } else if (styleConfig.borderStyle === 'accent') {
-    page.drawRectangle({ x: margin, y: y - 2, width: 5, height: 10, color: accentColour });
-    page.drawLine({ start: { x: margin + 10, y }, end: { x: pageWidth - margin, y }, thickness: 1, color: secondaryColour });
-    y -= 24;
-  } else {
-    page.drawLine({ start: { x: margin, y }, end: { x: pageWidth - margin, y }, thickness: 1, color: ruleLine });
-    y -= 20;
-  }
-
-  // Helper to ensure enough space on current page
-  function ensureSpace(needed: number) {
-    if (y - needed < margin + 30) {
-      page = pdfDoc.addPage(PageSizes.A4);
-      y = pageHeight - margin;
-      if (styleConfig.decorativeElements || styleConfig.cornerAccent) {
-        page.drawRectangle({ x: 0, y: pageHeight - 4, width: pageWidth, height: 4, color: primaryColour });
-      }
-    }
-  }
-
-  // ── CONTENT RENDERING ──
-  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
-    const block = blocks[blockIndex];
-
-    if (block.type === 'heading') {
-      const lines = wrapText(block.text, boldFont, block.level === 1 ? headingFontSize : subheadingFontSize, contentWidth - 20);
-      const needed = (lines.length * (block.level === 1 ? 18 : 15)) + 28;
-      ensureSpace(needed);
-
-      if (block.level === 1) {
-        // Section heading with coloured background strip and left accent bar
-        const hHeight = 22;
-        page.drawRectangle({ x: margin, y: y - 4, width: contentWidth, height: hHeight, color: primaryBg });
-        page.drawRectangle({ x: margin, y: y - 4, width: 4, height: hHeight, color: primaryColour });
-        page.drawText(block.text, { x: margin + 14, y: y + 2, size: headingFontSize, font: boldFont, color: primaryColour });
-        y -= hHeight + 4;
-        page.drawLine({ start: { x: margin, y }, end: { x: margin + contentWidth, y }, thickness: 1.5, color: accentColour });
-        y -= 14;
-      } else {
-        page.drawText(block.text, { x: margin + 4, y, size: subheadingFontSize, font: boldFont, color: secondaryColour });
-        y -= 4;
-        const hWidth = boldFont.widthOfTextAtSize(block.text, subheadingFontSize);
-        page.drawLine({ start: { x: margin + 4, y }, end: { x: margin + 4 + Math.min(hWidth + 10, contentWidth - 8), y }, thickness: 1, color: accentLine });
-        y -= 14;
-      }
-    } else if (block.type === 'subheading') {
-      ensureSpace(20);
-      page.drawText(block.text, { x: margin + 4, y, size: 10.5, font: boldItalicFont, color: secondaryColour });
-      y -= 16;
-    } else if (block.type === 'clause') {
-      // Split clause number from text for coloured numbering
-      const clauseMatch = block.text.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
-      if (clauseMatch) {
-        const clauseNum = clauseMatch[1] + '.';
-        const bodyLines = wrapText(clauseMatch[2], font, fontSize, contentWidth - clauseNumWidth - 12);
-        ensureSpace(bodyLines.length * lineHeight + 6);
-        page.drawText(clauseNum, { x: margin + 8, y, size: fontSize, font: boldFont, color: primaryColour });
-        for (let i = 0; i < bodyLines.length; i++) {
-          if (y < margin + 20) { page = pdfDoc.addPage(PageSizes.A4); y = pageHeight - margin; if (styleConfig.decorativeElements || styleConfig.cornerAccent) { page.drawRectangle({ x: 0, y: pageHeight - 4, width: pageWidth, height: 4, color: primaryColour }); } }
-          page.drawText(bodyLines[i], { x: margin + clauseNumWidth + 12, y, size: fontSize, font, color: bodyTextColour });
-          y -= lineHeight;
-        }
-        y -= 4;
-      } else {
-        const lines = wrapText(block.text, font, fontSize, contentWidth - 12);
-        ensureSpace(lines.length * lineHeight + 4);
-        for (const line of lines) {
-          if (y < margin + 20) { page = pdfDoc.addPage(PageSizes.A4); y = pageHeight - margin; if (styleConfig.decorativeElements || styleConfig.cornerAccent) { page.drawRectangle({ x: 0, y: pageHeight - 4, width: pageWidth, height: 4, color: primaryColour }); } }
-          page.drawText(line, { x: margin + 12, y, size: fontSize, font, color: bodyTextColour });
-          y -= lineHeight;
-        }
-        y -= 4;
-      }
-    } else if (block.type === 'bullet') {
-      const lines = wrapText(block.text, font, fontSize, contentWidth - 36);
-      ensureSpace(lines.length * lineHeight + 4);
-      for (let i = 0; i < lines.length; i++) {
-        if (y < margin + 20) { page = pdfDoc.addPage(PageSizes.A4); y = pageHeight - margin; if (styleConfig.decorativeElements || styleConfig.cornerAccent) { page.drawRectangle({ x: 0, y: pageHeight - 4, width: pageWidth, height: 4, color: primaryColour }); } }
-        if (i === 0) { page.drawText('\u2022', { x: margin + 14, y, size: fontSize, font: boldFont, color: accentColour }); }
-        page.drawText(lines[i], { x: margin + 36, y, size: fontSize, font, color: bodyTextColour });
-        y -= lineHeight;
-      }
-      y -= 3;
-    } else {
-      // Paragraph
-      const lines = wrapText(block.text, font, fontSize, contentWidth);
-      ensureSpace(lines.length * lineHeight + 8);
-      for (const line of lines) {
-        if (y < margin + 20) { page = pdfDoc.addPage(PageSizes.A4); y = pageHeight - margin; if (styleConfig.decorativeElements || styleConfig.cornerAccent) { page.drawRectangle({ x: 0, y: pageHeight - 4, width: pageWidth, height: 4, color: primaryColour }); } }
-        page.drawText(line, { x: margin, y, size: fontSize, font, color: bodyTextColour });
-        y -= lineHeight;
-      }
-      y -= 8;
-    }
-  }
-
-  // ── PAGE FOOTERS ──
-  const pages = pdfDoc.getPages();
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  for (let i = 0; i < pages.length; i++) {
-    const p = pages[i]; const footerY = 30;
-    p.drawLine({ start: { x: margin, y: footerY + 16 }, end: { x: pageWidth - margin, y: footerY + 16 }, thickness: 0.5, color: ruleLine });
-    p.drawText(design.businessName, { x: margin, y: footerY, size: smallFontSize, font: italicFont, color: lightText });
-    const pageStr = `Page ${i + 1} of ${pages.length}`; const pageStrWidth = font.widthOfTextAtSize(pageStr, smallFontSize);
-    p.drawText(pageStr, { x: pageWidth - margin - pageStrWidth, y: footerY, size: smallFontSize, font, color: lightText });
-    const dateWidth = font.widthOfTextAtSize(dateStr, smallFontSize);
-    p.drawText(dateStr, { x: (pageWidth - dateWidth) / 2, y: footerY, size: smallFontSize, font: italicFont, color: lightText });
-    if (i === pages.length - 1 && (styleConfig.decorativeElements || styleConfig.cornerAccent)) {
-      p.drawRectangle({ x: 0, y: 0, width: pageWidth, height: 4, color: primaryColour });
-      p.drawRectangle({ x: 0, y: 4, width: pageWidth, height: 2, color: accentColour });
-    }
-  }
-  return pdfDoc.save();
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HTML GENERATION — Beautiful CSS-driven document preview
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function textToHtml(text: string, documentLabel: string, design: ClientDesign): string {
-  const colours = parseBrandColours(design.brandColours);
-  const styleConfig = getVisualStyleConfig(design.visualStyle);
-  const displayName = design.brandIdentity === 'My personal name is the brand — I want documents to feel personal' ? (design.firstName || design.businessName) : design.businessName;
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  const blocks = parseTextToBlocks(text);
-  const htmlParts: string[] = [];
-
-  for (const block of blocks) {
-    const t = escHtml(block.text);
-    if (block.type === 'heading') {
-      if (block.level === 1) {
-        htmlParts.push(`<h2 class="section-title">${t}</h2>`);
-      } else {
-        htmlParts.push(`<h3 class="section-subtitle">${t}</h3>`);
-      }
-    } else if (block.type === 'subheading') {
-      htmlParts.push(`<h4 class="clause-group">${t}</h4>`);
-    } else if (block.type === 'clause') {
-      const clauseMatch = t.match(/^(\d+(?:\.\d+)*)\.\s+(.+)$/);
-      if (clauseMatch) {
-        htmlParts.push(`<div class="clause"><span class="clause-num">${clauseMatch[1]}.</span> <span class="clause-text">${clauseMatch[2]}</span></div>`);
-      } else {
-        htmlParts.push(`<div class="clause">${t}</div>`);
-      }
-    } else if (block.type === 'bullet') {
-      htmlParts.push(`<div class="bullet-item"><span class="bullet-marker">&bull;</span> <span>${t}</span></div>`);
-    } else if (block.type === 'table') {
-      const tbl = block as TableBlock;
-      const headerCells = tbl.headers.map(h => `<th>${escHtml(h)}</th>`).join('');
-      const dataRows = tbl.rows.map((row, idx) =>
-        `<tr class="${idx % 2 === 0 ? 'row-even' : 'row-odd'}">${row.map(cell => `<td>${escHtml(cell)}</td>`).join('')}</tr>`
-      ).join('');
-      htmlParts.push(`<table class="doc-table"><thead><tr>${headerCells}</tr></thead><tbody>${dataRows}</tbody></table>`);
-    } else {
-      htmlParts.push(`<p>${t.replace(/\n/g, '<br>')}</p>`);
-    }
-  }
-
-  const contentHtml = htmlParts.join('\n');
-
-  let headerBarStyle = '';
-  if (styleConfig.borderStyle === 'double') headerBarStyle = `border-bottom: 4px double ${colours.primary};`;
-  else if (styleConfig.borderStyle === 'solid') headerBarStyle = `border-bottom: 4px solid ${colours.primary};`;
-  else if (styleConfig.borderStyle === 'accent') headerBarStyle = `border-bottom: 2px solid ${colours.secondary}; border-left: 5px solid ${colours.accent}; padding-left: 12px;`;
-  else headerBarStyle = `border-bottom: 2px solid ${colours.primary};`;
-
-  const primaryLight = colours.primary + '12';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  @page { margin: 2cm; size: A4; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    font-size: 10.5pt; line-height: 1.65; color: #1a1a2e;
-    max-width: 800px; margin: 0 auto; padding: 48px 40px;
-    -webkit-font-smoothing: antialiased;
-  }
-  .top-bar { position: fixed; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, ${colours.primary}, ${colours.accent}); }
-  .doc-header { text-align: center; margin-bottom: 48px; padding-bottom: 28px; ${headerBarStyle} }
-  .doc-header h1 { font-size: 26pt; font-weight: 800; color: ${colours.primary}; letter-spacing: -0.02em; margin-bottom: 8px; }
-  .doc-header .subtitle { font-size: 11pt; color: #6b7280; font-weight: 400; }
-  .doc-header .branding { font-size: 9pt; color: #9ca3af; margin-top: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
-  .section-title { font-size: 15pt; font-weight: 700; color: ${colours.primary}; margin: 36px 0 16px; padding: 8px 0 8px 12px; border-left: 4px solid ${colours.primary}; background: ${primaryLight}; border-bottom: 2px solid ${colours.accent}; }
-  .section-subtitle { font-size: 12pt; font-weight: 600; color: ${colours.secondary}; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 1px solid ${colours.accent}44; }
-  .clause-group { font-size: 10.5pt; font-weight: 600; color: ${colours.secondary}; margin: 18px 0 8px; }
-  .clause { margin: 6px 0; padding-left: 32px; text-indent: -28px; line-height: 1.7; }
-  .clause-num { font-weight: 700; color: ${colours.primary}; min-width: 28px; display: inline-block; }
-  .clause-text { color: #1f2937; }
-  .bullet-item { margin: 5px 0; padding-left: 24px; line-height: 1.65; }
-  .bullet-marker { color: ${colours.accent}; font-weight: 700; margin-right: 8px; margin-left: -16px; }
-  .doc-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 9.5pt; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .doc-table thead tr { background: ${colours.primary}; color: #ffffff; }
-  .doc-table th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; }
-  .doc-table td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; }
-  .doc-table .row-even { background: #ffffff; }
-  .doc-table .row-odd { background: ${primaryLight}; }
-  p { margin: 8px 0; line-height: 1.7; }
-  .doc-footer { margin-top: 64px; padding-top: 20px; border-top: 2px solid ${colours.primary}; font-size: 8.5pt; color: #9ca3af; text-align: center; }
-  .doc-footer .footer-line { margin: 2px 0; }
-  @media print { body { padding: 0; max-width: none; } .top-bar { display: none; } }
-</style>
-</head>
-<body>
-${styleConfig.decorativeElements || styleConfig.cornerAccent ? '<div class="top-bar"></div>' : ''}
-<div class="doc-header">
-  <h1>${escHtml(documentLabel)}</h1>
-  <div class="subtitle">Prepared for ${escHtml(displayName)}</div>
-  <div class="branding">${escHtml(design.businessName)}</div>
-</div>
-<div class="content">
-${contentHtml}
-</div>
-<div class="doc-footer">
-  <div class="footer-line">${escHtml(design.businessName)}</div>
-  <div class="footer-line">${dateStr}</div>
-</div>
-</body>
-</html>`;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STRUCTURED HTML — For invoice, late payment letters, welcome email JSON data
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function structuredToHtml(data: any, documentType: string, design: ClientDesign): string {
-  const colours = parseBrandColours(design.brandColours);
-  const escHtml = (s: string) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  const primaryLight = colours.primary + '12';
-
-  if (documentType === 'professional_invoice_template') {
-    return renderInvoiceHtml(data, design, colours, escHtml, dateStr, primaryLight);
-  }
-  if (documentType === 'late_payment_letters') {
-    return renderLatePaymentHtml(data, design, colours, escHtml, dateStr, primaryLight);
-  }
-  if (documentType === 'welcome_email') {
-    return renderWelcomeEmailHtml(data, design, colours, escHtml, dateStr, primaryLight);
-  }
-
-  // Fallback: pretty JSON display
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:monospace;padding:20px;font-size:11px;white-space:pre-wrap;}</style></head><body>${escHtml(JSON.stringify(data, null, 2))}</body></html>`;
-}
-
-function renderInvoiceHtml(data: any, design: ClientDesign, colours: any, esc: (s: string) => string, dateStr: string, primaryLight: string): string {
-  const meta = data.metadata || {};
-  const biz = data.businessInfo || {};
-  const invoice = data.invoiceFields || {};
-  const billTo = data.billToPlaceholders || {};
-  const items = data.lineItems || [];
-  const totals = data.totals || {};
-  const payment = data.paymentTerms || {};
-  const bank = payment.bankTransferDetails || {};
-
-  return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><style>
-  @page { margin: 1.5cm; size: A4; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #1a1a2e; max-width: 800px; margin: 0 auto; padding: 40px; }
-  .invoice-header { display: flex; justify-content: space-between; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 3px solid ${colours.primary}; }
-  .biz-info h2 { font-size: 20pt; font-weight: 800; color: ${colours.primary}; margin-bottom: 8px; }
-  .biz-info p { font-size: 9pt; color: #6b7280; line-height: 1.5; }
-  .inv-details { text-align: right; background: ${primaryLight}; padding: 16px 20px; border-radius: 8px; border-left: 4px solid ${colours.accent}; }
-  .inv-details h3 { font-size: 14pt; font-weight: 700; color: ${colours.primary}; margin-bottom: 8px; }
-  .inv-details p { font-size: 9pt; color: #374151; line-height: 1.6; }
-  .bill-to { margin-bottom: 28px; padding: 16px 20px; background: #f9fafb; border-radius: 6px; }
-  .bill-to h4 { font-size: 10pt; font-weight: 700; color: ${colours.primary}; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-  .bill-to p { font-size: 9.5pt; color: #374151; line-height: 1.5; }
-  table.line-items { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-  table.line-items thead th { background: ${colours.primary}; color: #fff; padding: 10px 14px; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; }
-  table.line-items thead th:last-child, table.line-items thead th:nth-child(3) { text-align: right; }
-  table.line-items tbody td { padding: 10px 14px; border-bottom: 1px solid #e5e7eb; font-size: 9.5pt; }
-  table.line-items tbody td:last-child, table.line-items tbody td:nth-child(3) { text-align: right; }
-  table.line-items tbody tr:nth-child(even) { background: ${primaryLight}; }
-  .totals-section { display: flex; justify-content: flex-end; margin-bottom: 32px; }
-  .totals-table { width: 280px; }
-  .totals-table .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 10pt; }
-  .totals-table .total-row { background: ${colours.primary}; color: #fff; padding: 10px 14px; border-radius: 4px; font-weight: 700; font-size: 12pt; }
-  .section-heading { font-size: 10pt; font-weight: 700; color: ${colours.primary}; text-transform: uppercase; letter-spacing: 0.08em; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 2px solid ${colours.accent}; }
-  .payment-methods { margin-bottom: 6px; }
-  .payment-methods li { font-size: 9.5pt; color: #374151; margin-bottom: 3px; margin-left: 20px; }
-  .bank-details { background: #f9fafb; padding: 12px 16px; border-radius: 6px; font-size: 9pt; color: #374151; line-height: 1.6; margin-bottom: 20px; }
-  .late-payment { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 4px; font-size: 9pt; color: #92400e; line-height: 1.5; }
-  .disclaimer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 8pt; color: #9ca3af; text-align: center; }
-  @media print { body { padding: 0; max-width: none; } }
-</style></head>
-<body>
-<div class="invoice-header">
-  <div class="biz-info">
-    <h2>${esc(biz.tradingName || biz.legalName || '')}</h2>
-    <p>${esc(biz.address || '')}<br>${esc(biz.phone || '')}<br>${esc(biz.email || '')}<br>${esc(biz.website || '')}</p>
-  </div>
-  <div class="inv-details">
-    <h3>Invoice</h3>
-    <p>Invoice: ${esc(invoice.invoiceNumberFormat || '')}<br>Date: ${esc(invoice.dateFormat || '')}<br>Due: ${esc(invoice.dueDateFormat || '')}${invoice.showPoNumber ? '<br>PO: ' + esc(invoice.poNumberFormat || '') : ''}</p>
-  </div>
-</div>
-<div class="bill-to">
-  <h4>Bill To</h4>
-  <p>${esc(billTo.clientName || '')}<br>${esc(billTo.company || '')}<br>${esc(billTo.addressLine1 || '')}<br>${esc(billTo.addressLine2 || '')}<br>${esc(billTo.email || '')}${billTo.phone ? '<br>' + esc(billTo.phone) : ''}</p>
-</div>
-<table class="line-items">
-  <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
-  <tbody>${items.map((item: any, idx: number) => `<tr><td>${esc(item.description || '')}</td><td>${esc(item.quantity || '')}</td><td>${esc(item.unitPrice || '')}</td><td>${esc(item.amount || '')}</td></tr>`).join('')}</tbody>
-</table>
-<div class="totals-section">
-  <div class="totals-table">
-    <div class="row"><span>Subtotal</span><span>${esc(totals.subtotal || '')}</span></div>
-    ${totals.showVatLine !== false ? `<div class="row"><span>VAT (${totals.vatPercentage || 0}%)</span><span>${esc(totals.vatAmount || '')}</span></div>` : ''}
-    <div class="total-row"><span>Total Due</span><span>${esc(totals.totalDue || '')}</span></div>
-  </div>
-</div>
-<div class="section-heading">Payment Terms & Methods</div>
-<p style="font-size:9.5pt;color:#374151;margin-bottom:10px;">${esc(payment.paymentDeadline || '')}</p>
-<ul class="payment-methods">${(payment.paymentMethods || []).map((m: string) => `<li>${esc(m)}</li>`).join('')}</ul>
-${bank.show !== false ? `<div class="bank-details"><strong>Bank Transfer</strong><br>Account: ${esc(bank.accountName || '')}<br>Sort Code: ${esc(bank.sortCode || '')}<br>Account No: ${esc(bank.accountNumber || '')}<br>Reference: ${esc(payment.paymentReference || '')}</div>` : ''}
-<div class="section-heading">Late Payment Notice</div>
-<div class="late-payment">${esc(data.latePaymentClause || '')}</div>
-<div class="disclaimer">${esc(data.disclaimer || '')}</div>
-</body></html>`;
-}
-
-function renderLatePaymentHtml(data: any, design: ClientDesign, colours: any, esc: (s: string) => string, dateStr: string, primaryLight: string): string {
-  const letters = data.letters || [];
-  return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><style>
-  @page { margin: 2cm; size: A4; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 10.5pt; color: #1a1a2e; max-width: 700px; margin: 0 auto; padding: 48px 40px; }
-  .letter { margin-bottom: 48px; padding: 32px; border: 1px solid #e5e7eb; border-radius: 8px; page-break-after: always; }
-  .letter:last-child { page-break-after: avoid; }
-  .letter-header { display: flex; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid ${colours.primary}; }
-  .letter-header h3 { font-size: 14pt; font-weight: 700; color: ${colours.primary}; }
-  .letter-header .stage { font-size: 9pt; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; }
-  .letter-body { line-height: 1.7; font-size: 10pt; }
-  .letter-body p { margin: 10px 0; }
-  .letter-body .highlight { background: ${primaryLight}; padding: 12px 16px; border-left: 4px solid ${colours.accent}; border-radius: 4px; margin: 16px 0; font-weight: 600; }
-  .letter-body .deadline { color: ${colours.primary}; font-weight: 700; }
-  .from-block { margin-bottom: 24px; font-size: 9pt; color: #6b7280; }
-  .to-block { margin-bottom: 20px; font-size: 10pt; }
-  .signature { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
-  .signature p { font-size: 9.5pt; color: #6b7280; }
-  @media print { body { padding: 0; max-width: none; } }
-</style></head>
-<body>
-${letters.map((letter: any, idx: number) => `
-<div class="letter">
-  <div class="letter-header">
-    <h3>${esc(letter.title || `Letter ${idx + 1}`)}</h3>
-    <span class="stage">${esc(letter.stage || `Stage ${idx + 1}`)}</span>
-  </div>
-  <div class="from-block">
-    <p>Date: ${esc(letter.date || dateStr)}</p>
-    <p>From: ${esc(letter.from || '')}</p>
-  </div>
-  <div class="to-block">
-    <p>${esc(letter.to || '[Client Name]')}</p>
-  </div>
-  <div class="letter-body">
-    <p>Dear ${esc(letter.salutation || 'Sir/Madam')},</p>
-    <p>${esc(letter.opening || '')}</p>
-    ${letter.outstandingAmount ? `<div class="highlight">Outstanding Amount: ${esc(letter.outstandingAmount)}</div>` : ''}
-    <p>${esc(letter.body || '')}</p>
-    ${letter.deadline ? `<p class="deadline">Deadline: ${esc(letter.deadline)}</p>` : ''}
-    ${letter.consequence ? `<p>${esc(letter.consequence)}</p>` : ''}
-    <p>${esc(letter.closing || '')}</p>
-  </div>
-  <div class="signature">
-    <p>Yours sincerely,</p>
-    <p><strong>${esc(letter.signOffName || '')}</strong></p>
-  </div>
-</div>
-`).join('')}
-</body></html>`;
-}
-
-function renderWelcomeEmailHtml(data: any, design: ClientDesign, colours: any, esc: (s: string) => string, dateStr: string, primaryLight: string): string {
-  const emails = data.emails || [];
-  return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><style>
-  @page { margin: 2cm; size: A4; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 10.5pt; color: #1a1a2e; max-width: 700px; margin: 0 auto; padding: 48px 40px; }
-  .email { margin-bottom: 40px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; page-break-after: always; }
-  .email:last-child { page-break-after: avoid; }
-  .email-header { background: ${colours.primary}; color: #fff; padding: 16px 20px; }
-  .email-header h3 { font-size: 12pt; font-weight: 600; }
-  .email-header .meta { font-size: 8.5pt; opacity: 0.8; margin-top: 4px; }
-  .email-body { padding: 24px 20px; line-height: 1.7; }
-  .email-body p { margin: 10px 0; }
-  .email-body .callout { background: ${primaryLight}; border-left: 4px solid ${colours.accent}; padding: 12px 16px; border-radius: 4px; margin: 16px 0; }
-  .email-body .next-step { background: ${colours.primary}; color: #fff; padding: 12px 16px; border-radius: 6px; margin: 16px 0; font-weight: 600; }
-  .email-body .sign-off { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 9.5pt; color: #6b7280; }
-  @media print { body { padding: 0; max-width: none; } }
-</style></head>
-<body>
-${emails.map((email: any, idx: number) => `
-<div class="email">
-  <div class="email-header">
-    <h3>${esc(email.subject || `Email ${idx + 1}`)}</h3>
-    <div class="meta">Timing: ${esc(email.timing || 'Send immediately')} | From: ${esc(email.fromName || '')}</div>
-  </div>
-  <div class="email-body">
-    <p>${esc(email.greeting || 'Hi [Client Name],')}</p>
-    ${email.body ? `<p>${esc(email.body)}</p>` : ''}
-    ${email.keyPoints ? `<div class="callout"><strong>Key Points:</strong><br>${esc(email.keyPoints)}</div>` : ''}
-    ${email.nextStep ? `<div class="next-step">Next Step: ${esc(email.nextStep)}</div>` : ''}
-    ${email.closing ? `<p>${esc(email.closing)}</p>` : ''}
-    <div class="sign-off">
-      <p>${esc(email.signOff || 'Best regards,')}</p>
-      <p><strong>${esc(email.signOffName || '')}</strong></p>
-    </div>
-  </div>
-</div>
-`).join('')}
-</body></html>`;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // DOCX GENERATION
 // ─────────────────────────────────────────────────────────────────────────────
@@ -761,6 +258,27 @@ export async function generateDocx(text: string, documentLabel: string, business
         ],
         bullet: { level: 0 }, spacing: { after: 40 },
       }));
+    } else if (block.type === 'table') {
+      // Render table in DOCX
+      const tbl = block as TableBlock;
+      const headerRow = new TableRow({
+        children: tbl.headers.map(h => new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20, font: 'Calibri', color: 'FFFFFF' })] })],
+          shading: { type: ShadingType.CLEAR, fill: primaryHex },
+          verticalAlign: VerticalAlign.CENTER,
+        })),
+      });
+      const dataRows = tbl.rows.map((row, idx) => new TableRow({
+        children: row.map(cell => new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: cell, size: 20, font: 'Calibri', color: '262626' })] })],
+          shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : primaryHex + '08' },
+        })),
+      }));
+      children.push(new Table({
+        rows: [headerRow, ...dataRows],
+        width: { size: 100, type: WidthType.PERCENTAGE },
+      }));
+      children.push(new Paragraph({ spacing: { after: 100 } }));
     } else {
       children.push(new Paragraph({
         children: [new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' })],
@@ -893,20 +411,4 @@ export async function generateInvoiceDocx(invoiceData: InvoiceData, design: Clie
   const doc = new DocxDocument({ sections: [{ properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }] });
   const buffer = await Packer.toBuffer(doc);
   return new Uint8Array(buffer);
-}
-
-export function getDocumentLabel(type: string): string {
-  const labels: Record<string, string> = {
-    terms_and_conditions: 'Terms and Conditions',
-    bespoke_client_contract: 'Client Service Agreement',
-    gdpr_privacy_policy: 'GDPR Privacy Policy',
-    professional_bio: 'Professional Bio',
-    elevator_pitch: 'Elevator Pitch',
-    linkedin_script: 'LinkedIn Profile Optimisation',
-    professional_invoice_template: 'Invoice Template',
-    welcome_email: 'Welcome Email Sequence',
-    late_payment_letters: 'Late Payment Letter Sequence',
-    service_description_sheets: 'Service Description Sheets',
-  };
-  return labels[type] || type;
 }
