@@ -821,7 +821,53 @@ Before outputting, verify each of the following. If any check fails, correct and
 - [ ] All placeholder text replaced with actual data from the brief
 
 TARGET LENGTH: 4,500–6,000 words.
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT — MANDATORY
+═══════════════════════════════════════════════════════════════
+Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+{
+  "documentType": "terms_and_conditions",
+  "metadata": {
+    "businessName": "[trading name from brief]",
+    "legalName": "[legal name from brief]",
+    "address": "[business address from brief]",
+    "email": "[contact email from brief]",
+    "phone": "[phone from brief]",
+    "website": "[website from brief]",
+    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
+    "generatedDate": "May 2026",
+    "version": "1.0"
+  },
+  "sections": [
+    {
+      "id": "section_1",
+      "title": "[Section Title]",
+      "type": "legal",
+      "content": [
+        {
+          "type": "clause",
+          "clauseNumber": "1.1",
+          "text": "[full clause text]"
+        }
+      ]
+    }
+  ]
+}
+Section type values:
+- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
+- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
+- "list" — bullet point items
+- "signature" — signature blocks only
+- "table" — key/value or columnar data
+Content type values:
+- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
+- "paragraph" — prose block, no number
+- "bullet" — single bullet item
+- "heading" — sub-section heading within a section
+- "signature_block" — signature area
 `,
+    structuredOutput: true,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1285,7 +1331,53 @@ FINAL QUALITY VERIFICATION (MANDATORY SELF-CHECK)
 - [ ] Signature fields present for both parties
 - [ ] All business details populated from brief
 - [ ] Target length: 3,800–5,500 words
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT — MANDATORY
+═══════════════════════════════════════════════════════════════
+Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+{
+  "documentType": "bespoke_client_contract",
+  "metadata": {
+    "businessName": "[trading name from brief]",
+    "legalName": "[legal name from brief]",
+    "address": "[business address from brief]",
+    "email": "[contact email from brief]",
+    "phone": "[phone from brief]",
+    "website": "[website from brief]",
+    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
+    "generatedDate": "May 2026",
+    "version": "1.0"
+  },
+  "sections": [
+    {
+      "id": "section_1",
+      "title": "[Section Title]",
+      "type": "legal",
+      "content": [
+        {
+          "type": "clause",
+          "clauseNumber": "1.1",
+          "text": "[full clause text]"
+        }
+      ]
+    }
+  ]
+}
+Section type values:
+- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
+- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
+- "list" — bullet point items
+- "signature" — signature blocks only
+- "table" — key/value or columnar data
+Content type values:
+- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
+- "paragraph" — prose block, no number
+- "bullet" — single bullet item
+- "heading" — sub-section heading within a section
+- "signature_block" — signature area
 `,
+    structuredOutput: true,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1656,7 +1748,53 @@ FINAL QUALITY VERIFICATION (MANDATORY SELF-CHECK)
 - [ ] ICO contact details are correct (as stated above)
 - [ ] No markdown formatting
 - [ ] Length: 2,800–4,000 words
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT — MANDATORY
+═══════════════════════════════════════════════════════════════
+Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+{
+  "documentType": "gdpr_privacy_policy",
+  "metadata": {
+    "businessName": "[trading name from brief]",
+    "legalName": "[legal name from brief]",
+    "address": "[business address from brief]",
+    "email": "[contact email from brief]",
+    "phone": "[phone from brief]",
+    "website": "[website from brief]",
+    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
+    "generatedDate": "May 2026",
+    "version": "1.0"
+  },
+  "sections": [
+    {
+      "id": "section_1",
+      "title": "[Section Title]",
+      "type": "legal",
+      "content": [
+        {
+          "type": "clause",
+          "clauseNumber": "1.1",
+          "text": "[full clause text]"
+        }
+      ]
+    }
+  ]
+}
+Section type values:
+- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
+- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
+- "list" — bullet point items
+- "signature" — signature blocks only
+- "table" — key/value or columnar data
+Content type values:
+- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
+- "paragraph" — prose block, no number
+- "bullet" — single bullet item
+- "heading" — sub-section heading within a section
+- "signature_block" — signature area
 `,
+    structuredOutput: true,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1859,7 +1997,53 @@ FINAL QUALITY VERIFICATION
 - [ ] Word counts are accurate and stated
 - [ ] No markdown formatting
 - [ ] No claims not supported by the brief
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT — MANDATORY
+═══════════════════════════════════════════════════════════════
+Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+{
+  "documentType": "professional_bio",
+  "metadata": {
+    "businessName": "[trading name from brief]",
+    "legalName": "[legal name from brief]",
+    "address": "[business address from brief]",
+    "email": "[contact email from brief]",
+    "phone": "[phone from brief]",
+    "website": "[website from brief]",
+    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
+    "generatedDate": "May 2026",
+    "version": "1.0"
+  },
+  "sections": [
+    {
+      "id": "section_1",
+      "title": "[Section Title]",
+      "type": "legal",
+      "content": [
+        {
+          "type": "clause",
+          "clauseNumber": "1.1",
+          "text": "[full clause text]"
+        }
+      ]
+    }
+  ]
+}
+Section type values:
+- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
+- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
+- "list" — bullet point items
+- "signature" — signature blocks only
+- "table" — key/value or columnar data
+Content type values:
+- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
+- "paragraph" — prose block, no number
+- "bullet" — single bullet item
+- "heading" — sub-section heading within a section
+- "signature_block" — signature area
 `,
+    structuredOutput: true,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2023,7 +2207,53 @@ FINAL QUALITY VERIFICATION
 - [ ] Written version ends with a specific CTA
 - [ ] Word counts stated and accurate
 - [ ] No markdown formatting
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT — MANDATORY
+═══════════════════════════════════════════════════════════════
+Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+{
+  "documentType": "elevator_pitch",
+  "metadata": {
+    "businessName": "[trading name from brief]",
+    "legalName": "[legal name from brief]",
+    "address": "[business address from brief]",
+    "email": "[contact email from brief]",
+    "phone": "[phone from brief]",
+    "website": "[website from brief]",
+    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
+    "generatedDate": "May 2026",
+    "version": "1.0"
+  },
+  "sections": [
+    {
+      "id": "section_1",
+      "title": "[Section Title]",
+      "type": "legal",
+      "content": [
+        {
+          "type": "clause",
+          "clauseNumber": "1.1",
+          "text": "[full clause text]"
+        }
+      ]
+    }
+  ]
+}
+Section type values:
+- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
+- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
+- "list" — bullet point items
+- "signature" — signature blocks only
+- "table" — key/value or columnar data
+Content type values:
+- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
+- "paragraph" — prose block, no number
+- "bullet" — single bullet item
+- "heading" — sub-section heading within a section
+- "signature_block" — signature area
 `,
+    structuredOutput: true,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2222,7 +2452,53 @@ FINAL QUALITY VERIFICATION
 - [ ] Skills list uses real LinkedIn taxonomy names
 - [ ] UK English throughout (no US spelling)
 - [ ] No markdown formatting
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT — MANDATORY
+═══════════════════════════════════════════════════════════════
+Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+{
+  "documentType": "linkedin_script",
+  "metadata": {
+    "businessName": "[trading name from brief]",
+    "legalName": "[legal name from brief]",
+    "address": "[business address from brief]",
+    "email": "[contact email from brief]",
+    "phone": "[phone from brief]",
+    "website": "[website from brief]",
+    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
+    "generatedDate": "May 2026",
+    "version": "1.0"
+  },
+  "sections": [
+    {
+      "id": "section_1",
+      "title": "[Section Title]",
+      "type": "legal",
+      "content": [
+        {
+          "type": "clause",
+          "clauseNumber": "1.1",
+          "text": "[full clause text]"
+        }
+      ]
+    }
+  ]
+}
+Section type values:
+- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
+- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
+- "list" — bullet point items
+- "signature" — signature blocks only
+- "table" — key/value or columnar data
+Content type values:
+- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
+- "paragraph" — prose block, no number
+- "bullet" — single bullet item
+- "heading" — sub-section heading within a section
+- "signature_block" — signature area
 `,
+    structuredOutput: true,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2745,7 +3021,53 @@ For each sheet:
 - [ ] UK English throughout
 - [ ] No markdown formatting
 - [ ] Business name spelled correctly and consistently
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT — MANDATORY
+═══════════════════════════════════════════════════════════════
+Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+{
+  "documentType": "service_description_sheets",
+  "metadata": {
+    "businessName": "[trading name from brief]",
+    "legalName": "[legal name from brief]",
+    "address": "[business address from brief]",
+    "email": "[contact email from brief]",
+    "phone": "[phone from brief]",
+    "website": "[website from brief]",
+    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
+    "generatedDate": "May 2026",
+    "version": "1.0"
+  },
+  "sections": [
+    {
+      "id": "section_1",
+      "title": "[Section Title]",
+      "type": "legal",
+      "content": [
+        {
+          "type": "clause",
+          "clauseNumber": "1.1",
+          "text": "[full clause text]"
+        }
+      ]
+    }
+  ]
+}
+Section type values:
+- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
+- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
+- "list" — bullet point items
+- "signature" — signature blocks only
+- "table" — key/value or columnar data
+Content type values:
+- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
+- "paragraph" — prose block, no number
+- "bullet" — single bullet item
+- "heading" — sub-section heading within a section
+- "signature_block" — signature area
 `,
+    structuredOutput: true,
   },
 };
 
