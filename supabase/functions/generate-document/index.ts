@@ -9,6 +9,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
+async function fetchLogoAsBase64(supabase: any, fileUploads: any): Promise<string | null> {
+  const logoFiles = fileUploads['q66_logo_upload'] || [];
+  if (logoFiles.length === 0) return null;
+  const logoFile = logoFiles[0];
+  const storagePath = logoFile.path;
+  if (!storagePath) return null;
+  try {
+    const { data, error } = await supabase.storage
+      .from('user-uploads')
+      .download(storagePath);
+    if (error || !data) return null;
+    const arrayBuffer = await data.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64 = btoa(binary);
+    const mimeType = logoFile.type || 'image/png';
+    return `data:${mimeType};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') { return new Response(null, { status: 200, headers: corsHeaders }); }
 
@@ -65,23 +92,7 @@ Deno.serve(async (req: Request) => {
       fileUploadInfo += 'Use these to match the clients natural writing style and tone.\n';
     }
 
-    // Load logo as base64 if available
-    let logoBase64: string | null = null;
-    if (hasLogo && logoFiles.length > 0) {
-      try {
-        const logoPath = logoFiles[0].path;
-        const { data: logoData } = await supabase.storage.from('intake-uploads').download(logoPath);
-        if (logoData) {
-          const arrayBuf = await logoData.arrayBuffer();
-          const uint8 = new Uint8Array(arrayBuf);
-          let binary = '';
-          for (let i = 0; i < uint8.length; i++) { binary += String.fromCharCode(uint8[i]); }
-          logoBase64 = `data:${logoFiles[0].type || 'image/png'};base64,${btoa(binary)}`;
-        }
-      } catch (logoErr: any) {
-        console.error('Logo download error:', logoErr.message);
-      }
-    }
+    const logoBase64 = await fetchLogoAsBase64(supabase, fileUploads);
 
     const design: ClientDesign = {
       businessName: r.q2_business_name || 'Unknown Business',
