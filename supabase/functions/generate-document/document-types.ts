@@ -32,13 +32,16 @@ export interface ParagraphBlock extends BlockBase {
 
 export interface ClauseBlock extends BlockBase {
   type: 'clause';
+  /** The clause number only, e.g. "1.1" — NOT repeated in the text field */
   number: string;
+  /** The clause text WITHOUT any number prefix */
   text: string;
 }
 
 export interface BulletBlock extends BlockBase {
   type: 'bullet';
   text: string;
+  /** 0 = top level, 1 = nested */
   level?: number;
 }
 
@@ -271,13 +274,29 @@ export type AnyDocument = DocumentModel | InvoiceDocument | LatePaymentDocument 
 export function detectDocumentKind(doc: unknown): 'model' | 'invoice' | 'late_payment' | 'welcome_email' {
   if (!doc || typeof doc !== 'object') return 'model';
   const d = doc as Record<string, unknown>;
+
+  // 1. Check documentType or structural indicators for invoice
   const dt = d.documentType;
-  if (dt === 'invoice_template') return 'invoice';
-  if (dt === 'late_payment_letters') return 'late_payment';
-  if (dt === 'welcome_email') return 'welcome_email';
-  if (Array.isArray(d.letters)) return 'late_payment';
-  if (Array.isArray(d.emails)) return 'welcome_email';
-  if (Array.isArray(d.lineItems) && d.businessInfo) return 'invoice';
+  if (dt === 'invoice_template' || (Array.isArray(d.lineItems) && d.businessInfo)) {
+    return 'invoice';
+  }
+
+  // 2. Check for late payment letters
+  if (dt === 'late_payment_letters' || Array.isArray(d.letters)) {
+    return 'late_payment';
+  }
+
+  // 3. Check for welcome email
+  if (dt === 'welcome_email' || Array.isArray(d.emails)) {
+    return 'welcome_email';
+  }
+
+  // 4. Check for model (has sections array)
+  if (Array.isArray(d.sections)) {
+    return 'model';
+  }
+
+  // 5. Default to model
   return 'model';
 }
 
@@ -296,25 +315,29 @@ export function validateDocumentModel(doc: unknown): { valid: boolean; errors: s
 
   const d = doc as Record<string, unknown>;
 
-  // Metadata
+  // Check metadata exists
   const md = d.metadata;
   if (!md || typeof md !== 'object') {
     errors.push('Missing or invalid metadata');
   } else {
     const m = md as Record<string, unknown>;
-    if (!m.title) errors.push('metadata.title is required');
-    if (!m.documentType) errors.push('metadata.documentType is required');
-    if (!m.businessName) errors.push('metadata.businessName is required');
-    if (!m.date) errors.push('metadata.date is required');
+    if (typeof m.title !== 'string') {
+      errors.push('metadata.title is required and must be a string');
+    }
+    if (typeof m.date !== 'string') {
+      errors.push('metadata.date is required and must be a string');
+    }
   }
 
-  // Sections
+  // Check sections is an array
   const sections = d.sections;
   if (!Array.isArray(sections)) {
     errors.push('sections must be an array');
+    // Return false if sections is not an array (top-level structure broken)
     return { valid: false, errors };
   }
 
+  // Validate each section
   for (let si = 0; si < sections.length; si++) {
     const sec = sections[si];
     if (!sec || typeof sec !== 'object') {
@@ -322,26 +345,39 @@ export function validateDocumentModel(doc: unknown): { valid: boolean; errors: s
       continue;
     }
     const s = sec as Record<string, unknown>;
-    if (typeof s.id !== 'string') errors.push(`sections[${si}].id is missing or not a string`);
-    if (!Array.isArray(s.blocks)) errors.push(`sections[${si}].blocks is missing or not an array`);
 
-    if (Array.isArray(s.blocks)) {
-      for (let bi = 0; bi < s.blocks.length; bi++) {
-        const blk = s.blocks[bi];
-        if (!blk || typeof blk !== 'object') {
-          errors.push(`sections[${si}].blocks[${bi}] is not an object`);
-          continue;
-        }
-        const b = blk as Record<string, unknown>;
-        if (typeof b.id !== 'string') errors.push(`sections[${si}].blocks[${bi}].id is missing or not a string`);
-        if (typeof b.type !== 'string' || !VALID_BLOCK_TYPES.has(b.type)) {
-          errors.push(`sections[${si}].blocks[${bi}].type is missing or invalid: "${b.type}"`);
-        }
+    if (typeof s.id !== 'string') {
+      errors.push(`sections[${si}].id is missing or not a string`);
+    }
+
+    if (!Array.isArray(s.blocks)) {
+      errors.push(`sections[${si}].blocks is missing or not an array`);
+      continue;
+    }
+
+    // Validate each block in the section
+    for (let bi = 0; bi < s.blocks.length; bi++) {
+      const blk = s.blocks[bi];
+      if (!blk || typeof blk !== 'object') {
+        errors.push(`sections[${si}].blocks[${bi}] is not an object`);
+        continue;
+      }
+      const b = blk as Record<string, unknown>;
+
+      if (typeof b.id !== 'string') {
+        errors.push(`sections[${si}].blocks[${bi}].id is missing or not a string`);
+      }
+
+      if (typeof b.type !== 'string' || !VALID_BLOCK_TYPES.has(b.type)) {
+        errors.push(`sections[${si}].blocks[${bi}].type is missing or invalid: "${b.type}"`);
       }
     }
   }
 
-  // Only invalid if top-level structure is broken
-  const topLevelValid = (md && typeof md === 'object') && Array.isArray(sections);
-  return { valid: !!topLevelValid, errors };
+  // Return valid: true with any errors (errors don't invalidate the document)
+  // Only invalid if top-level structure is broken (metadata missing/invalid or sections not an array)
+  // Above we already return false if sections is not an array
+  // Only return false if metadata is completely missing
+  const hasValidMetadata = md && typeof md === 'object';
+  return { valid: !!hasValidMetadata, errors };
 }
