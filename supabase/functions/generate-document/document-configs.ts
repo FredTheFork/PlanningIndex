@@ -7,6 +7,7 @@ export interface DocumentConfig {
   model: string;
   systemPrompt: string;
   structuredOutput?: boolean;
+  maxOutputTokens?: number;
 }
 
 export const FORMATTING_RULES = `
@@ -825,124 +826,61 @@ TARGET LENGTH: 4,500–6,000 words.
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT — MANDATORY
 ═══════════════════════════════════════════════════════════════
-You must output ONLY a valid JSON object. No markdown. No code fences. No preamble. No text after the JSON. Start with { and end with }.
 
-The JSON must conform to this DocumentModel schema:
+Output ONLY a valid JSON object. No markdown. No code fences. No preamble. No trailing text. Start with { and end with }.
 
+Schema:
 {
   "metadata": {
-    "title": "Terms and Conditions",
+    "title": "Full document title",
     "subtitle": null,
     "documentType": "terms_and_conditions",
-    "businessName": "[trading name from brief]",
-    "legalName": "[legal name from brief]",
-    "address": "[full address from brief]",
-    "email": "[email from brief]",
-    "phone": "[phone from brief]",
-    "website": "[website from brief]",
-    "jurisdiction": "[from brief]",
+    "businessName": "Trading name from brief — exact spelling",
+    "legalName": "Legal name from brief — exact spelling",
+    "address": "Full address including postcode",
+    "email": "Contact email",
+    "phone": "Phone number",
+    "website": "Website URL",
+    "jurisdiction": "England and Wales",
     "version": "May 2026",
     "date": "May 2026"
   },
   "sections": [
     {
       "id": "s1",
-      "heading": "SECTION HEADING OR null",
+      "heading": "SECTION HEADING or null",
       "headingVariant": "section",
-      "density": "compact",
+      "density": "normal",
       "blocks": [
-        {
-          "id": "b1",
-          "type": "heading",
-          "variant": "section",
-          "text": "Heading text",
-          "emphasis": "normal"
-        },
-        {
-          "id": "b2",
-          "type": "paragraph",
-          "text": "Paragraph text. No markdown. No asterisks.",
-          "density": "normal"
-        },
-        {
-          "id": "b3",
-          "type": "clause",
-          "number": "1.1",
-          "text": "Full clause text. The number is NOT repeated in the text field.",
-          "density": "compact"
-        },
-        {
-          "id": "b4",
-          "type": "bullet",
-          "text": "Bullet item text",
-          "level": 0
-        },
-        {
-          "id": "b5",
-          "type": "table",
-          "styleHint": "definition",
-          "caption": "Optional table caption or omit",
-          "headers": ["Column A", "Column B", "Column C"],
-          "rows": [
-            ["Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"],
-            ["Row 2 Col 1", "Row 2 Col 2", "Row 2 Col 3"]
-          ]
-        },
-        {
-          "id": "b6",
-          "type": "callout",
-          "label": "Important",
-          "text": "Highlighted notice or disclaimer text."
-        },
-        {
-          "id": "b7",
-          "type": "signature",
-          "parties": [
-            {
-              "label": "Service Provider",
-              "nameField": "[Full Legal Name from brief]",
-              "dateField": "[Date]",
-              "companyField": "[Business Name from brief]"
-            },
-            {
-              "label": "Client",
-              "nameField": "[Client Full Name — to be completed]",
-              "dateField": "[Date — to be completed]",
-              "companyField": "[Client Company — to be completed]"
-            }
-          ]
-        },
-        {
-          "id": "b8",
-          "type": "divider",
-          "weight": "light"
-        }
+        { "id": "b1", "type": "heading", "variant": "section", "text": "Heading text" },
+        { "id": "b2", "type": "paragraph", "text": "Paragraph. No markdown. No asterisks." },
+        { "id": "b3", "type": "clause", "number": "1.1", "text": "Clause text. Number is NOT in the text field.", "density": "compact" },
+        { "id": "b4", "type": "bullet", "text": "Bullet text. No leading dash.", "level": 0 },
+        { "id": "b5", "type": "table", "styleHint": "definition", "headers": ["Col A", "Col B"], "rows": [["val", "val"]] },
+        { "id": "b6", "type": "callout", "label": "Important", "text": "Notice text. Use for all legal disclaimers." },
+        { "id": "b7", "type": "signature", "parties": [
+          { "label": "Service Provider", "nameField": "[Legal Name from brief]", "dateField": "[Date]", "companyField": "[Business Name]" },
+          { "label": "Client", "nameField": "[Client Name — to be completed]", "dateField": "[Date — to be completed]", "companyField": "[Client Company — to be completed]" }
+        ]},
+        { "id": "b8", "type": "divider", "weight": "light" }
       ]
     }
   ]
 }
 
-BLOCK TYPE RULES:
-- "heading": use for sub-headings within sections. variant is "section", "subsection", or "minor".
-- "paragraph": use for all prose. No markdown in text field.
-- "clause": use for numbered legal clauses. The "number" field contains ONLY the number (e.g. "1.1"). The "text" field contains the clause text WITHOUT the number prefix.
-- "bullet": use for list items. level 0 = top level, level 1 = nested.
-- "table": styleHint must be one of: "data", "comparative", "definition", "financial". Use "financial" for fee tables and totals. Use "definition" for GDPR processing tables.
-- "callout": use for disclaimers, legal warnings, important notices, and the legal disclaimer at the end of every legal document.
-- "signature": use for execution blocks. Include ALL parties.
-- "divider": use sparingly to separate major visual breaks.
-
-DENSITY RULES:
-- Use "compact" for dense legal clause sections
-- Use "normal" for mixed content sections
-- Use "airy" for introductory sections, bio sections, and email copy
-
-EVERY block must have a unique "id" string (e.g. "b1", "b2" etc.).
-EVERY section must have a unique "id" string (e.g. "s1", "s2" etc.).
-NO markdown syntax anywhere in any text field.
-NO placeholder text except in signature party fields and editable client-facing fields.
-`,
+RULES:
+- clause: number field = number only (e.g. "1.1"). text field = text only, no number prefix.
+- bullet: level 0 = top level, level 1 = nested. No bullet character in text.
+- table styleHint: "data" | "comparative" | "definition" | "financial". Use "financial" for fee tables. Use "definition" for GDPR tables.
+- callout: use for ALL disclaimers, legal warnings, and the mandatory LEGAL DISCLAIMER at the end of every legal document.
+- signature: Service Provider fields use actual data from brief. Client fields use [placeholder format].
+- divider: use sparingly.
+- density: "compact" for clause sections, "normal" for mixed content, "airy" for intros and bio copy.
+- IDs: section IDs are "s1", "s2" etc. Block IDs are "b1", "b2" etc. — unique across the ENTIRE document.
+- No markdown in any text field. No **, no *, no ##, no backticks.
+- All metadata fields populated from brief — no placeholder text in metadata.`,
     structuredOutput: true,
+    maxOutputTokens: 20000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1410,124 +1348,61 @@ FINAL QUALITY VERIFICATION (MANDATORY SELF-CHECK)
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT — MANDATORY
 ═══════════════════════════════════════════════════════════════
-You must output ONLY a valid JSON object. No markdown. No code fences. No preamble. No text after the JSON. Start with { and end with }.
 
-The JSON must conform to this DocumentModel schema:
+Output ONLY a valid JSON object. No markdown. No code fences. No preamble. No trailing text. Start with { and end with }.
 
+Schema:
 {
   "metadata": {
-    "title": "Client Service Agreement",
+    "title": "Full document title",
     "subtitle": null,
     "documentType": "bespoke_client_contract",
-    "businessName": "[trading name from brief]",
-    "legalName": "[legal name from brief]",
-    "address": "[full address from brief]",
-    "email": "[email from brief]",
-    "phone": "[phone from brief]",
-    "website": "[website from brief]",
-    "jurisdiction": "[from brief]",
+    "businessName": "Trading name from brief — exact spelling",
+    "legalName": "Legal name from brief — exact spelling",
+    "address": "Full address including postcode",
+    "email": "Contact email",
+    "phone": "Phone number",
+    "website": "Website URL",
+    "jurisdiction": "England and Wales",
     "version": "May 2026",
     "date": "May 2026"
   },
   "sections": [
     {
       "id": "s1",
-      "heading": "SECTION HEADING OR null",
+      "heading": "SECTION HEADING or null",
       "headingVariant": "section",
-      "density": "compact",
+      "density": "normal",
       "blocks": [
-        {
-          "id": "b1",
-          "type": "heading",
-          "variant": "section",
-          "text": "Heading text",
-          "emphasis": "normal"
-        },
-        {
-          "id": "b2",
-          "type": "paragraph",
-          "text": "Paragraph text. No markdown. No asterisks.",
-          "density": "normal"
-        },
-        {
-          "id": "b3",
-          "type": "clause",
-          "number": "1.1",
-          "text": "Full clause text. The number is NOT repeated in the text field.",
-          "density": "compact"
-        },
-        {
-          "id": "b4",
-          "type": "bullet",
-          "text": "Bullet item text",
-          "level": 0
-        },
-        {
-          "id": "b5",
-          "type": "table",
-          "styleHint": "definition",
-          "caption": "Optional table caption or omit",
-          "headers": ["Column A", "Column B", "Column C"],
-          "rows": [
-            ["Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"],
-            ["Row 2 Col 1", "Row 2 Col 2", "Row 2 Col 3"]
-          ]
-        },
-        {
-          "id": "b6",
-          "type": "callout",
-          "label": "Important",
-          "text": "Highlighted notice or disclaimer text."
-        },
-        {
-          "id": "b7",
-          "type": "signature",
-          "parties": [
-            {
-              "label": "Service Provider",
-              "nameField": "[Full Legal Name from brief]",
-              "dateField": "[Date]",
-              "companyField": "[Business Name from brief]"
-            },
-            {
-              "label": "Client",
-              "nameField": "[Client Full Name — to be completed]",
-              "dateField": "[Date — to be completed]",
-              "companyField": "[Client Company — to be completed]"
-            }
-          ]
-        },
-        {
-          "id": "b8",
-          "type": "divider",
-          "weight": "light"
-        }
+        { "id": "b1", "type": "heading", "variant": "section", "text": "Heading text" },
+        { "id": "b2", "type": "paragraph", "text": "Paragraph. No markdown. No asterisks." },
+        { "id": "b3", "type": "clause", "number": "1.1", "text": "Clause text. Number is NOT in the text field.", "density": "compact" },
+        { "id": "b4", "type": "bullet", "text": "Bullet text. No leading dash.", "level": 0 },
+        { "id": "b5", "type": "table", "styleHint": "definition", "headers": ["Col A", "Col B"], "rows": [["val", "val"]] },
+        { "id": "b6", "type": "callout", "label": "Important", "text": "Notice text. Use for all legal disclaimers." },
+        { "id": "b7", "type": "signature", "parties": [
+          { "label": "Service Provider", "nameField": "[Legal Name from brief]", "dateField": "[Date]", "companyField": "[Business Name]" },
+          { "label": "Client", "nameField": "[Client Name — to be completed]", "dateField": "[Date — to be completed]", "companyField": "[Client Company — to be completed]" }
+        ]},
+        { "id": "b8", "type": "divider", "weight": "light" }
       ]
     }
   ]
 }
 
-BLOCK TYPE RULES:
-- "heading": use for sub-headings within sections. variant is "section", "subsection", or "minor".
-- "paragraph": use for all prose. No markdown in text field.
-- "clause": use for numbered legal clauses. The "number" field contains ONLY the number (e.g. "1.1"). The "text" field contains the clause text WITHOUT the number prefix.
-- "bullet": use for list items. level 0 = top level, level 1 = nested.
-- "table": styleHint must be one of: "data", "comparative", "definition", "financial". Use "financial" for fee tables and totals. Use "definition" for GDPR processing tables.
-- "callout": use for disclaimers, legal warnings, important notices, and the legal disclaimer at the end of every legal document.
-- "signature": use for execution blocks. Include ALL parties.
-- "divider": use sparingly to separate major visual breaks.
-
-DENSITY RULES:
-- Use "compact" for dense legal clause sections
-- Use "normal" for mixed content sections
-- Use "airy" for introductory sections, bio sections, and email copy
-
-EVERY block must have a unique "id" string (e.g. "b1", "b2" etc.).
-EVERY section must have a unique "id" string (e.g. "s1", "s2" etc.).
-NO markdown syntax anywhere in any text field.
-NO placeholder text except in signature party fields and editable client-facing fields.
-`,
+RULES:
+- clause: number field = number only (e.g. "1.1"). text field = text only, no number prefix.
+- bullet: level 0 = top level, level 1 = nested. No bullet character in text.
+- table styleHint: "data" | "comparative" | "definition" | "financial". Use "financial" for fee tables. Use "definition" for GDPR tables.
+- callout: use for ALL disclaimers, legal warnings, and the mandatory LEGAL DISCLAIMER at the end of every legal document.
+- signature: Service Provider fields use actual data from brief. Client fields use [placeholder format].
+- divider: use sparingly.
+- density: "compact" for clause sections, "normal" for mixed content, "airy" for intros and bio copy.
+- IDs: section IDs are "s1", "s2" etc. Block IDs are "b1", "b2" etc. — unique across the ENTIRE document.
+- No markdown in any text field. No **, no *, no ##, no backticks.
+- All metadata fields populated from brief — no placeholder text in metadata.`,
     structuredOutput: true,
+    maxOutputTokens: 18000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1902,49 +1777,61 @@ FINAL QUALITY VERIFICATION (MANDATORY SELF-CHECK)
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT — MANDATORY
 ═══════════════════════════════════════════════════════════════
-Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+
+Output ONLY a valid JSON object. No markdown. No code fences. No preamble. No trailing text. Start with { and end with }.
+
+Schema:
 {
-  "documentType": "gdpr_privacy_policy",
   "metadata": {
-    "businessName": "[trading name from brief]",
-    "legalName": "[legal name from brief]",
-    "address": "[business address from brief]",
-    "email": "[contact email from brief]",
-    "phone": "[phone from brief]",
-    "website": "[website from brief]",
-    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
-    "generatedDate": "May 2026",
-    "version": "1.0"
+    "title": "Full document title",
+    "subtitle": null,
+    "documentType": "gdpr_privacy_policy",
+    "businessName": "Trading name from brief — exact spelling",
+    "legalName": "Legal name from brief — exact spelling",
+    "address": "Full address including postcode",
+    "email": "Contact email",
+    "phone": "Phone number",
+    "website": "Website URL",
+    "jurisdiction": "England and Wales",
+    "version": "May 2026",
+    "date": "May 2026"
   },
   "sections": [
     {
-      "id": "section_1",
-      "title": "[Section Title]",
-      "type": "legal",
-      "content": [
-        {
-          "type": "clause",
-          "clauseNumber": "1.1",
-          "text": "[full clause text]"
-        }
+      "id": "s1",
+      "heading": "SECTION HEADING or null",
+      "headingVariant": "section",
+      "density": "normal",
+      "blocks": [
+        { "id": "b1", "type": "heading", "variant": "section", "text": "Heading text" },
+        { "id": "b2", "type": "paragraph", "text": "Paragraph. No markdown. No asterisks." },
+        { "id": "b3", "type": "clause", "number": "1.1", "text": "Clause text. Number is NOT in the text field.", "density": "compact" },
+        { "id": "b4", "type": "bullet", "text": "Bullet text. No leading dash.", "level": 0 },
+        { "id": "b5", "type": "table", "styleHint": "definition", "headers": ["Col A", "Col B"], "rows": [["val", "val"]] },
+        { "id": "b6", "type": "callout", "label": "Important", "text": "Notice text. Use for all legal disclaimers." },
+        { "id": "b7", "type": "signature", "parties": [
+          { "label": "Service Provider", "nameField": "[Legal Name from brief]", "dateField": "[Date]", "companyField": "[Business Name]" },
+          { "label": "Client", "nameField": "[Client Name — to be completed]", "dateField": "[Date — to be completed]", "companyField": "[Client Company — to be completed]" }
+        ]},
+        { "id": "b8", "type": "divider", "weight": "light" }
       ]
     }
   ]
 }
-Section type values:
-- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
-- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
-- "list" — bullet point items
-- "signature" — signature blocks only
-- "table" — key/value or columnar data
-Content type values:
-- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
-- "paragraph" — prose block, no number
-- "bullet" — single bullet item
-- "heading" — sub-section heading within a section
-- "signature_block" — signature area
-`,
+
+RULES:
+- clause: number field = number only (e.g. "1.1"). text field = text only, no number prefix.
+- bullet: level 0 = top level, level 1 = nested. No bullet character in text.
+- table styleHint: "data" | "comparative" | "definition" | "financial". Use "financial" for fee tables. Use "definition" for GDPR tables.
+- callout: use for ALL disclaimers, legal warnings, and the mandatory LEGAL DISCLAIMER at the end of every legal document.
+- signature: Service Provider fields use actual data from brief. Client fields use [placeholder format].
+- divider: use sparingly.
+- density: "compact" for clause sections, "normal" for mixed content, "airy" for intros and bio copy.
+- IDs: section IDs are "s1", "s2" etc. Block IDs are "b1", "b2" etc. — unique across the ENTIRE document.
+- No markdown in any text field. No **, no *, no ##, no backticks.
+- All metadata fields populated from brief — no placeholder text in metadata.`,
     structuredOutput: true,
+    maxOutputTokens: 16000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2151,49 +2038,61 @@ FINAL QUALITY VERIFICATION
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT — MANDATORY
 ═══════════════════════════════════════════════════════════════
-Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+
+Output ONLY a valid JSON object. No markdown. No code fences. No preamble. No trailing text. Start with { and end with }.
+
+Schema:
 {
-  "documentType": "professional_bio",
   "metadata": {
-    "businessName": "[trading name from brief]",
-    "legalName": "[legal name from brief]",
-    "address": "[business address from brief]",
-    "email": "[contact email from brief]",
-    "phone": "[phone from brief]",
-    "website": "[website from brief]",
-    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
-    "generatedDate": "May 2026",
-    "version": "1.0"
+    "title": "Full document title",
+    "subtitle": null,
+    "documentType": "professional_bio",
+    "businessName": "Trading name from brief — exact spelling",
+    "legalName": "Legal name from brief — exact spelling",
+    "address": "Full address including postcode",
+    "email": "Contact email",
+    "phone": "Phone number",
+    "website": "Website URL",
+    "jurisdiction": "England and Wales",
+    "version": "May 2026",
+    "date": "May 2026"
   },
   "sections": [
     {
-      "id": "section_1",
-      "title": "[Section Title]",
-      "type": "legal",
-      "content": [
-        {
-          "type": "clause",
-          "clauseNumber": "1.1",
-          "text": "[full clause text]"
-        }
+      "id": "s1",
+      "heading": "SECTION HEADING or null",
+      "headingVariant": "section",
+      "density": "normal",
+      "blocks": [
+        { "id": "b1", "type": "heading", "variant": "section", "text": "Heading text" },
+        { "id": "b2", "type": "paragraph", "text": "Paragraph. No markdown. No asterisks." },
+        { "id": "b3", "type": "clause", "number": "1.1", "text": "Clause text. Number is NOT in the text field.", "density": "compact" },
+        { "id": "b4", "type": "bullet", "text": "Bullet text. No leading dash.", "level": 0 },
+        { "id": "b5", "type": "table", "styleHint": "definition", "headers": ["Col A", "Col B"], "rows": [["val", "val"]] },
+        { "id": "b6", "type": "callout", "label": "Important", "text": "Notice text. Use for all legal disclaimers." },
+        { "id": "b7", "type": "signature", "parties": [
+          { "label": "Service Provider", "nameField": "[Legal Name from brief]", "dateField": "[Date]", "companyField": "[Business Name]" },
+          { "label": "Client", "nameField": "[Client Name — to be completed]", "dateField": "[Date — to be completed]", "companyField": "[Client Company — to be completed]" }
+        ]},
+        { "id": "b8", "type": "divider", "weight": "light" }
       ]
     }
   ]
 }
-Section type values:
-- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
-- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
-- "list" — bullet point items
-- "signature" — signature blocks only
-- "table" — key/value or columnar data
-Content type values:
-- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
-- "paragraph" — prose block, no number
-- "bullet" — single bullet item
-- "heading" — sub-section heading within a section
-- "signature_block" — signature area
-`,
+
+RULES:
+- clause: number field = number only (e.g. "1.1"). text field = text only, no number prefix.
+- bullet: level 0 = top level, level 1 = nested. No bullet character in text.
+- table styleHint: "data" | "comparative" | "definition" | "financial". Use "financial" for fee tables. Use "definition" for GDPR tables.
+- callout: use for ALL disclaimers, legal warnings, and the mandatory LEGAL DISCLAIMER at the end of every legal document.
+- signature: Service Provider fields use actual data from brief. Client fields use [placeholder format].
+- divider: use sparingly.
+- density: "compact" for clause sections, "normal" for mixed content, "airy" for intros and bio copy.
+- IDs: section IDs are "s1", "s2" etc. Block IDs are "b1", "b2" etc. — unique across the ENTIRE document.
+- No markdown in any text field. No **, no *, no ##, no backticks.
+- All metadata fields populated from brief — no placeholder text in metadata.`,
     structuredOutput: true,
+    maxOutputTokens: 8000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2361,49 +2260,61 @@ FINAL QUALITY VERIFICATION
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT — MANDATORY
 ═══════════════════════════════════════════════════════════════
-Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+
+Output ONLY a valid JSON object. No markdown. No code fences. No preamble. No trailing text. Start with { and end with }.
+
+Schema:
 {
-  "documentType": "elevator_pitch",
   "metadata": {
-    "businessName": "[trading name from brief]",
-    "legalName": "[legal name from brief]",
-    "address": "[business address from brief]",
-    "email": "[contact email from brief]",
-    "phone": "[phone from brief]",
-    "website": "[website from brief]",
-    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
-    "generatedDate": "May 2026",
-    "version": "1.0"
+    "title": "Full document title",
+    "subtitle": null,
+    "documentType": "elevator_pitch",
+    "businessName": "Trading name from brief — exact spelling",
+    "legalName": "Legal name from brief — exact spelling",
+    "address": "Full address including postcode",
+    "email": "Contact email",
+    "phone": "Phone number",
+    "website": "Website URL",
+    "jurisdiction": "England and Wales",
+    "version": "May 2026",
+    "date": "May 2026"
   },
   "sections": [
     {
-      "id": "section_1",
-      "title": "[Section Title]",
-      "type": "legal",
-      "content": [
-        {
-          "type": "clause",
-          "clauseNumber": "1.1",
-          "text": "[full clause text]"
-        }
+      "id": "s1",
+      "heading": "SECTION HEADING or null",
+      "headingVariant": "section",
+      "density": "normal",
+      "blocks": [
+        { "id": "b1", "type": "heading", "variant": "section", "text": "Heading text" },
+        { "id": "b2", "type": "paragraph", "text": "Paragraph. No markdown. No asterisks." },
+        { "id": "b3", "type": "clause", "number": "1.1", "text": "Clause text. Number is NOT in the text field.", "density": "compact" },
+        { "id": "b4", "type": "bullet", "text": "Bullet text. No leading dash.", "level": 0 },
+        { "id": "b5", "type": "table", "styleHint": "definition", "headers": ["Col A", "Col B"], "rows": [["val", "val"]] },
+        { "id": "b6", "type": "callout", "label": "Important", "text": "Notice text. Use for all legal disclaimers." },
+        { "id": "b7", "type": "signature", "parties": [
+          { "label": "Service Provider", "nameField": "[Legal Name from brief]", "dateField": "[Date]", "companyField": "[Business Name]" },
+          { "label": "Client", "nameField": "[Client Name — to be completed]", "dateField": "[Date — to be completed]", "companyField": "[Client Company — to be completed]" }
+        ]},
+        { "id": "b8", "type": "divider", "weight": "light" }
       ]
     }
   ]
 }
-Section type values:
-- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
-- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
-- "list" — bullet point items
-- "signature" — signature blocks only
-- "table" — key/value or columnar data
-Content type values:
-- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
-- "paragraph" — prose block, no number
-- "bullet" — single bullet item
-- "heading" — sub-section heading within a section
-- "signature_block" — signature area
-`,
+
+RULES:
+- clause: number field = number only (e.g. "1.1"). text field = text only, no number prefix.
+- bullet: level 0 = top level, level 1 = nested. No bullet character in text.
+- table styleHint: "data" | "comparative" | "definition" | "financial". Use "financial" for fee tables. Use "definition" for GDPR tables.
+- callout: use for ALL disclaimers, legal warnings, and the mandatory LEGAL DISCLAIMER at the end of every legal document.
+- signature: Service Provider fields use actual data from brief. Client fields use [placeholder format].
+- divider: use sparingly.
+- density: "compact" for clause sections, "normal" for mixed content, "airy" for intros and bio copy.
+- IDs: section IDs are "s1", "s2" etc. Block IDs are "b1", "b2" etc. — unique across the ENTIRE document.
+- No markdown in any text field. No **, no *, no ##, no backticks.
+- All metadata fields populated from brief — no placeholder text in metadata.`,
     structuredOutput: true,
+    maxOutputTokens: 8000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2606,49 +2517,61 @@ FINAL QUALITY VERIFICATION
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT — MANDATORY
 ═══════════════════════════════════════════════════════════════
-Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+
+Output ONLY a valid JSON object. No markdown. No code fences. No preamble. No trailing text. Start with { and end with }.
+
+Schema:
 {
-  "documentType": "linkedin_script",
   "metadata": {
-    "businessName": "[trading name from brief]",
-    "legalName": "[legal name from brief]",
-    "address": "[business address from brief]",
-    "email": "[contact email from brief]",
-    "phone": "[phone from brief]",
-    "website": "[website from brief]",
-    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
-    "generatedDate": "May 2026",
-    "version": "1.0"
+    "title": "Full document title",
+    "subtitle": null,
+    "documentType": "linkedin_script",
+    "businessName": "Trading name from brief — exact spelling",
+    "legalName": "Legal name from brief — exact spelling",
+    "address": "Full address including postcode",
+    "email": "Contact email",
+    "phone": "Phone number",
+    "website": "Website URL",
+    "jurisdiction": "England and Wales",
+    "version": "May 2026",
+    "date": "May 2026"
   },
   "sections": [
     {
-      "id": "section_1",
-      "title": "[Section Title]",
-      "type": "legal",
-      "content": [
-        {
-          "type": "clause",
-          "clauseNumber": "1.1",
-          "text": "[full clause text]"
-        }
+      "id": "s1",
+      "heading": "SECTION HEADING or null",
+      "headingVariant": "section",
+      "density": "normal",
+      "blocks": [
+        { "id": "b1", "type": "heading", "variant": "section", "text": "Heading text" },
+        { "id": "b2", "type": "paragraph", "text": "Paragraph. No markdown. No asterisks." },
+        { "id": "b3", "type": "clause", "number": "1.1", "text": "Clause text. Number is NOT in the text field.", "density": "compact" },
+        { "id": "b4", "type": "bullet", "text": "Bullet text. No leading dash.", "level": 0 },
+        { "id": "b5", "type": "table", "styleHint": "definition", "headers": ["Col A", "Col B"], "rows": [["val", "val"]] },
+        { "id": "b6", "type": "callout", "label": "Important", "text": "Notice text. Use for all legal disclaimers." },
+        { "id": "b7", "type": "signature", "parties": [
+          { "label": "Service Provider", "nameField": "[Legal Name from brief]", "dateField": "[Date]", "companyField": "[Business Name]" },
+          { "label": "Client", "nameField": "[Client Name — to be completed]", "dateField": "[Date — to be completed]", "companyField": "[Client Company — to be completed]" }
+        ]},
+        { "id": "b8", "type": "divider", "weight": "light" }
       ]
     }
   ]
 }
-Section type values:
-- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
-- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
-- "list" — bullet point items
-- "signature" — signature blocks only
-- "table" — key/value or columnar data
-Content type values:
-- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
-- "paragraph" — prose block, no number
-- "bullet" — single bullet item
-- "heading" — sub-section heading within a section
-- "signature_block" — signature area
-`,
+
+RULES:
+- clause: number field = number only (e.g. "1.1"). text field = text only, no number prefix.
+- bullet: level 0 = top level, level 1 = nested. No bullet character in text.
+- table styleHint: "data" | "comparative" | "definition" | "financial". Use "financial" for fee tables. Use "definition" for GDPR tables.
+- callout: use for ALL disclaimers, legal warnings, and the mandatory LEGAL DISCLAIMER at the end of every legal document.
+- signature: Service Provider fields use actual data from brief. Client fields use [placeholder format].
+- divider: use sparingly.
+- density: "compact" for clause sections, "normal" for mixed content, "airy" for intros and bio copy.
+- IDs: section IDs are "s1", "s2" etc. Block IDs are "b1", "b2" etc. — unique across the ENTIRE document.
+- No markdown in any text field. No **, no *, no ##, no backticks.
+- All metadata fields populated from brief — no placeholder text in metadata.`,
     structuredOutput: true,
+    maxOutputTokens: 10000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2792,6 +2715,7 @@ JSON STRUCTURE:
   },
   "disclaimer": "This is a valid commercial invoice. [Business Trading Name] is [a sole trader / a company registered in England and Wales — adapt to Q3]. [If VAT registered:] VAT registration number: [VAT number]. [If not registered:] [Business Trading Name] is not VAT registered."
 }`,
+    maxOutputTokens: 6000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2870,6 +2794,7 @@ JSON STRUCTURE:
     }
   ]
 }`,
+    maxOutputTokens: 8000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -3009,6 +2934,7 @@ JSON STRUCTURE:
     "legalAdvice": "If the debt remains unpaid after Letter 3, seek legal advice or use a County Court claim form (Form N1) at www.gov.uk/make-court-claim-for-money. Small claims (under £10,000) can be filed online at www.moneyclaims.service.gov.uk."
   }
 }`,
+    maxOutputTokens: 10000,
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -3175,49 +3101,61 @@ For each sheet:
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT — MANDATORY
 ═══════════════════════════════════════════════════════════════
-Output ONLY valid JSON. No markdown. No code fences. No preamble. Start with { end with }.
+
+Output ONLY a valid JSON object. No markdown. No code fences. No preamble. No trailing text. Start with { and end with }.
+
+Schema:
 {
-  "documentType": "service_description_sheets",
   "metadata": {
-    "businessName": "[trading name from brief]",
-    "legalName": "[legal name from brief]",
-    "address": "[business address from brief]",
-    "email": "[contact email from brief]",
-    "phone": "[phone from brief]",
-    "website": "[website from brief]",
-    "jurisdiction": "[England and Wales / Scotland / Northern Ireland from brief]",
-    "generatedDate": "May 2026",
-    "version": "1.0"
+    "title": "Full document title",
+    "subtitle": null,
+    "documentType": "service_description_sheets",
+    "businessName": "Trading name from brief — exact spelling",
+    "legalName": "Legal name from brief — exact spelling",
+    "address": "Full address including postcode",
+    "email": "Contact email",
+    "phone": "Phone number",
+    "website": "Website URL",
+    "jurisdiction": "England and Wales",
+    "version": "May 2026",
+    "date": "May 2026"
   },
   "sections": [
     {
-      "id": "section_1",
-      "title": "[Section Title]",
-      "type": "legal",
-      "content": [
-        {
-          "type": "clause",
-          "clauseNumber": "1.1",
-          "text": "[full clause text]"
-        }
+      "id": "s1",
+      "heading": "SECTION HEADING or null",
+      "headingVariant": "section",
+      "density": "normal",
+      "blocks": [
+        { "id": "b1", "type": "heading", "variant": "section", "text": "Heading text" },
+        { "id": "b2", "type": "paragraph", "text": "Paragraph. No markdown. No asterisks." },
+        { "id": "b3", "type": "clause", "number": "1.1", "text": "Clause text. Number is NOT in the text field.", "density": "compact" },
+        { "id": "b4", "type": "bullet", "text": "Bullet text. No leading dash.", "level": 0 },
+        { "id": "b5", "type": "table", "styleHint": "definition", "headers": ["Col A", "Col B"], "rows": [["val", "val"]] },
+        { "id": "b6", "type": "callout", "label": "Important", "text": "Notice text. Use for all legal disclaimers." },
+        { "id": "b7", "type": "signature", "parties": [
+          { "label": "Service Provider", "nameField": "[Legal Name from brief]", "dateField": "[Date]", "companyField": "[Business Name]" },
+          { "label": "Client", "nameField": "[Client Name — to be completed]", "dateField": "[Date — to be completed]", "companyField": "[Client Company — to be completed]" }
+        ]},
+        { "id": "b8", "type": "divider", "weight": "light" }
       ]
     }
   ]
 }
-Section type values:
-- "legal" — numbered clauses (use for all contract/T&C/privacy sections)
-- "narrative" — paragraphs of prose (use for bio, pitch, LinkedIn copy)
-- "list" — bullet point items
-- "signature" — signature blocks only
-- "table" — key/value or columnar data
-Content type values:
-- "clause" — requires clauseNumber field (e.g. "1.1", "1.1.1")
-- "paragraph" — prose block, no number
-- "bullet" — single bullet item
-- "heading" — sub-section heading within a section
-- "signature_block" — signature area
-`,
+
+RULES:
+- clause: number field = number only (e.g. "1.1"). text field = text only, no number prefix.
+- bullet: level 0 = top level, level 1 = nested. No bullet character in text.
+- table styleHint: "data" | "comparative" | "definition" | "financial". Use "financial" for fee tables. Use "definition" for GDPR tables.
+- callout: use for ALL disclaimers, legal warnings, and the mandatory LEGAL DISCLAIMER at the end of every legal document.
+- signature: Service Provider fields use actual data from brief. Client fields use [placeholder format].
+- divider: use sparingly.
+- density: "compact" for clause sections, "normal" for mixed content, "airy" for intros and bio copy.
+- IDs: section IDs are "s1", "s2" etc. Block IDs are "b1", "b2" etc. — unique across the ENTIRE document.
+- No markdown in any text field. No **, no *, no ##, no backticks.
+- All metadata fields populated from brief — no placeholder text in metadata.`,
     structuredOutput: true,
+    maxOutputTokens: 14000,
   },
 };
 
