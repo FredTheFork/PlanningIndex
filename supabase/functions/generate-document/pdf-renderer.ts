@@ -4,837 +4,1081 @@
 
 import { jsPDF } from 'npm:jspdf@2.5.2';
 import {
-  AnyDocument, StructuredDocument, InvoiceDocument, LatePaymentDocument,
-  WelcomeEmailDocument, DocumentSection, ContentItem, detectDocumentKind,
-  ClauseContent, ParagraphContent, BulletContent, HeadingContent,
-  SignatureBlockContent, TableContent,
+  AnyDocument, DocumentModel, DocumentMetadata, DocumentSection, DocumentBlock,
+  HeadingBlock, ParagraphBlock, ClauseBlock, BulletBlock, TableBlock,
+  CalloutBlock, SignatureBlock, DividerBlock, BlockDensity,
+  detectDocumentKind, InvoiceDocument, LatePaymentDocument, WelcomeEmailDocument,
+  StructuredDocument,
 } from './document-types.ts';
-import { ClientDesign, parseBrandColours, hexToRgb } from './rendering.ts';
+import { DesignSystem, resolveDesignSystem, hexToToken, tintColour } from './design-system.ts';
+import { ClientDesign, parseBrandColours } from './rendering.ts';
 
-// ── Layout Constants ──
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
-const M_LEFT = 56;
-const M_RIGHT = 56;
-const M_TOP = 72;
-const M_BOTTOM = 72;
+const M_LEFT = 57;
+const M_RIGHT = 57;
+const M_TOP = 64;
+const M_BOTTOM = 64;
+const HEADER_H = 30;
+const FOOTER_H = 24;
 const CONTENT_W = PAGE_W - M_LEFT - M_RIGHT;
 
-// ── Colour Helpers ──
+// ─────────────────────────────────────────────────────────────────────────────
+// PDF LAYOUT ENGINE CLASS
+// ─────────────────────────────────────────────────────────────────────────────
 
-function hexToJsPdf(hex: string): [number, number, number] {
-  const rgb = hexToRgb(hex);
-  return [Math.round(rgb.r * 255), Math.round(rgb.g * 255), Math.round(rgb.b * 255)];
-}
+class PdfLayoutEngine {
+  public doc: jsPDF;
+  private ds: DesignSystem;
+  private metadata: DocumentMetadata | null = null;
+  private logoBase64: string | null;
+  private y: number;
+  private pageNum = 1;
 
-function lightenHex(hex: string, amount: number): [number, number, number] {
-  const rgb = hexToRgb(hex);
-  const f = amount / 100;
-  return [
-    Math.min(255, Math.round(rgb.r * 255 + (255 - rgb.r * 255) * f)),
-    Math.min(255, Math.round(rgb.g * 255 + (255 - rgb.g * 255) * f)),
-    Math.min(255, Math.round(rgb.b * 255 + (255 - rgb.b * 255) * f)),
-  ];
-}
+  // Pre-computed RGB arrays for colour tokens
+  private readonly primRgb: [number, number, number];
+  private readonly secRgb: [number, number, number];
+  private readonly accentRgb: [number, number, number];
+  private readonly surfaceRgb: [number, number, number];
+  private readonly bodyRgb: [number, number, number];
+  private readonly mutedRgb: [number, number, number];
 
-// ── PDF State Tracker ──
+  constructor(design: ClientDesign) {
+    this.doc = new jsPDF({ unit: 'pt', format: 'a4', hotfixes: ['px_scaling'] });
+    this.ds = resolveDesignSystem(design);
+    this.logoBase64 = design.logoBase64;
+    this.y = M_TOP + HEADER_H + 12;
 
-interface PdfState {
-  doc: jsPDF;
-  y: number;
-  page: number;
-  colours: { primary: string; secondary: string; accent: string };
-  primaryRgb: [number, number, number];
-  secondaryRgb: [number, number, number];
-  accentRgb: [number, number, number];
-  primaryLight: [number, number, number];
-  design: ClientDesign;
-}
-
-function createState(doc: jsPDF, design: ClientDesign): PdfState {
-  const colours = parseBrandColours(design.brandColours);
-  return {
-    doc,
-    y: M_TOP,
-    page: 1,
-    colours,
-    primaryRgb: hexToJsPdf(colours.primary),
-    secondaryRgb: hexToJsPdf(colours.secondary),
-    accentRgb: hexToJsPdf(colours.accent),
-    primaryLight: lightenHex(colours.primary, 92),
-    design,
-  };
-}
-
-function needsNewPage(s: PdfState, needed: number): boolean {
-  return s.y + needed > PAGE_H - M_BOTTOM;
-}
-
-function addPage(s: PdfState): void {
-  s.doc.addPage();
-  s.page++;
-  s.y = M_TOP;
-  drawPageHeader(s);
-  drawPageFooter(s);
-  s.y = M_TOP + 18;
-}
-
-function ensureSpace(s: PdfState, needed: number): void {
-  if (needsNewPage(s, needed)) addPage(s);
-}
-
-// ── Page Decorations ──
-
-function drawPageHeader(s: PdfState): void {
-  const d = s.doc;
-  d.setDrawColor(...s.primaryRgb);
-  d.setLineWidth(0.6);
-  d.line(M_LEFT, M_TOP - 12, PAGE_W - M_RIGHT, M_TOP - 12);
-  d.setFontSize(7);
-  d.setTextColor(...s.primaryRgb);
-  d.setFont('helvetica', 'normal');
-  d.text(s.design.businessName, M_LEFT, M_TOP - 16);
-}
-
-function drawPageFooter(s: PdfState): void {
-  const d = s.doc;
-  const footerY = PAGE_H - M_BOTTOM + 16;
-  d.setDrawColor(...s.primaryRgb);
-  d.setLineWidth(0.4);
-  d.line(M_LEFT, footerY - 6, PAGE_W - M_RIGHT, footerY - 6);
-  d.setFontSize(7);
-  d.setTextColor(140, 146, 168);
-  d.setFont('helvetica', 'italic');
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  d.text(`${s.design.businessName}  |  ${dateStr}  |  Page ${s.page}`, M_LEFT, footerY);
-}
-
-// ── Cover Page ──
-
-function drawCoverPage(s: PdfState, docLabel: string): void {
-  const d = s.doc;
-
-  // Top gradient bar
-  d.setFillColor(...s.primaryRgb);
-  d.rect(0, 0, PAGE_W, 8, 'F');
-  d.setFillColor(...s.accentRgb);
-  d.rect(PAGE_W * 0.6, 0, PAGE_W * 0.4, 8, 'F');
-
-  // Bottom accent
-  d.setFillColor(...s.primaryRgb);
-  d.setGState(new d.GState({ opacity: 0.15 }));
-  d.rect(0, PAGE_H - 4, PAGE_W, 4, 'F');
-  d.setGState(new d.GState({ opacity: 1.0 }));
-
-  // Left accent bar
-  d.setFillColor(...s.accentRgb);
-  d.rect(M_LEFT - 16, PAGE_H * 0.25, 4, PAGE_H * 0.35, 'F');
-
-  // Logo
-  if (s.design.logoBase64) {
-    try {
-      const dataUrl = s.design.logoBase64;
-      const mimeMatch = dataUrl.match(/^data:(image\/\w+);base64,/);
-      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-      const fmt = mime.includes('png') ? 'PNG' : 'JPEG';
-      d.addImage(dataUrl, fmt, M_LEFT, PAGE_H * 0.28, 120, 50);
-    } catch { /* skip if image fails */ }
+    // Pre-compute RGB values from DesignSystem colour tokens
+    this.primRgb = [this.ds.primary.r, this.ds.primary.g, this.ds.primary.b];
+    this.secRgb = [this.ds.secondary.r, this.ds.secondary.g, this.ds.secondary.b];
+    this.accentRgb = [this.ds.accent.r, this.ds.accent.g, this.ds.accent.b];
+    this.surfaceRgb = [this.ds.surface.r, this.ds.surface.g, this.ds.surface.b];
+    this.bodyRgb = [this.ds.bodyTextColour.r, this.ds.bodyTextColour.g, this.ds.bodyTextColour.b];
+    this.mutedRgb = [this.ds.mutedTextColour.r, this.ds.mutedTextColour.g, this.ds.mutedTextColour.b];
   }
 
-  // Title
-  const titleY = PAGE_H * 0.42;
-  d.setFontSize(30);
-  d.setTextColor(...s.primaryRgb);
-  d.setFont('helvetica', 'bold');
-  const lines = d.splitTextToSize(docLabel, CONTENT_W);
-  d.text(lines, M_LEFT, titleY);
-
-  // Subtitle
-  let nextY = titleY + lines.length * 14 + 12;
-  const displayName = s.design.brandIdentity === 'My personal name is the brand — I want documents to feel personal'
-    ? (s.design.firstName || s.design.businessName) : s.design.businessName;
-  d.setFontSize(13);
-  d.setTextColor(100, 108, 130);
-  d.setFont('helvetica', 'italic');
-  d.text(`Prepared for ${displayName}`, M_LEFT, nextY);
-
-  // Business name
-  nextY += 16;
-  d.setFontSize(10);
-  d.setTextColor(140, 146, 168);
-  d.setFont('helvetica', 'normal');
-  d.text(s.design.businessName, M_LEFT, nextY);
-
-  // Date
-  nextY += 14;
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  d.text(dateStr, M_LEFT, nextY);
-
-  // Separator line below info
-  nextY += 20;
-  d.setDrawColor(...s.primaryRgb);
-  d.setLineWidth(1.2);
-  d.line(M_LEFT, nextY, PAGE_W - M_RIGHT, nextY);
-
-  // Add page footer on cover
-  s.page = 1;
-  drawPageFooter(s);
-
-  // New page for content
-  d.addPage();
-  s.page = 2;
-  s.y = M_TOP + 18;
-  drawPageHeader(s);
-  drawPageFooter(s);
-}
-
-// ── Section Rendering ──
-
-function drawSection(s: PdfState, section: DocumentSection): void {
-  const d = s.doc;
-
-  if (section.title) {
-    ensureSpace(s, 36);
-    // Section header bar
-    d.setFillColor(...s.primaryLight);
-    d.rect(M_LEFT, s.y - 4, CONTENT_W, 24, 'F');
-    d.setDrawColor(...s.primaryRgb);
-    d.setLineWidth(0.8);
-    d.line(M_LEFT, s.y + 20, PAGE_W - M_RIGHT, s.y + 20);
-
-    // Accent bar
-    d.setFillColor(...s.accentRgb);
-    d.rect(M_LEFT, s.y - 4, 3, 24, 'F');
-
-    // Title text
-    d.setFontSize(14);
-    d.setTextColor(...s.primaryRgb);
-    d.setFont('helvetica', 'bold');
-    d.text(section.title, M_LEFT + 10, s.y + 10);
-    s.y += 30;
+  setMetadata(metadata: DocumentMetadata): void {
+    this.metadata = metadata;
   }
 
-  for (const item of section.content) {
-    drawContentItem(s, item);
+  // ── Layout Helpers ──
+
+  private measureH(text: string | string[], fontSizePt: number, maxWidth: number, lineSpacing: number = 5): number {
+    this.doc.setFontSize(fontSizePt);
+    const lines = Array.isArray(text) ? text : this.doc.splitTextToSize(text, maxWidth);
+    return lines.length * lineSpacing;
   }
 
-  s.y += 8;
-}
-
-function drawContentItem(s: PdfState, item: ContentItem): void {
-  const d = s.doc;
-
-  switch (item.type) {
-    case 'clause': {
-      const clause = item as ClauseContent;
-      const numText = clause.clauseNumber + '.';
-      const bodyText = clause.text;
-      const numW = d.getStringUnitWidth(numText) * 10 / d.internal.scaleFactor;
-      const indent = Math.max(numW + 4, 36);
-      const bodyW = CONTENT_W - indent;
-
-      d.setFontSize(10);
-      d.setFont('helvetica', 'bold');
-      d.setTextColor(...s.primaryRgb);
-
-      const bodyLines = d.splitTextToSize(bodyText, bodyW);
-      const totalH = bodyLines.length * 5 + 4;
-      ensureSpace(s, totalH);
-
-      d.text(numText, M_LEFT, s.y);
-
-      d.setFont('helvetica', 'normal');
-      d.setTextColor(30, 30, 46);
-      d.text(bodyLines, M_LEFT + indent, s.y);
-      s.y += totalH;
-      break;
+  private ensureSpace(needed: number): void {
+    const bottomBoundary = PAGE_H - M_BOTTOM - FOOTER_H - 10;
+    if (this.y + needed > bottomBoundary) {
+      this.addPage();
     }
-    case 'paragraph': {
-      const para = item as ParagraphContent;
-      d.setFontSize(10);
-      d.setFont('helvetica', 'normal');
-      d.setTextColor(30, 30, 46);
-      const lines = d.splitTextToSize(para.text, CONTENT_W);
-      const h = lines.length * 5 + 4;
-      ensureSpace(s, h);
-      d.text(lines, M_LEFT, s.y);
-      s.y += h;
-      break;
-    }
-    case 'bullet': {
-      const bullet = item as BulletContent;
-      d.setFontSize(10);
-      d.setFont('helvetica', 'bold');
-      d.setTextColor(...s.accentRgb);
-      ensureSpace(s, 10);
-      d.text('\u2022', M_LEFT + 8, s.y);
-      d.setFont('helvetica', 'normal');
-      d.setTextColor(30, 30, 46);
-      const lines = d.splitTextToSize(bullet.text, CONTENT_W - 18);
-      d.text(lines, M_LEFT + 18, s.y);
-      s.y += lines.length * 5 + 3;
-      break;
-    }
-    case 'heading': {
-      const heading = item as HeadingContent;
-      d.setFontSize(11);
-      d.setFont('helvetica', 'bolditalic');
-      d.setTextColor(...s.secondaryRgb);
-      const lines = d.splitTextToSize(heading.text, CONTENT_W);
-      ensureSpace(s, lines.length * 5 + 8);
-      d.text(lines, M_LEFT, s.y);
-      s.y += lines.length * 5 + 8;
-      break;
-    }
-    case 'signature_block': {
-      const sig = item as SignatureBlockContent;
-      ensureSpace(s, 70);
-      // Box
-      d.setFillColor(248, 249, 251);
-      d.setDrawColor(226, 230, 237);
-      d.setLineWidth(0.3);
-      d.roundedRect(M_LEFT, s.y, CONTENT_W, 60, 3, 3, 'FD');
+  }
 
-      // Party
-      d.setFontSize(10);
-      d.setFont('helvetica', 'bold');
-      d.setTextColor(...s.primaryRgb);
-      d.text(sig.party, M_LEFT + 10, s.y + 12);
+  private addPage(): void {
+    this.doc.addPage();
+    this.pageNum++;
+    this.y = M_TOP + HEADER_H + 12;
+    this.drawPageHeader();
+    this.drawPageFooter();
+  }
 
-      // Sign line
-      d.setDrawColor(200, 204, 212);
-      d.setLineWidth(0.2);
-      d.line(M_LEFT + 10, s.y + 28, M_LEFT + 200, s.y + 28);
-      d.line(M_LEFT + 10, s.y + 42, M_LEFT + 200, s.y + 42);
+  // ── Primitive Drawing ──
 
-      // Labels
-      d.setFontSize(8);
-      d.setTextColor(140, 146, 168);
-      d.setFont('helvetica', 'normal');
-      d.text(sig.signLine || 'Signed:', M_LEFT + 10, s.y + 32);
-      d.text(sig.dateLine || 'Date:', M_LEFT + 10, s.y + 46);
+  private drawText(text: string, x: number, y: number, options?: { fontSize?: number; colour?: 'primary' | 'secondary' | 'accent' | 'body' | 'muted' | 'white'; weight?: 'normal' | 'bold'; maxWidth?: number; align?: 'left' | 'center' | 'right' }): void {
+    const fontSize = options?.fontSize ?? this.ds.type.bodyPt;
+    const colour = options?.colour ?? 'body';
+    const weight = options?.weight ?? 'normal';
+    const align = options?.align ?? 'left';
 
-      // Name
-      d.setFontSize(9);
-      d.setTextColor(30, 30, 46);
-      d.setFont('helvetica', 'normal');
-      d.text(`${sig.nameLabel}: ${sig.nameValue}`, M_LEFT + 10, s.y + 54);
+    this.doc.setFontSize(fontSize);
+    this.doc.setFont('helvetica', weight);
 
-      if (sig.extraFields) {
-        let ey = s.y + 54;
-        for (const f of sig.extraFields) {
-          ey += 8;
-          d.text(`${f.label}: ${f.value}`, M_LEFT + 10, ey);
-        }
+    const rgbMap: Record<string, [number, number, number]> = {
+      primary: this.primRgb,
+      secondary: this.secRgb,
+      accent: this.accentRgb,
+      body: this.bodyRgb,
+      muted: this.mutedRgb,
+      white: [255, 255, 255],
+    };
+    this.doc.setTextColor(...rgbMap[colour]);
+
+    if (options?.maxWidth) {
+      const lines = this.doc.splitTextToSize(text, options.maxWidth);
+      for (const line of lines) {
+        this.doc.text(line, x, y, { align } as any);
+        y += fontSize * 0.45;
       }
-
-      s.y += 70;
-      break;
-    }
-    case 'table': {
-      const tbl = item as TableContent;
-      drawTable(s, tbl.headers, tbl.rows);
-      break;
+    } else {
+      this.doc.text(text, x, y, { align } as any);
     }
   }
-}
 
-function drawTable(s: PdfState, headers: string[], rows: string[][]): void {
-  const d = s.doc;
-  const colCount = headers.length;
-  const colW = CONTENT_W / colCount;
-  const rowH = 14;
-  const totalH = (rows.length + 1) * rowH + 8;
-  ensureSpace(s, Math.min(totalH, 100));
-
-  // Header row
-  d.setFillColor(...s.primaryRgb);
-  d.rect(M_LEFT, s.y, CONTENT_W, rowH, 'F');
-  d.setFontSize(9);
-  d.setFont('helvetica', 'bold');
-  d.setTextColor(255, 255, 255);
-  headers.forEach((h, i) => {
-    d.text(h, M_LEFT + i * colW + 6, s.y + 10, { maxWidth: colW - 12 });
-  });
-  s.y += rowH;
-
-  // Data rows
-  for (let ri = 0; ri < rows.length; ri++) {
-    const row = rows[ri];
-    if (needsNewPage(s, rowH)) {
-      addPage(s);
-      // Re-draw header
-      d.setFillColor(...s.primaryRgb);
-      d.rect(M_LEFT, s.y, CONTENT_W, rowH, 'F');
-      d.setTextColor(255, 255, 255);
-      d.setFont('helvetica', 'bold');
-      d.setFontSize(9);
-      headers.forEach((h, i) => {
-        d.text(h, M_LEFT + i * colW + 6, s.y + 10, { maxWidth: colW - 12 });
-      });
-      s.y += rowH;
-    }
-
-    if (ri % 2 === 1) {
-      d.setFillColor(...s.primaryLight);
-      d.rect(M_LEFT, s.y, CONTENT_W, rowH, 'F');
-    }
-
-    d.setFontSize(9);
-    d.setFont('helvetica', 'normal');
-    d.setTextColor(30, 30, 46);
-    row.forEach((cell, i) => {
-      d.text(cell, M_LEFT + i * colW + 6, s.y + 10, { maxWidth: colW - 12 });
-    });
-
-    d.setDrawColor(226, 230, 237);
-    d.setLineWidth(0.15);
-    d.line(M_LEFT, s.y + rowH, PAGE_W - M_RIGHT, s.y + rowH);
-    s.y += rowH;
+  private drawRule(x1: number, y: number, x2: number, colour: 'primary' | 'secondary' | 'accent' | 'muted' = 'primary', weight: number = 0.8): void {
+    const rgbMap: Record<string, [number, number, number]> = {
+      primary: this.primRgb,
+      secondary: this.secRgb,
+      accent: this.accentRgb,
+      muted: this.mutedRgb,
+    };
+    this.doc.setDrawColor(...rgbMap[colour]);
+    this.doc.setLineWidth(weight);
+    this.doc.line(x1, y, x2, y);
   }
-  s.y += 6;
-}
 
-// ── Invoice PDF ──
+  private drawRect(x: number, y: number, w: number, h: number, colour: 'primary' | 'secondary' | 'accent' | 'surface', opacity: number = 1.0): void {
+    const rgbMap: Record<string, [number, number, number]> = {
+      primary: this.primRgb,
+      secondary: this.secRgb,
+      accent: this.accentRgb,
+      surface: this.surfaceRgb,
+    };
+    const [r, g, b] = rgbMap[colour];
+    this.doc.setFillColor(r, g, b);
+    if (opacity < 1.0) {
+      this.doc.setGState(new (this.doc as any).GState({ opacity }));
+    }
+    this.doc.rect(x, y, w, h, 'F');
+    this.doc.setGState(new (this.doc as any).GState({ opacity: 1.0 }));
+  }
 
-function drawInvoicePdf(s: PdfState, doc: InvoiceDocument): void {
-  const d = s.doc;
-
-  // Top bar
-  d.setFillColor(...s.primaryRgb);
-  d.rect(0, 0, PAGE_W, 6, 'F');
-
-  // Logo
-  let infoStartY = M_TOP;
-  if (s.design.logoBase64) {
+  private drawImage(dataUrl: string, x: number, y: number, maxW: number, maxH: number): void {
     try {
-      const dataUrl = s.design.logoBase64;
-      const mimeMatch = dataUrl.match(/^data:(image\/\w+);base64,/);
-      const fmt = mimeMatch && mimeMatch[1].includes('png') ? 'PNG' : 'JPEG';
-      d.addImage(dataUrl, fmt, M_LEFT, M_TOP, 80, 36);
-      infoStartY = M_TOP + 42;
-    } catch { /* skip */ }
+      const format = dataUrl.includes('image/png') ? 'PNG' : 'JPEG';
+      this.doc.addImage(dataUrl, format, x, y, maxW, maxH, undefined, 'FAST');
+    } catch {
+      // Logo rendering must always be wrapped in try/catch per hard constraints
+    }
   }
 
-  // Business info (left column)
-  d.setFontSize(16);
-  d.setTextColor(...s.primaryRgb);
-  d.setFont('helvetica', 'bold');
-  d.text(doc.businessInfo.tradingName, M_LEFT, infoStartY);
-
-  d.setFontSize(8);
-  d.setTextColor(60, 60, 80);
-  d.setFont('helvetica', 'normal');
-  let iy = infoStartY + 10;
-  for (const line of [doc.businessInfo.address, doc.businessInfo.phone, doc.businessInfo.email]) {
-    if (line) { d.text(line, M_LEFT, iy); iy += 8; }
-  }
-  if (doc.metadata.vatRegistered && doc.metadata.vatNumber) {
-    d.text(`VAT No: ${doc.metadata.vatNumber}`, M_LEFT, iy);
+  private addSpacing(pt: number): void {
+    this.y += pt;
   }
 
-  // Invoice details (right column)
-  const rightX = PAGE_W - M_RIGHT - 140;
-  d.setFillColor(...s.primaryLight);
-  d.roundedRect(rightX, M_TOP, 140, 60, 3, 3, 'F');
+  // ── Page Chrome ──
 
-  d.setFontSize(9);
-  d.setTextColor(...s.primaryRgb);
-  d.setFont('helvetica', 'bold');
-  d.text('Invoice Details', rightX + 10, M_TOP + 14);
+  private drawPageHeader(): void {
+    const headerY = M_TOP - 6;
 
-  d.setFontSize(8);
-  d.setTextColor(60, 60, 80);
-  d.setFont('helvetica', 'normal');
-  const details = [
-    `Invoice: ${doc.invoiceFields.invoiceNumberFormat}`,
-    `Date: ${doc.invoiceFields.dateFormat}`,
-    `Due: ${doc.invoiceFields.dueDateFormat}`,
-  ];
-  if (doc.invoiceFields.showPoNumber) details.push(`PO: ${doc.invoiceFields.poNumberFormat}`);
-  details.forEach((line, i) => d.text(line, rightX + 10, M_TOP + 24 + i * 8));
-
-  s.y = M_TOP + 70;
-
-  // Bill To
-  d.setFillColor(248, 249, 251);
-  d.roundedRect(M_LEFT, s.y, CONTENT_W, 44, 3, 3, 'F');
-  d.setFontSize(10);
-  d.setTextColor(...s.primaryRgb);
-  d.setFont('helvetica', 'bold');
-  d.text('BILL TO', M_LEFT + 10, s.y + 12);
-  d.setFontSize(9);
-  d.setTextColor(30, 30, 46);
-  d.setFont('helvetica', 'normal');
-  const billLines = [doc.billToPlaceholders.clientName, doc.billToPlaceholders.company, doc.billToPlaceholders.addressLine1, doc.billToPlaceholders.addressLine2].filter(Boolean);
-  billLines.forEach((l, i) => d.text(l, M_LEFT + 10, s.y + 22 + i * 7));
-  s.y += 54;
-
-  // Services table
-  d.setFontSize(10);
-  d.setTextColor(...s.primaryRgb);
-  d.setFont('helvetica', 'bold');
-  d.text('SERVICES RENDERED', M_LEFT, s.y);
-  s.y += 4;
-  drawTable(s, ['Description', 'Qty', 'Unit Price', 'Amount'],
-    doc.lineItems.map(i => [i.description, i.quantity, i.unitPrice, i.amount]));
-
-  // Totals
-  ensureSpace(s, 50);
-  const totalsX = PAGE_W - M_RIGHT - 160;
-  d.setFontSize(9);
-  d.setTextColor(30, 30, 46);
-  d.setFont('helvetica', 'normal');
-  d.text('Subtotal', totalsX, s.y);
-  d.text(doc.totals.subtotal, PAGE_W - M_RIGHT, s.y, { align: 'right' });
-  s.y += 10;
-  if (doc.totals.showVatLine) {
-    d.text(`VAT (${doc.totals.vatPercentage}%)`, totalsX, s.y);
-    d.text(doc.totals.vatAmount, PAGE_W - M_RIGHT, s.y, { align: 'right' });
-    s.y += 10;
-  }
-
-  // Total Due bar
-  d.setFillColor(...s.primaryRgb);
-  d.rect(totalsX - 4, s.y - 4, PAGE_W - M_RIGHT - totalsX + 8, 14, 'F');
-  d.setTextColor(255, 255, 255);
-  d.setFont('helvetica', 'bold');
-  d.setFontSize(10);
-  d.text('TOTAL DUE', totalsX + 4, s.y + 5);
-  d.text(doc.totals.totalDue, PAGE_W - M_RIGHT - 4, s.y + 5, { align: 'right' });
-  s.y += 24;
-
-  // Payment terms
-  ensureSpace(s, 60);
-  d.setTextColor(...s.primaryRgb);
-  d.setFontSize(10);
-  d.setFont('helvetica', 'bold');
-  d.text('PAYMENT TERMS & METHODS', M_LEFT, s.y);
-  d.setDrawColor(...s.accentRgb);
-  d.setLineWidth(0.4);
-  d.line(M_LEFT, s.y + 2, PAGE_W - M_RIGHT, s.y + 2);
-  s.y += 12;
-
-  d.setFontSize(9);
-  d.setTextColor(30, 30, 46);
-  d.setFont('helvetica', 'normal');
-  d.text(doc.paymentTerms.paymentDeadline, M_LEFT, s.y);
-  s.y += 10;
-
-  doc.paymentTerms.paymentMethods.forEach(m => {
-    ensureSpace(s, 10);
-    d.setTextColor(...s.accentRgb);
-    d.setFont('helvetica', 'bold');
-    d.text('\u2022', M_LEFT + 8, s.y);
-    d.setTextColor(30, 30, 46);
-    d.setFont('helvetica', 'normal');
-    d.text(m, M_LEFT + 16, s.y);
-    s.y += 8;
-  });
-
-  if (doc.paymentTerms.bankTransferDetails.show) {
-    s.y += 4;
-    d.setFont('helvetica', 'bold');
-    d.text('Bank Details:', M_LEFT, s.y);
-    s.y += 8;
-    d.setFont('helvetica', 'normal');
-    d.text(`Account: ${doc.paymentTerms.bankTransferDetails.accountName}`, M_LEFT + 16, s.y); s.y += 7;
-    d.text(`Sort Code: ${doc.paymentTerms.bankTransferDetails.sortCode}`, M_LEFT + 16, s.y); s.y += 7;
-    d.text(`Account No: ${doc.paymentTerms.bankTransferDetails.accountNumber}`, M_LEFT + 16, s.y); s.y += 7;
-  }
-
-  d.text(`Reference: ${doc.paymentTerms.paymentReference}`, M_LEFT, s.y);
-  s.y += 16;
-
-  // Late payment
-  ensureSpace(s, 30);
-  d.setTextColor(...s.primaryRgb);
-  d.setFontSize(10);
-  d.setFont('helvetica', 'bold');
-  d.text('LATE PAYMENT NOTICE', M_LEFT, s.y);
-  d.line(M_LEFT, s.y + 2, PAGE_W - M_RIGHT, s.y + 2);
-  s.y += 12;
-  d.setFontSize(8);
-  d.setTextColor(30, 30, 46);
-  d.setFont('helvetica', 'normal');
-  const lpLines = d.splitTextToSize(doc.latePaymentClause, CONTENT_W);
-  d.text(lpLines, M_LEFT, s.y);
-  s.y += lpLines.length * 4 + 8;
-
-  // Notes
-  if (doc.optionalFields.showNotesSection) {
-    ensureSpace(s, 20);
-    d.setTextColor(...s.primaryRgb);
-    d.setFontSize(10);
-    d.setFont('helvetica', 'bold');
-    d.text('NOTES', M_LEFT, s.y);
-    s.y += 10;
-    d.setFontSize(8);
-    d.setTextColor(30, 30, 46);
-    d.setFont('helvetica', 'normal');
-    const noteLines = d.splitTextToSize(doc.optionalFields.notesPlaceholder, CONTENT_W);
-    d.text(noteLines, M_LEFT, s.y);
-    s.y += noteLines.length * 4 + 8;
-  }
-
-  // Footer
-  s.y += 20;
-  d.setDrawColor(...s.primaryRgb);
-  d.setLineWidth(0.6);
-  d.line(M_LEFT, s.y, PAGE_W - M_RIGHT, s.y);
-  s.y += 10;
-  d.setFontSize(8);
-  d.setTextColor(100, 108, 130);
-  d.setFont('helvetica', 'italic');
-  d.text('Thank you for your business.', PAGE_W / 2, s.y, { align: 'center' });
-  s.y += 8;
-  d.text(`${doc.businessInfo.legalName}  |  ${doc.businessInfo.email}  |  ${doc.businessInfo.phone}`, PAGE_W / 2, s.y, { align: 'center' });
-}
-
-// ── Late Payment Letters PDF ──
-
-function drawLatePaymentPdf(s: PdfState, doc: LatePaymentDocument): void {
-  const d = s.doc;
-
-  // Top bar
-  d.setFillColor(...s.primaryRgb);
-  d.rect(0, 0, PAGE_W, 6, 'F');
-
-  for (let li = 0; li < doc.letters.length; li++) {
-    if (li > 0) { d.addPage(); s.page++; s.y = M_TOP + 18; drawPageHeader(s); drawPageFooter(s); }
-
-    const letter = doc.letters[li];
-
-    // Letterhead
-    d.setFontSize(12);
-    d.setTextColor(...s.primaryRgb);
-    d.setFont('helvetica', 'bold');
-    const lhLines = d.splitTextToSize(letter.letterhead, CONTENT_W);
-    d.text(lhLines, M_LEFT, s.y);
-    s.y += lhLines.length * 6 + 4;
-    d.setDrawColor(...s.primaryRgb);
-    d.setLineWidth(0.8);
-    d.line(M_LEFT, s.y, PAGE_W - M_RIGHT, s.y);
-    s.y += 10;
-
-    // Heading (Letter 3)
-    if (letter.heading) {
-      ensureSpace(s, 30);
-      d.setFillColor(...s.primaryLight);
-      d.rect(M_LEFT, s.y - 4, CONTENT_W, 20, 'F');
-      d.setDrawColor(...s.primaryRgb);
-      d.setLineWidth(0.8);
-      d.rect(M_LEFT, s.y - 4, CONTENT_W, 20, 'S');
-      d.setFontSize(10);
-      d.setTextColor(...s.primaryRgb);
-      d.setFont('helvetica', 'bold');
-      const hLines = d.splitTextToSize(letter.heading, CONTENT_W - 20);
-      d.text(hLines, PAGE_W / 2, s.y + 6, { align: 'center' });
-      s.y += 24;
+    // Top accent line
+    if (this.ds.useTopAccentBar) {
+      this.drawRect(0, 0, PAGE_W, 4, 'accent');
     }
 
-    // Addressee
-    d.setFontSize(9);
-    d.setTextColor(80, 86, 104);
-    d.setFont('helvetica', 'normal');
-    const addrLines = d.splitTextToSize(letter.addresseeBlock, CONTENT_W);
-    d.text(addrLines, M_LEFT, s.y);
-    s.y += addrLines.length * 5 + 6;
+    // Business name
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    const businessName = this.metadata?.businessName || 'Foundationary';
+    this.doc.text(businessName, M_LEFT, headerY);
+
+    // Page number on right
+    this.doc.setTextColor(...this.mutedRgb);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text(`Page ${this.pageNum}`, PAGE_W - M_RIGHT, headerY, { align: 'right' });
+
+    // Thin rule below header
+    this.drawRule(M_LEFT, headerY + 6, PAGE_W - M_RIGHT, 'accent', 0.4);
+  }
+
+  private drawPageFooter(): void {
+    const footerY = PAGE_H - M_BOTTOM + 6;
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    this.drawRule(M_LEFT, footerY - 10, PAGE_W - M_RIGHT, 'accent', 0.4);
+
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'italic');
+    this.doc.setTextColor(...this.mutedRgb);
+    this.doc.text(`Generated by Foundationary  |  ${dateStr}`, M_LEFT, footerY);
+  }
+
+  // ── Cover Page ──
+
+  drawCoverPage(displayName: string, docLabel: string): void {
+    // Top gradient bar
+    this.drawRect(0, 0, PAGE_W * 0.6, 4, 'primary');
+    this.drawRect(PAGE_W * 0.6, 0, PAGE_W * 0.4, 4, 'accent');
+
+    // Bottom accent (subtle)
+    this.drawRect(0, PAGE_H - 4, PAGE_W, 4, 'primary', 0.15);
+
+    // Left accent bar (decorative)
+    const accentBarX = M_LEFT - 12;
+    const accentBarY = PAGE_H * 0.28;
+    const accentBarH = PAGE_H * 0.40;
+    this.drawRect(accentBarX, accentBarY, 4, accentBarH, 'accent');
+
+    // Logo
+    const logoY = PAGE_H * 0.28;
+    if (this.logoBase64) {
+      try {
+        this.drawImage(this.logoBase64, M_LEFT, logoY, 120, 45);
+      } catch {
+        // Logo rendering must always be wrapped in try/catch
+      }
+    }
+
+    // Title
+    const titleY = PAGE_H * 0.42;
+    this.doc.setFontSize(this.ds.type.displayPt);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    const titleLines = this.doc.splitTextToSize(docLabel, CONTENT_W);
+    let lineY = titleY;
+    for (const line of titleLines) {
+      this.doc.text(line, M_LEFT, lineY);
+      lineY += this.ds.type.displayPt * 0.5;
+    }
+
+    // Subtitle
+    let nextY = lineY + 14;
+    this.doc.setFontSize(this.ds.type.h2Pt);
+    this.doc.setFont('helvetica', 'italic');
+    this.doc.setTextColor(...this.secRgb);
+    this.doc.text(`Prepared for ${displayName}`, M_LEFT, nextY);
+
+    // Business name
+    nextY += 18;
+    this.doc.setFontSize(this.ds.type.smallPt);
+    this.doc.setTextColor(...this.mutedRgb);
+    this.doc.setFont('helvetica', 'normal');
+    const bizName = this.metadata?.businessName || '';
+    if (bizName) {
+      this.doc.text(bizName, M_LEFT, nextY);
+    }
 
     // Date
-    d.text(letter.date, M_LEFT, s.y);
-    s.y += 10;
+    nextY += 14;
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    this.doc.text(dateStr, M_LEFT, nextY);
 
-    // Salutation
-    d.setTextColor(30, 30, 46);
-    d.text(letter.salutation, M_LEFT, s.y);
-    s.y += 10;
+    // Heavy separator rule
+    nextY += 24;
+    this.drawRule(M_LEFT, nextY, PAGE_W - M_RIGHT, 'primary', 1.6);
+    nextY += 8;
+    this.drawRule(M_LEFT, nextY, PAGE_W - M_RIGHT, 'accent', 0.4);
 
-    // Body
-    if (letter.body) {
-      d.setFontSize(9);
-      d.setFont('helvetica', 'normal');
-      d.setTextColor(30, 30, 46);
-      const bodyLines = d.splitTextToSize(letter.body, CONTENT_W);
-      for (const line of bodyLines) {
-        ensureSpace(s, 6);
-        d.text(line, M_LEFT, s.y);
-        s.y += 5;
-      }
-      s.y += 6;
+    // Footer on cover page
+    this.drawPageFooter();
+
+    // New page for content
+    this.doc.addPage();
+    this.pageNum = 2;
+    this.y = M_TOP + HEADER_H + 12;
+    this.drawPageHeader();
+    this.drawPageFooter();
+  }
+
+  // ── Section Heading ──
+
+  drawSectionHeading(text: string): void {
+    this.ensureSpace(36);
+    const headingY = this.y;
+
+    // Section heading box
+    this.drawRect(M_LEFT, headingY - 4, CONTENT_W, 22, 'surface');
+
+    // Left accent bar
+    this.drawRect(M_LEFT, headingY - 4, 3, 22, 'accent');
+
+    // Title text
+    this.doc.setFontSize(this.ds.type.h1Pt);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text(text, M_LEFT + 12, headingY + 10);
+
+    // Rule below
+    this.drawRule(M_LEFT, headingY + 20, PAGE_W - M_RIGHT, 'accent', 0.6);
+
+    this.y = headingY + 32;
+  }
+
+  // ── Block Renderers ──
+
+  drawBlock(block: DocumentBlock, sectionDensity?: BlockDensity): void {
+    switch (block.type) {
+      case 'heading':
+        this.drawHeadingBlock(block as HeadingBlock);
+        break;
+      case 'paragraph':
+        this.drawParagraphBlock(block as ParagraphBlock, sectionDensity);
+        break;
+      case 'clause':
+        this.drawClauseBlock(block as ClauseBlock, sectionDensity);
+        break;
+      case 'bullet':
+        this.drawBulletBlock(block as BulletBlock);
+        break;
+      case 'table':
+        this.drawTableBlock(block as TableBlock);
+        break;
+      case 'callout':
+        this.drawCalloutBlock(block as CalloutBlock);
+        break;
+      case 'signature':
+        this.drawSignatureBlock(block as SignatureBlock);
+        break;
+      case 'divider':
+        this.drawDividerBlock(block as DividerBlock);
+        break;
+    }
+  }
+
+  drawHeadingBlock(block: HeadingBlock): void {
+    const fontSize = block.variant === 'section' ? this.ds.type.h1Pt
+      : block.variant === 'subsection' ? this.ds.type.h2Pt
+      : this.ds.type.h3Pt;
+
+    this.ensureSpace(fontSize + 16);
+
+    this.doc.setFontSize(fontSize);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...(block.variant === 'section' ? this.primRgb : this.secRgb));
+    this.doc.text(block.text, M_LEFT, this.y);
+
+    this.y += fontSize + 10;
+  }
+
+  drawParagraphBlock(block: ParagraphBlock, density?: BlockDensity): void {
+    const spacing = (density ?? block.density ?? 'normal') === 'compact' ? 6 : (density ?? block.density) === 'airy' ? 14 : 10;
+
+    this.doc.setFontSize(this.ds.type.bodyPt);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+
+    const lines = this.doc.splitTextToSize(block.text, CONTENT_W);
+    const totalH = lines.length * spacing;
+    this.ensureSpace(totalH);
+
+    for (const line of lines) {
+      this.doc.text(line, M_LEFT, this.y);
+      this.y += spacing;
+    }
+    this.y += 4;
+  }
+
+  drawClauseBlock(block: ClauseBlock, density?: BlockDensity): void {
+    const spacing = (density ?? block.density ?? 'normal') === 'compact' ? 5 : 6;
+
+    // Measure number width
+    this.doc.setFontSize(this.ds.type.bodyPt);
+    this.doc.setFont('helvetica', 'bold');
+    const numW = this.doc.getTextWidth(block.number + '. ') + 4;
+    const indent = Math.max(numW, 36);
+
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text(block.number + '.', M_LEFT, this.y);
+
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+
+    const bodyLines = this.doc.splitTextToSize(block.text, CONTENT_W - indent);
+    const totalH = bodyLines.length * spacing;
+    this.ensureSpace(totalH);
+
+    for (let i = 0; i < bodyLines.length; i++) {
+      this.doc.text(bodyLines[i], M_LEFT + indent, this.y);
+      this.y += spacing;
+    }
+    this.y += 3;
+  }
+
+  drawBulletBlock(block: BulletBlock): void {
+    this.ensureSpace(8);
+
+    this.doc.setFontSize(this.ds.type.bodyPt);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.accentRgb);
+    this.doc.text('\u2022', M_LEFT + 8, this.y);
+
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+
+    const lines = this.doc.splitTextToSize(block.text, CONTENT_W - 20);
+    for (const line of lines) {
+      this.doc.text(line, M_LEFT + 18, this.y);
+      this.y += 5;
+    }
+    this.y += 3;
+  }
+
+  drawTableBlock(block: TableBlock): void {
+    if (!block.headers || block.headers.length === 0 || !block.rows || block.rows.length === 0) {
+      return;
     }
 
-    // Structured paragraphs
-    if (letter.paragraphs) {
-      for (const [key, val] of Object.entries(letter.paragraphs)) {
-        ensureSpace(s, 30);
-        d.setFontSize(7);
-        d.setTextColor(...s.primaryRgb);
-        d.setFont('helvetica', 'bold');
-        d.text(key.replace(/_/g, ' ').toUpperCase(), M_LEFT, s.y);
-        s.y += 7;
+    const colCount = block.headers.length;
+    const colW = CONTENT_W / colCount;
+    const rowH = 14;
 
-        d.setFontSize(9);
-        d.setTextColor(30, 30, 46);
-        d.setFont('helvetica', 'normal');
-        const pLines = d.splitTextToSize(val, CONTENT_W);
-        for (const line of pLines) {
-          ensureSpace(s, 6);
-          d.text(line, M_LEFT, s.y);
-          s.y += 5;
+    this.ensureSpace((block.rows.length + 1) * rowH + 18);
+
+    // Header row
+    this.drawRect(M_LEFT, this.y, CONTENT_W, rowH, 'primary');
+
+    this.doc.setFontSize(this.ds.type.smallPt + 1);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(255, 255, 255);
+
+    let colX = M_LEFT;
+    for (const h of block.headers) {
+      this.doc.text(h, colX + 6, this.y + 10, { maxWidth: colW - 12, align: 'left' } as any);
+      colX += colW;
+    }
+    this.y += rowH;
+
+    // Data rows
+    for (let ri = 0; ri < block.rows.length; ri++) {
+      const row = block.rows[ri];
+
+      if (this.y + rowH > PAGE_H - M_BOTTOM - FOOTER_H - 10) {
+        this.addPage();
+        // Re-draw header on new page
+        this.drawRect(M_LEFT, this.y, CONTENT_W, rowH, 'primary');
+        this.doc.setFontSize(this.ds.type.smallPt + 1);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.setTextColor(255, 255, 255);
+        colX = M_LEFT;
+        for (const h of block.headers) {
+          this.doc.text(h, colX + 6, this.y + 10, { maxWidth: colW - 12, align: 'left' } as any);
+          colX += colW;
         }
-        s.y += 6;
+        this.y += rowH;
+      }
+
+      const isEvenRow = ri % 2 === 0;
+      if (isEvenRow) {
+        this.drawRect(M_LEFT, this.y, CONTENT_W, rowH, 'surface');
+      }
+
+      this.doc.setFontSize(this.ds.type.bodyPt);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(...this.bodyRgb);
+
+      colX = M_LEFT;
+      for (const cell of row) {
+        this.doc.text(cell, colX + 6, this.y + 10, { maxWidth: colW - 12, align: 'left' } as any);
+        colX += colW;
+      }
+
+      // Rule below row
+      this.doc.setDrawColor(...this.mutedRgb);
+      this.doc.setLineWidth(0.2);
+      this.doc.line(M_LEFT, this.y + rowH, PAGE_W - M_RIGHT, this.y + rowH);
+
+      this.y += rowH;
+    }
+
+    this.y += 8;
+  }
+
+  drawCalloutBlock(block: CalloutBlock): void {
+    this.ensureSpace(40);
+
+    // Box with left border
+    this.doc.setFillColor(...this.surfaceRgb);
+    this.doc.rect(M_LEFT, this.y, CONTENT_W, 36, 'F');
+
+    this.doc.setDrawColor(...this.accentRgb);
+    this.doc.setLineWidth(3);
+    this.doc.line(M_LEFT, this.y, M_LEFT, this.y + 36);
+
+    // Label
+    if (block.label) {
+      this.doc.setFontSize(this.ds.type.smallPt + 1);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.primRgb);
+      this.doc.text(block.label.toUpperCase(), M_LEFT + 10, this.y + 12);
+    }
+
+    // Text
+    this.doc.setFontSize(this.ds.type.bodyPt);
+    this.doc.setFont('helvetica', 'italic');
+    this.doc.setTextColor(...this.bodyRgb);
+
+    const textLines = this.doc.splitTextToSize(block.text, CONTENT_W - 20);
+    let textY = this.y + (block.label ? 18 : 12);
+    for (const line of textLines) {
+      this.doc.text(line, M_LEFT + 10, textY);
+      textY += 5;
+    }
+
+    this.y += Math.max(36, (textLines.length * 5) + 12);
+  }
+
+  drawSignatureBlock(block: SignatureBlock): void {
+    this.ensureSpace(90);
+
+    // Box
+    this.doc.setFillColor(...this.surfaceRgb);
+    this.doc.setDrawColor(226, 230, 237);
+    this.doc.setLineWidth(0.3);
+    this.doc.roundedRect(M_LEFT, this.y, CONTENT_W, 75, 3, 3, 'FD');
+
+    for (const party of block.parties) {
+      // Party label
+      this.doc.setFontSize(this.ds.type.bodyPt);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.primRgb);
+      this.doc.text(party.label, M_LEFT + 10, this.y + 12);
+
+      // Sign line
+      this.doc.setDrawColor(...this.mutedRgb);
+      this.doc.setLineWidth(0.2);
+      this.doc.line(M_LEFT + 10, this.y + 28, M_LEFT + 200, this.y + 28);
+      this.doc.line(M_LEFT + 10, this.y + 42, M_LEFT + 200, this.y + 42);
+
+      // Labels
+      this.doc.setFontSize(this.ds.type.smallPt);
+      this.doc.setTextColor(...this.mutedRgb);
+      this.doc.text('Signed:', M_LEFT + 10, this.y + 32);
+      this.doc.text('Date:', M_LEFT + 10, this.y + 46);
+
+      // Name
+      this.doc.setFontSize(this.ds.type.smallPt + 1);
+      this.doc.setTextColor(...this.bodyRgb);
+      this.doc.text(`${party.nameField}: ${party.dateField}`, M_LEFT + 10, this.y + 60);
+
+      this.y += 80;
+    }
+  }
+
+  drawDividerBlock(block: DividerBlock): void {
+    const weight = block.weight === 'heavy' ? 1.0 : 0.3;
+    const colour = block.weight === 'heavy' ? 'primary' : 'muted';
+
+    this.drawRule(M_LEFT, this.y + 4, PAGE_W - M_RIGHT, colour, weight);
+    this.y += 12;
+  }
+
+  // ── Section Rendering ──
+
+  drawSection(section: DocumentSection): void {
+    if (section.heading) {
+      this.drawSectionHeading(section.heading);
+    }
+
+    for (const block of section.blocks) {
+      this.drawBlock(block, section.density);
+    }
+
+    this.y += 10;
+  }
+
+  // ── Invoice Rendering ──
+
+  drawInvoice(doc: InvoiceDocument): void {
+    // Top bar
+    this.drawRect(0, 0, PAGE_W, 4, 'primary');
+
+    let startY = M_TOP + 10;
+
+    // Logo
+    if (this.logoBase64) {
+      try {
+        this.drawImage(this.logoBase64, M_LEFT, startY, 80, 36);
+        startY += 42;
+      } catch {
+        // Logo rendering must always be wrapped in try/catch
       }
     }
 
-    // Close statement
-    if (letter.closeStatement) {
-      ensureSpace(s, 12);
-      d.setFontSize(9);
-      d.setFont('helvetica', 'bold');
-      d.setTextColor(30, 30, 46);
-      const csLines = d.splitTextToSize(letter.closeStatement, CONTENT_W);
-      d.text(csLines, M_LEFT, s.y);
-      s.y += csLines.length * 5 + 8;
+    // Business info
+    this.doc.setFontSize(14);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text(doc.businessInfo.tradingName, M_LEFT, startY);
+    startY += 10;
+
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+    for (const line of [doc.businessInfo.address, doc.businessInfo.phone, doc.businessInfo.email]) {
+      if (line) {
+        this.doc.text(line, M_LEFT, startY);
+        startY += 8;
+      }
     }
 
-    // Close
-    ensureSpace(s, 30);
-    d.setFontSize(9);
-    d.setTextColor(30, 30, 46);
-    d.setFont('helvetica', 'normal');
-    const closeLines = letter.close.split('\n');
-    for (const cl of closeLines) {
-      d.text(cl, M_LEFT, s.y);
-      s.y += 5;
+    if (doc.metadata.vatRegistered && doc.metadata.vatNumber) {
+      this.doc.text(`VAT No: ${doc.metadata.vatNumber}`, M_LEFT, startY);
+      startY += 8;
+    }
+
+    // Invoice details box (right side)
+    const rightX = PAGE_W - M_RIGHT - 140;
+    this.drawRect(rightX, M_TOP + 10, 140, 56, 'surface');
+
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text('Invoice Details', rightX + 10, M_TOP + 24);
+
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+
+    let detailY = M_TOP + 34;
+    this.doc.text(`Invoice: ${doc.invoiceFields.invoiceNumberFormat}`, rightX + 10, detailY); detailY += 8;
+    this.doc.text(`Date: ${doc.invoiceFields.dateFormat}`, rightX + 10, detailY); detailY += 8;
+    this.doc.text(`Due: ${doc.invoiceFields.dueDateFormat}`, rightX + 10, detailY);
+    if (doc.invoiceFields.showPoNumber) {
+      detailY += 8;
+      this.doc.text(`PO: ${doc.invoiceFields.poNumberFormat}`, rightX + 10, detailY);
+    }
+
+    this.y = M_TOP + 75;
+
+    // Bill To
+    this.drawRect(M_LEFT, this.y, CONTENT_W, 40, 'surface');
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text('BILL TO', M_LEFT + 10, this.y + 12);
+
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+
+    let billY = this.y + 22;
+    for (const line of [doc.billToPlaceholders.clientName, doc.billToPlaceholders.company, doc.billToPlaceholders.addressLine1, doc.billToPlaceholders.addressLine2]) {
+      if (line) {
+        this.doc.text(line, M_LEFT + 10, billY);
+        billY += 7;
+      }
+    }
+    this.y += 50;
+
+    // Services label
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text('SERVICES RENDERED', M_LEFT, this.y);
+    this.y += 4;
+
+    // Table
+    const tableBlock: TableBlock = {
+      type: 'table',
+      id: 'services-table',
+      styleHint: 'financial',
+      headers: ['Description', 'Qty', 'Unit Price', 'Amount'],
+      rows: doc.lineItems.map(i => [i.description, i.quantity, i.unitPrice, i.amount]),
+    };
+    this.drawTableBlock(tableBlock);
+
+    this.y += 6;
+
+    // Totals
+    const totalsX = PAGE_W - M_RIGHT - 160;
+    this.doc.setFontSize(9);
+    this.doc.setTextColor(...this.bodyRgb);
+
+    this.doc.text('Subtotal', totalsX, this.y);
+    this.doc.text(doc.totals.subtotal, PAGE_W - M_RIGHT, this.y, { align: 'right' } as any);
+    this.y += 10;
+
+    if (doc.totals.showVatLine) {
+      this.doc.text(`VAT (${doc.totals.vatPercentage}%)`, totalsX, this.y);
+      this.doc.text(doc.totals.vatAmount, PAGE_W - M_RIGHT, this.y, { align: 'right' } as any);
+      this.y += 10;
+    }
+
+    // Total bar
+    this.drawRect(totalsX - 4, this.y - 4, PAGE_W - M_RIGHT - totalsX + 8, 14, 'primary');
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(255, 255, 255);
+    this.doc.text('TOTAL DUE', totalsX + 4, this.y + 5);
+    this.doc.text(doc.totals.totalDue, PAGE_W - M_RIGHT - 4, this.y + 5, { align: 'right' } as any);
+    this.y += 22;
+
+    // Payment Terms
+    this.ensureSpace(60);
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text('PAYMENT TERMS & METHODS', M_LEFT, this.y);
+    this.drawRule(M_LEFT, this.y + 2, PAGE_W - M_RIGHT, 'accent', 0.4);
+    this.y += 12;
+
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+    this.doc.text(doc.paymentTerms.paymentDeadline, M_LEFT, this.y);
+    this.y += 10;
+
+    for (const m of doc.paymentTerms.paymentMethods) {
+      this.ensureSpace(10);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.accentRgb);
+      this.doc.text('\u2022', M_LEFT + 8, this.y);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(...this.bodyRgb);
+      this.doc.text(m, M_LEFT + 16, this.y);
+      this.y += 8;
+    }
+
+    if (doc.paymentTerms.bankTransferDetails.show) {
+      this.y += 4;
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text('Bank Details:', M_LEFT, this.y);
+      this.y += 8;
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text(`Account: ${doc.paymentTerms.bankTransferDetails.accountName}`, M_LEFT + 16, this.y); this.y += 7;
+      this.doc.text(`Sort Code: ${doc.paymentTerms.bankTransferDetails.sortCode}`, M_LEFT + 16, this.y); this.y += 7;
+      this.doc.text(`Account No: ${doc.paymentTerms.bankTransferDetails.accountNumber}`, M_LEFT + 16, this.y); this.y += 7;
+    }
+
+    this.doc.text(`Reference: ${doc.paymentTerms.paymentReference}`, M_LEFT, this.y);
+    this.y += 16;
+
+    // Late payment notice
+    this.ensureSpace(30);
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text('LATE PAYMENT NOTICE', M_LEFT, this.y);
+    this.drawRule(M_LEFT, this.y + 2, PAGE_W - M_RIGHT, 'accent', 0.4);
+    this.y += 12;
+
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(...this.bodyRgb);
+    const lpLines = this.doc.splitTextToSize(doc.latePaymentClause, CONTENT_W);
+    for (const line of lpLines) {
+      this.doc.text(line, M_LEFT, this.y);
+      this.y += 4;
+    }
+    this.y += 8;
+
+    // Notes
+    if (doc.optionalFields.showNotesSection) {
+      this.ensureSpace(20);
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.primRgb);
+      this.doc.text('NOTES', M_LEFT, this.y);
+      this.y += 10;
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(...this.bodyRgb);
+      const noteLines = this.doc.splitTextToSize(doc.optionalFields.notesPlaceholder, CONTENT_W);
+      for (const line of noteLines) {
+        this.doc.text(line, M_LEFT, this.y);
+        this.y += 4;
+      }
+      this.y += 8;
+    }
+
+    // Footer
+    this.y += 20;
+    this.drawRule(M_LEFT, this.y, PAGE_W - M_RIGHT, 'primary', 0.6);
+    this.y += 10;
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'italic');
+    this.doc.setTextColor(...this.mutedRgb);
+    this.doc.text('Thank you for your business.', PAGE_W / 2, this.y, { align: 'center' } as any);
+    this.y += 8;
+    this.doc.text(`${doc.businessInfo.legalName}  |  ${doc.businessInfo.email}  |  ${doc.businessInfo.phone}`, PAGE_W / 2, this.y, { align: 'center' } as any);
+  }
+
+  // ── Late Payment Letters Rendering ──
+
+  drawLatePayment(doc: LatePaymentDocument): void {
+    // Top bar
+    this.drawRect(0, 0, PAGE_W, 4, 'primary');
+
+    for (let li = 0; li < doc.letters.length; li++) {
+      if (li > 0) {
+        this.doc.addPage();
+        this.pageNum++;
+        this.y = M_TOP + HEADER_H + 12;
+        this.drawPageHeader();
+        this.drawPageFooter();
+      }
+
+      const letter = doc.letters[li];
+
+      // Letterhead
+      this.doc.setFontSize(12);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.primRgb);
+      const lhLines = this.doc.splitTextToSize(letter.letterhead, CONTENT_W);
+      for (const line of lhLines) {
+        this.doc.text(line, M_LEFT, this.y);
+        this.y += 6;
+      }
+      this.y += 4;
+      this.drawRule(M_LEFT, this.y, PAGE_W - M_RIGHT, 'primary', 0.8);
+      this.y += 10;
+
+      // Heading (Letter 3)
+      if (letter.heading) {
+        this.ensureSpace(30);
+        this.drawRect(M_LEFT, this.y - 4, CONTENT_W, 20, 'surface');
+        this.doc.setDrawColor(...this.primRgb);
+        this.doc.setLineWidth(0.8);
+        this.doc.rect(M_LEFT, this.y - 4, CONTENT_W, 20, 'S');
+
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.setTextColor(...this.primRgb);
+        const hLines = this.doc.splitTextToSize(letter.heading, CONTENT_W - 20);
+        for (const line of hLines) {
+          this.doc.text(line, PAGE_W / 2, this.y + 6, { align: 'center' } as any);
+        }
+        this.y += 24;
+      }
+
+      // Addressee
+      this.doc.setFontSize(9);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(...this.mutedRgb);
+      const addrLines = this.doc.splitTextToSize(letter.addresseeBlock, CONTENT_W);
+      for (const line of addrLines) {
+        this.doc.text(line, M_LEFT, this.y);
+        this.y += 5;
+      }
+      this.y += 6;
+
+      // Date
+      this.doc.text(letter.date, M_LEFT, this.y);
+      this.y += 10;
+
+      // Salutation
+      this.doc.setTextColor(...this.bodyRgb);
+      this.doc.text(letter.salutation, M_LEFT, this.y);
+      this.y += 10;
+
+      // Body
+      if (letter.body) {
+        this.doc.setFontSize(9);
+        this.doc.setTextColor(...this.bodyRgb);
+        const bodyLines = this.doc.splitTextToSize(letter.body, CONTENT_W);
+        for (const line of bodyLines) {
+          this.ensureSpace(6);
+          this.doc.text(line, M_LEFT, this.y);
+          this.y += 5;
+        }
+        this.y += 6;
+      }
+
+      // Structured paragraphs
+      if (letter.paragraphs) {
+        for (const [key, val] of Object.entries(letter.paragraphs)) {
+          this.ensureSpace(30);
+          this.doc.setFontSize(7);
+          this.doc.setFont('helvetica', 'bold');
+          this.doc.setTextColor(...this.primRgb);
+          this.doc.text(key.replace(/_/g, ' ').toUpperCase(), M_LEFT, this.y);
+          this.y += 7;
+
+          this.doc.setFontSize(9);
+          this.doc.setFont('helvetica', 'normal');
+          this.doc.setTextColor(...this.bodyRgb);
+          const pLines = this.doc.splitTextToSize(val, CONTENT_W);
+          for (const line of pLines) {
+            this.ensureSpace(6);
+            this.doc.text(line, M_LEFT, this.y);
+            this.y += 5;
+          }
+          this.y += 6;
+        }
+      }
+
+      // Close statement
+      if (letter.closeStatement) {
+        this.ensureSpace(12);
+        this.doc.setFontSize(9);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.setTextColor(...this.bodyRgb);
+        const csLines = this.doc.splitTextToSize(letter.closeStatement, CONTENT_W);
+        for (const line of csLines) {
+          this.doc.text(line, M_LEFT, this.y);
+          this.y += 5;
+        }
+        this.y += 8;
+      }
+
+      // Close
+      this.ensureSpace(30);
+      this.doc.setFontSize(9);
+      this.doc.setTextColor(...this.bodyRgb);
+      const closeLines = letter.close.split('\n');
+      for (const cl of closeLines) {
+        this.doc.text(cl, M_LEFT, this.y);
+        this.y += 5;
+      }
+    }
+
+    // Usage notes
+    this.doc.addPage();
+    this.pageNum++;
+    this.y = M_TOP + HEADER_H + 12;
+    this.drawPageHeader();
+    this.drawPageFooter();
+
+    this.doc.setFontSize(12);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(...this.primRgb);
+    this.doc.text('Usage Notes', M_LEFT, this.y);
+    this.y += 14;
+
+    const notes = [
+      doc.usageNotes.calculatingInterest,
+      doc.usageNotes.recoveryChargeNote,
+      doc.usageNotes.recordKeeping,
+      doc.usageNotes.legalAdvice,
+    ];
+
+    for (const note of notes) {
+      this.ensureSpace(20);
+      this.doc.setFontSize(9);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.accentRgb);
+      this.doc.text('\u2022', M_LEFT + 8, this.y);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(...this.bodyRgb);
+      const nLines = this.doc.splitTextToSize(note, CONTENT_W - 18);
+      this.doc.text(nLines, M_LEFT + 18, this.y);
+      this.y += nLines.length * 5 + 6;
     }
   }
 
-  // Usage notes on a new page
-  d.addPage();
-  s.page++;
-  s.y = M_TOP + 18;
-  drawPageHeader(s);
-  drawPageFooter(s);
+  // ── Welcome Email Rendering ──
 
-  d.setFontSize(12);
-  d.setTextColor(...s.primaryRgb);
-  d.setFont('helvetica', 'bold');
-  d.text('Usage Notes', M_LEFT, s.y);
-  s.y += 14;
+  drawWelcomeEmail(doc: WelcomeEmailDocument): void {
+    this.drawRect(0, 0, PAGE_W, 4, 'primary');
 
-  const notes = [
-    doc.usageNotes.calculatingInterest,
-    doc.usageNotes.recoveryChargeNote,
-    doc.usageNotes.recordKeeping,
-    doc.usageNotes.legalAdvice,
-  ];
-  for (const note of notes) {
-    ensureSpace(s, 20);
-    d.setTextColor(...s.accentRgb);
-    d.setFont('helvetica', 'bold');
-    d.setFontSize(9);
-    d.text('\u2022', M_LEFT + 8, s.y);
-    d.setTextColor(30, 30, 46);
-    d.setFont('helvetica', 'normal');
-    const nLines = d.splitTextToSize(note, CONTENT_W - 18);
-    d.text(nLines, M_LEFT + 18, s.y);
-    s.y += nLines.length * 5 + 6;
+    for (let ei = 0; ei < doc.emails.length; ei++) {
+      if (ei > 0) {
+        this.doc.addPage();
+        this.pageNum++;
+        this.y = M_TOP + HEADER_H + 12;
+        this.drawPageHeader();
+        this.drawPageFooter();
+      }
+
+      const email = doc.emails[ei];
+
+      // Header card
+      this.drawRect(M_LEFT, this.y, CONTENT_W, 28, 'surface');
+      this.drawRect(M_LEFT, this.y, 4, 28, 'accent');
+
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.primRgb);
+      this.doc.text(email.emailType.replace(/_/g, ' ').toUpperCase(), M_LEFT + 14, this.y + 10);
+
+      this.doc.setFontSize(7);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(...this.mutedRgb);
+      this.doc.text(`Send: ${email.sendTiming}`, M_LEFT + 14, this.y + 18);
+      this.y += 36;
+
+      // Subject
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setTextColor(...this.primRgb);
+      this.doc.text(`Subject: ${email.subject}`, M_LEFT, this.y);
+      this.y += 12;
+
+      // Greeting
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(...this.bodyRgb);
+      this.doc.text(email.greeting, M_LEFT, this.y);
+      this.y += 10;
+
+      // Body
+      const bodyLines = this.doc.splitTextToSize(email.body, CONTENT_W);
+      for (const line of bodyLines) {
+        this.ensureSpace(6);
+        this.doc.text(line, M_LEFT, this.y);
+        this.y += 5;
+      }
+      this.y += 8;
+
+      // Sign-off
+      this.doc.setFontSize(8);
+      this.doc.setTextColor(80, 86, 104);
+      const signLines = email.signOff.split('\n');
+      for (const sl of signLines) {
+        this.ensureSpace(6);
+        this.doc.text(sl, M_LEFT, this.y);
+        this.y += 5;
+      }
+    }
+  }
+
+  // ── Finalisation ──
+
+  finalise(): Uint8Array {
+    return new Uint8Array(this.doc.output('arraybuffer'));
   }
 }
 
-// ── Welcome Email PDF ──
-
-function drawWelcomeEmailPdf(s: PdfState, doc: WelcomeEmailDocument): void {
-  const d = s.doc;
-
-  d.setFillColor(...s.primaryRgb);
-  d.rect(0, 0, PAGE_W, 6, 'F');
-
-  for (let ei = 0; ei < doc.emails.length; ei++) {
-    if (ei > 0) { d.addPage(); s.page++; s.y = M_TOP + 18; drawPageHeader(s); drawPageFooter(s); }
-
-    const email = doc.emails[ei];
-
-    // Header card
-    d.setFillColor(...s.primaryLight);
-    d.rect(M_LEFT, s.y, CONTENT_W, 28, 'F');
-    d.setFillColor(...s.primaryRgb);
-    d.rect(M_LEFT, s.y, 4, 28, 'F');
-
-    d.setFontSize(8);
-    d.setTextColor(...s.primaryRgb);
-    d.setFont('helvetica', 'bold');
-    d.text(email.emailType.replace(/_/g, ' ').toUpperCase(), M_LEFT + 14, s.y + 10);
-
-    d.setFontSize(7);
-    d.setTextColor(140, 146, 168);
-    d.setFont('helvetica', 'normal');
-    d.text(`Send: ${email.sendTiming}`, M_LEFT + 14, s.y + 18);
-    s.y += 36;
-
-    // Subject
-    d.setFontSize(10);
-    d.setTextColor(...s.primaryRgb);
-    d.setFont('helvetica', 'bold');
-    d.text(`Subject: ${email.subject}`, M_LEFT, s.y);
-    s.y += 12;
-
-    // Greeting
-    d.setFontSize(10);
-    d.setTextColor(30, 30, 46);
-    d.setFont('helvetica', 'normal');
-    d.text(email.greeting, M_LEFT, s.y);
-    s.y += 10;
-
-    // Body
-    const bodyLines = d.splitTextToSize(email.body, CONTENT_W);
-    for (const line of bodyLines) {
-      ensureSpace(s, 6);
-      d.text(line, M_LEFT, s.y);
-      s.y += 5;
-    }
-    s.y += 8;
-
-    // Sign-off
-    d.setFontSize(8);
-    d.setTextColor(80, 86, 104);
-    const signLines = email.signOff.split('\n');
-    for (const sl of signLines) {
-      ensureSpace(s, 6);
-      d.text(sl, M_LEFT, s.y);
-      s.y += 5;
-    }
-  }
-}
-
-// ── Public API ──
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC API
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function generatePdf(jsonDoc: AnyDocument, design: ClientDesign, docLabel: string): Uint8Array {
-  const d = new jsPDF({ unit: 'pt', format: 'a4', hotfixes: ['px_scaling'] });
-  const s = createState(d, design);
-  const kind = detectDocumentKind(jsonDoc);
+  try {
+    const engine = new PdfLayoutEngine(design);
+    const kind = detectDocumentKind(jsonDoc);
 
-  switch (kind) {
-    case 'invoice':
-      drawInvoicePdf(s, jsonDoc as InvoiceDocument);
-      break;
-    case 'late_payment':
-      drawLatePaymentPdf(s, jsonDoc as LatePaymentDocument);
-      break;
-    case 'welcome_email':
-      drawWelcomeEmailPdf(s, jsonDoc as WelcomeEmailDocument);
-      break;
-    default: {
-      drawCoverPage(s, docLabel);
-      const structured = jsonDoc as StructuredDocument;
-      for (const section of structured.sections) {
-        drawSection(s, section);
+    const displayName = design.brandIdentity === 'My personal name is the brand — I want documents to feel personal'
+      ? (design.firstName || design.businessName)
+      : design.businessName;
+
+    switch (kind) {
+      case 'invoice': {
+        const invoiceDoc = jsonDoc as InvoiceDocument;
+        engine.setMetadata(invoiceDoc.metadata);
+        engine.drawInvoice(invoiceDoc);
+        break;
       }
-      break;
-    }
-  }
+      case 'late_payment': {
+        const lateDoc = jsonDoc as LatePaymentDocument;
+        engine.setMetadata(lateDoc.metadata);
+        engine.drawLatePayment(lateDoc);
+        break;
+      }
+      case 'welcome_email': {
+        const welcomeDoc = jsonDoc as WelcomeEmailDocument;
+        engine.setMetadata(welcomeDoc.metadata);
+        engine.drawWelcomeEmail(welcomeDoc);
+        break;
+      }
+      default: {
+        const model = jsonDoc as DocumentModel;
+        engine.setMetadata(model.metadata);
+        engine.drawCoverPage(displayName, docLabel);
 
-  return new Uint8Array(d.output('arraybuffer'));
+        const structured = jsonDoc as StructuredDocument;
+        for (const section of structured.sections) {
+          engine.drawSection(section);
+        }
+        break;
+      }
+    }
+
+    return engine.finalise();
+  } catch (error) {
+    // generatePdf must never throw per hard constraints
+    // Return a minimal error document
+    const fallbackDoc = new jsPDF({ unit: 'pt', format: 'a4' });
+    fallbackDoc.setFontSize(12);
+    fallbackDoc.text('Error generating PDF. Please try again.', 50, 50);
+    return new Uint8Array(fallbackDoc.output('arraybuffer'));
+  }
 }
