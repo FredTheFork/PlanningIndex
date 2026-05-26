@@ -24,7 +24,15 @@ import {
   Packer,
 } from 'npm:docx@9.1.1';
 
-import type { AnyDocument, DocumentModel, DocumentMetadata } from './document-types.ts';
+import type {
+  AnyDocument,
+  DocumentModel,
+  DocumentMetadata,
+  DocumentBlock,
+  DocumentSection,
+  HeadingVariant,
+  BlockDensity,
+} from './document-types.ts';
 import { detectDocumentKind } from './document-types.ts';
 import type { DesignSystem } from './design-system.ts';
 import { resolveDesignSystem, parseBrandColours, hexToToken } from './design-system.ts';
@@ -572,8 +580,663 @@ function buildCoverPage(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STUB IMPLEMENTATIONS (Block rendering comes in next prompt)
+// SECTION HEADING RENDERER
 // ─────────────────────────────────────────────────────────────────────────────
+
+function renderSectionHeading(
+  text: string,
+  variant: HeadingVariant,
+  ds: DesignSystem
+): Paragraph[] {
+  const isSection = variant === 'section';
+  const headingLevel = isSection
+    ? HeadingLevel.HEADING_1
+    : variant === 'subsection'
+    ? HeadingLevel.HEADING_2
+    : HeadingLevel.HEADING_3;
+
+  const colour = isSection ? ds.primary.docxHex : ds.secondary.docxHex;
+  const spacingBefore = isSection ? ds.spacing.sectionBeforeDxa : ds.spacing.headingBeforeDxa;
+  const spacingAfter = isSection ? ds.spacing.sectionAfterDxa : ds.spacing.headingAfterDxa;
+  const size = isSection ? ds.type.h1Hp : variant === 'subsection' ? ds.type.h2Hp : ds.type.h3Hp;
+
+  switch (ds.headingTreatment) {
+    case 'capsule':
+      return [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text,
+              bold: true,
+              size,
+              color: 'FFFFFF',
+              font: ds.font,
+            }),
+          ],
+          heading: headingLevel,
+          shading: { type: ShadingType.CLEAR, fill: ds.primary.docxHex },
+          indent: { left: 120, right: 120 },
+          spacing: { before: spacingBefore, after: spacingAfter },
+        }),
+      ];
+
+    case 'left-rule':
+      return [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: '  ' + text,
+              bold: true,
+              size,
+              color: colour,
+              font: ds.font,
+            }),
+          ],
+          heading: headingLevel,
+          border: {
+            left: {
+              style: BorderStyle.SINGLE,
+              size: isSection ? 24 : 12,
+              color: ds.accent.docxHex,
+              space: 4,
+            },
+          },
+          spacing: { before: spacingBefore, after: spacingAfter },
+        }),
+      ];
+
+    case 'full-rule':
+      return [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text,
+              bold: true,
+              size,
+              color: colour,
+              font: ds.font,
+            }),
+          ],
+          heading: headingLevel,
+          border: {
+            bottom: {
+              style: BorderStyle.SINGLE,
+              size: isSection ? 6 : 3,
+              color: ds.accent.docxHex,
+              space: 1,
+            },
+          },
+          spacing: { before: spacingBefore, after: spacingAfter },
+        }),
+      ];
+
+    case 'underline-accent':
+      return [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text,
+              bold: true,
+              size,
+              color: colour,
+              font: ds.font,
+            }),
+          ],
+          heading: headingLevel,
+          spacing: { before: spacingBefore, after: 40 },
+        }),
+        new Paragraph({
+          border: {
+            bottom: {
+              style: BorderStyle.SINGLE,
+              size: 4,
+              color: ds.accent.docxHex,
+            },
+          },
+          spacing: { after: spacingAfter },
+        }),
+      ];
+
+    case 'plain':
+    default:
+      return [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text,
+              bold: true,
+              size,
+              color: colour,
+              font: ds.font,
+            }),
+          ],
+          heading: headingLevel,
+          spacing: { before: spacingBefore, after: spacingAfter },
+        }),
+      ];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOCK RENDERERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderParagraphBlock(
+  block: Extract<DocumentBlock, { type: 'paragraph' }>,
+  ds: DesignSystem,
+  density: BlockDensity
+): Paragraph {
+  const afterMap: Record<BlockDensity, number> = { compact: 60, normal: 120, airy: 200 };
+  const lineMap: Record<BlockDensity, number> = { compact: 240, normal: 276, airy: 360 };
+
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: block.text,
+        size: ds.type.bodyHp,
+        color: ds.bodyTextColour.docxHex,
+        font: ds.font,
+      }),
+    ],
+    spacing: { after: afterMap[density], line: lineMap[density], lineRule: 'auto' },
+    alignment: AlignmentType.JUSTIFIED,
+  });
+}
+
+function renderClauseBlock(
+  block: Extract<DocumentBlock, { type: 'clause' }>,
+  ds: DesignSystem,
+  density: BlockDensity
+): Paragraph {
+  const afterMap: Record<BlockDensity, number> = { compact: 40, normal: 80, airy: 120 };
+
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: block.number + '.',
+        bold: true,
+        size: ds.type.clauseNumberHp,
+        color: ds.primary.docxHex,
+        font: ds.font,
+      }),
+      new TextRun({
+        text: '  ' + block.text,
+        size: ds.type.bodyHp,
+        color: ds.bodyTextColour.docxHex,
+        font: ds.font,
+      }),
+    ],
+    indent: { left: ds.spacing.clauseIndentDxa, hanging: ds.spacing.clauseIndentDxa },
+    spacing: { after: afterMap[density], line: 276, lineRule: 'auto' },
+    alignment: AlignmentType.JUSTIFIED,
+  });
+}
+
+function renderBulletBlock(
+  block: Extract<DocumentBlock, { type: 'bullet' }>,
+  ds: DesignSystem
+): Paragraph {
+  const ref = (block.level ?? 0) === 0 ? 'bullet-l0' : 'bullet-l1';
+
+  return new Paragraph({
+    children: [
+      new TextRun({
+        text: block.text,
+        size: ds.type.bodyHp,
+        color: ds.bodyTextColour.docxHex,
+        font: ds.font,
+      }),
+    ],
+    numbering: { reference: ref, level: 0 },
+    spacing: { after: ds.spacing.bulletAfterDxa },
+  });
+}
+
+function renderTableBlock(
+  block: Extract<DocumentBlock, { type: 'table' }>,
+  ds: DesignSystem
+): (Paragraph | Table)[] {
+  if (!block.headers || block.headers.length === 0 || !block.rows || block.rows.length === 0) {
+    return [];
+  }
+
+  const colCount = block.headers.length;
+  const colWidthBase = Math.floor(ds.spacing.contentWidthDxa / colCount);
+  const columnWidths = Array(colCount).fill(colWidthBase);
+  columnWidths[colCount - 1] = ds.spacing.contentWidthDxa - colWidthBase * (colCount - 1);
+
+  const isFinancial = block.styleHint === 'financial';
+
+  const isMinimalist = ds.headingTreatment === 'plain' || ds.headingTreatment === 'underline-accent';
+  const isOpenLayout = ds.headingTreatment === 'left-rule' || ds.headingTreatment === 'plain';
+
+  const outerBorderSize = isMinimalist ? 2 : 6;
+  const outerBorderColour = isMinimalist ? ds.mutedTextColour.docxHex : ds.primary.docxHex;
+
+  const innerHBorderSize = isOpenLayout ? 1 : 2;
+  const innerHBorderColour = isOpenLayout ? 'E0E0E0' : 'CCCCCC';
+  const innerVBorderSize = 1;
+  const innerVBorderColour = isOpenLayout ? 'NONE' : 'DDDDDD';
+
+  const headerRow = new TableRow({
+    children: block.headers.map((h, i) => {
+      const cell = new TableCell({
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: h,
+                bold: true,
+                size: ds.type.smallHp + 2,
+                color: 'FFFFFF',
+                font: ds.font,
+              }),
+            ],
+            alignment: isFinancial && i > 0 ? AlignmentType.RIGHT : AlignmentType.LEFT,
+          }),
+        ],
+        shading: { type: ShadingType.CLEAR, fill: ds.primary.docxHex },
+        verticalAlign: VerticalAlign.CENTER,
+        width: { size: columnWidths[i], type: WidthType.DXA },
+        margins: {
+          top: ds.spacing.tableCellTopDxa,
+          bottom: ds.spacing.tableCellBottomDxa,
+          left: ds.spacing.tableCellLeftDxa,
+          right: ds.spacing.tableCellRightDxa,
+        },
+      });
+      return cell;
+    }),
+    tableHeader: true,
+  });
+
+  const dataRows = block.rows.map((row, rowIdx) => {
+    const isEvenRow = rowIdx % 2 === 0;
+    const isLastRow = rowIdx === block.rows.length - 1;
+    const isTotal = isLastRow && isFinancial;
+
+    let rowFill: string;
+    if (isTotal) {
+      rowFill = ds.surface.docxHex;
+    } else if (isEvenRow) {
+      rowFill = isMinimalist || isOpenLayout ? 'FFFFFF' : ds.surface.docxHex;
+    } else {
+      rowFill = 'FFFFFF';
+    }
+
+    return new TableRow({
+      children: row.map((cell, i) => {
+        const textStyle = isTotal
+          ? { bold: true, size: ds.type.bodyHp, color: ds.primary.docxHex }
+          : {
+              size: ds.type.bodyHp,
+              color: ds.bodyTextColour.docxHex,
+              font: isFinancial ? 'Courier New' : ds.font,
+            };
+
+        const cellFill = isTotal ? ds.surface.docxHex : rowFill;
+
+        return new TableCell({
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: cell, font: ds.font, ...textStyle })],
+              alignment: isFinancial && i > 0 ? AlignmentType.RIGHT : AlignmentType.LEFT,
+            }),
+          ],
+          shading: { type: ShadingType.CLEAR, fill: cellFill },
+          verticalAlign: VerticalAlign.CENTER,
+          width: { size: columnWidths[i], type: WidthType.DXA },
+          margins: {
+            top: ds.spacing.tableCellTopDxa,
+            bottom: ds.spacing.tableCellBottomDxa,
+            left: ds.spacing.tableCellLeftDxa,
+            right: ds.spacing.tableCellRightDxa,
+          },
+        });
+      }),
+    });
+  });
+
+  const table = new Table({
+    rows: [headerRow, ...dataRows],
+    width: { size: ds.spacing.contentWidthDxa, type: WidthType.DXA },
+    columnWidths,
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: outerBorderSize, color: outerBorderColour },
+      bottom: { style: BorderStyle.SINGLE, size: outerBorderSize, color: outerBorderColour },
+      left: { style: BorderStyle.SINGLE, size: outerBorderSize, color: outerBorderColour },
+      right: { style: BorderStyle.SINGLE, size: outerBorderSize, color: outerBorderColour },
+      insideHorizontal: {
+        style: innerVBorderColour === 'NONE' ? BorderStyle.NONE : BorderStyle.SINGLE,
+        size: innerHBorderSize,
+        color: innerHBorderColour,
+      },
+      insideVertical: {
+        style: innerVBorderColour === 'NONE' ? BorderStyle.NONE : BorderStyle.SINGLE,
+        size: innerVBorderSize,
+        color: innerVBorderColour,
+      },
+    },
+  });
+
+  const afterContent: Paragraph[] = [];
+
+  if (block.caption) {
+    afterContent.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: block.caption,
+            italics: true,
+            size: ds.type.smallHp,
+            color: ds.mutedTextColour.docxHex,
+            font: ds.font,
+          }),
+        ],
+        spacing: { before: 60, after: 120 },
+      })
+    );
+  } else {
+    afterContent.push(new Paragraph({ spacing: { after: 120 } }));
+  }
+
+  return [table, ...afterContent];
+}
+
+function renderCalloutBlock(
+  block: Extract<DocumentBlock, { type: 'callout' }>,
+  ds: DesignSystem
+): Paragraph[] {
+  const leftBorder = {
+    left: {
+      style: BorderStyle.SINGLE,
+      size: 16,
+      color: ds.accent.docxHex,
+      space: 4,
+    },
+  };
+  const shading = { type: ShadingType.CLEAR, fill: ds.surface.docxHex };
+
+  const paras: Paragraph[] = [];
+
+  if (block.label) {
+    paras.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: block.label.toUpperCase(),
+            bold: true,
+            size: ds.type.smallHp + 2,
+            color: ds.primary.docxHex,
+            font: ds.font,
+          }),
+        ],
+        border: leftBorder,
+        shading,
+        indent: { left: 200 },
+        spacing: { before: 120, after: 40 },
+      })
+    );
+  }
+
+  paras.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: block.text,
+          italics: true,
+          size: ds.type.bodyHp,
+          color: ds.bodyTextColour.docxHex,
+          font: ds.font,
+        }),
+      ],
+      border: leftBorder,
+      shading,
+      indent: { left: 200 },
+      spacing: { before: block.label ? 0 : 120, after: 120 },
+    })
+  );
+
+  return paras;
+}
+
+function renderSignatureBlock(
+  block: Extract<DocumentBlock, { type: 'signature' }>,
+  ds: DesignSystem
+): Paragraph[] {
+  const paras: Paragraph[] = [];
+
+  // Divider
+  paras.push(
+    new Paragraph({
+      border: {
+        bottom: {
+          style: BorderStyle.SINGLE,
+          size: 3,
+          color: ds.mutedTextColour.docxHex,
+        },
+      },
+      spacing: { before: 160, after: 200 },
+    })
+  );
+
+  for (const party of block.parties) {
+    // Label
+    paras.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: party.label,
+            bold: true,
+            size: ds.type.bodyHp,
+            color: ds.primary.docxHex,
+            font: ds.font,
+          }),
+        ],
+        spacing: { before: 240, after: 80 },
+      })
+    );
+
+    // Signed line
+    paras.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Signed: ',
+            size: ds.type.smallHp,
+            color: ds.mutedTextColour.docxHex,
+            font: ds.font,
+          }),
+          new TextRun({
+            text: '_____________________________',
+            size: ds.type.smallHp,
+            color: ds.mutedTextColour.docxHex,
+            font: ds.font,
+          }),
+        ],
+        border: {
+          bottom: {
+            style: BorderStyle.SINGLE,
+            size: 2,
+            color: ds.mutedTextColour.docxHex,
+            space: 1,
+          },
+        },
+        indent: { right: 5760 },
+        spacing: { after: 80 },
+      })
+    );
+
+    // Date line
+    paras.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Date: ',
+            size: ds.type.smallHp,
+            color: ds.mutedTextColour.docxHex,
+            font: ds.font,
+          }),
+          new TextRun({
+            text: '_________________________',
+            size: ds.type.smallHp,
+            color: ds.mutedTextColour.docxHex,
+            font: ds.font,
+          }),
+        ],
+        border: {
+          bottom: {
+            style: BorderStyle.SINGLE,
+            size: 2,
+            color: ds.mutedTextColour.docxHex,
+            space: 1,
+          },
+        },
+        indent: { right: 7200 },
+        spacing: { after: 60 },
+      })
+    );
+
+    // Name
+    paras.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Name: ',
+            size: ds.type.smallHp,
+            color: ds.mutedTextColour.docxHex,
+            font: ds.font,
+          }),
+          new TextRun({
+            text: party.nameField,
+            size: ds.type.bodyHp,
+            color: ds.bodyTextColour.docxHex,
+            font: ds.font,
+          }),
+        ],
+        spacing: { after: 40 },
+      })
+    );
+
+    // Company (if present)
+    if (party.companyField) {
+      paras.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'Company: ',
+              size: ds.type.smallHp,
+              color: ds.mutedTextColour.docxHex,
+              font: ds.font,
+            }),
+            new TextRun({
+              text: party.companyField,
+              size: ds.type.bodyHp,
+              color: ds.bodyTextColour.docxHex,
+              font: ds.font,
+            }),
+          ],
+          spacing: { after: 200 },
+        })
+      );
+    } else {
+      // Set spacing on the last paragraph if no company
+      if (paras.length > 0) {
+        const lastPara = paras[paras.length - 1];
+        // Clone with updated spacing
+        paras[paras.length - 1] = new Paragraph({
+          ...lastPara,
+          spacing: { ...(lastPara as any).spacing, after: 200 },
+        });
+      }
+    }
+  }
+
+  return paras;
+}
+
+function renderDividerBlock(
+  block: Extract<DocumentBlock, { type: 'divider' }>,
+  ds: DesignSystem
+): Paragraph[] {
+  const size = block.weight === 'heavy' ? 8 : 3;
+  const colour = block.weight === 'heavy' ? ds.primary.docxHex : ds.mutedTextColour.docxHex;
+
+  return [
+    new Paragraph({
+      border: {
+        bottom: {
+          style: BorderStyle.SINGLE,
+          size,
+          color: colour,
+        },
+      },
+      spacing: { before: 160, after: 200 },
+    }),
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOCK DISPATCHER
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderBlock(
+  block: DocumentBlock,
+  ds: DesignSystem,
+  sectionDensity?: BlockDensity
+): (Paragraph | Table)[] {
+  const density = block.density ?? sectionDensity ?? 'normal';
+
+  switch (block.type) {
+    case 'heading':
+      return renderSectionHeading(block.text, block.variant, ds);
+
+    case 'paragraph':
+      return [renderParagraphBlock(block, ds, density)];
+
+    case 'clause':
+      return [renderClauseBlock(block, ds, density)];
+
+    case 'bullet':
+      return [renderBulletBlock(block, ds)];
+
+    case 'table':
+      return renderTableBlock(block, ds);
+
+    case 'callout':
+      return renderCalloutBlock(block, ds);
+
+    case 'signature':
+      return renderSignatureBlock(block, ds);
+
+    case 'divider':
+      return renderDividerBlock(block, ds);
+
+    default:
+      return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION RENDERER
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderSection(section: DocumentSection, ds: DesignSystem): (Paragraph | Table)[] {
+  const elements: (Paragraph | Table)[] = [];
+
+  // Section heading (if present)
+  if (section.heading) {
+    const headingVariant = section.headingVariant ?? 'section';
+    elements.push(...renderSectionHeading(section.heading, headingVariant, ds));
+  }
+
+  // Blocks
+  for (const block of section.blocks) {
+    elements.push(...renderBlock(block, ds, section.density));
+  }
+
+  return elements;
+}
 
 export async function generateDocxFromJson(
   jsonDoc: AnyDocument,
@@ -591,75 +1254,36 @@ export async function generateDocxFromJson(
         ? design.firstName || design.businessName
         : design.businessName;
 
+    // Build metadata based on document type
+    let metadata: DocumentMetadata;
+    let allContent: (Paragraph | Table)[] = [];
+
     if (kind === 'model') {
       const doc = jsonDoc as DocumentModel;
-      const metadata = doc.metadata;
+      metadata = doc.metadata;
 
       // Build cover page
       const coverParas = buildCoverPage(metadata, ds, logo, displayName);
+      allContent.push(...coverParas);
 
-      // Placeholder content (block rendering comes in next prompt)
-      const contentParas: Paragraph[] = [
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: 'Document content will be rendered here.',
-              size: ds.type.bodyHp,
-              color: ds.bodyTextColour.docxHex,
-              font: ds.font,
-            }),
-          ],
-        }),
-      ];
+      // Render all sections
+      for (const section of doc.sections) {
+        allContent.push(...renderSection(section, ds));
+      }
+    } else {
+      // Fallback for other document types without full model
+      metadata = {
+        title: docLabel,
+        documentType: kind,
+        businessName: design.businessName,
+        date: new Date().toLocaleDateString('en-GB'),
+      };
 
-      const allChildren = [...coverParas, ...contentParas];
-
-      const document = new DocxDocument({
-        styles: buildDocumentStyles(ds),
-        numbering: buildNumberingConfig(ds),
-        sections: [
-          {
-            properties: {
-              page: {
-                size: {
-                  width: 11906,
-                  height: 16838,
-                },
-                margin: {
-                  top: ds.spacing.marginTopDxa,
-                  bottom: ds.spacing.marginBottomDxa,
-                  left: ds.spacing.marginLeftDxa,
-                  right: ds.spacing.marginRightDxa,
-                  header: 720,
-                  footer: 720,
-                },
-              },
-            },
-            headers: {
-              default: buildHeader(metadata, ds, logo),
-            },
-            footers: {
-              default: buildFooter(ds),
-            },
-            children: allChildren,
-          },
-        ],
-      });
-
-      const buffer = await Packer.toBuffer(document);
-      return new Uint8Array(buffer);
+      const coverParas = buildCoverPage(metadata, ds, logo, displayName);
+      allContent.push(...coverParas);
     }
 
-    // Fallback for other document types (placeholder)
-    const metadata: DocumentMetadata = {
-      title: docLabel,
-      documentType: kind,
-      businessName: design.businessName,
-      date: new Date().toLocaleDateString('en-GB'),
-    };
-
-    const coverParas = buildCoverPage(metadata, ds, logo, displayName);
-
+    // Assemble the document
     const document = new DocxDocument({
       styles: buildDocumentStyles(ds),
       numbering: buildNumberingConfig(ds),
@@ -687,7 +1311,7 @@ export async function generateDocxFromJson(
           footers: {
             default: buildFooter(ds),
           },
-          children: coverParas,
+          children: allContent,
         },
       ],
     });
