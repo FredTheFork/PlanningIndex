@@ -1637,15 +1637,18 @@ export async function generateDocx(
       children.push(
         new Paragraph({
           children: [
-            new TextRun({ text: '\u2022 ', bold: true, size: 20, font: 'Calibri', color: accentHex }),
             new TextRun({ text: block.text, size: 20, font: 'Calibri', color: '262626' }),
           ],
-          bullet: { level: 0 },
+          numbering: { reference: 'legacy-bullets', level: 0 },
           spacing: { after: 40 },
         })
       );
     } else if (block.type === 'table') {
       const tbl = block as TableBlock;
+      const contentWidthDxaLegacy = 11906 - 1134 - 1134; // 9638
+      const numCols = tbl.headers.length;
+      const colW = Math.floor(contentWidthDxaLegacy / numCols);
+      const columnWidthsLegacy = Array(numCols).fill(colW);
       const headerRow = new TableRow({
         children: tbl.headers.map(h =>
           new TableCell({
@@ -1656,6 +1659,8 @@ export async function generateDocx(
             ],
             shading: { type: ShadingType.CLEAR, fill: primaryHex },
             verticalAlign: VerticalAlign.CENTER,
+            width: { size: colW, type: WidthType.DXA },
+            margins: { top: 80, bottom: 80, left: 160, right: 160 },
           })
         ),
       });
@@ -1670,6 +1675,8 @@ export async function generateDocx(
                   }),
                 ],
                 shading: { type: ShadingType.CLEAR, fill: idx % 2 === 0 ? 'FFFFFF' : primaryHex + '08' },
+                width: { size: colW, type: WidthType.DXA },
+                margins: { top: 80, bottom: 80, left: 160, right: 160 },
               })
             ),
           })
@@ -1677,7 +1684,8 @@ export async function generateDocx(
       children.push(
         new Table({
           rows: [headerRow, ...dataRows],
-          width: { size: 100, type: WidthType.PERCENTAGE },
+          width: { size: contentWidthDxaLegacy, type: WidthType.DXA },
+          columnWidths: columnWidthsLegacy,
         })
       );
       children.push(new Paragraph({ spacing: { after: 100 } }));
@@ -1718,6 +1726,25 @@ export async function generateDocx(
   );
 
   const doc = new DocxDocument({
+    numbering: {
+      config: [
+        {
+          reference: 'legacy-bullets',
+          levels: [
+            {
+              level: 0,
+              format: LevelFormat.BULLET,
+              text: '\u2022',
+              style: {
+                paragraph: {
+                  indent: { left: 720, hanging: 360 },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
     sections: [
       {
         properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
