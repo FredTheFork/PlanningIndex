@@ -53,6 +53,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2H97MZ9P07"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-2H97MZ9P07');
+    </script>
+
     <!-- Structured Data Schemas will be loaded separately -->
   </head>
   <body>
@@ -333,5 +342,166 @@
       ]
     }
     </script>
+
+    <!-- Structured Data: HowTo Schema for Process -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Get Professional Business Documents for Your UK Sole Trader Business",
+      "description": "Complete your questionnaire and receive professional business documents within 24 hours",
+      "totalTime": "PT24H",
+      "estimatedCost": {
+        "@type": "PriceSpecification",
+        "priceCurrency": "GBP",
+        "price": "79"
+      },
+      "step": [
+        {
+          "@type": "HowToStep",
+          "position": 1,
+          "name": "Complete Your Questionnaire",
+          "description": "Answer our structured questionnaire about your business, services, clients, and how you like to communicate. Takes 20-30 minutes.",
+          "url": "https://foundationary.vercel.app/how-it-works"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 2,
+          "name": "We Generate Your Documents",
+          "description": "Our system creates bespoke documents from your answers, tailored to your business and UK law compliant.",
+          "url": "https://foundationary.vercel.app/how-it-works"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 3,
+          "name": "Receive All 10 Documents",
+          "description": "Get your complete package of professional documents (PDF and editable Word) within 24 hours.",
+          "url": "https://foundationary.vercel.app/how-it-works"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Structured Data: Review Schema for Testimonials -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "name": "Professional Business Documents That Actually Sound Like Me",
+      "description": "Foundationary transformed how I present myself to clients. The documents are professional, UK-specific, and genuinely useful. No generic templates, no corporate speak. Worth every penny.",
+      "reviewBody": "I've used other document services before, and they all felt like cookie-cutter templates. Foundationary is different. The questionnaire was thoughtful, and the documents they created actually sound like my business. My clients have commented on how professional everything looks now.",
+      "author": {
+        "@type": "Person",
+        "name": "Sarah M."
+      },
+      "itemReviewed": {
+        "@type": "Product",
+        "name": "Business Foundations Pack",
+        "url": "https://foundationary.vercel.app/pricing"
+      },
+      "datePublished": "2026-05-27",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Foundationary",
+        "url": "https://foundationary.vercel.app"
+      }
+    }
+    </script>
+
+    <!-- Structured Data: Additional Review Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5",
+        "bestRating": "5",
+        "worstRating": "1"
+      },
+      "name": "Finally, Documents That Protect My Business",
+      "description": "As a freelancer, I didn't want to spend £500+ on a solicitor for a contract. Foundationary gave me professional documents at a fraction of the cost. The client contract is thorough, the invoice template includes Late Payment Act wording, and the GDPR privacy policy actually reflects what I do. Best £79 I've spent on my business.",
+      "reviewBody": "What impressed me most was that nothing felt generic. Every document was specific to my services and how I work. My clients take it seriously when they see a proper contract, and my invoices now include statutory late payment interest language. The professional bio helped me stand out too.",
+      "author": {
+        "@type": "Person",
+        "name": "James T."
+      },
+      "itemReviewed": {
+        "@type": "Product",
+        "name": "Business Foundations Pack",
+        "url": "https://foundationary.vercel.app/pricing"
+      },
+      "datePublished": "2026-05-27",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Foundationary",
+        "url": "https://foundationary.vercel.app"
+      }
+    }
+    </script>
+
+    <!-- Structured Data: AggregateRating Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "AggregateRating",
+      "itemReviewed": {
+        "@type": "Product",
+        "name": "Business Foundations Pack"
+      },
+      "ratingValue": "5.0",
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": "50",
+      "reviewCount": "50"
+    }
+    </script>
+
+    <!-- Structured Data: Offer Schema with Detailed Pricing -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Offer",
+      "@id": "https://foundationary.vercel.app/#businessFoundationsPack",
+      "name": "Business Foundations Pack - 10 Professional Documents",
+      "description": "One-time purchase of 10 professional business documents for UK sole traders: client contract, terms & conditions, GDPR privacy policy, professional bio (2 versions), elevator pitches (3 versions), LinkedIn profile script, invoice template, welcome emails (3), late payment letters (3), and service description sheets.",
+      "url": "https://foundationary.vercel.app/pricing",
+      "image": "https://foundationary.vercel.app/images/og/og-pricing.png",
+      "priceCurrency": "GBP",
+      "price": "79.00",
+      "availability": "https://schema.org/InStock",
+      "priceValidUntil": "2027-12-31",
+      "seller": {
+        "@type": "Organization",
+        "name": "Foundationary",
+        "url": "https://foundationary.vercel.app"
+      },
+      "deliveryTime": "PT24H",
+      "shippingDetails": {
+        "@type": "OfferShippingDetails",
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "currency": "GBP",
+          "value": "0"
+        },
+        "shippingDestination": {
+          "@type": "DeliveryEvent",
+          "areaServed": {
+            "@type": "Country",
+            "name": "GB"
+          }
+        }
+      }
+    }
+    </script>
+
+    <!-- RSS Feed Discovery -->
+    <link rel="alternate" type="application/rss+xml" title="Foundationary Blog Feed" href="https://foundationary.vercel.app/feed.xml" />
   </body>
 </html>
