@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import WhatYouGet from '@/components/WhatYouGet';
 
 export const metadata: Metadata = {
   title: 'What\'s Included — 10 Business Documents',
@@ -34,7 +33,15 @@ export default function WhatsIncludedPage() {
           }),
         }}
       />
-      <WhatYouGet />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center py-24">
+          <h1 className="text-4xl font-bold mb-6">What's Included</h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto px-6">
+            10 professional documents. Done for you.
+          </p>
+          <p className="mt-4 text-gray-500">Full content coming soon...</p>
+        </div>
+      </div>
     </>
   );
 }
