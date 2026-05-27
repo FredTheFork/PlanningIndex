@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import HowItWorks from '@/components/HowItWorks';
 
 export const metadata: Metadata = {
   title: 'How It Works — Simple 4-Step Process',
@@ -33,15 +34,7 @@ export default function HowItWorksPage() {
           }),
         }}
       />
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center py-24">
-          <h1 className="text-4xl font-bold mb-6">How It Works</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto px-6">
-            Simple. Done for you. 24 hours.
-          </p>
-          <p className="mt-4 text-gray-500">Full content coming soon...</p>
-        </div>
-      </div>
+      <HowItWorks />
     </>
   );
 }

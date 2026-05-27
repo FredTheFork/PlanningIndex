@@ -21,11 +21,11 @@ export const metadata: Metadata = {
 const faqs = [
   {
     question: 'What exactly is Foundationary?',
-    answer: 'Foundationary is a done-for-you service that creates professional business documents tailored to your specific situation. You answer a structured questionnaire about your business, and we generate a complete set of documents including Terms & Conditions, Privacy Policy, Client Agreement, and other operational essentials — all specific to you and UK law.',
+    answer: 'Foundationary is a done-for-you service that creates professional business documents tailored to your specific situation. You answer a structured questionnaire about your business, and we generate a complete set of documents including Terms & Conditions, Privacy Policy, Client Agreement, and other operational essentials—all specific to you and UK law.',
   },
   {
     question: 'Is this a legal service? Are you lawyers?',
-    answer: 'No. Foundationary documents are professionally drafted and UK-compliant, but we\'re not a law firm and don\'t provide legal advice. Think of us as a structured service that gets your documentation right the first time.',
+    answer: 'No. Foundationary is a document drafting service, not a law firm, and we don\'t provide legal advice. However, our documents are professionally drafted and UK law compliant. Think of us as a structured service that gets your documentation right the first time.',
   },
   {
     question: 'Who is Foundationary for?',
@@ -33,15 +33,39 @@ const faqs = [
   },
   {
     question: 'What documents do I actually get?',
-    answer: 'The Business Foundations Pack includes 10 tailored documents covering legal protection, client communication, positioning, and admin essentials for UK sole traders.',
+    answer: 'The Business Foundations Pack includes 10 tailored documents: Bespoke Client Contract, Terms & Conditions, GDPR Privacy Policy, Professional Bio, Elevator Pitches (3 versions), LinkedIn Profile Script, Professional Invoice Template, New Client Welcome Emails (×3), Late Payment Letters (×3), and Service Description Sheets.',
   },
   {
     question: 'How long does it take?',
-    answer: 'From submitting your intake form to receiving your complete package is typically 5 business days. The form itself takes about 20-30 minutes to complete.',
+    answer: 'From submitting your intake form to receiving your complete package is typically within 24 hours. The form itself takes about 20-30 minutes to complete.',
   },
   {
     question: 'Why is it £79?',
     answer: 'We\'ve priced Foundationary to be accessible to sole traders, but not so cheap that it suggests the work isn\'t serious. £79 covers bespoke document generation, individual review, and ownership of everything you receive.',
+  },
+  {
+    question: 'Do I keep the documents forever?',
+    answer: 'Yes. You own all documents outright. They\'re yours to use, edit, and keep as long as you need them. No ongoing costs or subscriptions.',
+  },
+  {
+    question: 'Can I edit the documents?',
+    answer: 'Absolutely. You receive editable Word documents (.docx) and polished PDFs. You can modify them as your business evolves.',
+  },
+  {
+    question: 'What if I\'m not happy with them?',
+    answer: 'You have 7 days to request a full refund if you\'re not completely satisfied. No questions asked. We want you happy.',
+  },
+  {
+    question: 'Do I need this if I\'m just starting out?',
+    answer: 'Actually, this is the BEST time to get these documents. Starting with proper documentation protects you from day one and gives you a professional image that impresses early clients.',
+  },
+  {
+    question: 'How is this different from templates I can get online?',
+    answer: 'Templates are generic. Ours are bespoke—specifically built around YOUR business based on YOUR answers. Templates require you to figure out what to change; ours are ready to use immediately.',
+  },
+  {
+    question: 'What about GDPR—am I actually compliant?',
+    answer: 'Our privacy policies are ICO-compliant and specific to your data activities. However, GDPR compliance involves more than just a policy—it\'s an ongoing process. We get your documentation right, but you\'re responsible for your data practices.',
   },
 ];
 
@@ -65,13 +89,34 @@ export default function FAQPage() {
           }),
         }}
       />
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center py-24">
-          <h1 className="text-4xl font-bold mb-6">Frequently Asked Questions</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto px-6">
-            Questions we hear a lot.
-          </p>
-          <p className="mt-4 text-gray-500">Full FAQ content coming soon...</p>
+      <div className="min-h-screen pt-24 pb-20 px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-12">
+            <h1 className="text-4xl lg:text-5xl font-bold text-dark-text mb-4">Frequently Asked Questions</h1>
+            <p className="text-xl text-secondary-text">Questions we hear a lot—answered honestly.</p>
+          </div>
+
+          <div className="space-y-6">
+            {faqs.map((faq, idx) => (
+              <details key={idx} className="bg-off-white rounded-lg p-6 border border-border hover:border-medium-blue transition-colors group">
+                <summary className="font-semibold text-dark-text cursor-pointer flex items-center justify-between">
+                  <span>{faq.question}</span>
+                  <span className="text-medium-blue group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <p className="text-secondary-text mt-4 leading-relaxed">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+
+          <div className="mt-12 bg-medium-blue/10 rounded-lg p-8 border-l-4 border-medium-blue text-center">
+            <h2 className="text-xl font-bold text-dark-text mb-3">Still have questions?</h2>
+            <p className="text-secondary-text mb-6">
+              Email us at <strong>foundationarybusiness@gmail.com</strong> or call <strong>+44 7377 203834</strong>
+            </p>
+            <p className="text-sm text-secondary-text">
+              We typically respond within 24 hours
+            </p>
+          </div>
         </div>
       </div>
     </>

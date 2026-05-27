@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Pricing from '@/components/Pricing';
 
 export const metadata: Metadata = {
   title: 'Pricing — Business Foundations Pack £79',
@@ -46,35 +47,7 @@ export default function PricingPage() {
           }),
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Service',
-            name: 'Business Document Drafting Service',
-            serviceType: 'Legal Document Preparation',
-            description: 'Professional business document creation for UK sole traders',
-            provider: {
-              '@type': 'Organization',
-              name: 'Foundationary',
-            },
-            areaServed: {
-              '@type': 'Country',
-              name: 'United Kingdom',
-            },
-          }),
-        }}
-      />
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center py-24">
-          <h1 className="text-4xl font-bold mb-6">Pricing</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto px-6">
-            One price. No surprises. £79 once.
-          </p>
-          <p className="mt-4 text-gray-500">Full content coming soon...</p>
-        </div>
-      </div>
+      <Pricing />
     </>
   );
 }
