@@ -1,7 +1,9 @@
 {
+  "$schema": "https://developers.bolt.new/platform-config",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["sfo1"]
+  "devCommand": "npm run dev",
+  "previewCommand": "npm run start"
 }
