@@ -40,26 +40,6 @@ const articles = [
     category: 'Operations',
     featured: true,
   },
-  {
-    slug: 'gdpr-compliance-sole-traders-uk',
-    title: 'GDPR Compliance for UK Sole Traders: Complete 2026 Guide',
-    excerpt:
-      'Everything UK sole traders need to know about GDPR — data protection obligations, privacy policies, ICO registration, and what the penalties actually look like in practice.',
-    date: '27 May 2026',
-    readTime: '12 min read',
-    category: 'Legal',
-    featured: false,
-  },
-  {
-    slug: 'client-contract-essentials-uk-freelancers',
-    title: 'What Every UK Freelancer Needs in Their Client Contract',
-    excerpt:
-      'Essential clauses every UK freelancer should include in their service agreements — payment terms, intellectual property, termination, limitation of liability, and dispute resolution.',
-    date: '27 May 2026',
-    readTime: '10 min read',
-    category: 'Legal',
-    featured: false,
-  },
 ];
 
 const categories = [
@@ -222,10 +202,10 @@ export default function BlogIndexPage() {
               </Link>
             ))}
 
-            {/* Placeholder card for upcoming articles */}
+            {/* Placeholder cards for upcoming articles */}
             <div className="bg-white rounded-xl p-6 shadow-sm border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center min-h-[200px]">
               <span className="text-[#5a5a7a] text-sm font-medium">More guides coming soon</span>
-              <span className="text-[#5a5a7a] text-xs mt-1">Financial, marketing, and tax resources</span>
+              <span className="text-[#5a5a7a] text-xs mt-1">Financial, legal, and marketing resources</span>
             </div>
           </div>
         </div>

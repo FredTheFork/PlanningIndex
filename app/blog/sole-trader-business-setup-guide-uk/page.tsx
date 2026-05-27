@@ -1022,30 +1022,7 @@ export default function SoleTraderGuideArticle() {
         <div className="max-w-[860px] mx-auto">
           <h2 className="font-bold text-[#1a1a2e] text-2xl mb-7">Related guides</h2>
           <div className="grid sm:grid-cols-2 gap-5">
-            <Link
-              href="/blog/gdpr-compliance-sole-traders-uk"
-              className="group bg-[#F8FAFE] rounded-xl p-6 border border-gray-200 hover:border-[#2C68C4] transition-colors"
-            >
-              <span className="text-xs font-semibold text-[#2C68C4] uppercase tracking-wide">Legal</span>
-              <h3 className="font-semibold text-[#1a1a2e] mt-2 mb-1 group-hover:text-[#2C68C4] transition-colors">
-                GDPR Compliance for UK Sole Traders: Complete 2026 Guide
-              </h3>
-              <p className="text-sm text-[#5a5a7a]">
-                Data protection, privacy policies, ICO registration, and what the penalties actually look like.
-              </p>
-            </Link>
-            <Link
-              href="/blog/client-contract-essentials-uk-freelancers"
-              className="group bg-[#F8FAFE] rounded-xl p-6 border border-gray-200 hover:border-[#2C68C4] transition-colors"
-            >
-              <span className="text-xs font-semibold text-[#2C68C4] uppercase tracking-wide">Legal</span>
-              <h3 className="font-semibold text-[#1a1a2e] mt-2 mb-1 group-hover:text-[#2C68C4] transition-colors">
-                What Every UK Freelancer Needs in Their Client Contract
-              </h3>
-              <p className="text-sm text-[#5a5a7a]">
-                Essential clauses for payment terms, IP rights, termination, and dispute resolution.
-              </p>
-            </Link>
+            {/* Placeholder related articles */}
             <div className="bg-[#F8FAFE] rounded-xl p-6 border border-gray-200">
               <span className="text-xs font-semibold text-[#2C68C4] uppercase tracking-wide">Coming soon</span>
               <h3 className="font-semibold text-[#1a1a2e] mt-2 mb-1">
@@ -1053,6 +1030,24 @@ export default function SoleTraderGuideArticle() {
               </h3>
               <p className="text-sm text-[#5a5a7a]">
                 Day rate calculations, project pricing, and how to stop undercharging.
+              </p>
+            </div>
+            <div className="bg-[#F8FAFE] rounded-xl p-6 border border-gray-200">
+              <span className="text-xs font-semibold text-[#2C68C4] uppercase tracking-wide">Coming soon</span>
+              <h3 className="font-semibold text-[#1a1a2e] mt-2 mb-1">
+                GDPR for Sole Traders: What You Actually Need to Do
+              </h3>
+              <p className="text-sm text-[#5a5a7a]">
+                A plain-English guide to UK GDPR compliance for freelancers and sole traders.
+              </p>
+            </div>
+            <div className="bg-[#F8FAFE] rounded-xl p-6 border border-gray-200">
+              <span className="text-xs font-semibold text-[#2C68C4] uppercase tracking-wide">Coming soon</span>
+              <h3 className="font-semibold text-[#1a1a2e] mt-2 mb-1">
+                Client Contracts Explained: What Every Sole Trader Must Include
+              </h3>
+              <p className="text-sm text-[#5a5a7a]">
+                The essential clauses that protect you when clients don&apos;t pay or scope creeps.
               </p>
             </div>
             <div className="bg-[#F8FAFE] rounded-xl p-6 border border-gray-200">

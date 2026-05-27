@@ -260,51 +260,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials with Review Schema */}
+      {/* Testimonials */}
       <section className="bg-white py-20 px-6">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify([
-              {
-                '@context': 'https://schema.org',
-                '@type': 'Review',
-                itemReviewed: {
-                  '@type': 'Product',
-                  name: 'Business Foundations Pack',
-                },
-                reviewRating: {
-                  '@type': 'Rating',
-                  ratingValue: '5',
-                  bestRating: '5',
-                },
-                author: {
-                  '@type': 'Person',
-                  name: 'Sarah M.',
-                },
-                reviewBody: 'Finally got my contracts sorted after 2 years of winging it. The questionnaire made me think about things I\'d never considered.',
-              },
-              {
-                '@context': 'https://schema.org',
-                '@type': 'Review',
-                itemReviewed: {
-                  '@type': 'Product',
-                  name: 'Business Foundations Pack',
-                },
-                reviewRating: {
-                  '@type': 'Rating',
-                  ratingValue: '5',
-                  bestRating: '5',
-                },
-                author: {
-                  '@type': 'Person',
-                  name: 'James T.',
-                },
-                reviewBody: 'The privacy policy alone was worth it. My GDPR anxiety is finally gone. Professional quality, not some generic template.',
-              },
-            ]),
-          }}
-        />
         <div className="max-w-[1200px] mx-auto">
           <div className="text-center mb-12">
             <span className="text-[#2C68C4] font-semibold uppercase text-xs tracking-widest">

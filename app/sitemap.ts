@@ -106,59 +106,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
-    {
-      url: `${baseUrl}/case-studies`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/case-studies/virtual-assistant-london`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/case-studies/marketing-consultant-manchester`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/case-studies/bookkeeper-birmingham`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/london`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/manchester`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/birmingham`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/blog/gdpr-compliance-sole-traders-uk`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/blog/client-contract-essentials-uk-freelancers`,
-      lastModified: new Date('2026-05-27'),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
   ];
 }

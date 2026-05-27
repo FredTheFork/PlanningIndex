@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Remove standalone for Bolt.new compatibility
-  // output: 'standalone',
+  output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
 
