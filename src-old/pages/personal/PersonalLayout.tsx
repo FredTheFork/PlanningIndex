@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { useIsAdmin } from '../../hooks/useIsAdmin';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, FileText, ChartBar as BarChart3, FolderOpen, LogOut, Shield } from 'lucide-react';
 
 const clientNavItems = [
   { label: 'Overview', to: '/personal', icon: LayoutDashboard, end: true },

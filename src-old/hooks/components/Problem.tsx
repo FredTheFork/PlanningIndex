@@ -1,4 +1,4 @@
-import { FileX, ShieldOff, AlertCircle, UserX, Receipt, MessageSquareOff } from 'lucide-react';
+import { FileX, ShieldOff, CircleAlert as AlertCircle, UserX, Receipt, MessageSquareOff } from 'lucide-react';
 
 const problems = [
   {

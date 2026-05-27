@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Package, Clock, Fingerprint } from 'lucide-react';
+import { Package, Clock, FingerprintPattern as Fingerprint } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'What\'s Included in Your Business Foundations Pack',

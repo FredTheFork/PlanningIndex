@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { CircleCheck as CheckCircle } from 'lucide-react';
 
 export default function Hero() {
   return (
