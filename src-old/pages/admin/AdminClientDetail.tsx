@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { intakeFormSections, upsellFormSections, FormField } from '../../lib/intakeFormDefinition';
-import { ArrowLeft, FileText, Upload, X, Save, AlertCircle, FolderOpen, Download, ExternalLink, Copy, RefreshCw, FileSearch, FileOutput, Eye, CreditCard as Edit3, Check, Send } from 'lucide-react';
+import { ArrowLeft, FileText, Upload, X, Save, CircleAlert as AlertCircle, FolderOpen, Download, ExternalLink, Copy, RefreshCw, FileSearch, FileOutput, Eye, CreditCard as Edit3, Check, Send } from 'lucide-react';
 
 interface ClientData {
   profile: {

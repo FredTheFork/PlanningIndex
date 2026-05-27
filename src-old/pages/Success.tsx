@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { CircleCheck as CheckCircle, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Success() {

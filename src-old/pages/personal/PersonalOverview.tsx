@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { useIsAdmin } from '../../hooks/useIsAdmin';
 import { Link } from 'react-router-dom';
-import { FileText, ArrowRight, Clock, CheckCircle2, FolderOpen } from 'lucide-react';
+import { FileText, ArrowRight, Clock, CircleCheck as CheckCircle2, FolderOpen } from 'lucide-react';
 
 export default function PersonalOverview() {
   const { user } = useAuth();

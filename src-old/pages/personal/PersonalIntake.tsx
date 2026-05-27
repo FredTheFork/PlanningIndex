@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useClientProfile } from '../../hooks/useClientProfile';
 import { supabase } from '../../lib/supabase';
 import { intakeFormSections, upsellFormSections, FormField, FormSection } from '../../lib/intakeFormDefinition';
-import { Save, CheckCircle2, ArrowRight, ArrowLeft, Upload, X, Plus, Trash2, MessageSquare } from 'lucide-react';
+import { Save, CircleCheck as CheckCircle2, ArrowRight, ArrowLeft, Upload, X, Plus, Trash2, MessageSquare } from 'lucide-react';
 
 type FieldValue = string | string[] | Record<string, string>[];
 type Responses = Record<string, FieldValue>;

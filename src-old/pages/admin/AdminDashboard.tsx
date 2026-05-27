@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
-import { Users, FileText, Clock, CheckCircle2, Search, ChevronRight } from 'lucide-react';
+import { Users, FileText, Clock, CircleCheck as CheckCircle2, Search, ChevronRight } from 'lucide-react';
 
 interface ClientRow {
   user_id: string;

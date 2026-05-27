@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Clock, Fingerprint } from 'lucide-react';
+import { Package, Clock, FingerprintPattern as Fingerprint } from 'lucide-react';
 
 /* ─── data ─── */
 

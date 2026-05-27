@@ -1,5 +1,5 @@
 import { useClientProfile } from '../../hooks/useClientProfile';
-import { CheckCircle2, Clock, FileText } from 'lucide-react';
+import { CircleCheck as CheckCircle2, Clock, FileText } from 'lucide-react';
 
 export default function PersonalStatus() {
   const { profile, loading } = useClientProfile();
