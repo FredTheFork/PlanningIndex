@@ -1,10 +1,27 @@
+import Hero from '@/components/sections/Hero';
+import SocialProof from '@/components/sections/SocialProof';
+import Problem from '@/components/sections/Problem';
+import WhatYouGet from '@/components/sections/WhatYouGet';
+import HowItWorks from '@/components/sections/HowItWorks';
+import Testimonials from '@/components/sections/Testimonials';
+import Pricing from '@/components/sections/Pricing';
+import CTABanner from '@/components/sections/CTABanner';
+
+export const metadata = {
+  title: 'Foundationary — Business Foundations. Fast.',
+};
+
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-navy mb-4">Foundationary</h1>
-        <p className="text-secondary-text">Migration in progress...</p>
-      </div>
-    </div>
+    <>
+      <Hero />
+      <SocialProof />
+      <Problem />
+      <WhatYouGet />
+      <HowItWorks />
+      <Testimonials />
+      <Pricing />
+      <CTABanner />
+    </>
   );
 }
