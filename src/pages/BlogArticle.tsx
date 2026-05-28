@@ -1,106 +1,20 @@
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft } from 'lucide-react';
-
-interface ArticleData {
-  title: string;
-  description: string;
-  keywords: string;
-  category: string;
-  readTime: number;
-  date: string;
-  content: React.ReactNode;
-  relatedArticles: { title: string; slug: string }[];
-}
-
-const articleDatabase: { [key: string]: ArticleData } = {
-  'sole-trader-business-setup-guide-uk': {
-    title: 'Complete Guide to Setting Up a Sole Trader Business in the UK (2026)',
-    description: 'Complete 2026 guide to setting up a sole trader business in the UK. Step-by-step registration, legal requirements, tax obligations, and essential documents. Start your business properly.',
-    keywords: 'sole trader setup UK, how to start sole trader business, UK sole trader registration',
-    category: 'Legal',
-    readTime: 12,
-    date: '2026-05-27',
-    content: <div>
-      <p>Loading article content from static HTML...</p>
-    </div>,
-    relatedArticles: [
-      { title: 'GDPR Compliance for UK Sole Traders', slug: 'gdpr-compliance-for-sole-traders-uk' },
-      { title: 'What Every UK Freelancer Needs in Their Client Contract', slug: 'client-contract-essentials-uk-freelancers' },
-    ],
-  },
-  'gdpr-compliance-for-sole-traders-uk': {
-    title: 'GDPR Compliance for UK Sole Traders: Complete 2026 Guide',
-    description: 'Complete 2026 guide to GDPR compliance for UK sole traders. Privacy policy requirements, ICO registration, data subject rights, and practical compliance steps.',
-    keywords: 'GDPR sole trader, data protection UK freelancer, privacy policy requirements',
-    category: 'Legal',
-    readTime: 10,
-    date: '2026-05-27',
-    content: <div>
-      <p>Loading article content from static HTML...</p>
-    </div>,
-    relatedArticles: [
-      { title: 'Complete Guide to Setting Up a Sole Trader Business', slug: 'sole-trader-business-setup-guide-uk' },
-      { title: 'Invoice Best Practices for UK Sole Traders', slug: 'invoice-best-practices-uk-sole-traders' },
-    ],
-  },
-  'client-contract-essentials-uk-freelancers': {
-    title: 'What Every UK Freelancer Needs in Their Client Contract',
-    description: 'Essential contract clauses explained: scope, payment terms, IP rights, termination, and dispute resolution. Protect yourself from day one.',
-    keywords: 'freelancer contract UK, service agreement sole trader, client contract terms',
-    category: 'Legal',
-    readTime: 8,
-    date: '2026-05-27',
-    content: <div>
-      <p>Loading article content from static HTML...</p>
-    </div>,
-    relatedArticles: [
-      { title: 'Complete Guide to Setting Up a Sole Trader Business', slug: 'sole-trader-business-setup-guide-uk' },
-      { title: 'Late Payment Act 1998: How to Get Paid on Time', slug: 'late-payment-act-1998-guide' },
-    ],
-  },
-  'invoice-best-practices-uk-sole-traders': {
-    title: 'Invoice Best Practices for UK Sole Traders',
-    description: 'Create professional invoices that get you paid on time. Essential elements, payment terms, and Late Payment Act requirements.',
-    keywords: 'invoice UK sole trader, invoicing freelancers, late payment terms',
-    category: 'Financial',
-    readTime: 7,
-    date: '2026-05-27',
-    content: <div>
-      <p>Loading article content from static HTML...</p>
-    </div>,
-    relatedArticles: [
-      { title: 'Late Payment Act 1998: How to Get Paid on Time', slug: 'late-payment-act-1998-guide' },
-      { title: 'Complete Guide to Setting Up a Sole Trader Business', slug: 'sole-trader-business-setup-guide-uk' },
-    ],
-  },
-  'late-payment-act-1998-guide': {
-    title: 'Late Payment Act 1998: How to Get Paid on Time',
-    description: 'Your rights under UK law. Statutory interest, compensation claims, and the Letter Before Action that protects your position.',
-    keywords: 'late payment UK, statutory interest, legal action payment',
-    category: 'Financial',
-    readTime: 6,
-    date: '2026-05-27',
-    content: <div>
-      <p>Loading article content from static HTML...</p>
-    </div>,
-    relatedArticles: [
-      { title: 'Invoice Best Practices for UK Sole Traders', slug: 'invoice-best-practices-uk-sole-traders' },
-      { title: 'What Every UK Freelancer Needs in Their Client Contract', slug: 'client-contract-essentials-uk-freelancers' },
-    ],
-  },
-};
+import { getArticleBySlug, getRelatedArticles } from '../lib/articleContent';
 
 export default function BlogArticle() {
   const { slug } = useParams<{ slug: string }>();
-  const article = slug ? articleDatabase[slug] : null;
+  const article = slug ? getArticleBySlug(slug) : null;
+  const relatedArticles = slug ? getRelatedArticles(slug) : [];
 
   if (!article) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFBFC]">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Article Not Found</h1>
-          <Link to="/blog" className="text-blue-600 hover:underline">
+          <h1 className="text-2xl font-bold mb-4 text-gray-900">Article Not Found</h1>
+          <p className="text-gray-600 mb-6">Sorry, we couldn't find that article.</p>
+          <Link to="/blog" className="text-[#2C68C4] hover:underline font-medium">
             ← Back to Blog
           </Link>
         </div>
@@ -149,18 +63,8 @@ export default function BlogArticle() {
               {article.title}
             </h1>
 
-            {/* Content Placeholder - Article content would be loaded from static HTML */}
-            <div className="prose prose-sm max-w-none text-gray-700 mb-12">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-                <p className="text-sm text-gray-700">
-                  Article content is loaded from the optimized static HTML files. The React component provides SEO metadata and consistent navigation.
-                </p>
-                <p className="text-sm text-gray-700 mt-3">
-                  <Link to={`/blog/${slug}.html`} className="text-blue-600 hover:underline">
-                    View full article with complete content →
-                  </Link>
-                </p>
-              </div>
+            {/* Content */}
+            <div className="text-gray-700 mb-12 prose prose-sm max-w-none">
               {article.content}
             </div>
 
@@ -179,11 +83,11 @@ export default function BlogArticle() {
             </div>
 
             {/* Related Articles */}
-            {article.relatedArticles.length > 0 && (
+            {relatedArticles.length > 0 && (
               <div>
                 <h3 className="font-bold text-gray-900 text-lg mb-6">Related Articles</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {article.relatedArticles.map((related) => (
+                  {relatedArticles.map((related) => (
                     <Link
                       key={related.slug}
                       to={`/blog/${related.slug}`}

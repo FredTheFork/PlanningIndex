@@ -1,64 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-
-const articles = [
-  {
-    id: 1,
-    slug: 'sole-trader-business-setup-guide-uk',
-    title: 'Complete Guide to Setting Up a Sole Trader Business in the UK (2026)',
-    description: 'Everything you need to know about registering as a sole trader, legal requirements, tax obligations, and essential documents from day one.',
-    category: 'Legal',
-    readTime: 12,
-    date: '2026-05-27',
-    image: '📋',
-    keywords: 'sole trader setup UK, how to start sole trader business, UK sole trader registration',
-  },
-  {
-    id: 2,
-    slug: 'gdpr-compliance-for-sole-traders-uk',
-    title: 'GDPR Compliance for UK Sole Traders: Complete 2026 Guide',
-    description: 'Understand your obligations under UK GDPR. Privacy policy requirements, data subject rights, ICO registration, and practical compliance steps.',
-    category: 'Legal',
-    readTime: 10,
-    date: '2026-05-27',
-    image: '🔒',
-    keywords: 'GDPR sole trader, data protection UK freelancer, privacy policy requirements',
-  },
-  {
-    id: 3,
-    slug: 'client-contract-essentials-uk-freelancers',
-    title: 'What Every UK Freelancer Needs in Their Client Contract',
-    description: 'Essential contract clauses explained: scope, payment terms, IP rights, termination, and dispute resolution. Protect yourself from day one.',
-    category: 'Legal',
-    readTime: 8,
-    date: '2026-05-27',
-    image: '📝',
-    keywords: 'freelancer contract UK, service agreement sole trader, client contract terms',
-  },
-  {
-    id: 4,
-    slug: 'invoice-best-practices-uk-sole-traders',
-    title: 'Invoice Best Practices for UK Sole Traders',
-    description: 'Create professional invoices that get you paid on time. Essential elements, payment terms, and Late Payment Act requirements.',
-    category: 'Financial',
-    readTime: 7,
-    date: '2026-05-27',
-    image: '🧾',
-    keywords: 'invoice UK sole trader, invoicing freelancers, late payment terms',
-  },
-  {
-    id: 5,
-    slug: 'late-payment-act-1998-guide',
-    title: 'Late Payment Act 1998: How to Get Paid on Time',
-    description: 'Your rights under UK law. Statutory interest, compensation claims, and the Letter Before Action that protects your position.',
-    category: 'Financial',
-    readTime: 6,
-    date: '2026-05-27',
-    image: '💰',
-    keywords: 'late payment UK, statutory interest, legal action payment',
-  },
-];
+import { articles } from '../lib/articleContent';
 
 const categories = ['All Topics', 'Legal', 'Financial', 'Marketing', 'Operations'];
 
