@@ -1,4 +1,4 @@
-export type { Article } from '../../src/lib/articleContent';
+export type { Article } from './articleContent.tsx';
 export {
   articles,
   getArticleBySlug,
@@ -8,4 +8,4 @@ export {
   ClientContractArticle,
   InvoiceArticle,
   LatePaymentArticle,
-} from '../../src/lib/articleContent';
+} from './articleContent.tsx';
