@@ -26,7 +26,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between gap-10">
           {/* Logo (white version) */}
           <Link href="/" className="flex items-center gap-2 shrink-0" style={{ height: 40 }}>
-            <img src="/Firefly_GeminiFlash_please_do_not_change_the_shape_of_the_rocket_or_stand_or_any_of_the_blue_currently_in_422366.png" alt="Foundationary" style={{ height: 40, width: 'auto' }} />
+            <img src="/images/logo-white.png" alt="Foundationary logo" style={{ height: 40, width: 'auto' }} />
             <div className="flex flex-col">
               <span className="font-inter font-bold text-white leading-none" style={{ fontSize: '1.15rem' }}>
                 <span style={{ fontSize: '1.3rem' }}>F</span>oundationary
