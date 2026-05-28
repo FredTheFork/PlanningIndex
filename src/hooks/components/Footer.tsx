@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 const serviceLinks = [
   { label: "What's Included", to: '/whats-included' },
   { label: 'Pricing', to: '/pricing' },
+  { label: 'Blog', to: '/blog' },
   { label: 'Additional Services', to: '/additional-services' },
   { label: 'How It Works', to: '/how-it-works' },
 ];

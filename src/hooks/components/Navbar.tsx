@@ -8,6 +8,7 @@ const navLinks = [
   { label: "What's Included", to: '/whats-included' },
   { label: 'How It Works', to: '/how-it-works' },
   { label: 'Pricing', to: '/pricing' },
+  { label: 'Blog', to: '/blog' },
   { label: 'Additional Services', to: '/additional-services' },
   { label: 'About', to: '/about' },
 ];

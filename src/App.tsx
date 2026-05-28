@@ -13,6 +13,8 @@ import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfUsePage from './pages/TermsOfUsePage';
+import BlogPage from './pages/BlogPage';
+import BlogArticle from './pages/BlogArticle';
 
 // Public flow pages
 import CheckoutPage from './pages/Checkout';
@@ -77,6 +79,8 @@ export default function App() {
           <Route path="/whats-included" element={<WhatsIncludedPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogArticle />} />
           <Route path="/additional-services" element={<AdditionalServicesPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/faq" element={<FAQPage />} />
