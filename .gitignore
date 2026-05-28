@@ -1,2 +1,34 @@
-node_modules/
+# dependencies
+node_modules
+
+# next
+.next
+out
+
+# vercel
+.vercel
+
+# logs
+*.log
+
+# env
 .env
+.env.local
+.env.production
+
+# mac/windows junk
+.DS_Store
+Thumbs.db
+
+# turbo
+.turbo
+
+# build
+dist
+build
+
+# cache
+.cache
+
+# typescript
+*.tsbuildinfo
