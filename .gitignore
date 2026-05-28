@@ -1,34 +1,25 @@
-# dependencies
-node_modules
+# Next.js build output — never commit this
+.next/
+out/
 
-# next
-.next
-out
+# Dependencies — Vercel installs these itself
+node_modules/
 
-# vercel
-.vercel
-
-# logs
-*.log
-
-# env
+# Environment variables — never commit secrets
 .env
 .env.local
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
-# mac/windows junk
+# Vercel internals
+.vercel/
+
+# OS junk
 .DS_Store
 Thumbs.db
 
-# turbo
-.turbo
-
-# build
-dist
-build
-
-# cache
-.cache
-
-# typescript
-*.tsbuildinfo
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
