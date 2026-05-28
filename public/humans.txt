@@ -1,49 +1,68 @@
 /* TEAM */
 Name: Foundationary
-Site: https://foundationary.vercel.app
+Site: https://foundationary.co.uk
 Email: foundationarybusiness@gmail.com
 Phone: +44 7377 203834
 Location: United Kingdom
 Language: English (UK)
+Twitter: @Foundationary
+LinkedIn: https://www.linkedin.com/company/foundationary
 
 /* TECHNOLOGY */
-Framework: React + TypeScript
-Build Tool: Vite
-Hosting: Vercel
-Database: Supabase
+Framework: Next.js 14 + React 18
+Language: TypeScript
+Styling: Tailwind CSS
+Hosting: Vercel Edge Network
+Database: Supabase (PostgreSQL)
+Authentication: Supabase Auth
 Fonts: Inter (Google Fonts)
-Server: Node.js
 
 /* STANDARDS */
-HTML5
-CSS3
+HTML5 Semantic Markup
+CSS3 with Tailwind
 ECMAScript 2020+
-JSON-LD (Schema.org)
-WCAG 2.1 Level AA
+JSON-LD (Schema.org) for SEO
+WCAG 2.1 Level AA Accessibility
+Core Web Vitals Optimized
 
 /* SERVICES */
-Business Document Drafting
-Legal Document Preparation
-GDPR Compliance
-Professional Documentation for UK Sole Traders
+Business Document Drafting for UK Sole Traders
+Client Contracts
+GDPR Privacy Policies
+Terms and Conditions
+Invoice Templates
+Professional Bios
+LinkedIn Profile Scripts
 
 /* THANKS */
 Built with attention to detail and care for UK sole traders.
 Special thanks to the open source community.
 
-/* NOTE */
-Last Updated: 2026-05-27
+/* SEO */
+Sitemap: https://foundationary.co.uk/sitemap.xml
+RSS Feed: https://foundationary.co.uk/feed.xml
+Robots.txt: https://foundationary.co.uk/robots.txt
+Structured Data: JSON-LD (Organization, WebSite, Service, Article, FAQPage, HowTo, BreadcrumbList)
+Open Graph: Yes
+Twitter Cards: Yes
+Canonical URLs: Yes
+AI Optimized: llms.txt available
+
+/* LAST UPDATED */
+Date: 2026-05-28
 Doctype: HTML5
 Responsive: Yes
 Accessibility: Yes
 Performance Optimized: Yes
 
 /* POLICIES */
-Privacy Policy: https://foundationary.vercel.app/privacy
-Terms of Use: https://foundationary.vercel.app/terms
+Privacy Policy: https://foundationary.co.uk/privacy
+Terms of Use: https://foundationary.co.uk/terms
 GDPR Compliant: Yes
+UK Law Compliant: Yes
 
 /* CONTACT */
 Email: foundationarybusiness@gmail.com
 Phone: +44 7377 203834
+Business Hours: Monday-Friday, 9:00 AM - 5:00 PM GMT
 Response Time: Within 24 hours

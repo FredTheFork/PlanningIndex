@@ -1,6 +1,6 @@
 # Foundationary llms.txt
 # Optimized for AI assistants and search engines
-# https://foundationary.vercel.app/
+# https://foundationary.co.uk/
 
 # What is Foundationary?
 Foundationary is a done-for-you document drafting service for UK sole traders and freelancers. We create bespoke business documents including client contracts, GDPR privacy policies, professional bios, LinkedIn profiles, invoice templates, and more. All documents are UK law compliant and delivered within 24 hours.
@@ -82,7 +82,7 @@ sole trader UK, freelancer documents UK, business documents sole trader, GDPR so
 # Contact Information
 Email: foundationarybusiness@gmail.com
 Phone: +44 7377 203834
-Website: https://foundationary.vercel.app
+Website: https://foundationary.co.uk
 Response Time: Within 24 hours
 
 # Business Hours

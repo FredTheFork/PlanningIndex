@@ -1,8 +1,21 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
+import { JsonLd } from '@/components/seo';
+import { generateBreadcrumbSchema, SITE_URL } from '@/lib/seo';
 
-export const metadata = {
-  title: 'About | Foundationary',
-  description: 'Professional foundations for UK sole traders who want to operate properly — without templates, solicitors on retainer, or ongoing complexity.',
+export const metadata: Metadata = {
+  title: 'About | Foundationary - UK Sole Trader Document Service',
+  description: 'Professional foundations for UK sole traders who want to operate properly - without templates, solicitors on retainer, or ongoing complexity. Learn about our mission and approach.',
+  keywords: 'Foundationary about, sole trader document service UK, business foundations company, who we are',
+  openGraph: {
+    title: 'About Foundationary | Professional Documents for UK Sole Traders',
+    description: 'We help UK sole traders operate properly with professional business documents - no templates, no solicitors, no complexity.',
+    url: `${SITE_URL}/about`,
+    images: [{ url: `${SITE_URL}/og/about.png`, width: 1200, height: 630 }],
+  },
+  alternates: {
+    canonical: `${SITE_URL}/about`,
+  },
 };
 
 /* ─── shared ─── */
@@ -859,8 +872,14 @@ function FinalCTA() {
 /* ─── Main Page ─── */
 
 export default function AboutPage() {
+  const breadcrumbs = generateBreadcrumbSchema([
+    { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
+  ]);
+
   return (
     <>
+      <JsonLd data={breadcrumbs} />
       <PageHeader />
       <ClarityStrip />
       <ProblemDiagram />
