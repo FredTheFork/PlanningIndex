@@ -27,14 +27,34 @@ export default function NewsletterSignup({ variant = 'default' }: NewsletterSign
     }
 
     try {
-      // In production, this would integrate with an email service like ConvertKit, Mailchimp, or Supabase
-      // For now, we'll simulate success
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/send-newsletter-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          email,
+          source: variant === 'compact' ? 'footer' : 'blog-page',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe');
+      }
+
       setSubmitted(true);
       setEmail('');
       setTimeout(() => setSubmitted(false), 5000);
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       console.error('Newsletter signup error:', err);
     } finally {
       setLoading(false);

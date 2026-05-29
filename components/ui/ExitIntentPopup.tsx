@@ -59,8 +59,26 @@ export default function ExitIntentPopup() {
     }
 
     try {
-      // Simulate API call - integrate with your email service
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured');
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/send-lead-magnet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send checklist');
+      }
+
       setSubmitted(true);
       localStorage.setItem('exit-intent-dismissed', 'true');
 
@@ -70,6 +88,7 @@ export default function ExitIntentPopup() {
       }, 3000);
     } catch (error) {
       console.error('Lead magnet signup error:', error);
+      alert('Failed to send checklist. Please try again.');
     } finally {
       setLoading(false);
     }
