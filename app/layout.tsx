@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import StickyCTA from '@/components/ui/StickyCTA';
 import CookieConsent from '@/components/ui/CookieConsent';
+import ExitIntentPopup from '@/components/ui/ExitIntentPopup';
 import { JsonLd } from '@/components/seo';
 import { generateOrganizationSchema, generateWebSiteSchema, SITE_CONFIG, SITE_URL, KEYWORDS } from '@/lib/seo';
 
@@ -115,6 +116,7 @@ export default function RootLayout({
         <Footer />
         <StickyCTA />
         <CookieConsent />
+        <ExitIntentPopup />
       </body>
     </html>
   );

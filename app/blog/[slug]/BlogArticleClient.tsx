@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
 import { Article } from '@/lib/content/articleContent';
+import ReadingProgress from '@/components/ui/ReadingProgress';
+import AuthorBio from '@/components/ui/AuthorBio';
 
 interface BlogArticleClientProps {
   article: Article;
@@ -34,6 +36,9 @@ export default function BlogArticleClient({ article, relatedArticles }: BlogArti
 
   return (
     <div className="min-h-screen bg-off-white">
+      {/* Reading Progress Bar */}
+      <ReadingProgress />
+
       {/* Back Navigation - Shows/hides on scroll */}
       <div
         className={`bg-white border-b border-border fixed left-0 right-0 z-30 transition-transform duration-300 ${
@@ -102,6 +107,9 @@ export default function BlogArticleClient({ article, relatedArticles }: BlogArti
           </div>
         </div>
 
+        {/* Author Bio */}
+        <AuthorBio />
+
         {/* CTA Box - Simple, no patterns */}
         <div className="mt-10 bg-navy rounded-lg p-10 text-white text-center">
           <h2 className="font-inter font-bold text-2xl mb-3">
@@ -115,7 +123,7 @@ export default function BlogArticleClient({ article, relatedArticles }: BlogArti
             className="font-inter font-semibold text-navy bg-white rounded-lg inline-flex items-center gap-2 hover:bg-gray-50 transition-colors"
             style={{ padding: '14px 32px', fontSize: '1rem' }}
           >
-            Get Your Pack for 79
+            Get Your Pack — £79
           </Link>
         </div>
 
