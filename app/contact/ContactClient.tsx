@@ -62,6 +62,7 @@ interface ContactFormState {
   phone: string;
   subject: string;
   message: string;
+  website?: string; // Honeypot field - hidden from users, bots will fill it
 }
 
 function ContactForm() {
@@ -71,6 +72,7 @@ function ContactForm() {
     phone: '',
     subject: '',
     message: '',
+    website: '', // Honeypot field
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -83,6 +85,15 @@ function ContactForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Honeypot check - if website field is filled, it's likely a bot
+    if (form.website && form.website.trim() !== '') {
+      console.log('Spam detected: honeypot field filled');
+      setSubmitted(true); // Fake success message
+      setForm({ name: '', email: '', phone: '', subject: '', message: '', website: '' });
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -295,6 +306,20 @@ function ContactForm() {
                 rows={6}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-medium-blue focus:border-medium-blue resize-none"
                 style={{ fontSize: '0.95rem' }}
+              />
+            </div>
+
+            {/* Honeypot field - hidden from users, traps bots */}
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                value={form.website}
+                onChange={handleChange}
+                tabIndex={-1}
+                autoComplete="off"
               />
             </div>
 

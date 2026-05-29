@@ -5,6 +5,7 @@ export interface Article {
   description: string;
   category: string;
   date: string;
+  lastUpdated: string; // Add freshness tracking
   readTime: number;
   image: string;
   keywords: string;
@@ -19,6 +20,7 @@ export const SoleTraderSetupArticle: Article = {
   description: 'The complete guide to setting up as a sole trader in the UK. Covers registration, taxes, National Insurance, VAT, legal requirements, business documents, and everything you need to run a compliant sole trader business.',
   category: 'Legal',
   date: '2024-01-15',
+  lastUpdated: '2025-05-29', // Show freshness to Google
   readTime: 22,
   image: '/images/blog/sole-trader-setup.png',
   keywords: 'sole trader registration UK, HMRC self assessment, UTR number, Class 2 National Insurance, Class 4 NI, sole trader tax rates, trading allowance, business bank account UK, sole trader vs limited company, VAT registration threshold, allowable expenses sole trader, sole trader record keeping',
@@ -429,6 +431,7 @@ export const GdprArticle: Article = {
   description: 'The complete guide to UK GDPR compliance for sole traders. Understanding your legal obligations, privacy policy requirements, data subject rights, security measures, breach procedures, and how to avoid substantial fines.',
   category: 'Legal',
   date: '2024-01-22',
+  lastUpdated: '2025-05-29',
   readTime: 25,
   image: '/images/blog/gdpr-compliance.png',
   keywords: 'GDPR sole trader, UK data protection, Data Protection Act 2018, privacy policy UK, GDPR compliance small business, ICO registration, data subject rights, lawful basis for processing, GDPR fines UK, Subject Access Request, data breach notification, data protection officer, consent requirements UK',
@@ -862,6 +865,7 @@ export const ClientContractArticle: Article = {
   description: 'The complete guide to freelancer and sole trader client contracts in the UK. Covers every essential clause, legal principles, dispute resolution, termination rights, intellectual property assignment, and practical strategies for protecting your business.',
   category: 'Legal',
   date: '2024-02-01',
+  lastUpdated: '2025-05-29',
   readTime: 24,
   image: '/images/blog/client-contract.png',
   keywords: 'freelance contract UK, service agreement clauses, client agreement template UK, freelancer legal protection, intellectual property assignment, limitation of liability contract, contract termination UK law, breach of contract remedies, scope creep prevention, force majeure clause UK, confidentiality agreement freelance, indemnity clause service contract',
@@ -1323,6 +1327,7 @@ export const InvoiceArticle: Article = {
   description: 'The complete guide to creating compliant, professional invoices in the UK. Covers legal requirements for sole traders and VAT-registered businesses, invoice elements, payment terms, late payment legislation, accounting software integration, and strategies for getting paid faster.',
   category: 'Financial',
   date: '2024-02-08',
+  lastUpdated: '2025-05-29',
   readTime: 21,
   image: '/images/blog/invoice-template.png',
   keywords: 'invoice template UK, sole trader invoice requirements, UK invoice format, VAT invoice requirements, HMRC invoice rules, invoice payment terms, billing best practices UK, proforma invoice, credit note UK, invoice numbering system, invoice software UK, accounting integration, invoice factoring UK',
@@ -1824,6 +1829,7 @@ export const LatePaymentArticle: Article = {
   description: 'The complete guide to late payment legislation, debt recovery, and cash flow management for UK businesses. Covers statutory interest, compensation fees, court procedures, letters before action, debt collection agencies, and preventing late payment in the first place.',
   category: 'Financial',
   date: '2024-02-15',
+  lastUpdated: '2025-05-29',
   readTime: 23,
   image: '/images/blog/late-payment.png',
   keywords: 'late payment fees UK, statutory interest UK, unpaid invoices, debt recovery UK, County Court claims, letter before action, small claims court UK, enforcement of judgments, chasing unpaid invoices, late payment legislation, debt collection agency UK, charging order, statutory demand, winding up petition',

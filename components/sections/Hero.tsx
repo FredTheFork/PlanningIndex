@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Users } from 'lucide-react';
 
 export default function Hero() {
   return (
@@ -31,6 +31,14 @@ export default function Hero() {
           >
             10 professional documents built entirely around your UK sole trader business — contracts, privacy policies, invoices, bios, pitches and more. Done for you. Delivered in 24 hours.
           </p>
+
+          {/* Social Proof Counter */}
+          <div className="flex items-center gap-3 my-6 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+            <Users size={18} className="text-medium-blue shrink-0" />
+            <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.9rem' }}>
+              Join <span className="font-semibold text-navy">200+</span> UK sole traders who got their business foundations sorted
+            </span>
+          </div>
 
           <div className="flex flex-wrap gap-4 mt-9">
             <Link

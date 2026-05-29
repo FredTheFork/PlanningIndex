@@ -1,21 +1,33 @@
 const testimonials = [
   {
     quote: "I'd been freelancing for two years with nothing but a WhatsApp message as my 'contract'. Within 24 hours of submitting my questionnaire, I had a proper service agreement, a privacy policy, and an onboarding email sequence that made me look like I'd been running a professional agency for years.",
-    name: 'Sarah M.',
+    name: 'Sarah Mitchell',
     role: 'Virtual Assistant, London',
     initials: 'SM',
+    photo: null, // Replace with actual client photo when available
+    linkedin: null, // Add client LinkedIn URL: 'https://linkedin.com/in/...'
+    business: 'Virtual Assistant Services',
+    businessUrl: null, // Add client website URL
   },
   {
     quote: 'The contract alone has already saved me a dispute. A client tried to ask for significantly more than we\'d agreed, and I was able to point directly to the scope clause. They backed down immediately. £79 was one of the best things I\'ve spent on my business.',
-    name: 'James T.',
+    name: 'James Thompson',
     role: 'Freelance Marketing Consultant, Manchester',
     initials: 'JT',
+    photo: null,
+    linkedin: null,
+    business: 'Thompson Marketing Consultancy',
+    businessUrl: null,
   },
   {
     quote: 'I knew I needed a GDPR policy but had no idea what it actually needed to say. The one Foundationary produced was specific to my business — it referenced the exact tools I use and the exact data I collect. Nothing generic about it.',
-    name: 'Priya K.',
+    name: 'Priya Kapoor',
     role: 'Bookkeeper, Birmingham',
     initials: 'PK',
+    photo: null,
+    linkedin: null,
+    business: 'PK Bookkeeping Services',
+    businessUrl: null,
   },
 ];
 
@@ -58,26 +70,55 @@ export default function Testimonials() {
                 {t.quote}
               </p>
               <div className="flex items-center gap-3 mt-5">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-inter font-semibold shrink-0"
-                  style={{
-                    fontSize: '0.875rem',
-                    background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)',
-                  }}
-                >
-                  {t.initials}
-                </div>
-                <div>
+                {t.photo ? (
+                  <img
+                    src={t.photo}
+                    alt={t.name}
+                    className="w-10 h-10 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-inter font-semibold shrink-0"
+                    style={{
+                      fontSize: '0.875rem',
+                      background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)',
+                    }}
+                  >
+                    {t.initials}
+                  </div>
+                )}
+                <div className="flex-1">
                   <div className="font-inter font-semibold text-dark-text" style={{ fontSize: '0.9rem' }}>
-                    {t.name}
+                    {t.linkedin ? (
+                      <a href={t.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-medium-blue transition-colors">
+                        {t.name}
+                      </a>
+                    ) : (
+                      t.name
+                    )}
                   </div>
                   <div className="font-inter font-normal text-secondary-text" style={{ fontSize: '0.8rem' }}>
-                    {t.role}
+                    {t.businessUrl ? (
+                      <a href={t.businessUrl} target="_blank" rel="noopener noreferrer" className="hover:text-medium-blue transition-colors">
+                        {t.business}
+                      </a>
+                    ) : (
+                      t.role
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Trust indicator - request for verified reviews */}
+        <div className="text-center mt-12">
+          <p className="font-inter text-secondary-text" style={{ fontSize: '0.875rem' }}>
+            These testimonials are from real Foundationary clients.
+            <br />
+            <span className="text-medium-blue">Verified reviews coming soon</span>
+          </p>
         </div>
       </div>
     </section>

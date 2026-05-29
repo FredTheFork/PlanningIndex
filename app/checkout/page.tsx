@@ -4,11 +4,26 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Clock, FileText, ArrowRight } from 'lucide-react';
 import { stripeProducts, stripeMode } from '@/lib/stripe/config';
+import GuaranteeBadge from '@/components/ui/GuaranteeBadge';
+import AddOnSelector, { availableAddOns } from '@/components/ui/AddOnSelector';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const product = stripeProducts[0];
+
+  const addOnTotal = selectedAddOns.reduce((sum, id) => {
+    const addOn = availableAddOns.find(a => a.id === id);
+    return sum + (addOn?.price || 0);
+  }, 0);
+  const grandTotal = product.price + addOnTotal;
+
+  const toggleAddOn = (addOnId: string) => {
+    setSelectedAddOns(prev =>
+      prev.includes(addOnId) ? prev.filter(id => id !== addOnId) : [...prev, addOnId]
+    );
+  };
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -29,6 +44,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           price_id: product.priceId,
           mode: stripeMode,
+          add_ons: selectedAddOns,
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/checkout`,
         }),
@@ -109,11 +125,40 @@ export default function CheckoutPage() {
                 </ul>
               </div>
 
-              <div className="border-t border-border pt-4 flex items-center justify-between">
-                <span className="font-inter font-semibold text-navy">Total</span>
-                <span className="font-inter font-bold text-navy text-2xl">
-                  {product.currencySymbol}{product.price.toFixed(2)}
-                </span>
+              {/* Add-ons Section */}
+              <div className="border-t border-border pt-6 mb-6">
+                <AddOnSelector
+                  addOns={availableAddOns}
+                  selectedAddOns={selectedAddOns}
+                  onToggle={toggleAddOn}
+                />
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
+                    Core Pack
+                  </span>
+                  <span className="font-inter font-semibold text-navy">
+                    {product.currencySymbol}{product.price.toFixed(2)}
+                  </span>
+                </div>
+                {selectedAddOns.length > 0 && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
+                      Add-ons ({selectedAddOns.length})
+                    </span>
+                    <span className="font-inter font-semibold text-medium-blue">
+                      +{product.currencySymbol}{addOnTotal.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                  <span className="font-inter font-semibold text-navy">Total</span>
+                  <span className="font-inter font-bold text-navy text-2xl">
+                    {product.currencySymbol}{grandTotal.toFixed(2)}
+                  </span>
+                </div>
               </div>
               <p className="font-inter text-secondary-text text-xs mt-1">One-time payment. No recurring charges.</p>
             </div>
@@ -122,6 +167,11 @@ export default function CheckoutPage() {
           {/* Checkout action */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg border border-border p-8 sticky top-24">
+              {/* Guarantee Badge */}
+              <div className="mb-6">
+                <GuaranteeBadge size="small" />
+              </div>
+
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <ShieldCheck size={18} className="text-success" />
@@ -149,7 +199,7 @@ export default function CheckoutPage() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                 ) : (
                   <>
-                    Pay {product.currencySymbol}{product.price.toFixed(2)}
+                    Pay {product.currencySymbol}{grandTotal.toFixed(2)}
                     <ArrowRight size={18} />
                   </>
                 )}

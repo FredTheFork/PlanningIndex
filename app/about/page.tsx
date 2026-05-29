@@ -435,7 +435,81 @@ function ProcessTransparency() {
   );
 }
 
-/* ─── 7. Design Philosophy ─── */
+/* ─── 7. Founder Section ─── */
+
+function FounderSection() {
+  return (
+    <section className="bg-gradient-to-br from-navy to-medium-blue py-24 px-6">
+      <div className="mx-auto" style={{ maxWidth: 900 }}>
+        <SectionLabel>THE FOUNDER</SectionLabel>
+        <h2
+          className="font-inter font-bold text-white mt-3"
+          style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}
+        >
+          Built by someone who saw the problem firsthand.
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+          <div className="md:col-span-2">
+            <p
+              className="font-inter font-normal text-white/90 leading-[1.7] mb-4"
+              style={{ fontSize: '1rem' }}
+            >
+              Foundationary was founded after years of watching talented freelancers and sole traders struggle with the same operational gaps — contracts that weren't enforceable, invoices that went unpaid, privacy policies that didn't hold up, and professional materials that looked like afterthoughts.
+            </p>
+            <p
+              className="font-inter font-normal text-white/90 leading-[1.7] mb-4"
+              style={{ fontSize: '1rem' }}
+            >
+              The legal industry priced out most small businesses. Template sites offered generic, often US-centric documents that didn't reflect UK law. DIY tools assumed knowledge most people didn't have. And solicitors treated sole traders like small corporations, over-engineering everything.
+            </p>
+            <p
+              className="font-inter font-semibold text-white leading-[1.7]"
+              style={{ fontSize: '1.05rem' }}
+            >
+              Foundationary is the result of asking: what if you could give sole traders exactly what they need — no more, no less — and make it genuinely easy to use?
+            </p>
+
+            <div className="mt-8 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                <span className="font-inter font-bold text-white text-lg">F</span>
+              </div>
+              <div>
+                <p className="font-inter font-semibold text-white" style={{ fontSize: '1rem' }}>
+                  The Foundationary Team
+                </p>
+                <p className="font-inter text-white/70" style={{ fontSize: '0.85rem' }}>
+                  UK-based, focused on sole traders
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/5 rounded-2xl border border-white/10 p-6 backdrop-blur-sm">
+            <h3 className="font-inter font-semibold text-white mb-4" style={{ fontSize: '1rem' }}>
+              What drove the founding philosophy:
+            </h3>
+            <ul className="flex flex-col gap-3">
+              {[
+                'Quality should not cost £300/hour',
+                'Documents should work in the real world',
+                'Small business deserves big business tools',
+                'Done-for-you beats do-it-yourself',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <span className="text-success font-bold shrink-0">✓</span>
+                  <span className="font-inter font-medium text-white/90" style={{ fontSize: '0.9rem' }}>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── 8. Design Philosophy ─── */
 
 const feelItems = ['Calm', 'Clear', 'Structured', 'Human'];
 const avoidItems = ['Legal intimidation', 'Corporate posturing', 'Aggressive sales language', 'Artificial urgency'];
@@ -886,6 +960,7 @@ export default function AboutPage() {
       <WhyWeExist />
       <ComparisonBlock />
       <ProcessTransparency />
+      <FounderSection />
       <DesignPhilosophy />
       <WhoItsFor />
       <EthicsSection />
