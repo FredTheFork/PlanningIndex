@@ -1,7 +1,7 @@
 // SEO Configuration for Foundationary
 // Centralized configuration for all SEO-related settings
 
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://foundationary.co.uk';
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://foundationary.vercel.app';
 
 export const SITE_CONFIG = {
   name: 'Foundationary',

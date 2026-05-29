@@ -147,7 +147,7 @@ export default function BlogPage() {
               className="font-inter font-semibold text-navy bg-white rounded-lg hover:bg-gray-50 transition-colors"
               style={{ padding: '14px 32px', fontSize: '1rem' }}
             >
-              Get Your Pack for 79
+              Get Your Pack — £79
             </Link>
             <Link
               href="/whats-included"

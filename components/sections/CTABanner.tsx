@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function CTABanner() {
   return (
     <section
@@ -17,13 +19,13 @@ export default function CTABanner() {
         >
           Join the sole traders who stopped operating on a wing and a prayer and started running their business from a proper foundation.
         </p>
-        <a
-          href="#" // TODO: Link to checkout
+        <Link
+          href="/checkout"
           className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
           style={{ padding: '18px 40px', fontSize: '1.05rem', minHeight: 48 }}
         >
           Get My Pack — £79
-        </a>
+        </Link>
         <p
           className="font-inter font-normal mt-4"
           style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}

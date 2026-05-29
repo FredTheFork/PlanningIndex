@@ -33,13 +33,13 @@ export default function Hero() {
           </p>
 
           <div className="flex flex-wrap gap-4 mt-9">
-            <a
-              href="#" // TODO: Link to checkout
+            <Link
+              href="/checkout"
               className="font-inter font-semibold text-white bg-navy rounded-lg hover:bg-medium-blue hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(27,63,122,0.25)] transition-all duration-200"
               style={{ padding: '16px 32px', fontSize: '1rem', minHeight: 48 }}
             >
               Get Started — £79
-            </a>
+            </Link>
             <Link
               href="/whats-included"
               className="font-inter font-semibold text-navy border-2 border-navy rounded-lg hover:bg-off-white transition-colors duration-200"

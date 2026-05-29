@@ -260,13 +260,13 @@ function PageHeader() {
         >
           This is exactly what lands in your inbox within 24 hours of submitting your questionnaire. Ten documents, built entirely around your business.
         </p>
-        <a
-          href="#" // TODO: Link to checkout
+        <Link
+          href="/checkout"
           className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] transition-colors duration-200 mt-9"
           style={{ padding: '16px 36px', fontSize: '1rem', minHeight: 48 }}
         >
           Get My Pack — £79
-        </a>
+        </Link>
       </div>
     </section>
   );
@@ -432,13 +432,13 @@ function FinalCTA() {
         >
           One questionnaire. One payment. Everything set up properly.
         </p>
-        <a
-          href="#" // TODO: Link to checkout
+        <Link
+          href="/checkout"
           className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
           style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
         >
           Get My Business Foundations Pack — £79
-        </a>
+        </Link>
         <p
           className="font-inter font-normal mt-4"
           style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}

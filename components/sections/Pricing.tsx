@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const features = [
   'Bespoke Client Contract',
   'Terms & Conditions',
@@ -112,13 +114,13 @@ export default function Pricing() {
               ))}
             </div>
 
-            <a
-              href="#" // TODO: Link to checkout
+            <Link
+              href="/checkout"
               className="block w-full text-center font-inter font-bold text-white bg-navy rounded-[10px] hover:bg-medium-blue hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(27,63,122,0.3)] transition-all duration-200 mt-9"
               style={{ padding: '18px', fontSize: '1rem' }}
             >
               Get My Business Foundations Pack
-            </a>
+            </Link>
 
             <p className="font-inter font-normal text-secondary-text text-center mt-4" style={{ fontSize: '0.8rem' }}>
               🔒 Secure payment via Stripe. Document drafting service — not legal advice.

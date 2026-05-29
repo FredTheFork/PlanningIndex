@@ -432,13 +432,13 @@ function MainPricingSection() {
 
               <div className="border-t border-border my-6" />
 
-              <a
-                href="#" // TODO: Link to checkout
+              <Link
+                href="/checkout"
                 className="block w-full text-center font-inter font-bold text-white bg-navy rounded-[10px] hover:bg-medium-blue hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(27,63,122,0.3)] transition-all duration-200"
                 style={{ padding: '16px', fontSize: '1rem' }}
               >
                 Get My Business Foundations Pack
-              </a>
+              </Link>
 
               <div className="flex justify-center gap-4 mt-4 flex-wrap">
                 {['🔒 Secure via Stripe', '📄 PDF + Word formats', '🇬🇧 UK law compliant'].map((t) => (
@@ -638,13 +638,13 @@ function FinalCTA() {
         >
           One questionnaire. One payment of £79. Ten documents delivered to your inbox within 24 hours.
         </p>
-        <a
-          href="#" // TODO: Link to checkout
+        <Link
+          href="/checkout"
           className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
           style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
         >
           Get My Business Foundations Pack
-        </a>
+        </Link>
       </div>
     </section>
   );
