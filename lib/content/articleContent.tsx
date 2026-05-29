@@ -20,7 +20,7 @@ export const SoleTraderSetupArticle: Article = {
   category: 'Legal',
   date: '2024-01-15',
   readTime: 8,
-  image: '📋',
+  image: '/images/blog/sole-trader-setup.png',
   keywords: 'sole trader setup UK, register sole trader, UK business registration, self-employment',
   content: (
     <div>
@@ -81,7 +81,7 @@ export const GdprArticle: Article = {
   category: 'Legal',
   date: '2024-01-22',
   readTime: 6,
-  image: '🔒',
+  image: '/images/blog/gdpr-compliance.png',
   keywords: 'GDPR sole trader, UK data protection, privacy policy UK, GDPR compliance small business',
   content: (
     <div>
@@ -129,7 +129,7 @@ export const ClientContractArticle: Article = {
   category: 'Legal',
   date: '2024-02-01',
   readTime: 7,
-  image: '📝',
+  image: '/images/blog/client-contract.png',
   keywords: 'freelance contract UK, client agreement template, freelancer legal protection, service agreement',
   content: (
     <div>
@@ -186,7 +186,7 @@ export const InvoiceArticle: Article = {
   category: 'Financial',
   date: '2024-02-08',
   readTime: 5,
-  image: '🧾',
+  image: '/images/blog/invoice-template.png',
   keywords: 'invoice template UK, sole trader invoice requirements, UK invoice format, billing best practices',
   content: (
     <div>
@@ -232,7 +232,7 @@ export const LatePaymentArticle: Article = {
   category: 'Financial',
   date: '2024-02-15',
   readTime: 6,
-  image: '⏰',
+  image: '/images/blog/late-payment.png',
   keywords: 'late payment fees UK, statutory interest UK, unpaid invoices, debt recovery sole trader',
   content: (
     <div>
