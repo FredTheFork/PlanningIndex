@@ -77,7 +77,19 @@ Deno.serve(async (req: Request) => {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY not configured");
+      console.error("RESEND_API_KEY not configured - email not sent");
+      // Still return success - user is saved to database
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Subscribed successfully! Email delivery pending setup.",
+          warning: "Email service not yet configured. Please contact support."
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -105,10 +117,14 @@ Deno.serve(async (req: Request) => {
               </p>
 
               <div style="text-align: center; margin: 30px 0;">
-                <a href="https://foundationary.vercel.app/downloads/sole-trader-legal-checklist.pdf" style="background: #1B3F7A; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
-                  Download Your Free Checklist (PDF)
+                <a href="https://foundationary.vercel.app/downloads/sole-trader-legal-checklist.html" style="background: #1B3F7A; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                  View Your Free Checklist
                 </a>
               </div>
+
+              <p style="color: #718096; font-size: 14px; text-align: center; margin: 20px 0;">
+                💡 <strong>Tip:</strong> Use your browser's print function (Ctrl/Cmd + P) to save as PDF
+              </p>
 
               <div style="background: white; border-left: 4px solid #38A169; padding: 15px; margin: 20px 0;">
                 <p style="margin: 0; color: #1B3F7A; font-weight: 600;">Inside you'll find:</p>
@@ -145,12 +161,6 @@ Deno.serve(async (req: Request) => {
             </div>
           </div>
         `,
-        attachments: [
-          {
-            filename: "uk-sole-trader-legal-checklist.pdf",
-            path: "https://foundationary.vercel.app/downloads/sole-trader-legal-checklist.pdf",
-          },
-        ],
       }),
     });
 
