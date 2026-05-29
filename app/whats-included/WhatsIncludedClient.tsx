@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Package, Clock, Fingerprint } from 'lucide-react';
+import DocumentPreview from '@/components/ui/DocumentPreview';
 
 /* ─── data ─── */
 
@@ -405,6 +406,13 @@ function DocumentSection({ doc }: { doc: typeof documents[number] }) {
             {doc.risk}
           </p>
         </div>
+
+        {/* Document Preview */}
+        <DocumentPreview
+          documentId={doc.id}
+          documentTitle={doc.title}
+          documentNumber={doc.num}
+        />
       </div>
     </section>
   );
