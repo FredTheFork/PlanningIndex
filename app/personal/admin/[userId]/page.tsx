@@ -2,10 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, User, FileText, Clock, Save, AlertCircle } from 'lucide-react';
+import {
+  ArrowLeft, User, FileText, Clock, Save, AlertCircle, Briefcase, FileCheck,
+  MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
+  Download, Eye, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
+  ChevronRight, FileDown, Send, Loader
+} from 'lucide-react';
+
+// Tab components
+import OverviewTab from './tabs/OverviewTab';
+import BriefTab from './tabs/BriefTab';
+import DocumentsTab from './tabs/DocumentsTab';
+import IntakeTab from './tabs/IntakeTab';
+import CommunicationsTab from './tabs/CommunicationsTab';
+import NotesTab from './tabs/NotesTab';
+import SettingsTab from './tabs/SettingsTab';
 
 interface ClientData {
   profile: {
@@ -19,29 +32,43 @@ interface ClientData {
     purchased_upsells: string[];
   } | null;
   intakeResponses: Record<string, any> | null;
+  intakeMetadata: {
+    submitted_at: string | null;
+    form_version: string;
+    last_saved_at: string;
+    file_uploads: Record<string, any>;
+    additional_notes: Record<string, any>;
+  } | null;
   email: string;
 }
 
+const TABS = [
+  { id: 'overview', label: 'Overview', icon: User },
+  { id: 'brief', label: 'Master Brief', icon: Briefcase },
+  { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'intake', label: 'Intake Form', icon: FileCheck },
+  { id: 'communications', label: 'Communications', icon: MessageSquare },
+  { id: 'notes', label: 'Notes & Activity', icon: StickyNote },
+  { id: 'settings', label: 'Settings & Delivery', icon: Settings },
+];
+
 export default function AdminClientDetail({ params }: { params: { userId: string } }) {
   const { userId } = params;
-  const router = useRouter();
   const { user: adminUser } = useAuth();
   const [data, setData] = useState<ClientData>({
     profile: null,
     intakeResponses: null,
+    intakeMetadata: null,
     email: '',
   });
   const [loading, setLoading] = useState(true);
-  const [deliveryStatus, setDeliveryStatus] = useState('');
-  const [deliveryLink, setDeliveryLink] = useState('');
-  const [adminNotes, setAdminNotes] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
     fetchClientData();
-  }, [userId]);
+  }, [userId, refreshKey]);
 
   const fetchClientData = async () => {
     if (!userId) return;
@@ -60,50 +87,29 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         .eq('user_id', userId)
         .maybeSingle();
 
-      // Get email from intake responses
       const email = intakeResult?.responses?.q7_document_email || userId.substring(0, 8) + '...';
 
       setData({
         profile,
         intakeResponses: intakeResult?.responses || null,
+        intakeMetadata: intakeResult ? {
+          submitted_at: intakeResult.submitted_at,
+          form_version: intakeResult.form_version,
+          last_saved_at: intakeResult.last_saved_at,
+          file_uploads: intakeResult.file_uploads || {},
+          additional_notes: intakeResult.additional_notes || {},
+        } : null,
         email,
       });
-
-      if (profile) {
-        setDeliveryStatus(profile.delivery_status);
-        setDeliveryLink(profile.delivery_link || '');
-        setAdminNotes(profile.admin_notes || '');
-      }
+    } catch (error) {
+      console.error('Error fetching client data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!userId || !data.profile) return;
-    setSaving(true);
-    setSaveMessage('');
-
-    try {
-      const { error } = await supabase
-        .from('client_profiles')
-        .update({
-          delivery_status: deliveryStatus,
-          delivery_link: deliveryLink || null,
-          admin_notes: adminNotes,
-        })
-        .eq('user_id', userId);
-
-      if (error) {
-        setSaveMessage('Error saving changes');
-        console.error('Save error:', error);
-      } else {
-        setSaveMessage('Changes saved successfully');
-        setTimeout(() => setSaveMessage(''), 3000);
-      }
-    } finally {
-      setSaving(false);
-    }
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   if (loading) {
@@ -143,149 +149,139 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         Back to Dashboard
       </Link>
 
-      <div className="mb-6">
-        <h1 className="font-inter font-bold text-[#1B3F7A] text-2xl mb-1">
-          Client Details
-        </h1>
-        <p className="font-inter text-gray-600 text-sm">
-          Manage client information and delivery status.
-        </p>
-      </div>
-
-      {/* Client info */}
+      {/* Client Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="bg-[#FAFBFC] rounded-lg p-3">
-            <User size={24} className="text-[#1B3F7A]" />
-          </div>
-          <div>
-            <p className="font-inter font-semibold text-gray-900">{data.email}</p>
-            <p className="font-inter text-gray-600 text-sm">{userId}</p>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-inter font-medium text-gray-700 text-sm mb-2">
-              Created
-            </label>
-            <p className="font-inter text-gray-600 text-sm">
-              {new Date(data.profile.created_at).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
-          <div>
-            <label className="block font-inter font-medium text-gray-700 text-sm mb-2">
-              Intake Form
-            </label>
-            <p className="font-inter text-gray-600 text-sm">
-              {data.profile.has_submitted_intake
-                ? `Submitted ${data.profile.intake_submitted_at ? new Date(data.profile.intake_submitted_at).toLocaleDateString('en-GB') : ''}`
-                : 'Not submitted'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Delivery controls */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-4">
-          Delivery Settings
-        </h2>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block font-inter font-medium text-gray-700 text-sm mb-2">
-              Delivery Status
-            </label>
-            <select
-              value={deliveryStatus}
-              onChange={(e) => setDeliveryStatus(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
-            >
-              <option value="not_started">Not Started</option>
-              <option value="in_progress">In Progress</option>
-              <option value="delivered">Delivered</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-inter font-medium text-gray-700 text-sm mb-2">
-              Delivery Link
-            </label>
-            <input
-              type="text"
-              value={deliveryLink}
-              onChange={(e) => setDeliveryLink(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block font-inter font-medium text-gray-700 text-sm mb-2">
-              Admin Notes
-            </label>
-            <textarea
-              value={adminNotes}
-              onChange={(e) => setAdminNotes(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm"
-              placeholder="Add notes about this client..."
-            />
-          </div>
-
+        <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ padding: '10px 20px', fontSize: '0.9rem' }}
-            >
-              {saving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save size={16} />
-                  Save Changes
-                </>
-              )}
-            </button>
-
-            {saveMessage && (
-              <p className={`font-inter text-sm ${saveMessage.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
-                {saveMessage}
-              </p>
-            )}
+            <div className="bg-[#FAFBFC] rounded-lg p-3">
+              <User size={24} className="text-[#1B3F7A]" />
+            </div>
+            <div>
+              <p className="font-inter font-semibold text-gray-900 text-lg">{data.email}</p>
+              <p className="font-inter text-gray-600 text-sm">{userId}</p>
+            </div>
           </div>
+          <div className="flex items-center gap-2">
+            <QuickStatusBadges profile={data.profile} />
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+          <QuickStat
+            label="Created"
+            value={new Date(data.profile.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          />
+          <QuickStat
+            label="Intake"
+            value={data.profile.has_submitted_intake ? 'Submitted' : 'Pending'}
+            status={data.profile.has_submitted_intake ? 'success' : 'pending'}
+          />
+          <QuickStat
+            label="Delivery"
+            value={data.profile.delivery_status.replace('_', ' ')}
+            status={data.profile.delivery_status === 'delivered' ? 'success' : data.profile.delivery_status === 'in_progress' ? 'progress' : 'pending'}
+          />
+          <QuickStat
+            label="Upsells"
+            value={data.profile.purchased_upsells?.length || 0}
+          />
         </div>
       </div>
 
-      {/* Intake responses preview */}
-      {data.intakeResponses && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-4">
-            Intake Form Responses
-          </h2>
-
-          <div className="space-y-3">
-            {Object.entries(data.intakeResponses).map(([key, value]) => (
-              <div key={key} className="border-b border-gray-100 pb-3">
-                <p className="font-inter font-medium text-gray-900 text-sm mb-1">{key}</p>
-                <p className="font-inter text-gray-600 text-sm">
-                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                </p>
-              </div>
-            ))}
-          </div>
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg border border-gray-200 mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px overflow-x-auto">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-6 py-4 border-b-2 font-inter text-sm font-medium transition-colors whitespace-nowrap ${
+                    isActive
+                      ? 'border-[#1B3F7A] text-[#1B3F7A]'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon size={18} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
         </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {activeTab === 'overview' && (
+            <OverviewTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'brief' && (
+            <BriefTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'documents' && (
+            <DocumentsTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'intake' && (
+            <IntakeTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'communications' && (
+            <CommunicationsTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'notes' && (
+            <NotesTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'settings' && (
+            <SettingsTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Quick Status Badges
+function QuickStatusBadges({ profile }: { profile: any }) {
+  return (
+    <div className="flex items-center gap-2">
+      {profile.has_submitted_intake ? (
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-inter font-medium">
+          <CheckCircle2 size={12} />
+          Intake Complete
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 rounded-md text-xs font-inter font-medium">
+          <Clock size={12} />
+          Intake Pending
+        </span>
       )}
+      {profile.delivery_status === 'delivered' && (
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-inter font-medium">
+          <CheckCircle2 size={12} />
+          Delivered
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Quick Stat Component
+function QuickStat({ label, value, status }: { label: string; value: string | number; status?: 'success' | 'progress' | 'pending' }) {
+  const statusColors = {
+    success: 'text-green-700',
+    progress: 'text-amber-700',
+    pending: 'text-gray-600',
+  };
+
+  return (
+    <div>
+      <p className="font-inter text-gray-600 text-xs mb-1">{label}</p>
+      <p className={`font-inter font-semibold text-sm ${status ? statusColors[status] : 'text-gray-900'}`}>
+        {value}
+      </p>
     </div>
   );
 }
