@@ -139,26 +139,26 @@ export default function AdminClientDetail({ params }: { params: { userId: string
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Back link */}
       <Link
         href="/personal/admin"
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-[#1B3F7A] mb-6"
+        className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-[#1B3F7A]"
       >
         <ArrowLeft size={16} />
         Back to Dashboard
       </Link>
 
       {/* Client Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-[#FAFBFC] rounded-lg p-3">
-              <User size={24} className="text-[#1B3F7A]" />
+          <div className="flex items-center gap-3">
+            <div className="bg-[#FAFBFC] rounded-lg p-2.5">
+              <User size={22} className="text-[#1B3F7A]" />
             </div>
             <div>
-              <p className="font-inter font-semibold text-gray-900 text-lg">{data.email}</p>
-              <p className="font-inter text-gray-600 text-sm">{userId}</p>
+              <p className="font-inter font-semibold text-gray-900 text-base">{data.email}</p>
+              <p className="font-inter text-gray-600 text-xs">{userId}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-200">
           <QuickStat
             label="Created"
             value={new Date(data.profile.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -190,9 +190,9 @@ export default function AdminClientDetail({ params }: { params: { userId: string
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg border border-gray-200 mb-6">
+      <div className="bg-white rounded-lg border border-gray-200">
         <div className="border-b border-gray-200">
-          <nav className="flex -mb-px overflow-x-auto">
+          <nav className="flex -mb-px overflow-x-auto scrollbar-hide">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -200,13 +200,13 @@ export default function AdminClientDetail({ params }: { params: { userId: string
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-4 border-b-2 font-inter text-sm font-medium transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-4 py-3 border-b-2 font-inter text-sm font-medium transition-colors whitespace-nowrap ${
                     isActive
                       ? 'border-[#1B3F7A] text-[#1B3F7A]'
                       : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={16} />
                   {tab.label}
                 </button>
               );
@@ -215,7 +215,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4">
           {activeTab === 'overview' && (
             <OverviewTab userId={userId} data={data} refreshData={refreshData} />
           )}

@@ -13,6 +13,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hide horizontal scrollbar while keeping scrolling functional */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom focus ring for all interactive elements */
 button:focus-visible,
 a:focus-visible {

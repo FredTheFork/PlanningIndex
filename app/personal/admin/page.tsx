@@ -173,6 +173,7 @@ export default function AdminDashboard() {
     pending: clients.filter(c => !c.has_submitted_intake).length,
     inProgress: clients.filter(c => c.delivery_status === 'in_progress').length,
     delivered: clients.filter(c => c.delivery_status === 'delivered').length,
+    totalDocs: clients.reduce((sum, c) => sum + (c.documents_count || 0), 0),
     highRisk: clients.filter(c => c.risk_level === 'High').length,
   };
 
@@ -220,141 +221,100 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-inter font-bold text-[#1B3F7A] text-2xl mb-1">
-              Admin Dashboard
-            </h1>
-            <p className="font-inter text-gray-600 text-sm">
-              Manage all clients, intake forms, and document delivery.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchClients}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-md font-inter text-sm font-medium transition-colors"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-md font-inter text-sm font-medium transition-colors"
-            >
-              <Download size={16} />
-              Export CSV
-            </button>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-inter font-bold text-[#1B3F7A] text-2xl mb-1">
+            Admin Dashboard
+          </h1>
+          <p className="font-inter text-gray-600 text-sm">
+            Manage all clients, intake forms, and document delivery.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchClients}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-md font-inter text-sm font-medium transition-colors"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-md font-inter text-sm font-medium transition-colors"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Export</span>
+          </button>
         </div>
       </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-        <StatCard
-          icon={Users}
-          label="Total Clients"
-          value={stats.total}
-          color="navy"
-          trend={stats.total > 0 ? '+' : ''}
-        />
-        <StatCard
-          icon={Inbox}
-          label="Pending Intake"
-          value={stats.pending}
-          color="amber"
-          alert={stats.pending > 0}
-        />
-        <StatCard
-          icon={FileText}
-          label="Intake Submitted"
-          value={stats.submitted}
-          color="medium-blue"
-        />
-        <StatCard
-          icon={Clock}
-          label="In Progress"
-          value={stats.inProgress}
-          color="amber"
-        />
-        <StatCard
-          icon={Send}
-          label="Delivered"
-          value={stats.delivered}
-          color="success"
-        />
-        <StatCard
-          icon={Briefcase}
-          label="Total Documents"
-          value={clients.reduce((sum, c) => sum + (c.documents_count || 0), 0)}
-          color="medium-blue"
-        />
-        <StatCard
-          icon={AlertTriangle}
-          label="High Risk"
-          value={stats.highRisk}
-          color="red"
-          alert={stats.highRisk > 0}
-        />
+      {/* Stats cards - 6 stats max for cleaner layout */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard icon={Users} label="Total" value={stats.total} color="navy" />
+        <StatCard icon={Inbox} label="Pending" value={stats.pending} color="amber" alert={stats.pending > 0} />
+        <StatCard icon={Clock} label="In Progress" value={stats.inProgress} color="medium-blue" />
+        <StatCard icon={Send} label="Delivered" value={stats.delivered} color="success" />
+        <StatCard icon={Briefcase} label="Docs" value={stats.totalDocs} color="medium-blue" />
+        <StatCard icon={AlertTriangle} label="Risk" value={stats.highRisk} color="red" alert={stats.highRisk > 0} />
       </div>
 
       {/* Filters & Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-3">
+        <div className="flex flex-col lg:flex-row gap-3">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by email, ID, or business name..."
-              className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm"
+              className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm"
             />
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
             >
-              <Filter size={16} />
+              <Filter size={14} />
               Filters
-              {showFilters ? <X size={16} /> : null}
+              {showFilters ? <X size={14} /> : null}
             </button>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
             >
-              <option value="created_at">Sort by Date</option>
-              <option value="email">Sort by Email</option>
-              <option value="documents_count">Sort by Documents</option>
-              <option value="delivery_status">Sort by Status</option>
+              <option value="created_at">Date</option>
+              <option value="email">Email</option>
+              <option value="documents_count">Docs</option>
+              <option value="delivery_status">Status</option>
             </select>
 
             <button
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
             >
-              {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+              {sortOrder === 'asc' ? '↑' : '↓'}
             </button>
           </div>
         </div>
 
         {/* Expanded Filters */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-inter text-gray-700 text-xs mb-2">Delivery Status</label>
+              <label className="block font-inter text-gray-700 text-xs mb-1">Delivery Status</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
               >
                 <option value="all">All Statuses</option>
                 <option value="not_started">Not Started</option>
@@ -364,11 +324,11 @@ export default function AdminDashboard() {
             </div>
 
             <div>
-              <label className="block font-inter text-gray-700 text-xs mb-2">Intake Status</label>
+              <label className="block font-inter text-gray-700 text-xs mb-1">Intake Status</label>
               <select
                 value={filterIntake}
                 onChange={(e) => setFilterIntake(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
               >
                 <option value="all">All</option>
                 <option value="submitted">Submitted</option>
@@ -383,11 +343,11 @@ export default function AdminDashboard() {
                   setFilterIntake('all');
                   setSearch('');
                 }}
-                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
               >
-                Clear Filters
+                Clear
               </button>
-              <div className="px-4 py-2.5 bg-[#FAFBFC] rounded-md">
+              <div className="px-3 py-2 bg-[#FAFBFC] rounded-md flex-1">
                 <span className="font-inter text-sm text-gray-600">{filteredClients.length} results</span>
               </div>
             </div>
@@ -397,21 +357,21 @@ export default function AdminDashboard() {
 
       {/* Client list */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B3F7A]" />
         </div>
       ) : filteredClients.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <Users size={40} className="text-gray-400 mx-auto mb-4" />
-          <p className="font-inter text-gray-600">No clients found.</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <Users size={32} className="text-gray-400 mx-auto mb-3" />
+          <p className="font-inter text-gray-600 text-sm">No clients found.</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="bg-[#FAFBFC] border-b border-gray-200">
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-6 py-3 w-12">
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5 w-10">
                     <input
                       type="checkbox"
                       checked={selectedClients.size === filteredClients.length && filteredClients.length > 0}
@@ -419,13 +379,13 @@ export default function AdminDashboard() {
                       className="rounded border-gray-300"
                     />
                   </th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-6 py-3">Client</th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-6 py-3">Intake</th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-6 py-3">Brief</th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-6 py-3">Documents</th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-6 py-3">Status</th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-6 py-3">Created</th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-right px-6 py-3"></th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Client</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Intake</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Brief</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Docs</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Status</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Created</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-right px-4 py-2.5 w-20"></th>
                 </tr>
               </thead>
               <tbody>
@@ -436,7 +396,7 @@ export default function AdminDashboard() {
                       selectedClients.has(client.user_id) ? 'bg-blue-50' : ''
                     }`}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={selectedClients.has(client.user_id)}
@@ -444,62 +404,62 @@ export default function AdminDashboard() {
                         className="rounded border-gray-300"
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="font-inter text-sm text-gray-900 font-medium truncate max-w-[200px]">
+                    <td className="px-4 py-3">
+                      <div className="font-inter text-sm text-gray-900 font-medium truncate max-w-[180px]">
                         {client.email}
                       </div>
                       {client.business_name && (
-                        <div className="font-inter text-xs text-[#1B3F7A] truncate max-w-[200px]">
+                        <div className="font-inter text-xs text-[#1B3F7A] truncate max-w-[180px]">
                           {client.business_name}
                         </div>
                       )}
-                      <div className="font-inter text-xs text-gray-600 truncate max-w-[200px]">
+                      <div className="font-inter text-xs text-gray-600 truncate max-w-[180px]">
                         {client.user_id.substring(0, 8)}...
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       {client.has_submitted_intake ? (
-                        <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
-                          <CheckCircle2 size={12} />
-                          Submitted
+                        <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 size={10} />
+                          Done
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                          <Clock size={12} />
+                        <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                          <Clock size={10} />
                           Pending
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <BriefStatusBadge status={client.brief_status} />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-inter text-sm text-gray-900">
-                          {client.documents_count || 0}/10
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-inter text-xs text-gray-900">
+                          {client.documents_count || 0}
                         </span>
                         {client.risk_level && (
                           <RiskBadge level={client.risk_level} />
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <StatusBadge status={client.delivery_status} />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <span className="font-inter text-xs text-gray-600">
                         {new Date(client.created_at).toLocaleDateString('en-GB', {
                           day: 'numeric', month: 'short', year: 'numeric'
                         })}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-3 text-right">
                       <Link
                         href={`/personal/admin/${client.user_id}`}
                         className="inline-flex items-center gap-1 font-inter text-xs font-medium text-[#2C68C4] hover:underline"
                       >
                         Manage
-                        <ChevronRight size={14} />
+                        <ChevronRight size={12} />
                       </Link>
                     </td>
                   </tr>
@@ -512,13 +472,13 @@ export default function AdminDashboard() {
 
       {/* Selected Actions */}
       {selectedClients.size > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#1B3F7A] text-white rounded-lg shadow-lg px-6 py-4 flex items-center gap-4">
-          <span className="font-inter text-sm">
-            {selectedClients.size} client{selectedClients.size > 1 ? 's' : ''} selected
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#1B3F7A] text-white rounded-lg shadow-lg px-4 py-2.5 flex items-center gap-3">
+          <span className="font-inter text-xs">
+            {selectedClients.size} selected
           </span>
-          <div className="h-4 w-px bg-white/30" />
-          <button className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded text-xs font-inter font-medium transition-colors">
-            Bulk Actions (Coming Soon)
+          <div className="h-3 w-px bg-white/30" />
+          <button className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-inter font-medium transition-colors">
+            Bulk Actions
           </button>
         </div>
       )}
@@ -526,12 +486,11 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, color, trend, alert }: {
+function StatCard({ icon: Icon, label, value, color, alert }: {
   icon: any;
   label: string;
   value: number;
   color: string;
-  trend?: string;
   alert?: boolean;
 }) {
   const colorMap: Record<string, string> = {
@@ -543,15 +502,15 @@ function StatCard({ icon: Icon, label, value, color, trend, alert }: {
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-4 ${alert ? 'ring-2 ring-red-200' : ''}`}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`${colorMap[color] || 'bg-[#1B3F7A]'} rounded-lg p-1.5`}>
-          <Icon size={16} className="text-white" />
+    <div className={`bg-white rounded-lg border border-gray-200 p-3 ${alert ? 'ring-2 ring-red-200' : ''}`}>
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className={`${colorMap[color] || 'bg-[#1B3F7A]'} rounded p-1`}>
+          <Icon size={14} className="text-white" />
         </div>
-        {alert && <AlertTriangle size={14} className="text-red-500" />}
+        {alert && <AlertTriangle size={12} className="text-red-500" />}
       </div>
-      <div className="font-inter font-bold text-[#1B3F7A] text-xl">{value}</div>
-      <div className="font-inter text-gray-600 text-xs mt-0.5">{label}</div>
+      <div className="font-inter font-bold text-[#1B3F7A] text-lg">{value}</div>
+      <div className="font-inter text-gray-600 text-xs">{label}</div>
     </div>
   );
 }
@@ -566,7 +525,7 @@ function StatusBadge({ status }: { status: string }) {
   const c = config[status] || config.not_started;
 
   return (
-    <span className={`inline-flex items-center font-inter text-xs font-medium px-2 py-1 rounded-full ${c.color} ${c.bg}`}>
+    <span className={`inline-flex items-center font-inter text-xs font-medium px-2 py-0.5 rounded-full ${c.color} ${c.bg}`}>
       {c.label}
     </span>
   );
