@@ -53,7 +53,7 @@ export default function BlogArticleClient({ article, relatedArticles }: BlogArti
       </div>
 
       {/* Spacer to account for fixed back bar */}
-      <div style={{ height: '76px' }} />
+      <div style={{ height: '84px' }} />
 
       {/* Article Header - Simple gradient, no patterns */}
       <section
