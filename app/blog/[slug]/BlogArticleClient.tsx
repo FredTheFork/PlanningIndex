@@ -39,7 +39,7 @@ export default function BlogArticleClient({ article, relatedArticles }: BlogArti
         className={`bg-white border-b border-border fixed left-0 right-0 z-30 transition-transform duration-300 ${
           showBackBar ? 'translate-y-0' : '-translate-y-full'
         }`}
-        style={{ top: '72px' }}
+        style={{ top: '720px' }}
       >
         <div className="max-w-[840px] mx-auto px-6 py-3">
           <Link
