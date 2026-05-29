@@ -88,50 +88,47 @@ function FAQAccordion({ faqs }: FAQAccordionProps) {
             </h2>
 
             <div className="flex flex-col gap-3">
-              {faqs.filter(faq => faq.category === category).map(faq => (
-                <div
-                  key={faq.id}
-                  className="bg-off-white rounded-lg border border-border overflow-hidden hover:shadow-md transition-shadow"
-                >
-                  <button
-                    onClick={() => toggleExpanded(faq.id)}
-                    className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
-                    aria-expanded={expanded[faq.id] || false}
-                  >
-                    <h3
-                      className="font-inter font-semibold text-dark-text pr-4"
-                      style={{ fontSize: '1rem' }}
-                    >
-                      {faq.question}
-                    </h3>
-                    <ChevronDown
-                      size={20}
-                      className="text-navy shrink-0 transition-transform duration-200"
-                      style={{
-                        transform: expanded[faq.id] ? 'rotate(180deg)' : 'rotate(0deg)',
-                      }}
-                    />
-                  </button>
-
+              {faqs.filter(faq => faq.category === category).map(faq => {
+                const isExpanded = expanded[faq.id] !== false; // Default to expanded (true)
+                
+                return (
                   <div
-                    className="px-6 pb-6 border-t border-border"
-                    style={{
-                      display: expanded[faq.id] ? 'block' : 'block',
-                      maxHeight: expanded[faq.id] ? 'none' : '0px',
-                      overflow: 'hidden',
-                      padding: expanded[faq.id] ? undefined : '0 1.5rem 0 1.5rem',
-                      border: expanded[faq.id] ? undefined : 'none',
-                    }}
+                    key={faq.id}
+                    className="bg-off-white rounded-lg border border-border overflow-hidden hover:shadow-md transition-shadow"
                   >
-                    <p
-                      className="font-inter text-secondary-text leading-[1.7]"
-                      style={{ fontSize: '0.95rem', paddingTop: expanded[faq.id] ? '1.5rem' : '0', paddingBottom: expanded[faq.id] ? '1.5rem' : '0' }}
+                    <button
+                      onClick={() => toggleExpanded(faq.id)}
+                      className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
+                      aria-expanded={isExpanded}
                     >
-                      {faq.answer}
-                    </p>
+                      <h3
+                        className="font-inter font-semibold text-dark-text pr-4"
+                        style={{ fontSize: '1rem' }}
+                      >
+                        {faq.question}
+                      </h3>
+                      <ChevronDown
+                        size={20}
+                        className="text-navy shrink-0 transition-transform duration-200"
+                        style={{
+                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        }}
+                      />
+                    </button>
+
+                    {/* CRITICAL: Answer content is ALWAYS in the HTML for SEO/AI visibility */}
+                    {/* No CSS hiding - content is fully visible to search engines and AI agents */}
+                    <div className="px-6 pb-6 border-t border-border">
+                      <p
+                        className="font-inter text-secondary-text leading-[1.7] pt-6"
+                        style={{ fontSize: '0.95rem' }}
+                      >
+                        {faq.answer}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
