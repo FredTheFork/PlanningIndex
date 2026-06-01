@@ -8,7 +8,6 @@ import Pricing from '@/components/sections/Pricing';
 import CTABanner from '@/components/sections/CTABanner';
 import { JsonLd } from '@/components/seo';
 import { generateServiceSchema, SITE_URL } from '@/lib/seo';
-import ClientOverlays from '@/components/layout/ClientOverlays';
 
 export const metadata = {
   title: 'Foundationary | Business Documents for UK Sole Traders - Fast & Simple',
@@ -25,18 +24,18 @@ export const metadata = {
   },
 };
 
-
 export default function HomePage() {
   return (
     <>
-      {/* Page-specific content */}
+      <JsonLd data={generateServiceSchema()} />
       <Hero />
-      <Features />
+      <SocialProof />
+      <Problem />
+      <WhatYouGet />
+      <HowItWorks />
+      <Testimonials />
       <Pricing />
-      <FAQ />
-
-      {/* Client-only UI (popups, cookies, CTA, etc.) */}
-      <ClientOverlays />
+      <CTABanner />
     </>
   );
 }
