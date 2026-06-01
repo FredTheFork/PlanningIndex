@@ -1,17 +1,104 @@
-/lib*
-supabase/*
-supabase/
-lib/*
-lib*
-/supabase*
-/lib
-lib/
-/supabase
-components
-/components
-components*
-/components*
-public/
-/public
-public*
-/public*
+# ===============================
+# CORE – never useful to Bolt
+# ===============================
+node_modules/
+.next/
+dist/
+build/
+out/
+coverage/
+.turbo/
+.vercel/
+.cache/
+
+# ===============================
+# ENV / SECRETS
+# ===============================
+.env
+.env.*
+*.env
+
+# ===============================
+# SUPABASE (huge + irrelevant)
+# ===============================
+supabase/migrations/
+supabase/functions/
+supabase/.temp/
+supabase/.branches/
+
+# ===============================
+# GENERATED / MACHINE FILES
+# ===============================
+**/*.generated.*
+**/*.gen.*
+**/*.map
+**/*.lock
+**/*.snap
+
+# ===============================
+# LARGE CONFIG / DATA BLOBS
+# ===============================
+lib/seo/**
+lib/content/**
+lib/forms/**
+lib/stripe/**
+lib/supabase/**
+
+# ===============================
+# PUBLIC ASSETS
+# ===============================
+public/images/
+public/downloads/
+public/**/*.pdf
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.svg
+public/**/*.webp
+public/**/*.ico
+
+# ===============================
+# DOCUMENT GENERATORS (CRITICAL)
+# ===============================
+**/*document-config*
+**/*documentConfigs*
+**/*document-configs*
+**/document-configs/**
+**/configs/**
+**/schemas/**
+**/*schema*
+
+# ===============================
+# TESTS / MOCKS
+# ===============================
+**/*.test.*
+**/*.spec.*
+**/__tests__/
+**/__mocks__/
+
+# ===============================
+# LOGS / TEMP
+# ===============================
+*.log
+*.tmp
+
+# ===============================
+# MARKETING / SEO HELPERS
+# ===============================
+components/seo/**
+components/sections/**
+hooks/useClientProfile.ts
+hooks/useAdmin.ts
+
+# ===============================
+# TYPE DECLARATIONS (HUGE)
+# ===============================
+**/*.d.ts
+
+# ===============================
+# JSON DATA FILES
+# ===============================
+**/*.json
+!package.json
+!tsconfig.json
+!tsconfig.*.json
