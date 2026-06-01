@@ -1,1 +1,14 @@
 /lib*
+supabase
+lib*
+/supabase*
+/lib
+/supabase
+components
+/components
+components*
+/components*
+public
+/public
+public*
+/public*
