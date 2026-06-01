@@ -25,26 +25,17 @@ export const metadata = {
   },
 };
 
-export default function HomePage() {
-  return (
-    <>
-      <JsonLd data={generateServiceSchema()} />
-      <Hero />
-      <SocialProof />
-      <Problem />
-      <WhatYouGet />
-      <HowItWorks />
-      <Testimonials />
-      <Pricing />
-      <CTABanner />
-    </>
-  );
-}
 
 export default function HomePage() {
   return (
     <>
-      {/* page content */}
+      {/* Page-specific content */}
+      <Hero />
+      <Features />
+      <Pricing />
+      <FAQ />
+
+      {/* Client-only UI (popups, cookies, CTA, etc.) */}
       <ClientOverlays />
     </>
   );
