@@ -30,7 +30,6 @@ const DOCUMENT_TYPES = [
 ];
 
 // ─── System prompts for each document type ────────────────────────────────────
-// These are the full generation instructions sent to the AI
 
 const DOCUMENT_PROMPTS: Record<string, string> = {
   terms_and_conditions: `You are a senior UK commercial solicitor with 25 years of experience drafting small business contracts. You have been instructed to produce a complete, legally robust Terms and Conditions document for a UK sole trader or small business.
@@ -374,6 +373,306 @@ Standard closing clause about scope clarity.
 Apply tone from Q62. No words from Q63 avoid list. UK English.`,
 };
 
+// ─── FILE OUTPUT SPECIFICATION ────────────────────────────────────────────────
+// This is appended to every prompt to instruct Claude on how to produce
+// both a DOCX (via docx-js) and a PDF (via LibreOffice) in one pass.
+
+const FILE_OUTPUT_SPEC = `
+════════════════════════════════════════════════════════════════════════════════
+FILE OUTPUT SPECIFICATION — READ THIS BEFORE GENERATING ANYTHING
+════════════════════════════════════════════════════════════════════════════════
+
+You must produce TWO files in a single response, no back-and-forth:
+  1. A DOCX file built programmatically using the docx npm library (docx-js)
+  2. A PDF file converted from the DOCX using: soffice --headless --convert-to pdf
+
+The user will run your code in a Node.js environment (Claude.ai artifacts or local).
+Both files must be downloadable at the end of your response.
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 1 — DOCX GENERATION (docx-js)
+════════════════════════════════════════════════════════════════════════════════
+
+Use this exact Node.js script structure. Do NOT use markdown formatting in the document content — the docx library handles all formatting programmatically.
+
+BRAND COLOURS (extract from the brief — if none stated use these defaults):
+  - Primary / headings:    #1B3F7A  (dark navy)
+  - Accent / rule lines:   #E8732A  (orange)
+  - Body text:             #1A1A1A
+  - Light background:      #F8F9FA
+
+TYPOGRAPHY:
+  - All headings:          Calibri, bold
+  - Body text:             Calibri, 11pt, 1.15 line spacing
+  - Footer:                Calibri, 9pt, grey (#888888)
+
+DOCUMENT STRUCTURE RULES (apply to EVERY document type):
+  - Page margins: top 2.5cm, bottom 2.5cm, left 3cm, right 2.5cm
+  - Header: Business trading name (left) + document title (right), separated by a thin border-bottom
+  - Footer: "© [Year] [Business Name] | [Document Title] | Page X of Y"
+  - Section headings: ALL CAPS, Calibri Bold 13pt, colour #1B3F7A, followed by a 2pt rule line in accent colour
+  - Clause numbers: bold, same font, hanging indent at 1cm
+  - Sub-clauses: indented 1cm further
+  - Tables (where applicable): header row background #1B3F7A, white text; alternating row shading #F0F4FA / white
+  - Signature blocks: two-column table, 1pt border, label + underline field
+  - Page breaks: before each major numbered section (1. 2. 3. etc.)
+  - No watermarks, no draft stamps
+
+EXACT SCRIPT TEMPLATE:
+
+\`\`\`javascript
+// install: npm install docx fs-extra
+// run: node generate.js
+// then: soffice --headless --convert-to pdf [filename].docx
+
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
+        BorderStyle, ShadingType, TableRow, TableCell, Table, WidthType,
+        PageNumber, Header, Footer, ImageRun, UnderlineType, PageBreak } = require('docx');
+const fs = require('fs');
+
+// ── Brand colours (update from brief) ─────────────────────────────────────
+const BRAND = {
+  primary:  '1B3F7A',  // headings
+  accent:   'E8732A',  // rule lines, borders
+  body:     '1A1A1A',  // body text
+  light:    'F0F4FA',  // table alt rows
+  grey:     '888888',  // footer text
+  white:    'FFFFFF',
+};
+
+// ── Helper: section heading with accent rule ───────────────────────────────
+function sectionHeading(text) {
+  return [
+    new Paragraph({
+      pageBreakBefore: true,
+      spacing: { before: 400, after: 120 },
+      children: [
+        new TextRun({
+          text: text.toUpperCase(),
+          bold: true,
+          size: 26,       // 13pt
+          color: BRAND.primary,
+          font: 'Calibri',
+        }),
+      ],
+      border: {
+        bottom: { color: BRAND.accent, size: 16, style: BorderStyle.SINGLE, space: 6 },
+      },
+    }),
+  ];
+}
+
+// ── Helper: numbered clause ────────────────────────────────────────────────
+function clause(number, text, bold = false) {
+  return new Paragraph({
+    spacing: { before: 120, after: 80 },
+    indent: { left: 360, hanging: 360 },
+    children: [
+      new TextRun({ text: number + '  ', bold: true, size: 22, font: 'Calibri', color: BRAND.body }),
+      new TextRun({ text, bold, size: 22, font: 'Calibri', color: BRAND.body }),
+    ],
+  });
+}
+
+// ── Helper: sub-clause ─────────────────────────────────────────────────────
+function subClause(number, text) {
+  return new Paragraph({
+    spacing: { before: 80, after: 60 },
+    indent: { left: 720, hanging: 360 },
+    children: [
+      new TextRun({ text: number + '  ', bold: true, size: 22, font: 'Calibri', color: BRAND.body }),
+      new TextRun({ text, size: 22, font: 'Calibri', color: BRAND.body }),
+    ],
+  });
+}
+
+// ── Helper: body paragraph ─────────────────────────────────────────────────
+function body(text, options = {}) {
+  return new Paragraph({
+    spacing: { before: 100, after: 100, line: 276 }, // 1.15
+    children: [
+      new TextRun({ text, size: 22, font: 'Calibri', color: BRAND.body, ...options }),
+    ],
+  });
+}
+
+// ── Helper: two-column signature block ────────────────────────────────────
+function signatureBlock(leftLabel, rightLabel) {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({ children: [
+        new TableCell({ children: [body(leftLabel, { bold: true })],  borders: { bottom: { style: BorderStyle.SINGLE, size: 8, color: BRAND.body } } }),
+        new TableCell({ children: [body(rightLabel, { bold: true })], borders: { bottom: { style: BorderStyle.SINGLE, size: 8, color: BRAND.body } } }),
+      ]}),
+      new TableRow({ children: [
+        new TableCell({ children: [body('Signature: _______________________')] }),
+        new TableCell({ children: [body('Signature: _______________________')] }),
+      ]}),
+      new TableRow({ children: [
+        new TableCell({ children: [body('Date: ____________________________')] }),
+        new TableCell({ children: [body('Date: ____________________________')] }),
+      ]}),
+    ],
+  });
+}
+
+// ── Document content — REPLACE THE ARRAY BELOW WITH ACTUAL DOCUMENT ────────
+// Use sectionHeading(), clause(), subClause(), body(), signatureBlock()
+// Map every === SECTION NAME === from the plain-text document to sectionHeading()
+// Map every numbered clause to clause() / subClause()
+// Map every body paragraph to body()
+
+const documentContent = [
+  // ← GENERATED CONTENT GOES HERE
+  // Example:
+  // ...sectionHeading('1. PARTIES AND DEFINITIONS'),
+  // clause('1.1', 'Provider means [Business Name], a sole trader registered in England and Wales...'),
+  // subClause('1.1.1', 'Trading as [Trading Name]...'),
+];
+
+// ── Build document ─────────────────────────────────────────────────────────
+const doc = new Document({
+  creator: '[Business Name]',
+  title: '[Document Title]',
+  description: 'Generated by Foundationary',
+  sections: [{
+    properties: {
+      page: {
+        margin: { top: 1418, bottom: 1418, left: 1701, right: 1418 }, // cm in twips
+      },
+    },
+    headers: {
+      default: new Header({
+        children: [
+          new Paragraph({
+            border: { bottom: { color: BRAND.accent, size: 8, style: BorderStyle.SINGLE } },
+            children: [
+              new TextRun({ text: '[Business Name]', bold: true, size: 18, color: BRAND.primary, font: 'Calibri' }),
+              new TextRun({ text: '    |    ', size: 18, color: BRAND.grey, font: 'Calibri' }),
+              new TextRun({ text: '[Document Title]', size: 18, color: BRAND.grey, font: 'Calibri' }),
+            ],
+          }),
+        ],
+      }),
+    },
+    footers: {
+      default: new Footer({
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({ text: '© [Year] [Business Name]  |  [Document Title]  |  Page ', size: 18, color: BRAND.grey, font: 'Calibri' }),
+              new TextRun({ children: [PageNumber.CURRENT], size: 18, color: BRAND.grey, font: 'Calibri' }),
+              new TextRun({ text: ' of ', size: 18, color: BRAND.grey, font: 'Calibri' }),
+              new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18, color: BRAND.grey, font: 'Calibri' }),
+            ],
+          }),
+        ],
+      }),
+    },
+    children: documentContent,
+  }],
+});
+
+Packer.toBuffer(doc).then((buffer) => {
+  fs.writeFileSync('[filename].docx', buffer);
+  console.log('[filename].docx written successfully');
+});
+\`\`\`
+
+IMPORTANT — CONTENT GENERATION RULE:
+Do NOT generate the plain text document first and then separately code the DOCX.
+Generate the DOCX code directly — the documentContent array IS the document.
+Every section, clause, sub-clause, and paragraph from the document specification above must appear as a docx-js node in the documentContent array. Use the actual populated content from the client brief — no placeholders except signature fields and [FIELD TO COMPLETE] invoice fields.
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 2 — PDF CONVERSION
+════════════════════════════════════════════════════════════════════════════════
+
+After writing the DOCX, convert it to PDF using LibreOffice headless mode:
+
+\`\`\`bash
+soffice --headless --convert-to pdf [filename].docx
+\`\`\`
+
+This produces [filename].pdf in the same directory. No further configuration needed.
+Do NOT use html-pdf, puppeteer, or wkhtmltopdf — LibreOffice conversion preserves all docx formatting faithfully.
+
+If LibreOffice is not available in the environment, output the following alternative:
+
+\`\`\`bash
+# Alternative: Gotenberg (Docker)
+curl -X POST http://localhost:3000/forms/libreoffice/convert \
+  -F 'files=@[filename].docx' \
+  -o [filename].pdf
+
+# Alternative: Local install check
+which libreoffice || which soffice || brew install --cask libreoffice
+\`\`\`
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 3 — RESPONSE FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Your response must follow this exact structure:
+
+1. Brief paragraph (3–5 sentences) flagging any notable decisions made while generating the document — contradictions in the brief resolved, ambiguous fields interpreted, any compliance points the client should verify. This is the quality commentary the client expects from a professional service.
+
+2. The complete Node.js script (generate.js) with ALL document content populated in documentContent[]. This must be a single, runnable file. No TODOs, no placeholder comments inside the content array.
+
+3. The bash conversion command.
+
+4. The two resulting files presented for download (DOCX and PDF).
+
+The client's name for the files should be: [BusinessTradingName]-[DocumentType] (kebab-case, no spaces).
+
+DO NOT:
+- Output the document as plain text before the code
+- Ask clarifying questions
+- Produce a partial script and say "continue below"
+- Use any other file generation library
+- Add any back-and-forth — the entire deliverable is one response
+
+════════════════════════════════════════════════════════════════════════════════
+END OF FILE OUTPUT SPECIFICATION
+════════════════════════════════════════════════════════════════════════════════
+`;
+
+// ─── Build the full clipboard prompt ─────────────────────────────────────────
+
+function buildFullPrompt(docTypeId: string, docLabel: string, brief: string): string {
+  const generationPrompt = DOCUMENT_PROMPTS[docTypeId];
+  if (!generationPrompt || !brief) return '';
+
+  return `════════════════════════════════════════════════════════════════════════════════
+FOUNDATIONARY — DOCUMENT GENERATION REQUEST
+════════════════════════════════════════════════════════════════════════════════
+Document:  ${docLabel}
+════════════════════════════════════════════════════════════════════════════════
+
+${FILE_OUTPUT_SPEC}
+
+════════════════════════════════════════════════════════════════════════════════
+DOCUMENT CONTENT SPECIFICATION
+════════════════════════════════════════════════════════════════════════════════
+
+${generationPrompt}
+
+════════════════════════════════════════════════════════════════════════════════
+CLIENT BRIEF — USE THIS DATA TO POPULATE THE ENTIRE DOCUMENT
+════════════════════════════════════════════════════════════════════════════════
+
+${brief}
+
+════════════════════════════════════════════════════════════════════════════════
+END OF BRIEF
+════════════════════════════════════════════════════════════════════════════════
+
+Now generate the complete "${docLabel}" as described above.
+Produce the full Node.js script (every clause populated from the brief), the PDF conversion command, and both downloadable files. Start with your quality commentary paragraph.`;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DocumentsTab({ userId, data, refreshData }: DocumentsTabProps) {
@@ -420,7 +719,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
     setMessage(msg);
     setMessageType(type);
-    setTimeout(() => setMessage(''), 4000);
+    setTimeout(() => setMessage(''), 5000);
   };
 
   const handleCopyPrompt = async (docTypeId: string) => {
@@ -429,62 +728,46 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       return;
     }
 
-    const prompt = DOCUMENT_PROMPTS[docTypeId];
-    if (!prompt) {
+    const docLabel = DOCUMENT_TYPES.find(d => d.id === docTypeId)?.label || docTypeId;
+    const fullPrompt = buildFullPrompt(docTypeId, docLabel, brief);
+
+    if (!fullPrompt) {
       showMessage('No prompt found for this document type.', 'error');
       return;
     }
 
-    const docLabel = DOCUMENT_TYPES.find(d => d.id === docTypeId)?.label || docTypeId;
-    const fullText = `DOCUMENT TO GENERATE: ${docLabel}
-
-GENERATION INSTRUCTIONS:
-${prompt}
-
-═══════════════════════════════════════════════════════════════
-CLIENT BRIEF — USE THIS DATA TO POPULATE THE DOCUMENT
-═══════════════════════════════════════════════════════════════
-
-${brief}
-
-═══════════════════════════════════════════════════════════════
-END OF BRIEF
-═══════════════════════════════════════════════════════════════
-
-Please generate the complete ${docLabel} document now, using ALL data from the client brief above. Populate every field with real data from the brief. Do not leave placeholder text except in signature fields and editable client-facing fields. Apply the business name, payment terms, and jurisdiction exactly as stated in the brief.`;
-
     try {
-      await navigator.clipboard.writeText(fullText);
-      setCopiedDocId(docTypeId);
-      showMessage(`Prompt for "${docLabel}" copied to clipboard. Paste it into your Claude agent.`, 'success');
-
-      // Ensure a "pending" record exists so upload becomes available
-      const existing = documents[docTypeId];
-      if (!existing) {
-        await supabase.from('generated_documents').insert({
-          client_id: userId,
-          document_type: docTypeId,
-          document_label: docLabel,
-          status: 'pending',
-        });
-        await fetchDocuments();
-      }
-
-      setTimeout(() => setCopiedDocId(null), 3000);
+      await navigator.clipboard.writeText(fullPrompt);
     } catch {
-      // Fallback: open a text window
+      // Fallback for older browsers
       const textarea = document.createElement('textarea');
-      textarea.value = fullText;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
+      textarea.value = fullPrompt;
+      textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      setCopiedDocId(docTypeId);
-      showMessage(`Prompt copied. Paste it into your Claude agent.`, 'success');
-      setTimeout(() => setCopiedDocId(null), 3000);
     }
+
+    setCopiedDocId(docTypeId);
+    showMessage(
+      `Full prompt for "${docLabel}" copied — paste directly into Claude.ai to generate both DOCX and PDF files.`,
+      'success'
+    );
+
+    // Create a pending record if one doesn't exist yet
+    const existing = documents[docTypeId];
+    if (!existing) {
+      await supabase.from('generated_documents').insert({
+        client_id: userId,
+        document_type: docTypeId,
+        document_label: docLabel,
+        status: 'pending',
+      });
+      await fetchDocuments();
+    }
+
+    setTimeout(() => setCopiedDocId(null), 3000);
   };
 
   const handleFileUpload = async (
@@ -511,7 +794,6 @@ Please generate the complete ${docLabel} document now, using ALL data from the c
         return;
       }
 
-      // Upsert the document record
       const existing = documents[docTypeId];
       const updatePayload: Record<string, any> = {
         client_id: userId,
@@ -535,7 +817,7 @@ Please generate the complete ${docLabel} document now, using ALL data from the c
         await supabase.from('generated_documents').insert(updatePayload);
       }
 
-      showMessage(`${fileKind.toUpperCase()} uploaded successfully for "${docLabel}"`, 'success');
+      showMessage(`${fileKind.toUpperCase()} uploaded for "${docLabel}"`, 'success');
       await fetchDocuments();
       refreshData();
     } catch (err: any) {
@@ -586,7 +868,6 @@ Please generate the complete ${docLabel} document now, using ALL data from the c
     }
 
     const updatePayload: Record<string, any> = { [fieldKey]: null };
-    // If both files are now gone, revert status
     const otherKey = fileKind === 'pdf' ? 'docx_path' : 'pdf_path';
     if (!existing[otherKey]) {
       updatePayload.status = 'pending';
@@ -614,11 +895,14 @@ Please generate the complete ${docLabel} document now, using ALL data from the c
     <div className="space-y-6">
       {/* Message Banner */}
       {message && (
-        <div className={`rounded-lg p-4 border ${
+        <div className={`rounded-lg p-4 border flex items-start gap-3 ${
           messageType === 'success' ? 'bg-green-50 border-green-200 text-green-800'
           : messageType === 'error' ? 'bg-red-50 border-red-200 text-red-800'
           : 'bg-blue-50 border-blue-200 text-blue-800'
         }`}>
+          {messageType === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />}
+          {messageType === 'error' && <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />}
+          {messageType === 'info' && <Info size={16} className="shrink-0 mt-0.5 text-blue-600" />}
           <p className="font-inter text-sm font-medium">{message}</p>
         </div>
       )}
@@ -631,7 +915,7 @@ Please generate the complete ${docLabel} document now, using ALL data from the c
               Document Generation Centre
             </h3>
             <p className="font-inter text-gray-500 text-sm">
-              Copy the prompt for each document, paste into your Claude agent, then upload the resulting files here.
+              Copy the full prompt for each document and paste it into Claude.ai — you'll get back a DOCX and PDF in one pass.
             </p>
           </div>
           <div className="flex items-center gap-6 text-sm shrink-0">
@@ -651,31 +935,45 @@ Please generate the complete ${docLabel} document now, using ALL data from the c
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
             <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
             <p className="font-inter text-amber-800 text-sm">
-              No client brief found. Generate the Master Brief first — prompts won&apos;t include client data without it.
+              No client brief found. Generate the Master Brief first — prompts won't include client data without it.
             </p>
           </div>
         )}
 
         {/* Workflow instructions */}
         <div className="mt-4 bg-[#FAFBFC] rounded-lg border border-gray-200 p-4">
-          <div className="flex items-start gap-2 mb-2">
+          <div className="flex items-start gap-2 mb-3">
             <Info size={15} className="text-[#1B3F7A] shrink-0 mt-0.5" />
-            <p className="font-inter font-semibold text-[#1B3F7A] text-sm">How to generate documents</p>
+            <p className="font-inter font-semibold text-[#1B3F7A] text-sm">One copy. One paste. Two files.</p>
           </div>
-          <ol className="space-y-1.5 ml-5">
+          <ol className="space-y-2 ml-5">
             {[
-              'Click "Copy Prompt" on any document below',
-              'Paste the full prompt into your Claude agent',
-              'Ask Claude to produce a DOCX and PDF version',
-              'Upload both files back here using the Upload buttons',
-              'Files are stored and can be downloaded or sent to the client',
-            ].map((step, i) => (
+              { step: 'Click "Copy Prompt" on any document below', note: 'Copies the full generation prompt + client brief + file output specification' },
+              { step: 'Paste everything into Claude.ai (claude.ai/new)', note: 'The prompt includes precise instructions for building the DOCX with docx-js and converting to PDF' },
+              { step: 'Claude produces both files in one response', note: 'A DOCX built programmatically (correct heading hierarchy, numbered clauses, brand colours) and a PDF via LibreOffice conversion' },
+              { step: 'Download both files from Claude\'s response', note: 'Then upload them back here using the Upload buttons below' },
+              { step: 'Mark as delivered when sent to the client', note: 'Tracks delivery date for your records' },
+            ].map(({ step, note }, i) => (
               <li key={i} className="font-inter text-gray-600 text-xs flex gap-2">
-                <span className="font-bold text-[#1B3F7A] shrink-0">{i + 1}.</span>
-                <span>{step}</span>
+                <span className="font-bold text-[#1B3F7A] shrink-0 w-4">{i + 1}.</span>
+                <span>
+                  <span className="font-medium text-gray-800">{step}</span>
+                  <span className="text-gray-400"> — {note}</span>
+                </span>
               </li>
             ))}
           </ol>
+        </div>
+
+        {/* What's in the prompt callout */}
+        <div className="mt-3 bg-[#1B3F7A] bg-opacity-5 border border-[#1B3F7A] border-opacity-20 rounded-lg p-3 flex items-start gap-2">
+          <Clipboard size={14} className="text-[#1B3F7A] shrink-0 mt-0.5" />
+          <p className="font-inter text-[#1B3F7A] text-xs">
+            <span className="font-semibold">Each copied prompt contains three sections:</span>{' '}
+            (1) File output specification — tells Claude to produce DOCX + PDF with brand colours, correct structure, and running footer;{' '}
+            (2) Document content specification — the legal/copy instructions for this document type;{' '}
+            (3) Client brief — every answer from the intake form, populated into the document automatically.
+          </p>
         </div>
       </div>
 
@@ -752,16 +1050,16 @@ function DocumentCard({
   const isCompleted = status === 'completed';
 
   const statusConfig: Record<string, { colour: string; bg: string; label: string; icon: React.ReactNode }> = {
-    pending: { colour: 'text-gray-500', bg: 'bg-gray-100', label: 'Pending', icon: <Clock size={11} /> },
-    generating: { colour: 'text-blue-600', bg: 'bg-blue-50', label: 'In Progress', icon: <RefreshCw size={11} className="animate-spin" /> },
-    completed: { colour: 'text-green-600', bg: 'bg-green-50', label: 'Complete', icon: <CheckCircle2 size={11} /> },
-    failed: { colour: 'text-red-600', bg: 'bg-red-50', label: 'Failed', icon: <AlertCircle size={11} /> },
+    pending:    { colour: 'text-gray-500',  bg: 'bg-gray-100',  label: 'Pending',     icon: <Clock size={11} /> },
+    generating: { colour: 'text-blue-600',  bg: 'bg-blue-50',   label: 'In Progress', icon: <RefreshCw size={11} className="animate-spin" /> },
+    completed:  { colour: 'text-green-600', bg: 'bg-green-50',  label: 'Complete',    icon: <CheckCircle2 size={11} /> },
+    failed:     { colour: 'text-red-600',   bg: 'bg-red-50',    label: 'Failed',      icon: <AlertCircle size={11} /> },
   };
 
   const s = statusConfig[status] || statusConfig.pending;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className={`bg-white rounded-lg border overflow-hidden transition-shadow ${isExpanded ? 'border-[#1B3F7A] border-opacity-40 shadow-sm' : 'border-gray-200'}`}>
       {/* Card header row */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
@@ -783,12 +1081,12 @@ function DocumentCard({
                 )}
                 {hasPdf && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-600">
-                    PDF
+                    PDF ✓
                   </span>
                 )}
                 {hasDocx && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-600">
-                    DOCX
+                    DOCX ✓
                   </span>
                 )}
               </div>
@@ -807,10 +1105,12 @@ function DocumentCard({
             <button
               onClick={onCopyPrompt}
               disabled={!briefAvailable}
-              title={briefAvailable ? 'Copy full prompt to clipboard' : 'Generate Master Brief first'}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-inter font-medium transition-colors
+              title={briefAvailable
+                ? 'Copy full prompt (document spec + client brief + file output instructions) to clipboard'
+                : 'Generate Master Brief first to include client data'}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-inter font-medium transition-all
                 ${isCopied
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-green-600 text-white scale-95'
                   : briefAvailable
                     ? 'bg-[#1B3F7A] hover:bg-[#2C68C4] text-white'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -830,6 +1130,13 @@ function DocumentCard({
                 {isExpanded ? 'Close' : 'Manage'}
               </button>
             )}
+
+            {/* Quick upload trigger if doc exists but no files yet */}
+            {!doc && briefAvailable && (
+              <span className="text-xs text-gray-400 font-inter italic hidden sm:block">
+                Copy prompt → paste into Claude.ai → upload files
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -840,9 +1147,13 @@ function DocumentCard({
 
           {/* Upload section */}
           <div>
-            <p className="font-inter font-semibold text-gray-700 text-xs mb-2 uppercase tracking-wide">Upload Files</p>
+            <p className="font-inter font-semibold text-gray-700 text-xs mb-2 uppercase tracking-wide">
+              Upload Generated Files
+            </p>
+            <p className="font-inter text-gray-500 text-xs mb-3">
+              After running the prompt in Claude.ai, download both files and upload them here.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* PDF upload */}
               <FileUploadZone
                 label="PDF"
                 existingPath={doc?.pdf_path}
@@ -854,7 +1165,6 @@ function DocumentCard({
                 onDownload={doc?.pdf_path ? () => onDownload(doc.pdf_path, `${docType.label}.pdf`) : undefined}
                 onRemove={doc?.pdf_path ? () => onRemoveFile('pdf') : undefined}
               />
-              {/* DOCX upload */}
               <FileUploadZone
                 label="Word (DOCX)"
                 existingPath={doc?.docx_path}
@@ -894,8 +1204,8 @@ function DocumentCard({
           {doc && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-200">
               <MetaItem label="Status" value={s.label} />
-              <MetaItem label="Generated" value={doc.generated_at ? new Date(doc.generated_at).toLocaleDateString('en-GB') : '—'} />
-              <MetaItem label="Files" value={hasPdf && hasDocx ? 'PDF & DOCX' : hasPdf ? 'PDF only' : hasDocx ? 'DOCX only' : 'No files'} />
+              <MetaItem label="Updated" value={doc.generated_at ? new Date(doc.generated_at).toLocaleDateString('en-GB') : '—'} />
+              <MetaItem label="Files" value={hasPdf && hasDocx ? 'PDF & DOCX' : hasPdf ? 'PDF only' : hasDocx ? 'DOCX only' : 'No files yet'} />
               <MetaItem label="Delivered" value={doc.delivered_to_client ? 'Yes' : 'No'} />
             </div>
           )}
@@ -931,7 +1241,6 @@ function FileUploadZone({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) onFileSelect(file);
-    // Reset so same file can be re-uploaded
     e.target.value = '';
   };
 
