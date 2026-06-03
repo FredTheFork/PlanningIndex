@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
-  Briefcase, FileText, Zap, Send, CheckCircle2, Clock, AlertTriangle,
+  Briefcase, Zap, Send, CheckCircle2, Clock, AlertTriangle,
   RefreshCw, ArrowRight, Mail, Phone, MapPin, CreditCard, ExternalLink,
-  MessageSquare, DollarSign, Package, Calendar, Plus, StickyNote
+  MessageSquare, DollarSign, Package, Calendar, Plus, StickyNote, FileText
 } from 'lucide-react';
 
 interface OverviewTabProps {
@@ -229,42 +229,6 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
           <p className="font-inter text-sm font-medium">{actionMessage}</p>
         </div>
       )}
-
-      {/* Quick Actions */}
-      <div className="bg-[#FAFBFC] rounded-lg border border-gray-200 p-6">
-        <h3 className="font-inter font-semibold text-[#1B3F7A] text-lg mb-4">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionButton
-            icon={Briefcase}
-            label="Generate Brief"
-            description="AI-generated master client brief"
-            onClick={handleGenerateBrief}
-            loading={generatingBrief}
-            disabled={!data.profile.has_submitted_intake}
-            variant="primary"
-          />
-          <QuickActionButton
-            icon={FileText}
-            label="Generate All Documents"
-            description="Create all 10 documents at once"
-            onClick={handleGenerateAllDocuments}
-            loading={generatingDocs}
-            disabled={!data.profile.has_submitted_intake}
-            variant="secondary"
-          />
-          <QuickActionButton
-            icon={Send}
-            label="Mark as Delivered"
-            description="Finalize delivery to client"
-            onClick={refreshData}
-            loading={false}
-            disabled={data.profile.delivery_status === 'delivered'}
-            variant="tertiary"
-          />
-        </div>
-      </div>
 
       {/* Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -511,40 +475,6 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
         </div>
       )}
     </div>
-  );
-}
-
-function QuickActionButton({ icon: Icon, label, description, onClick, loading, disabled, variant }: {
-  icon: any;
-  label: string;
-  description: string;
-  onClick: () => void;
-  loading: boolean;
-  disabled: boolean;
-  variant: 'primary' | 'secondary' | 'tertiary';
-}) {
-  const variantStyles = {
-    primary: 'bg-[#1B3F7A] hover:bg-[#2C68C4] text-white',
-    secondary: 'bg-[#2C68C4] hover:bg-[#1B3F7A] text-white',
-    tertiary: 'bg-white hover:bg-gray-50 text-[#1B3F7A] border border-[#1B3F7A]',
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={loading || disabled}
-      className={`rounded-lg p-4 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]}`}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        {loading ? (
-          <RefreshCw size={18} className="animate-spin" />
-        ) : (
-          <Icon size={18} />
-        )}
-        <span className="font-inter font-semibold text-sm">{label}</span>
-      </div>
-      <p className="font-inter text-xs opacity-90">{description}</p>
-    </button>
   );
 }
 
