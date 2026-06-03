@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +8,8 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { LayoutDashboard, FileText, BarChart3, FolderOpen, MessageSquare, LogOut, Shield } from 'lucide-react';
+import ChatBubbleTrigger from '@/components/ui/ChatBubbleTrigger';
+import ChatBubble from '@/components/ui/ChatBubble';
 
 const clientNavItems = [
   { label: 'Overview', href: '/personal', icon: LayoutDashboard },
@@ -32,6 +34,7 @@ export default function PersonalLayout({
   const { profile } = useClientProfile();
   const { isAdmin } = useIsAdmin();
   const { unreadCount } = useUnreadMessages();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -130,6 +133,14 @@ export default function PersonalLayout({
           <main className="flex-1 min-w-0">{children}</main>
         </div>
       </div>
+
+      {/* Chat Bubble - Only for clients, not admins */}
+      {!isAdmin && (
+        <>
+          <ChatBubbleTrigger onOpen={() => setIsChatOpen(true)} />
+          <ChatBubble isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        </>
+      )}
     </div>
   );
 }
