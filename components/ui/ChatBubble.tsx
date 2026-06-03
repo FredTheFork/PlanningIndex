@@ -219,7 +219,7 @@ export default function ChatBubble() {
                     }`}
                   >
                     <div
-                      className={`max-w-[75%] px-4 py-2 rounded-lg text-sm break-words ${
+                      className={`max-w-xs px-4 py-2 rounded-lg text-sm ${
                         msg.sender_id === user?.id
                           ? 'bg-[#0F1E4D] text-white'
                           : 'bg-white text-gray-900 border border-gray-200'

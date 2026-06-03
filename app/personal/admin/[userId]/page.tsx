@@ -8,7 +8,7 @@ import {
   ArrowLeft, User, FileText, Clock, Save, AlertCircle, Briefcase, FileCheck,
   MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
   Download, Eye, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-  ChevronRight, FileDown, Loader
+  ChevronRight, FileDown, Send, Loader
 } from 'lucide-react';
 
 // Tab components
@@ -16,6 +16,7 @@ import OverviewTab from './tabs/OverviewTab';
 import BriefTab from './tabs/BriefTab';
 import DocumentsTab from './tabs/DocumentsTab';
 import IntakeTab from './tabs/IntakeTab';
+import MessagingTab from './tabs/MessagingTab';
 
 interface ClientData {
   profile: {
@@ -45,6 +46,7 @@ const TABS = [
   { id: 'brief', label: 'Master Brief', icon: Briefcase },
   { id: 'documents', label: 'Documents', icon: FileText },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
+  { id: 'messaging', label: 'Messaging', icon: Send },
 ];
 
 export default function AdminClientDetail({ params }: { params: { userId: string } }) {
@@ -225,6 +227,9 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           )}
           {activeTab === 'intake' && (
             <IntakeTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'messaging' && (
+            <MessagingTab userId={userId} data={data} refreshData={refreshData} />
           )}
         </div>
       </div>
