@@ -157,6 +157,19 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const sendMessage = async () => {
     if (!messageText.trim() || !user || !conversationId) return;
 
+    const optimisticMessage: Message = {
+      id: `temp_${Date.now()}`,
+      sender_id: user.id,
+      recipient_id: userId,
+      message_content: messageText.trim(),
+      message_type: messageType,
+      is_read: true,
+      created_at: new Date().toISOString(),
+    };
+
+    // Add optimistic message immediately
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessageText('');
     setSending(true);
 
     try {
@@ -164,18 +177,23 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         conversation_id: conversationId,
         sender_id: user.id,
         recipient_id: userId,
-        message_content: messageText.trim(),
+        message_content: optimisticMessage.message_content,
         message_type: messageType,
       }).select('*');
 
       if (error) {
         console.error('Error sending message:', error);
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+        setMessageText(optimisticMessage.message_content);
         return;
       }
 
       if (insertedData && insertedData.length > 0) {
         const newMessage = insertedData[0];
-        setMessages((prev) => [...prev, newMessage]);
+        // Replace optimistic message with real one
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticMessage.id ? newMessage : m))
+        );
 
         await triggerMessageNotification({
           id: newMessage.id,
@@ -187,10 +205,11 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         });
       }
 
-      setMessageText('');
       setMessageType('general');
     } catch (err) {
       console.error('Error sending message:', err);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+      setMessageText(optimisticMessage.message_content);
     } finally {
       setSending(false);
     }
