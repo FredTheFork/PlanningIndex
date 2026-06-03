@@ -189,7 +189,7 @@ export default function ChatBubble() {
             <div className="bg-gradient-to-r from-[#0F1E4D] to-[#1A3A7A] px-6 py-4 flex items-center justify-between text-white">
               <div>
                 <h3 className="font-semibold text-base">{teamName}</h3>
-                <p className="text-xs text-blue-100">Support</p>
+                <p className="text-xs text-blue-100">Chat with the team</p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -219,7 +219,7 @@ export default function ChatBubble() {
                     }`}
                   >
                     <div
-                      className={`max-w-xs px-4 py-2 rounded-lg text-sm ${
+                      className={`max-w-xs px-4 py-2 rounded-lg text-sm break-words ${
                         msg.sender_id === user?.id
                           ? 'bg-[#0F1E4D] text-white'
                           : 'bg-white text-gray-900 border border-gray-200'
@@ -283,10 +283,10 @@ export default function ChatBubble() {
           <button
             onClick={() => setIsOpen(true)}
             className="fixed bottom-8 right-8 md:bottom-8 md:right-6 bg-[#0F1E4D] hover:bg-[#1A3A7A] text-white rounded-lg px-4 py-3 shadow-lg transition-all flex items-center gap-2 font-medium text-sm"
-            aria-label="Open support chat"
+            aria-label="Open chat with the team"
           >
             <MessageCircle size={18} />
-            <span className="hidden md:inline">Support</span>
+            <span className="hidden md:inline">Chat with the team</span>
             {unreadCount > 0 && (
               <span className="ml-1 inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full">
                 {unreadCount > 9 ? '9+' : unreadCount}
