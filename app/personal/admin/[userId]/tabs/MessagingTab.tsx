@@ -51,6 +51,13 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (user && userId) {
+      fetchConversation();
+      fetchClientPreferences();
+    }
+  }, [user, userId]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -69,93 +76,83 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   };
 
   useEffect(() => {
-    if (user && userId) {
+    if (user && conversationId) {
       let subscription: any;
       let isMounted = true;
 
-      const initConversation = async () => {
-        setLoading(true);
+      subscription = supabase.channel(`admin_messages:${conversationId}`);
 
-        try {
-          if (!user) return;
-
-          const convId = [user.id, userId].sort().join('_');
-          setConversationId(convId);
-
-          subscription = supabase.channel(`admin_messages:${convId}`);
-
-          subscription
-            .on(
-              'postgres_changes',
-              {
-                event: '*',
-                schema: 'public',
-                table: 'client_messages',
-                filter: `conversation_id=eq.${convId}`,
-              },
-              async (payload: any) => {
-                if (isMounted) {
-                  if (payload.eventType === 'INSERT') {
-                    setMessages((prev) => [...prev, payload.new]);
-                  } else if (payload.eventType === 'UPDATE') {
-                    setMessages((prev) =>
-                      prev.map((m) => (m.id === payload.new.id ? payload.new : m))
-                    );
-                  }
-                }
-              }
-            )
-            .subscribe();
-
-          const { data: messagesData, error } = await supabase
-            .from('client_messages')
-            .select('*')
-            .eq('conversation_id', convId)
-            .order('created_at', { ascending: true });
-
-          if (error) {
-            console.error('Error fetching conversation:', error);
+      subscription
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'client_messages',
+            filter: `conversation_id=eq.${conversationId}`,
+          },
+          async (payload: any) => {
             if (isMounted) {
-              setMessages([]);
-            }
-            return;
-          }
-
-          if (isMounted) {
-            setMessages(messagesData || []);
-
-            const unreadIds =
-              messagesData
-                ?.filter((m) => m.recipient_id === user.id && !m.is_read)
-                .map((m) => m.id) || [];
-
-            if (unreadIds.length > 0) {
-              await supabase
-                .from('client_messages')
-                .update({ is_read: true, read_at: new Date().toISOString() })
-                .in('id', unreadIds);
+              if (payload.eventType === 'INSERT') {
+                setMessages((prev) => [...prev, payload.new]);
+              } else if (payload.eventType === 'UPDATE') {
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === payload.new.id ? payload.new : m))
+                );
+              }
             }
           }
-        } catch (err) {
-          console.error('Error fetching conversation:', err);
-        } finally {
-          if (isMounted) {
-            setLoading(false);
-          }
-        }
-      };
-
-      initConversation();
-      fetchClientPreferences();
+        )
+        .subscribe();
 
       return () => {
         isMounted = false;
-        if (subscription) {
-          subscription.unsubscribe();
-        }
+        subscription.unsubscribe();
       };
     }
-  }, [user, userId]);
+  }, [user, conversationId]);
+
+  const fetchConversation = async () => {
+    setLoading(true);
+
+    try {
+      if (!user) return;
+
+      const convId = [user.id, userId].sort().join('_');
+      setConversationId(convId);
+
+      const { data: messagesData, error } = await supabase
+        .from('client_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching conversation:', error);
+        setMessages([]);
+        return;
+      }
+
+      setMessages(messagesData || []);
+
+      // Mark client messages as read
+      const unreadIds =
+        messagesData
+          ?.filter((m) => m.recipient_id === user.id && !m.is_read)
+          .map((m) => m.id) || [];
+
+      if (unreadIds.length > 0) {
+        await supabase
+          .from('client_messages')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .in('id', unreadIds);
+      }
+    } catch (err) {
+      console.error('Error fetching conversation:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!messageText.trim() || !user || !conversationId) return;

@@ -72,14 +72,11 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
     scrollToBottom();
   }, [messages]);
 
-  // Load team member data and set up real-time subscription
+  // Load team member data
   useEffect(() => {
     if (!user || !isOpen) return;
 
-    let isMounted = true;
-    let subscription: any;
-
-    const initializeChat = async () => {
+    const loadTeamMember = async () => {
       try {
         const { data: adminData } = await supabase
           .from('admin_users')
@@ -87,79 +84,100 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
           .limit(1)
           .maybeSingle();
 
-        if (!isMounted || !adminData) return;
-
-        setTeamMember({
-          id: adminData.user_id,
-          display_name: adminData.display_name || 'Our Team',
-          profile_picture_url: adminData.profile_picture_url,
-        });
-
-        const convId = [user.id, adminData.user_id].sort().join('_');
-        setConversationId(convId);
-
-        subscription = supabase.channel(`messages:${convId}`);
-
-        subscription
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'client_messages',
-              filter: `conversation_id=eq.${convId}`,
-            },
-            (payload: any) => {
-              if (isMounted && payload.new) {
-                if (payload.new.sender_id === user.id) {
-                  return;
-                }
-                setMessages((prev) => [...prev, payload.new as Message]);
-                if (payload.new.recipient_id === user.id && !payload.new.is_read) {
-                  supabase
-                    .from('client_messages')
-                    .update({ is_read: true, read_at: new Date().toISOString() })
-                    .eq('id', payload.new.id)
-                    .then();
-                }
-              }
-            }
-          )
-          .subscribe();
-
-        setLoading(true);
-        const { data: messagesData } = await supabase
-          .from('client_messages')
-          .select('*')
-          .eq('conversation_id', convId)
-          .order('created_at', { ascending: true });
-
-        if (isMounted) {
-          if (messagesData) {
-            setMessages(messagesData);
-
-            const unreadIds = messagesData
-              .filter((m) => m.recipient_id === user.id && !m.is_read)
-              .map((m) => m.id);
-
-            if (unreadIds.length > 0) {
-              await supabase
-                .from('client_messages')
-                .update({ is_read: true, read_at: new Date().toISOString() })
-                .in('id', unreadIds);
-            }
-          }
-          setLoading(false);
+        if (adminData) {
+          setTeamMember({
+            id: adminData.user_id,
+            display_name: adminData.display_name || 'Our Team',
+            profile_picture_url: adminData.profile_picture_url,
+          });
+          setConversationId([user.id, adminData.user_id].sort().join('_'));
         }
       } catch (err) {
-        console.error('Error initializing chat:', err);
-        if (isMounted) {
-          setLoading(false);
-        }
+        console.error('Error loading team member:', err);
       }
     };
 
-    initializeChat();
+    loadTeamMember();
+  }, [user, isOpen]);
+
+  // Load messages
+  useEffect(() => {
+    if (!user || !conversationId) return;
+
+    const loadMessages = async () => {
+      setLoading(true);
+      try {
+        const { data: messagesData } = await supabase
+          .from('client_messages')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
+
+        if (messagesData) {
+          setMessages(messagesData);
+
+          // Mark unread as read
+          const unreadIds = messagesData
+            .filter((m) => m.recipient_id === user.id && !m.is_read)
+            .map((m) => m.id);
+
+          if (unreadIds.length > 0) {
+            await supabase
+              .from('client_messages')
+              .update({ is_read: true, read_at: new Date().toISOString() })
+              .in('id', unreadIds);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading messages:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMessages();
+  }, [user, conversationId]);
+
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!user || !conversationId) return;
+
+    let subscription: any;
+    let isMounted = true;
+
+    const setupSubscription = async () => {
+      subscription = supabase.channel(`messages:${conversationId}`);
+
+      subscription
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'client_messages',
+            filter: `conversation_id=eq.${conversationId}`,
+          },
+          (payload: any) => {
+            if (isMounted && payload.new) {
+              // Skip messages sent by the current user (already handled by optimistic update)
+              if (payload.new.sender_id === user.id) {
+                return;
+              }
+              setMessages((prev) => [...prev, payload.new as Message]);
+              if (payload.new.recipient_id === user.id && !payload.new.is_read) {
+                supabase
+                  .from('client_messages')
+                  .update({ is_read: true, read_at: new Date().toISOString() })
+                  .eq('id', payload.new.id)
+                  .then();
+              }
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupSubscription();
 
     return () => {
       isMounted = false;
@@ -167,7 +185,7 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
         subscription.unsubscribe();
       }
     };
-  }, [user, isOpen]);
+  }, [user, conversationId]);
 
   const sendMessage = async () => {
     if (!messageText.trim() || !user || !teamMember) return;
