@@ -30,6 +30,8 @@ export default function PersonalLayout({
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile } = useClientProfile();
   const { isAdmin } = useIsAdmin();
+  const { unreadCount } = useUnreadMessages();
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -87,18 +89,26 @@ export default function PersonalLayout({
             <div className="bg-white rounded-lg border border-gray-200 p-2">
           {navItems.map((item) => {
                 const isActive = pathname === item.href;
+                const isMessages = item.label === 'Messages';
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-md font-inter text-sm transition-colors ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-md font-inter text-sm transition-colors ${
                       isActive
                         ? 'bg-[#FAFBFC] text-[#1B3F7A] font-semibold'
                         : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
                     }`}
                   >
-                    <item.icon size={18} />
-                    {item.label}
+                    <div className="flex items-center gap-3">
+                      <item.icon size={18} />
+                      {item.label}
+                    </div>
+                    {isMessages && unreadCount > 0 && (
+                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-medium-blue rounded-full">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
