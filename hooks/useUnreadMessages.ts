@@ -51,14 +51,20 @@ export function useUnreadMessages() {
     try {
       const { count, error } = await supabase
         .from('client_messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('recipient_id', user.id)
         .eq('is_read', false);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching unread count:', error);
+        setUnreadCount(0);
+        return;
+      }
+
       setUnreadCount(count || 0);
     } catch (err) {
       console.error('Error fetching unread count:', err);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }

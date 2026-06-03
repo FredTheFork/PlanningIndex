@@ -77,13 +77,22 @@ export default function MessagesPage() {
         .maybeSingle();
 
       if (data?.user_id) {
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
-          data.user_id
-        );
+        // Try to get from auth, fall back to using ID if not available
+        try {
+          const { data: userData } = await supabase.auth.admin.getUserById(
+            data.user_id
+          );
 
-        if (userData?.user?.email) {
-          setAdminInfo({ email: userData.user.email, id: data.user_id });
+          if (userData?.user?.email) {
+            setAdminInfo({ email: userData.user.email, id: data.user_id });
+            return;
+          }
+        } catch (adminErr) {
+          console.error('Could not fetch admin via auth API:', adminErr);
         }
+
+        // Fallback: just use the admin user ID, assume they exist
+        setAdminInfo({ email: 'Admin', id: data.user_id });
       }
     } catch (err) {
       console.error('Error fetching admin info:', err);
@@ -110,13 +119,10 @@ export default function MessagesPage() {
           const convId = [user.id, otherId].sort().join('_');
 
           if (!conversationMap.has(convId)) {
-            // Fetch other user email
-            const { data: userData } = await supabase.auth.admin.getUserById(otherId);
-
             conversationMap.set(convId, {
               conversation_id: convId,
               other_user_id: otherId,
-              other_user_email: userData?.user?.email || 'Unknown',
+              other_user_email: 'Admin',
               last_message_preview: msg.message_content.substring(0, 50),
               last_message_at: msg.created_at,
               unread_count: msg.is_read ? 0 : 1,
@@ -202,8 +208,7 @@ export default function MessagesPage() {
 
     try {
       const [userId1, userId2] = selectedConversation.split('_');
-
-      const { data, error } = await supabase.from('client_messages').insert({
+      const { error } = await supabase.from('client_messages').insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
         recipient_id: adminInfo.id,
@@ -211,12 +216,17 @@ export default function MessagesPage() {
         message_type: 'general',
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error sending message:', error);
+        alert('Failed to send message: ' + error.message);
+        return;
+      }
 
       setMessageText('');
       await loadMessages(selectedConversation);
     } catch (err) {
       console.error('Error sending message:', err);
+      alert('Failed to send message');
     } finally {
       setSending(false);
     }

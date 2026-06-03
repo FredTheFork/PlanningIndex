@@ -47,11 +47,15 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
   const fetchClientPreferences = async () => {
     try {
-      const { data: prefs } = await supabase
+      const { data: prefs, error } = await supabase
         .from('client_communication_preferences')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching preferences:', error);
+      }
 
       setClientPreferences(prefs);
     } catch (err) {
@@ -99,7 +103,11 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         .eq('conversation_id', convId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching conversation:', error);
+        setMessages([]);
+        return;
+      }
 
       setMessages(messagesData || []);
 
@@ -136,13 +144,18 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         message_type: messageType,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error sending message:', error);
+        alert('Failed to send message: ' + error.message);
+        return;
+      }
 
       setMessageText('');
       setMessageType('general');
       await fetchConversation();
     } catch (err) {
       console.error('Error sending message:', err);
+      alert('Failed to send message');
     } finally {
       setSending(false);
     }
