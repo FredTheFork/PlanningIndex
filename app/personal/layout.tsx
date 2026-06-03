@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield } from 'lucide-react';
 import ChatBubble from '@/components/ui/ChatBubble';
 
