@@ -69,11 +69,14 @@ export default function ChatBubble() {
     }
   }, [isOpen]);
 
-  // Load team member data
+  // Load team member data AND start subscription immediately
   useEffect(() => {
-    if (!user || !isOpen) return;
+    if (!user) return;
 
-    const loadTeamMember = async () => {
+    let isMounted = true;
+    let subscription: any;
+
+    const setupTeamMemberAndSubscription = async () => {
       try {
         const { data: adminData } = await supabase
           .from('admin_users')
@@ -81,28 +84,86 @@ export default function ChatBubble() {
           .limit(1)
           .maybeSingle();
 
-        if (adminData) {
-          setTeamMember({
-            id: adminData.user_id,
-            display_name: adminData.display_name || 'Our Team',
-            profile_picture_url: adminData.profile_picture_url,
-          });
-          setConversationId([user.id, adminData.user_id].sort().join('_'));
-        }
+        if (!isMounted || !adminData) return;
+
+        const teamMemberId = adminData.user_id;
+        const conversationId = [user.id, teamMemberId].sort().join('_');
+
+        // Set team member
+        setTeamMember({
+          id: teamMemberId,
+          display_name: adminData.display_name || 'Our Team',
+          profile_picture_url: adminData.profile_picture_url,
+        });
+
+        // Set conversation ID
+        setConversationId(conversationId);
+
+        // Set up real-time subscription IMMEDIATELY with the conversation ID
+        subscription = supabase.channel(`messages:${conversationId}`);
+
+        subscription
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'client_messages',
+              filter: `conversation_id=eq.${conversationId}`,
+            },
+            (payload: any) => {
+              if (isMounted && payload.new) {
+                // Only process messages where THIS user is the recipient (admin sent it to me)
+                if (payload.new.recipient_id === user.id) {
+                  setMessages((prev) => {
+                    // Avoid duplicates
+                    if (prev.some((m) => m.id === payload.new.id)) {
+                      return prev;
+                    }
+                    return [...prev, payload.new as Message];
+                  });
+                  setLastMessage(payload.new as Message);
+
+                  // Update unread count and show notification if unread
+                  if (!payload.new.is_read) {
+                    setUnreadCount((prev) => prev + 1);
+                    setLastMessagePreview(payload.new.message_content);
+                    setShowNotification(true);
+                    setTimeout(() => {
+                      if (isMounted) setShowNotification(false);
+                    }, 5000);
+                    // Mark as read
+                    supabase
+                      .from('client_messages')
+                      .update({ is_read: true, read_at: new Date().toISOString() })
+                      .eq('id', payload.new.id)
+                      .then();
+                  }
+                }
+              }
+            }
+          )
+          .subscribe();
       } catch (err) {
         console.error('Error loading team member:', err);
       }
     };
 
-    loadTeamMember();
-  }, [user, isOpen]);
+    setupTeamMemberAndSubscription();
 
-  // Initialize unread count and setup unread tracking
+    return () => {
+      isMounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [user]);
+
+  // Initialize unread count
   useEffect(() => {
     if (!user) return;
 
     let isMounted = true;
-    let subscription: any;
 
     const getUnreadCount = async () => {
       try {
@@ -119,9 +180,6 @@ export default function ChatBubble() {
           .select('id, message_content')
           .eq('recipient_id', user.id)
           .eq('is_read', false)
-          .or(
-            `and(sender_id.eq.${user.id},recipient_id.eq.${adminData.user_id}),and(sender_id.eq.${adminData.user_id},recipient_id.eq.${user.id})`
-          )
           .order('created_at', { ascending: false })
           .limit(1);
 
@@ -132,33 +190,6 @@ export default function ChatBubble() {
           setLastMessagePreview(messages[0].message_content);
           setLastMessage(messages[0] as Message);
         }
-
-        const conversationId = [user.id, adminData.user_id].sort().join('_');
-        subscription = supabase.channel(`messages:${conversationId}`);
-
-        subscription
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'client_messages',
-              filter: `conversation_id=eq.${conversationId}`,
-            },
-            (payload: any) => {
-              if (!isMounted) return;
-              if (payload.new.recipient_id === user.id && !payload.new.is_read) {
-                setUnreadCount((prev) => prev + 1);
-                setLastMessagePreview(payload.new.message_content);
-                setLastMessage(payload.new as Message);
-                setShowNotification(true);
-                setTimeout(() => {
-                  if (isMounted) setShowNotification(false);
-                }, 5000);
-              }
-            }
-          )
-          .subscribe();
       } catch (err) {
         console.error('Error getting unread count:', err);
       }
@@ -168,9 +199,6 @@ export default function ChatBubble() {
 
     return () => {
       isMounted = false;
-      if (subscription) {
-        subscription.unsubscribe();
-      }
     };
   }, [user]);
 
@@ -212,55 +240,6 @@ export default function ChatBubble() {
     };
 
     loadMessages();
-  }, [user, conversationId]);
-
-  // Real-time subscription for new messages
-  useEffect(() => {
-    if (!user || !conversationId) return;
-
-    let subscription: any;
-    let isMounted = true;
-
-    const setupSubscription = async () => {
-      subscription = supabase.channel(`messages:${conversationId}`);
-
-      subscription
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'client_messages',
-            filter: `conversation_id=eq.${conversationId}`,
-          },
-          (payload: any) => {
-            if (isMounted && payload.new) {
-              if (payload.new.sender_id === user.id) {
-                return;
-              }
-              setMessages((prev) => [...prev, payload.new as Message]);
-              setLastMessage(payload.new as Message);
-              if (payload.new.recipient_id === user.id && !payload.new.is_read) {
-                supabase
-                  .from('client_messages')
-                  .update({ is_read: true, read_at: new Date().toISOString() })
-                  .eq('id', payload.new.id)
-                  .then();
-              }
-            }
-          }
-        )
-        .subscribe();
-    };
-
-    setupSubscription();
-
-    return () => {
-      isMounted = false;
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-    };
   }, [user, conversationId]);
 
   const sendMessage = async () => {
