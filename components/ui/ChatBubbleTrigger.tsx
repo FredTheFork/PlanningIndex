@@ -88,7 +88,7 @@ export default function ChatBubbleTrigger({ onOpen }: ChatBubbleTriggerProps) {
   return (
     <>
       {showNotification && (
-        <div className="fixed bottom-24 right-6 bg-white text-navy rounded-lg shadow-2xl p-4 max-w-xs z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-20 md:bottom-24 right-0 md:right-6 bg-white text-navy rounded-t-lg md:rounded-lg shadow-2xl p-4 max-w-xs z-[9997] animate-in fade-in slide-in-from-bottom-2 duration-300 w-full md:w-auto">
           <p className="font-inter text-sm font-semibold mb-1">New message</p>
           <p className="font-inter text-xs text-secondary-text line-clamp-2">
             {lastMessagePreview}
@@ -98,7 +98,7 @@ export default function ChatBubbleTrigger({ onOpen }: ChatBubbleTriggerProps) {
 
       <button
         onClick={onOpen}
-        className="fixed bottom-8 right-8 bg-gradient-to-br from-[#2563eb] via-[#1e40af] to-[#1d4ed8] hover:from-[#1d4ed8] hover:via-[#1d4ed8] hover:to-[#1e3a8a] text-white rounded-full p-4 shadow-2xl hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] transition-all duration-300 z-[9999] flex items-center justify-center group relative"
+        className="fixed bottom-0 right-0 md:bottom-8 md:right-8 md:top-auto bg-gradient-to-br from-[#2563eb] via-[#1e40af] to-[#1d4ed8] hover:from-[#1d4ed8] hover:via-[#1d4ed8] hover:to-[#1e3a8a] text-white rounded-b-3xl md:rounded-full p-4 shadow-2xl hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] transition-all duration-300 z-[9998] flex items-center justify-center group relative w-16 h-16 md:w-auto md:h-auto"
         aria-label="Open chat"
         style={unreadCount > 0 ? { animation: 'breathe 2.5s ease-in-out infinite' } : undefined}
       >
