@@ -566,7 +566,7 @@ export default function ChatBubble() {
             {/* Toggle Button */}
             <button
               onClick={() => setIsOpen(true)}
-              className="fixed bottom-8 right-8 md:bottom-8 md:right-6 bg-gradient-to-br from-[#0F1E4D] to-[#1A3A7A] hover:from-[#1A3A7A] hover:to-[#0F2E63] text-white rounded-t-3xl md:rounded-t-3xl px-5 py-3 shadow-2xl hover:shadow-[0_20px_40px_rgba(15,30,77,0.4)] transition-all duration-300 flex items-center gap-2 group animate-in fade-in slide-in-from-bottom-2 duration-300"
+              className="fixed bottom-8 right-8 md:bottom-0 md:right-6 bg-gradient-to-br from-[#0F1E4D] to-[#1A3A7A] hover:from-[#1A3A7A] hover:to-[#0F2E63] text-white rounded-t-3xl md:rounded-t-3xl px-5 py-3 shadow-2xl hover:shadow-[0_20px_40px_rgba(15,30,77,0.4)] transition-all duration-300 flex items-center gap-2 group animate-in fade-in slide-in-from-bottom-2 duration-300"
               aria-label="Open chat"
               style={
                 unreadCount > 0
