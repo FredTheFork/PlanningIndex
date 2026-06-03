@@ -6,8 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, MessageSquare, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield } from 'lucide-react';
 import ChatBubble from '@/components/ui/ChatBubble';
 
 const clientNavItems = [
@@ -15,7 +14,6 @@ const clientNavItems = [
   { label: 'Intake Form', href: '/personal/intake', icon: FileText },
   { label: 'Status', href: '/personal/status', icon: BarChart3 },
   { label: 'Documents', href: '/personal/documents', icon: FolderOpen },
-  { label: 'Messages', href: '/personal/messages', icon: MessageSquare },
 ];
 
 const adminNavItems = [
