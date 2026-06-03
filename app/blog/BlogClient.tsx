@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { articles } from '@/lib/content/articles';
 import { Calendar } from 'lucide-react';
-import NewsletterSignup from '@/components/ui/NewsletterSignup';
 
 const categories = ['All Topics', 'Legal', 'Financial'];
 
@@ -131,11 +130,6 @@ export default function BlogPage() {
         <p className="text-center text-secondary-text text-sm mt-10 font-inter">
           Showing {filteredArticles.length} of {articles.length} articles
         </p>
-
-        {/* Newsletter Signup */}
-        <div className="mt-16">
-          <NewsletterSignup />
-        </div>
       </div>
 
       {/* CTA Section - Simple, matching site style */}

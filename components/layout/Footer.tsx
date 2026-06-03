@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import NewsletterSignup from '@/components/ui/NewsletterSignup';
 
 const serviceLinks = [
   { label: "What's Included", href: '/whats-included' },
@@ -112,11 +111,6 @@ export default function Footer() {
               </ul>
             </div>
           </div>
-        </div>
-
-        {/* Newsletter Signup */}
-        <div className="mt-12 max-w-md">
-          <NewsletterSignup variant="compact" />
         </div>
 
         <div className="border-t border-[rgba(255,255,255,0.1)] mt-10 pt-6 flex flex-col md:flex-row justify-between gap-4">
