@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const navLinks = [
   { label: "What's Included", href: '/whats-included' },
@@ -21,6 +22,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading } = useClientProfile();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const router = useRouter();
 
   const isPaidUser = !authLoading && !profileLoading && !!user && !!profile;
@@ -84,7 +86,25 @@ export default function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden lg:flex items-center gap-3 ml-auto pr-6">
-          {isPaidUser ? (
+          {isAdmin && !adminLoading ? (
+            <>
+              <Link
+                href="/personal/admin"
+                className="font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200"
+                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              >
+                Admin
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="font-inter font-medium text-secondary-text hover:text-navy transition-colors duration-200"
+                style={{ fontSize: '0.85rem' }}
+                title="Sign out"
+              >
+                <LogOut size={18} />
+              </button>
+            </>
+          ) : isPaidUser ? (
             <>
               <Link
                 href="/personal"
@@ -163,7 +183,25 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          {isPaidUser ? (
+          {isAdmin && !adminLoading ? (
+            <>
+              <Link
+                href="/personal/admin"
+                className="font-inter font-semibold text-navy bg-white rounded-md mt-4"
+                style={{ padding: '14px 32px', fontSize: '1rem' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Admin
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="font-inter font-medium text-white mt-2"
+                style={{ fontSize: '1rem' }}
+              >
+                Sign Out
+              </button>
+            </>
+          ) : isPaidUser ? (
             <>
               <Link
                 href="/personal"
