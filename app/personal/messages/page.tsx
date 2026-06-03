@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Send, MessageSquare, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { triggerMessageNotification } from '@/app/actions/messaging';
 
 interface Message {
   id: string;
@@ -208,18 +209,31 @@ export default function MessagesPage() {
 
     try {
       const [userId1, userId2] = selectedConversation.split('_');
-      const { error } = await supabase.from('client_messages').insert({
+      const { data: insertedData, error } = await supabase.from('client_messages').insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
         recipient_id: adminInfo.id,
         message_content: messageText.trim(),
         message_type: 'general',
-      });
+      }).select('*');
 
       if (error) {
         console.error('Error sending message:', error);
         alert('Failed to send message: ' + error.message);
         return;
+      }
+
+      // Trigger notification via server action if message was inserted
+      if (insertedData && insertedData.length > 0) {
+        const newMessage = insertedData[0];
+        await triggerMessageNotification({
+          id: newMessage.id,
+          sender_id: newMessage.sender_id,
+          recipient_id: newMessage.recipient_id,
+          message_content: newMessage.message_content,
+          message_type: newMessage.message_type,
+          created_at: newMessage.created_at,
+        });
       }
 
       setMessageText('');
