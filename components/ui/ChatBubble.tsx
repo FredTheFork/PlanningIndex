@@ -160,8 +160,12 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
           },
           (payload: any) => {
             if (isMounted && payload.new) {
+              // Skip messages sent by the current user (already handled by optimistic update)
+              if (payload.new.sender_id === user.id) {
+                return;
+              }
               setMessages((prev) => [...prev, payload.new as Message]);
-              if (payload.new.recipient_id === user.id && payload.new.sender_id !== user.id) {
+              if (payload.new.recipient_id === user.id && !payload.new.is_read) {
                 supabase
                   .from('client_messages')
                   .update({ is_read: true, read_at: new Date().toISOString() })
@@ -187,7 +191,21 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
   const sendMessage = async () => {
     if (!messageText.trim() || !user || !teamMember) return;
 
+    const optimisticMessage: Message = {
+      id: `temp_${Date.now()}`,
+      sender_id: user.id,
+      recipient_id: teamMember.id,
+      message_content: messageText.trim(),
+      message_type: 'general',
+      is_read: true,
+      created_at: new Date().toISOString(),
+    };
+
+    // Add optimistic message immediately
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessageText('');
     setSending(true);
+
     try {
       const { data: insertedData, error } = await supabase
         .from('client_messages')
@@ -195,19 +213,26 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
           conversation_id: conversationId,
           sender_id: user.id,
           recipient_id: teamMember.id,
-          message_content: messageText.trim(),
+          message_content: optimisticMessage.message_content,
           message_type: 'general',
         })
         .select('*');
 
       if (error) {
         console.error('Error sending message:', error);
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+        setMessageText(optimisticMessage.message_content);
         return;
       }
 
-      // Trigger notification
       if (insertedData && insertedData.length > 0) {
         const newMessage = insertedData[0];
+        // Replace optimistic message with real one
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticMessage.id ? newMessage : m))
+        );
+
+        // Trigger notification
         try {
           const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
           const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -231,10 +256,10 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
           console.error('Error triggering notification:', err);
         }
       }
-
-      setMessageText('');
     } catch (err) {
       console.error('Error sending message:', err);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+      setMessageText(optimisticMessage.message_content);
     } finally {
       setSending(false);
     }
