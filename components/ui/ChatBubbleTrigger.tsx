@@ -88,7 +88,7 @@ export default function ChatBubbleTrigger({ onOpen }: ChatBubbleTriggerProps) {
   return (
     <>
       {showNotification && (
-        <div className="fixed bottom-24 right-6 bg-white text-navy rounded-lg shadow-2xl p-4 max-w-xs z-40 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-24 right-6 bg-white text-navy rounded-lg shadow-2xl p-4 max-w-xs z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <p className="font-inter text-sm font-semibold mb-1">New message</p>
           <p className="font-inter text-xs text-secondary-text line-clamp-2">
             {lastMessagePreview}
@@ -98,7 +98,7 @@ export default function ChatBubbleTrigger({ onOpen }: ChatBubbleTriggerProps) {
 
       <button
         onClick={onOpen}
-        className="fixed bottom-6 right-6 bg-gradient-to-br from-[#2563eb] to-[#1e40af] hover:from-[#1e40af] hover:to-[#1e3a8a] text-white rounded-full p-4 shadow-2xl hover:shadow-2xl transition-all duration-300 z-40 flex items-center justify-center group relative"
+        className="fixed bottom-6 right-6 bg-gradient-to-br from-[#2563eb] to-[#1e40af] hover:from-[#1e40af] hover:to-[#1e3a8a] text-white rounded-full p-4 shadow-2xl hover:shadow-2xl transition-all duration-300 z-50 flex items-center justify-center group relative"
         aria-label="Open chat"
         style={unreadCount > 0 ? { animation: 'breathe 2.5s ease-in-out infinite' } : undefined}
       >

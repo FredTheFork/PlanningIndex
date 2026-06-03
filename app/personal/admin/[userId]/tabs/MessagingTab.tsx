@@ -77,8 +77,12 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
   useEffect(() => {
     if (user && conversationId) {
-      const subscription = supabase
-        .channel(`admin_messages:${conversationId}`)
+      let subscription: any;
+      let isMounted = true;
+
+      subscription = supabase.channel(`admin_messages:${conversationId}`);
+
+      subscription
         .on(
           'postgres_changes',
           {
@@ -87,13 +91,22 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
             table: 'client_messages',
             filter: `conversation_id=eq.${conversationId}`,
           },
-          () => {
-            fetchConversation();
+          async (payload: any) => {
+            if (isMounted) {
+              if (payload.eventType === 'INSERT') {
+                setMessages((prev) => [...prev, payload.new]);
+              } else if (payload.eventType === 'UPDATE') {
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === payload.new.id ? payload.new : m))
+                );
+              }
+            }
           }
         )
         .subscribe();
 
       return () => {
+        isMounted = false;
         subscription.unsubscribe();
       };
     }
@@ -162,6 +175,8 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
       if (insertedData && insertedData.length > 0) {
         const newMessage = insertedData[0];
+        setMessages((prev) => [...prev, newMessage]);
+
         await triggerMessageNotification({
           id: newMessage.id,
           sender_id: newMessage.sender_id,
@@ -174,7 +189,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
       setMessageText('');
       setMessageType('general');
-      await fetchConversation();
     } catch (err) {
       console.error('Error sending message:', err);
     } finally {
