@@ -17,6 +17,7 @@ import BriefTab from './tabs/BriefTab';
 import DocumentsTab from './tabs/DocumentsTab';
 import IntakeTab from './tabs/IntakeTab';
 import CommunicationsTab from './tabs/CommunicationsTab';
+import MessagingTab from './tabs/MessagingTab';
 import NotesTab from './tabs/NotesTab';
 import SettingsTab from './tabs/SettingsTab';
 
@@ -47,6 +48,7 @@ const TABS = [
   { id: 'brief', label: 'Master Brief', icon: Briefcase },
   { id: 'documents', label: 'Documents', icon: FileText },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
+  { id: 'messaging', label: 'Messaging', icon: Send },
   { id: 'communications', label: 'Communications', icon: MessageSquare },
   { id: 'notes', label: 'Notes & Activity', icon: StickyNote },
   { id: 'settings', label: 'Settings & Delivery', icon: Settings },
@@ -227,6 +229,9 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           )}
           {activeTab === 'intake' && (
             <IntakeTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'messaging' && (
+            <MessagingTab userId={userId} data={data} refreshData={refreshData} />
           )}
           {activeTab === 'communications' && (
             <CommunicationsTab userId={userId} data={data} refreshData={refreshData} />

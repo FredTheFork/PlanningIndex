@@ -6,13 +6,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield } from 'lucide-react';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { LayoutDashboard, FileText, BarChart3, FolderOpen, MessageSquare, LogOut, Shield } from 'lucide-react';
 
 const clientNavItems = [
   { label: 'Overview', href: '/personal', icon: LayoutDashboard },
   { label: 'Intake Form', href: '/personal/intake', icon: FileText },
   { label: 'Status', href: '/personal/status', icon: BarChart3 },
   { label: 'Documents', href: '/personal/documents', icon: FolderOpen },
+  { label: 'Messages', href: '/personal/messages', icon: MessageSquare },
 ];
 
 const adminNavItems = [
@@ -29,6 +31,7 @@ export default function PersonalLayout({
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile } = useClientProfile();
   const { isAdmin } = useIsAdmin();
+  const { unreadCount } = useUnreadMessages();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -85,20 +88,28 @@ export default function PersonalLayout({
           {/* Sidebar */}
           <nav className="md:w-48 shrink-0">
             <div className="bg-white rounded-lg border border-gray-200 p-2">
-              {navItems.map((item) => {
+          {navItems.map((item) => {
                 const isActive = pathname === item.href;
+                const isMessages = item.label === 'Messages';
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-md font-inter text-sm transition-colors ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-md font-inter text-sm transition-colors ${
                       isActive
                         ? 'bg-[#FAFBFC] text-[#1B3F7A] font-semibold'
                         : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
                     }`}
                   >
-                    <item.icon size={18} />
-                    {item.label}
+                    <div className="flex items-center gap-3">
+                      <item.icon size={18} />
+                      {item.label}
+                    </div>
+                    {isMessages && unreadCount > 0 && (
+                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-medium-blue rounded-full">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

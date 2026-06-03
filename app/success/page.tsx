@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { CommunicationPreferencesModal } from '@/components/ui/CommunicationPreferencesModal';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -15,6 +16,8 @@ function SuccessContent() {
   const [settingPassword, setSettingPassword] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState('');
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const [userId, setUserId] = useState('');
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
@@ -84,7 +87,14 @@ function SuccessContent() {
         return;
       }
 
-      router.replace('/personal');
+      // Get the user ID from session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setUserId(session.user.id);
+        setShowPreferencesModal(true);
+      } else {
+        router.replace('/personal');
+      }
     } catch (err) {
       console.error('Set password error:', err);
       setError('Something went wrong. Please try again.');
@@ -105,8 +115,19 @@ function SuccessContent() {
     );
   }
 
+  const handleModalClose = () => {
+    setShowPreferencesModal(false);
+    router.replace('/personal');
+  };
+
   return (
     <div className="min-h-screen bg-off-white flex items-center justify-center py-12 px-6">
+      <CommunicationPreferencesModal
+        userId={userId}
+        userEmail={email}
+        isOpen={showPreferencesModal}
+        onClose={handleModalClose}
+      />
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
