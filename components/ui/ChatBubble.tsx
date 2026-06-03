@@ -48,6 +48,7 @@ export default function ChatBubble() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
   const [lastMessagePreview, setLastMessagePreview] = useState('');
+  const [lastMessage, setLastMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -119,6 +120,7 @@ export default function ChatBubble() {
         setUnreadCount(messages?.length || 0);
         if (messages && messages.length > 0) {
           setLastMessagePreview(messages[0].message_content);
+          setLastMessage(messages[0] as Message);
         }
 
         const conversationId = [user.id, adminData.user_id].sort().join('_');
@@ -138,6 +140,7 @@ export default function ChatBubble() {
               if (payload.new.recipient_id === user.id && !payload.new.is_read) {
                 setUnreadCount((prev) => prev + 1);
                 setLastMessagePreview(payload.new.message_content);
+                setLastMessage(payload.new as Message);
                 setShowNotification(true);
                 setTimeout(() => {
                   if (isMounted) setShowNotification(false);
@@ -222,11 +225,11 @@ export default function ChatBubble() {
           },
           (payload: any) => {
             if (isMounted && payload.new) {
-              // Skip messages sent by the current user (already handled by optimistic update)
               if (payload.new.sender_id === user.id) {
                 return;
               }
               setMessages((prev) => [...prev, payload.new as Message]);
+              setLastMessage(payload.new as Message);
               if (payload.new.recipient_id === user.id && !payload.new.is_read) {
                 supabase
                   .from('client_messages')
@@ -263,7 +266,6 @@ export default function ChatBubble() {
       created_at: new Date().toISOString(),
     };
 
-    // Add optimistic message immediately
     setMessages((prev) => [...prev, optimisticMessage]);
     setMessageText('');
     setSending(true);
@@ -289,12 +291,10 @@ export default function ChatBubble() {
 
       if (insertedData && insertedData.length > 0) {
         const newMessage = insertedData[0];
-        // Replace optimistic message with real one
         setMessages((prev) =>
           prev.map((m) => (m.id === optimisticMessage.id ? newMessage : m))
         );
 
-        // Trigger notification
         try {
           const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
           const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -338,7 +338,6 @@ export default function ChatBubble() {
     setIsOpen(false);
   };
 
-  // Group messages by date
   const groupedMessages: { [key: string]: Message[] } = {};
   messages.forEach((msg) => {
     const dateKey = getMessageGroupKey(msg.created_at);
@@ -353,7 +352,7 @@ export default function ChatBubble() {
     <>
       {/* Notification Banner */}
       {showNotification && (
-        <div className="fixed bottom-24 md:bottom-32 right-0 md:right-8 bg-white text-navy rounded-t-lg md:rounded-lg shadow-2xl p-4 max-w-xs z-[9997] animate-in fade-in slide-in-from-bottom-2 duration-300 w-full md:w-auto">
+        <div className="fixed bottom-32 md:bottom-40 right-0 md:right-12 bg-white text-navy rounded-t-lg md:rounded-lg shadow-2xl p-4 max-w-xs z-[9997] animate-in fade-in slide-in-from-bottom-2 duration-300 w-full md:w-auto">
           <p className="font-inter text-sm font-semibold mb-1">New message</p>
           <p className="font-inter text-xs text-secondary-text line-clamp-2">
             {lastMessagePreview}
@@ -361,7 +360,7 @@ export default function ChatBubble() {
         </div>
       )}
 
-      {/* Overlay - only show when chat is open */}
+      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-[9998] md:hidden backdrop-blur-sm transition-opacity duration-300"
@@ -371,7 +370,7 @@ export default function ChatBubble() {
 
       {/* Chat Modal Container */}
       <div
-        className={`fixed md:bottom-8 md:right-8 bottom-0 right-0 z-[9999] transition-all duration-300 ${
+        className={`fixed md:bottom-8 md:right-12 bottom-0 right-0 z-[9999] transition-all duration-300 ${
           isOpen
             ? 'top-0 md:top-auto md:w-96 w-full'
             : 'md:w-auto md:h-auto w-16 h-auto pointer-events-none md:pointer-events-auto'
@@ -379,16 +378,13 @@ export default function ChatBubble() {
       >
         {/* Chat Modal - visible when open */}
         {isOpen && (
-          <div className="flex flex-col bg-white rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden h-full md:max-h-[750px] animate-in slide-in-from-bottom duration-300">
+          <div className="flex flex-col bg-white rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden h-full md:max-h-[750px] animate-in fade-in slide-in-from-bottom-4 duration-300">
             {/* Header */}
             <div className="relative">
-              {/* Blue gradient background */}
               <div className="bg-gradient-to-r from-[#0F1E4D] to-[#1A3A7A] relative overflow-hidden pb-6">
-                {/* Decorative blurred circles */}
                 <div className="absolute top-0 -right-32 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl" />
                 <div className="absolute -bottom-16 -left-32 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl" />
 
-                {/* Wave divider */}
                 <svg
                   className="absolute bottom-0 left-0 w-full h-8 text-white"
                   viewBox="0 0 1200 120"
@@ -400,11 +396,9 @@ export default function ChatBubble() {
                   />
                 </svg>
 
-                {/* Header content */}
                 <div className="relative z-10 px-4 pt-4 pb-2">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3 flex-1">
-                      {/* Profile picture */}
                       <div className="relative">
                         {teamMember?.profile_picture_url ? (
                           <img
@@ -417,11 +411,9 @@ export default function ChatBubble() {
                             <MessageCircle size={28} className="text-white" />
                           </div>
                         )}
-                        {/* Online indicator */}
                         <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full shadow-lg" />
                       </div>
 
-                      {/* Name and title */}
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-semibold leading-tight">Chat with</p>
                         <p className="text-white text-lg font-bold truncate">
@@ -430,7 +422,6 @@ export default function ChatBubble() {
                       </div>
                     </div>
 
-                    {/* Action buttons */}
                     <div className="flex items-center gap-2 ml-2">
                       <button className="hover:bg-white hover:bg-opacity-15 rounded-full p-2 transition-colors duration-200 text-white">
                         <MoreVertical size={20} />
@@ -444,7 +435,6 @@ export default function ChatBubble() {
                     </div>
                   </div>
 
-                  {/* Status line */}
                   <p className="text-blue-100 text-sm font-medium pl-0">We're online</p>
                 </div>
               </div>
@@ -477,7 +467,6 @@ export default function ChatBubble() {
                 <>
                   {sortedDateKeys.map((dateKey) => (
                     <div key={dateKey}>
-                      {/* Date separator */}
                       <div className="flex items-center gap-3 my-4">
                         <div className="flex-1 border-t border-gray-200" />
                         <p className="text-xs font-inter text-gray-500 font-medium px-3 py-1 bg-white rounded-full border border-gray-200">
@@ -486,7 +475,6 @@ export default function ChatBubble() {
                         <div className="flex-1 border-t border-gray-200" />
                       </div>
 
-                      {/* Messages for this date */}
                       <div className="space-y-3">
                         {groupedMessages[dateKey].map((msg) => (
                           <div
@@ -536,7 +524,6 @@ export default function ChatBubble() {
             {/* Input Area */}
             <div className="border-t border-gray-200 bg-white p-4">
               <div className="space-y-3">
-                {/* Main input and send button */}
                 <div className="flex gap-3">
                   <input
                     type="text"
@@ -561,7 +548,6 @@ export default function ChatBubble() {
                   </button>
                 </div>
 
-                {/* Bottom action icons */}
                 <div className="flex items-center justify-between px-1">
                   <div className="flex gap-2">
                     <button className="hover:text-blue-600 text-gray-500 transition-colors p-2 hover:bg-blue-50 rounded-full">
@@ -582,50 +568,78 @@ export default function ChatBubble() {
           </div>
         )}
 
-        {/* Closed Toggle Tab - visible when chat is closed */}
+        {/* Closed Toggle Tab with Message Preview */}
         {!isOpen && (
-          <button
-            onClick={() => setIsOpen(true)}
-            className="fixed bottom-8 right-8 md:bottom-0 md:right-0 bg-gradient-to-br from-[#0F1E4D] to-[#1A3A7A] hover:from-[#1A3A7A] hover:to-[#0F2E63] text-white rounded-t-3xl md:rounded-t-3xl px-5 py-3 shadow-2xl hover:shadow-[0_20px_40px_rgba(15,30,77,0.4)] transition-all duration-300 flex items-center gap-2 group animate-in fade-in slide-in-from-bottom-2 duration-300"
-            aria-label="Open chat"
-            style={unreadCount > 0 ? { animation: 'breathe 2.5s ease-in-out infinite, slideIn 0.3s ease-out' } : undefined}
-          >
-            <div className="relative">
-              <MessageCircle size={20} strokeWidth={1.5} />
-              {unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold animate-pulse shadow-lg">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+          <div className="relative">
+            {/* Message Preview Bubble */}
+            {lastMessage && lastMessage.sender_id !== user?.id && (
+              <div className="absolute -top-16 left-0 md:left-auto md:-top-20 md:right-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="bg-white rounded-2xl px-4 py-3 shadow-lg border border-gray-100 max-w-xs">
+                  <p className="font-inter text-sm text-gray-900 break-words leading-relaxed">
+                    {lastMessage.message_content}
+                  </p>
+                  {/* Pointer triangle */}
+                  <div className="absolute -bottom-2 left-6 md:left-auto md:right-6 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white" />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            <span className="font-inter text-sm font-semibold hidden md:inline whitespace-nowrap">
-              {unreadCount > 0 ? `${unreadCount} new` : 'Chat with us'}
-            </span>
-
-            <ChevronUp size={18} className="hidden md:inline group-hover:translate-y-0.5 transition-transform" />
-
-            <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none md:hidden">
-              {unreadCount > 0 ? `${unreadCount} new message${unreadCount !== 1 ? 's' : ''}` : 'Message our team'}
-            </span>
-
-            <style>{`
-              @keyframes breathe {
-                0%, 100% { box-shadow: 0 0 20px 0 rgba(15, 30, 77, 0.4), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-                50% { box-shadow: 0 0 30px 0 rgba(15, 30, 77, 0.6), 0 10px 25px -5px rgba(0, 0, 0, 0.15); }
+            {/* Toggle Button */}
+            <button
+              onClick={() => setIsOpen(true)}
+              className="fixed bottom-8 right-8 md:bottom-0 md:right-0 bg-gradient-to-br from-[#0F1E4D] to-[#1A3A7A] hover:from-[#1A3A7A] hover:to-[#0F2E63] text-white rounded-t-3xl md:rounded-t-3xl px-5 py-3 shadow-2xl hover:shadow-[0_20px_40px_rgba(15,30,77,0.4)] transition-all duration-300 flex items-center gap-2 group animate-in fade-in slide-in-from-bottom-2 duration-300"
+              aria-label="Open chat"
+              style={
+                unreadCount > 0
+                  ? {
+                      animation:
+                        'breathe 2.5s ease-in-out infinite, slideIn 0.3s ease-out',
+                    }
+                  : undefined
               }
-              @keyframes slideIn {
-                from {
-                  opacity: 0;
-                  transform: translateY(10px);
+            >
+              <div className="relative">
+                <MessageCircle size={20} strokeWidth={1.5} />
+                {unreadCount > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold animate-pulse shadow-lg">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </div>
+                )}
+              </div>
+
+              <span className="font-inter text-sm font-semibold hidden md:inline whitespace-nowrap">
+                {unreadCount > 0 ? `${unreadCount} new` : 'Chat with us'}
+              </span>
+
+              <ChevronUp
+                size={18}
+                className="hidden md:inline transition-transform duration-300 group-hover:-translate-y-1"
+              />
+
+              <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none md:hidden">
+                {unreadCount > 0
+                  ? `${unreadCount} new message${unreadCount !== 1 ? 's' : ''}`
+                  : 'Message our team'}
+              </span>
+
+              <style>{`
+                @keyframes breathe {
+                  0%, 100% { box-shadow: 0 0 20px 0 rgba(15, 30, 77, 0.4), 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+                  50% { box-shadow: 0 0 30px 0 rgba(15, 30, 77, 0.6), 0 10px 25px -5px rgba(0, 0, 0, 0.15); }
                 }
-                to {
-                  opacity: 1;
-                  transform: translateY(0);
+                @keyframes slideIn {
+                  from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: translateY(0);
+                  }
                 }
-              }
-            `}</style>
-          </button>
+              `}</style>
+            </button>
+          </div>
         )}
       </div>
     </>
