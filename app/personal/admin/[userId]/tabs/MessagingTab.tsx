@@ -94,7 +94,9 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           async (payload: any) => {
             if (isMounted) {
               if (payload.eventType === 'INSERT') {
-                setMessages((prev) => [...prev, payload.new]);
+                setMessages((prev) =>
+                  prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new]
+                );
               } else if (payload.eventType === 'UPDATE') {
                 setMessages((prev) =>
                   prev.map((m) => (m.id === payload.new.id ? payload.new : m))
