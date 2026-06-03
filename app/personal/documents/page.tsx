@@ -34,12 +34,13 @@ export default function PersonalDocuments() {
     if (!user) return;
     setLoading(true);
     try {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('generated_documents')
         .select('id, document_type, document_label, content_html, delivered_at, auto_delete_at, admin_edited, pdf_path, docx_path')
         .eq('client_id', user.id)
         .eq('delivered_to_client', true)
-        .gt('auto_delete_at', new Date().toISOString())
+        .or(`auto_delete_at.is.null,auto_delete_at.gt.${now}`)
         .order('document_type');
 
       if (error) {

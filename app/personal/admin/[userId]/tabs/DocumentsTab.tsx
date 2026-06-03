@@ -847,9 +847,16 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
   };
 
   const handleMarkDelivered = async (docId: string) => {
+    const now = new Date();
+    const autoDeleteAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
     await supabase
       .from('generated_documents')
-      .update({ delivered_to_client: true, delivered_at: new Date().toISOString() })
+      .update({
+        delivered_to_client: true,
+        delivered_at: now.toISOString(),
+        auto_delete_at: autoDeleteAt.toISOString()
+      })
       .eq('id', docId);
 
     showMessage('Document marked as delivered', 'success');
