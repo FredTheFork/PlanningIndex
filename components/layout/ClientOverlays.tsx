@@ -3,7 +3,6 @@
 import StickyCTA from '@/components/ui/StickyCTA';
 import CookieConsent from '@/components/ui/CookieConsent';
 import ExitIntentPopup from '@/components/ui/ExitIntentPopup';
-import ChatBubble from '@/components/ui/ChatBubble';
 
 export default function ClientOverlays() {
   return (
@@ -11,7 +10,6 @@ export default function ClientOverlays() {
       <StickyCTA />
       <CookieConsent />
       <ExitIntentPopup />
-      <ChatBubble />
     </>
   );
 }
