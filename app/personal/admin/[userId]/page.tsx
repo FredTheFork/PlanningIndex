@@ -16,10 +16,7 @@ import OverviewTab from './tabs/OverviewTab';
 import BriefTab from './tabs/BriefTab';
 import DocumentsTab from './tabs/DocumentsTab';
 import IntakeTab from './tabs/IntakeTab';
-import CommunicationsTab from './tabs/CommunicationsTab';
 import MessagingTab from './tabs/MessagingTab';
-import NotesTab from './tabs/NotesTab';
-import SettingsTab from './tabs/SettingsTab';
 
 interface ClientData {
   profile: {
@@ -41,6 +38,7 @@ interface ClientData {
     additional_notes: Record<string, any>;
   } | null;
   email: string;
+  authEmail?: string;
 }
 
 const TABS = [
@@ -49,9 +47,6 @@ const TABS = [
   { id: 'documents', label: 'Documents', icon: FileText },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
   { id: 'messaging', label: 'Messaging', icon: Send },
-  { id: 'communications', label: 'Communications', icon: MessageSquare },
-  { id: 'notes', label: 'Notes & Activity', icon: StickyNote },
-  { id: 'settings', label: 'Settings & Delivery', icon: Settings },
 ];
 
 export default function AdminClientDetail({ params }: { params: { userId: string } }) {
@@ -89,6 +84,8 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         .eq('user_id', userId)
         .maybeSingle();
 
+      const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId);
+
       const email = intakeResult?.responses?.q7_document_email || userId.substring(0, 8) + '...';
 
       setData({
@@ -102,6 +99,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           additional_notes: intakeResult.additional_notes || {},
         } : null,
         email,
+        authEmail: authUser?.email,
       });
     } catch (error) {
       console.error('Error fetching client data:', error);
@@ -160,7 +158,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
             </div>
             <div>
               <p className="font-inter font-semibold text-gray-900 text-base">{data.email}</p>
-              <p className="font-inter text-gray-600 text-xs">{userId}</p>
+              <p className="font-inter text-gray-600 text-xs">{data.authEmail}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -232,15 +230,6 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           )}
           {activeTab === 'messaging' && (
             <MessagingTab userId={userId} data={data} refreshData={refreshData} />
-          )}
-          {activeTab === 'communications' && (
-            <CommunicationsTab userId={userId} data={data} refreshData={refreshData} />
-          )}
-          {activeTab === 'notes' && (
-            <NotesTab userId={userId} data={data} refreshData={refreshData} />
-          )}
-          {activeTab === 'settings' && (
-            <SettingsTab userId={userId} data={data} refreshData={refreshData} />
           )}
         </div>
       </div>
