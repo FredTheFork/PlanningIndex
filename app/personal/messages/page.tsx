@@ -187,8 +187,23 @@ export default function MessagesPage() {
     }
   };
 
+  const startConversationWithAdmin = async () => {
+    if (!user || !adminInfo) return;
+
+    const conversationId = [user.id, adminInfo.id].sort().join('_');
+    setSelectedConversation(conversationId);
+  };
+
   const sendMessage = async () => {
-    if (!messageText.trim() || !user || !selectedConversation || !adminInfo) return;
+    if (!messageText.trim() || !user || !selectedConversation) {
+      return;
+    }
+
+    if (!adminInfo) {
+      console.error('Error: Admin info not loaded. Cannot send message.');
+      alert('Unable to send message. Admin information is not available.');
+      return;
+    }
 
     setSending(true);
 
@@ -269,7 +284,15 @@ export default function MessagesPage() {
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="p-4 text-center">
-              <p className="font-inter text-secondary-text text-sm">No conversations yet</p>
+              <p className="font-inter text-secondary-text text-sm mb-4">No conversations yet</p>
+              {adminInfo && (
+                <button
+                  onClick={startConversationWithAdmin}
+                  className="w-full bg-medium-blue hover:bg-navy text-white rounded-lg px-4 py-2 font-inter text-sm transition-colors"
+                >
+                  Message Admin
+                </button>
+              )}
             </div>
           ) : (
             conversations.map((conv) => (
