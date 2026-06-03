@@ -78,21 +78,6 @@ export default function MessagesPage() {
         .maybeSingle();
 
       if (data?.user_id) {
-        // Try to get from auth, fall back to using ID if not available
-        try {
-          const { data: userData } = await supabase.auth.admin.getUserById(
-            data.user_id
-          );
-
-          if (userData?.user?.email) {
-            setAdminInfo({ email: userData.user.email, id: data.user_id });
-            return;
-          }
-        } catch (adminErr) {
-          console.error('Could not fetch admin via auth API:', adminErr);
-        }
-
-        // Fallback: just use the admin user ID, assume they exist
         setAdminInfo({ email: 'Admin', id: data.user_id });
       }
     } catch (err) {
