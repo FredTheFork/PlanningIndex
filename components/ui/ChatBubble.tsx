@@ -339,16 +339,6 @@ export default function ChatBubble() {
 
   return (
     <>
-      {/* Notification Banner */}
-      {showNotification && (
-        <div className="fixed bottom-32 md:bottom-40 right-0 md:right-12 bg-white text-navy rounded-t-lg md:rounded-lg shadow-2xl p-4 max-w-xs z-[9997] animate-in fade-in slide-in-from-bottom-2 duration-300 w-full md:w-auto">
-          <p className="font-inter text-sm font-semibold mb-1">New message</p>
-          <p className="font-inter text-xs text-secondary-text line-clamp-2">
-            {lastMessagePreview}
-          </p>
-        </div>
-      )}
-
       {/* Overlay */}
       {isOpen && (
         <div
@@ -597,7 +587,7 @@ export default function ChatBubble() {
               </div>
 
               <span className="font-inter text-sm font-semibold hidden md:inline whitespace-nowrap">
-                {unreadCount > 0 ? `${unreadCount} new` : 'Chat with us'}
+                {unreadCount > 0 ? `${unreadCount} new` : 'Talk with the team'}
               </span>
 
               <ChevronUp
@@ -608,7 +598,7 @@ export default function ChatBubble() {
               <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none md:hidden">
                 {unreadCount > 0
                   ? `${unreadCount} new message${unreadCount !== 1 ? 's' : ''}`
-                  : 'Message our team'}
+                  : 'Talk with the team'}
               </span>
 
               <style>{`
