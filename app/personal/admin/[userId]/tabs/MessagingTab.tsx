@@ -49,6 +49,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const [conversationId, setConversationId] = useState('');
   const [clientPreferences, setClientPreferences] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     if (user && userId) {
@@ -58,7 +59,9 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   }, [user, userId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const behavior = isInitialLoadRef.current ? ('instant' as ScrollBehavior) : ('smooth' as ScrollBehavior);
+    messagesEndRef.current?.scrollIntoView({ behavior });
+    isInitialLoadRef.current = false;
   }, [messages]);
 
   const fetchClientPreferences = async () => {
@@ -244,9 +247,9 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const sortedDateKeys = Object.keys(groupedMessages).sort();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
       {/* Left Panel - Conversation Info */}
-      <div className="lg:col-span-1 space-y-4">
+      <div className="lg:col-span-1 space-y-4 overflow-y-auto">
         {/* Client Card */}
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <div className="flex items-center gap-3 mb-4">
@@ -335,7 +338,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
       </div>
 
       {/* Right Panel - Messaging */}
-      <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col h-[600px] lg:h-auto">
+      <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col h-full">
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gradient-to-b from-gray-50 to-white">
           {messages.length === 0 ? (

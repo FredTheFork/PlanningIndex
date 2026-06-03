@@ -50,14 +50,24 @@ export default function ChatBubble() {
   const [lastMessagePreview, setLastMessagePreview] = useState('');
   const [lastMessage, setLastMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isInitialLoadRef = useRef(true);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    const behavior = isInitialLoadRef.current ? ('instant' as ScrollBehavior) : ('smooth' as ScrollBehavior);
+    scrollToBottom(behavior);
+    isInitialLoadRef.current = false;
   }, [messages]);
+
+  // Scroll to bottom when modal opens (if messages already loaded)
+  useEffect(() => {
+    if (isOpen && messages.length > 0 && !loading) {
+      scrollToBottom('instant');
+    }
+  }, [isOpen]);
 
   // Load team member data
   useEffect(() => {
