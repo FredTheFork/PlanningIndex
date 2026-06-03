@@ -289,18 +289,23 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-30 z-40 md:hidden"
+        className="fixed inset-0 bg-black bg-opacity-40 z-[9998] md:hidden backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
       />
 
       {/* Chat Modal */}
       <div
-        className={`fixed bottom-0 right-0 top-0 md:bottom-6 md:right-6 md:top-auto md:w-96 w-full z-50 flex flex-col bg-white rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
+        className={`fixed bottom-0 right-0 top-0 md:bottom-8 md:right-8 md:top-auto md:w-96 w-full z-[9999] flex flex-col bg-white rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
           isMinimized ? 'md:max-h-16' : 'max-h-screen md:max-h-[650px]'
         }`}
       >
         {/* Header with gradient background and wave */}
-        <div className="bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#2563eb] text-white relative overflow-hidden shadow-lg">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 -right-40 w-80 h-80 bg-white rounded-full mix-blend-multiply filter blur-3xl" />
+            <div className="absolute -bottom-8 -left-40 w-80 h-80 bg-white rounded-full mix-blend-multiply filter blur-3xl" />
+          </div>
           {/* Header content */}
           <div className="p-4 pb-0 relative z-10">
             <div className="flex items-start justify-between">
@@ -309,10 +314,10 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
                   <img
                     src={teamMember.profile_picture_url}
                     alt={teamMember.display_name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg ring-2 ring-white ring-opacity-30"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-white bg-opacity-30 flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 rounded-full bg-white bg-opacity-30 flex items-center justify-center shadow-lg ring-2 ring-white ring-opacity-30 backdrop-blur-sm">
                     <MessageCircle size={24} className="text-white" />
                   </div>
                 )}
@@ -326,14 +331,14 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setIsMinimized(!isMinimized)}
-                  className="hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
+                  className="hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-all duration-200 backdrop-blur-sm"
                   aria-label="Minimize chat"
                 >
                   <ChevronDown size={20} className={`transition-transform ${isMinimized ? 'rotate-180' : ''}`} />
                 </button>
                 <button
                   onClick={onClose}
-                  className="hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
+                  className="hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-all duration-200 backdrop-blur-sm"
                   aria-label="Close chat"
                 >
                   <X size={20} />
@@ -349,18 +354,20 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
         {/* Messages Area */}
         {!isMinimized && (
           <>
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-gradient-to-b from-gray-50 to-white">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-gradient-to-b from-blue-50 via-gray-50 to-white">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <Loader size={32} className="text-blue-500 animate-spin mx-auto mb-2" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-3">
+                      <Loader size={32} className="text-blue-500 animate-spin" />
+                    </div>
                     <p className="text-sm text-gray-600 font-inter">Loading messages...</p>
                   </div>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                  <div className="bg-blue-50 rounded-full p-6 mb-4">
-                    <MessageCircle size={40} className="text-blue-500" />
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-full p-6 mb-4 shadow-lg">
+                    <MessageCircle size={40} className="text-blue-600" />
                   </div>
                   <p className="font-inter font-semibold text-gray-900 mb-2">
                     Welcome to our support channel
@@ -376,7 +383,7 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
                       {/* Date separator */}
                       <div className="flex items-center gap-3 my-4">
                         <div className="flex-1 border-t border-gray-200" />
-                        <p className="text-xs font-inter text-gray-500 font-medium px-2">
+                        <p className="text-xs font-inter text-gray-500 font-medium px-2 bg-white rounded-full py-1">
                           {formatMessageDate(groupedMessages[dateKey][0].created_at)}
                         </p>
                         <div className="flex-1 border-t border-gray-200" />
@@ -387,13 +394,13 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
                         {groupedMessages[dateKey].map((msg) => (
                           <div
                             key={msg.id}
-                            className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                           >
                             <div
                               className={`max-w-xs px-4 py-3 rounded-2xl ${
                                 msg.sender_id === user?.id
-                                  ? 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white rounded-br-none shadow-md'
-                                  : 'bg-white text-gray-900 border border-gray-200 rounded-bl-none shadow-sm'
+                                  ? 'bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white rounded-br-none shadow-md hover:shadow-lg transition-shadow'
+                                  : 'bg-white text-gray-900 border border-gray-200 rounded-bl-none shadow-sm hover:shadow-md transition-shadow'
                               }`}
                             >
                               <p className="font-inter text-sm break-words leading-relaxed">
@@ -428,7 +435,7 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-gray-200 bg-white">
+            <div className="p-4 border-t border-gray-200 bg-gradient-to-b from-white to-gray-50 backdrop-blur-sm">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -436,13 +443,13 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
                   onChange={(e) => setMessageText(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter text-sm bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter text-sm bg-white transition-all shadow-sm hover:shadow-md"
                   disabled={sending}
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!messageText.trim() || sending}
-                  className="bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#1e40af] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full p-3 transition-all flex items-center justify-center shadow-md hover:shadow-lg"
+                  className="bg-gradient-to-br from-[#2563eb] via-[#1d4ed8] to-[#1d4ed8] hover:from-[#1d4ed8] hover:via-[#1d4ed8] hover:to-[#1e40af] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full p-3 transition-all flex items-center justify-center shadow-md hover:shadow-lg active:scale-95"
                   aria-label="Send message"
                 >
                   {sending ? (
@@ -459,7 +466,7 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
                 </button>
               </div>
               {messageText.length > 400 && (
-                <p className="font-inter text-xs text-gray-500 mt-2">
+                <p className="font-inter text-xs text-gray-500 mt-2 text-center">
                   {messageText.length}/500 characters
                 </p>
               )}
