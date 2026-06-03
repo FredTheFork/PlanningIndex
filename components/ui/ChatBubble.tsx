@@ -143,33 +143,44 @@ export default function ChatBubble({ isOpen, onClose }: ChatBubbleProps) {
   useEffect(() => {
     if (!user || !conversationId) return;
 
-    const subscription = supabase
-      .channel(`messages:${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'client_messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          if (payload.new) {
-            setMessages((prev) => [...prev, payload.new as Message]);
-            if (payload.new.recipient_id === user.id && payload.new.sender_id !== user.id) {
-              supabase
-                .from('client_messages')
-                .update({ is_read: true, read_at: new Date().toISOString() })
-                .eq('id', payload.new.id)
-                .then();
+    let subscription: any;
+    let isMounted = true;
+
+    const setupSubscription = async () => {
+      subscription = supabase.channel(`messages:${conversationId}`);
+
+      subscription
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'client_messages',
+            filter: `conversation_id=eq.${conversationId}`,
+          },
+          (payload: any) => {
+            if (isMounted && payload.new) {
+              setMessages((prev) => [...prev, payload.new as Message]);
+              if (payload.new.recipient_id === user.id && payload.new.sender_id !== user.id) {
+                supabase
+                  .from('client_messages')
+                  .update({ is_read: true, read_at: new Date().toISOString() })
+                  .eq('id', payload.new.id)
+                  .then();
+              }
             }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    };
+
+    setupSubscription();
 
     return () => {
-      subscription.unsubscribe();
+      isMounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, [user, conversationId]);
 
