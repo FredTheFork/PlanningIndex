@@ -80,45 +80,58 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
   useEffect(() => {
     if (user && conversationId) {
-      let subscription: any;
       let isMounted = true;
 
-      subscription = supabase.channel(`admin_messages:${conversationId}`);
+      const subscription = supabase.channel(`messages:${conversationId}`);
 
       subscription
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
             schema: 'public',
             table: 'client_messages',
             filter: `conversation_id=eq.${conversationId}`,
           },
-          async (payload: any) => {
-            if (isMounted) {
-              if (payload.eventType === 'INSERT') {
-                const newMsg = payload.new as Message;
-                setMessages((prev) => {
-                  if (prev.some((m) => m.id === newMsg.id)) return prev;
+          (payload: any) => {
+            if (!isMounted) return;
 
-                  const tempIdx = prev.findIndex(
-                    (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
-                  );
-                  if (tempIdx !== -1) {
-                    return prev.map((m, i) => (i === tempIdx ? newMsg : m));
-                  }
+            const newMsg = payload.new as Message;
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newMsg.id)) return prev;
 
-                  return [...prev, newMsg];
-                });
-              } else if (payload.eventType === 'UPDATE') {
-                setMessages((prev) =>
-                  prev.map((m) => (m.id === payload.new.id ? payload.new : m))
-                );
+              const tempIdx = prev.findIndex(
+                (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
+              );
+              if (tempIdx !== -1) {
+                return prev.map((m, i) => (i === tempIdx ? newMsg : m));
               }
-            }
+
+              return [...prev, newMsg];
+            });
           }
         )
-        .subscribe();
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'client_messages',
+            filter: `conversation_id=eq.${conversationId}`,
+          },
+          (payload: any) => {
+            if (!isMounted) return;
+
+            setMessages((prev) =>
+              prev.map((m) => (m.id === payload.new.id ? payload.new : m))
+            );
+          }
+        )
+        .subscribe((status) => {
+          if (status !== 'SUBSCRIBED' && status !== 'CHANNEL_ERROR') {
+            console.log('MessagingTab subscription status:', status);
+          }
+        });
 
       return () => {
         isMounted = false;
@@ -220,6 +233,9 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           message_type: newMessage.message_type,
           created_at: newMessage.created_at,
         });
+      } else if (!error) {
+        // Insert succeeded but .select('*') returned no rows (possible RLS timing issue)
+        // The optimistic message stays; realtime will replace it, or a refresh will load it
       }
 
       setMessageType('general');
