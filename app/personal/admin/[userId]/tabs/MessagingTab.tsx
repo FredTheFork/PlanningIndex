@@ -54,100 +54,98 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const lastFetchTimeRef = useRef('');
   const componentActiveRef = useRef(true);
 
-  // Compute conversation ID whenever user/userId change
+  // Setup everything when user/userId are both available
   useEffect(() => {
-    if (user?.id && userId) {
-      const convId = [user.id, userId].sort().join('_');
-      setConversationId(convId);
-    }
-  }, [user?.id, userId]);
-
-  // Main data fetch — always sets loading=false when done
-  const loadMessages = async (convId: string) => {
-    if (!user) { setLoading(false); return; }
-
-    try {
-      const { data: messagesData, error } = await supabase
-        .from('client_messages')
-        .select('*')
-        .eq('conversation_id', convId)
-        .order('created_at', { ascending: true });
-
-      if (!componentActiveRef.current) return;
-
-      if (error) {
-        console.error('Error fetching conversation:', error);
-        setMessages([]);
-      } else {
-        setMessages(messagesData || []);
-        if (messagesData && messagesData.length > 0) {
-          lastFetchTimeRef.current = messagesData[messagesData.length - 1].created_at;
-        }
-
-        // Mark unread messages as read
-        const unreadIds = (messagesData || [])
-          .filter((m) => m.recipient_id === user.id && !m.is_read)
-          .map((m) => m.id);
-        if (unreadIds.length > 0) {
-          supabase
-            .from('client_messages')
-            .update({ is_read: true, read_at: new Date().toISOString() })
-            .in('id', unreadIds)
-            .then();
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching conversation:', err);
-    } finally {
+    // Must have both user and userId to proceed
+    if (!user?.id || !userId) {
       setLoading(false);
-    }
-  };
-
-  // Poll for new messages (fetches only messages newer than last known)
-  const pollForNewMessages = async (convId: string) => {
-    if (!user) return;
-    try {
-      let query = supabase
-        .from('client_messages')
-        .select('*')
-        .eq('conversation_id', convId)
-        .order('created_at', { ascending: true });
-      if (lastFetchTimeRef.current) {
-        query = query.gt('created_at', lastFetchTimeRef.current);
-      }
-      const { data: newMsgs, error } = await query;
-      if (!componentActiveRef.current || error || !newMsgs || newMsgs.length === 0) return;
-
-      setMessages((prev) => {
-        const existingIds = new Set(prev.map((m) => m.id));
-        const trulyNew = newMsgs.filter((m) => !existingIds.has(m.id));
-        if (trulyNew.length === 0) return prev;
-        return [...prev, ...trulyNew];
-      });
-      lastFetchTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
-
-      const unreadNew = newMsgs.filter((m) => m.recipient_id === user.id && !m.is_read);
-      if (unreadNew.length > 0) {
-        supabase
-          .from('client_messages')
-          .update({ is_read: true, read_at: new Date().toISOString() })
-          .in('id', unreadNew.map((m) => m.id))
-          .then();
-      }
-    } catch {
-      // silent
-    }
-  };
-
-  // Setup Realtime subscription + polling whenever we have a conversationId
-  useEffect(() => {
-    if (!conversationId || !user) {
-      setLoading(false);
+      setConversationId('');
       return;
     }
 
+    // Compute conversation ID directly (don't rely on state)
+    const convId = [user.id, userId].sort().join('_');
+    setConversationId(convId);
+    componentActiveRef.current = true;
+    setLoading(true);
+
+    // Load messages
+    const loadMessages = async () => {
+      try {
+        const { data: messagesData, error } = await supabase
+          .from('client_messages')
+          .select('*')
+          .eq('conversation_id', convId)
+          .order('created_at', { ascending: true });
+
+        if (!componentActiveRef.current) return;
+
+        if (error) {
+          console.error('Error fetching conversation:', error);
+          setMessages([]);
+        } else {
+          setMessages(messagesData || []);
+          if (messagesData && messagesData.length > 0) {
+            lastFetchTimeRef.current = messagesData[messagesData.length - 1].created_at;
+          }
+
+          // Mark unread messages as read
+          const unreadIds = (messagesData || [])
+            .filter((m) => m.recipient_id === user.id && !m.is_read)
+            .map((m) => m.id);
+          if (unreadIds.length > 0) {
+            supabase
+              .from('client_messages')
+              .update({ is_read: true, read_at: new Date().toISOString() })
+              .in('id', unreadIds)
+              .then();
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching conversation:', err);
+        setMessages([]);
+      } finally {
+        if (componentActiveRef.current) setLoading(false);
+      }
+    };
+
+    // Poll for new messages
+    const pollForNewMessages = async () => {
+      try {
+        let query = supabase
+          .from('client_messages')
+          .select('*')
+          .eq('conversation_id', convId)
+          .order('created_at', { ascending: true });
+        if (lastFetchTimeRef.current) {
+          query = query.gt('created_at', lastFetchTimeRef.current);
+        }
+        const { data: newMsgs, error } = await query;
+        if (!componentActiveRef.current || error || !newMsgs || newMsgs.length === 0) return;
+
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const trulyNew = newMsgs.filter((m) => !existingIds.has(m.id));
+          if (trulyNew.length === 0) return prev;
+          return [...prev, ...trulyNew];
+        });
+        lastFetchTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+
+        const unreadNew = newMsgs.filter((m) => m.recipient_id === user.id && !m.is_read);
+        if (unreadNew.length > 0) {
+          supabase
+            .from('client_messages')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .in('id', unreadNew.map((m) => m.id))
+            .then();
+        }
+      } catch (err) {
+        console.error('Poll error:', err);
+      }
+    };
+
     // Initial load
-    loadMessages(conversationId);
+    loadMessages();
 
     // Fetch client preferences
     supabase
@@ -160,11 +158,11 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
       });
 
     // Realtime subscription
-    const channel = supabase.channel(`messages:${conversationId}`);
+    const channel = supabase.channel(`messages:${convId}`);
     channel
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${conversationId}` },
+        { event: 'INSERT', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${convId}` },
         (payload: any) => {
           if (!componentActiveRef.current) return;
           const newMsg = payload.new as Message;
@@ -184,7 +182,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${conversationId}` },
+        { event: 'UPDATE', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${convId}` },
         (payload: any) => {
           if (!componentActiveRef.current) return;
           setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
@@ -196,12 +194,12 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
     channelRef.current = channel;
 
-    // Start polling as a reliable fallback
-    pollingRef.current = setInterval(() => pollForNewMessages(conversationId), POLL_INTERVAL);
+    // Start polling
+    pollingRef.current = setInterval(pollForNewMessages, POLL_INTERVAL);
 
     // Refetch on focus/visibility
-    const onFocus = () => loadMessages(conversationId);
-    const onVisibility = () => { if (document.visibilityState === 'visible') loadMessages(conversationId); };
+    const onFocus = () => { if (componentActiveRef.current) loadMessages(); };
+    const onVisibility = () => { if (document.visibilityState === 'visible' && componentActiveRef.current) loadMessages(); };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -212,7 +210,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [conversationId, user?.id]);
+  }, [user?.id, userId]);
 
   // Reset componentActive on remount
   useEffect(() => {

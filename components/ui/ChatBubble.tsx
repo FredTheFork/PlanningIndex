@@ -34,69 +34,9 @@ export default function ChatBubble() {
   const lastFetchTimeRef = useRef('');
   const activeRef = useRef(true);
 
-  // Compute convId when we have user and teamId
+  // Initial setup: find admin and get unread count
   useEffect(() => {
-    if (user?.id && teamId) {
-      setConvId([user.id, teamId].sort().join('_'));
-    }
-  }, [user?.id, teamId]);
-
-  // Load all messages for the conversation
-  const loadMessages = async (conversationId: string) => {
-    if (!user) return;
-    try {
-      const { data } = await supabase
-        .from('client_messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (!activeRef.current) return;
-
-      if (data) {
-        setMessages(data);
-        if (data.length > 0) lastFetchTimeRef.current = data[data.length - 1].created_at;
-
-        const unreadIds = data.filter((m) => m.recipient_id === user.id && !m.is_read).map((m) => m.id);
-        if (unreadIds.length > 0) {
-          supabase.from('client_messages').update({ is_read: true, read_at: new Date().toISOString() }).in('id', unreadIds).then();
-          setUnreadCount(0);
-        }
-      }
-    } catch (err) {
-      console.error('Error loading messages:', err);
-    }
-  };
-
-  // Poll for new messages
-  const pollForNewMessages = async (conversationId: string) => {
-    if (!user) return;
-    try {
-      let query = supabase.from('client_messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true });
-      if (lastFetchTimeRef.current) query = query.gt('created_at', lastFetchTimeRef.current);
-
-      const { data: newMsgs, error } = await query;
-      if (!activeRef.current || error || !newMsgs || newMsgs.length === 0) return;
-
-      setMessages((prev) => {
-        const existingIds = new Set(prev.map((m) => m.id));
-        const trulyNew = newMsgs.filter((m) => !existingIds.has(m.id));
-        if (trulyNew.length === 0) return prev;
-        return [...prev, ...trulyNew];
-      });
-      lastFetchTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
-
-      const unreadNew = newMsgs.filter((m) => m.recipient_id === user.id && !m.is_read);
-      if (unreadNew.length > 0) {
-        supabase.from('client_messages').update({ is_read: true, read_at: new Date().toISOString() }).in('id', unreadNew.map((m) => m.id)).then();
-        setUnreadCount(0);
-      }
-    } catch { /* silent */ }
-  };
-
-  // Initial setup: find admin, get unread count, create subscription
-  useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     activeRef.current = true;
 
     const setup = async () => {
@@ -112,6 +52,11 @@ export default function ChatBubble() {
         setTeamId(admin.user_id);
         setTeamName(admin.display_name || 'Support Team');
 
+        // Compute convId directly
+        const computedConvId = [user.id, admin.user_id].sort().join('_');
+        setConvId(computedConvId);
+
+        // Get initial unread count
         const { count } = await supabase
           .from('client_messages')
           .select('id', { count: 'exact', head: true })
@@ -131,9 +76,72 @@ export default function ChatBubble() {
     };
   }, [user?.id]);
 
-  // Realtime subscription + polling when convId is available
+  // Load messages when chat opens
   useEffect(() => {
-    if (!convId || !user) return;
+    if (!isOpen || !convId || !user?.id) return;
+
+    setLoading(true);
+
+    const loadMessages = async () => {
+      try {
+        const { data } = await supabase
+          .from('client_messages')
+          .select('*')
+          .eq('conversation_id', convId)
+          .order('created_at', { ascending: true });
+
+        if (!activeRef.current) return;
+
+        if (data) {
+          setMessages(data);
+          if (data.length > 0) lastFetchTimeRef.current = data[data.length - 1].created_at;
+
+          const unreadIds = data.filter((m) => m.recipient_id === user.id && !m.is_read).map((m) => m.id);
+          if (unreadIds.length > 0) {
+            supabase.from('client_messages').update({ is_read: true, read_at: new Date().toISOString() }).in('id', unreadIds).then();
+            setUnreadCount(0);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading messages:', err);
+      } finally {
+        if (activeRef.current) setLoading(false);
+      }
+    };
+
+    loadMessages();
+  }, [isOpen, convId, user?.id]);
+
+  // Realtime subscription + polling
+  useEffect(() => {
+    if (!convId || !user?.id) return;
+
+    // Poll for new messages
+    const pollForNewMessages = async () => {
+      try {
+        let query = supabase.from('client_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+        if (lastFetchTimeRef.current) query = query.gt('created_at', lastFetchTimeRef.current);
+
+        const { data: newMsgs, error } = await query;
+        if (!activeRef.current || error || !newMsgs || newMsgs.length === 0) return;
+
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const trulyNew = newMsgs.filter((m) => !existingIds.has(m.id));
+          if (trulyNew.length === 0) return prev;
+          return [...prev, ...trulyNew];
+        });
+        lastFetchTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+
+        const unreadNew = newMsgs.filter((m) => m.recipient_id === user.id && !m.is_read);
+        if (unreadNew.length > 0) {
+          supabase.from('client_messages').update({ is_read: true, read_at: new Date().toISOString() }).in('id', unreadNew.map((m) => m.id)).then();
+          setUnreadCount(0);
+        }
+      } catch (err) {
+        console.error('Poll error:', err);
+      }
+    };
 
     const channel = supabase.channel(`messages:${convId}`);
     channel
@@ -163,33 +171,21 @@ export default function ChatBubble() {
       });
 
     channelRef.current = channel;
-    pollingRef.current = setInterval(() => pollForNewMessages(convId), POLL_INTERVAL);
+    pollingRef.current = setInterval(pollForNewMessages, POLL_INTERVAL);
+
+    // Re-fetch on focus
+    const onFocus = () => { if (activeRef.current && isOpen) { setLoading(true); pollForNewMessages().finally(() => setLoading(false)); } };
+    const onVisible = () => { if (document.visibilityState === 'visible' && activeRef.current && isOpen) { setLoading(true); pollForNewMessages().finally(() => setLoading(false)); } };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       channel.unsubscribe();
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-    };
-  }, [convId, user?.id]);
-
-  // Load messages when chat opens
-  useEffect(() => {
-    if (isOpen && convId) {
-      setLoading(true);
-      loadMessages(convId).finally(() => setLoading(false));
-    }
-  }, [isOpen, convId]);
-
-  // Re-fetch on focus
-  useEffect(() => {
-    const onFocus = () => { if (activeRef.current && isOpen && convId) loadMessages(convId); };
-    const onVisible = () => { if (document.visibilityState === 'visible' && activeRef.current && isOpen && convId) loadMessages(convId); };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [isOpen, convId]);
+  }, [convId, user?.id, isOpen]);
 
   // Scroll to bottom
   useEffect(() => {
