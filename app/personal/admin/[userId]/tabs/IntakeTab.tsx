@@ -44,6 +44,8 @@ const OTHER_TEXT_FIELDS = new Set([
   'q39_data_storage_other',
   'q48_tracking_tools_other',
   'q79_how_heard_other',
+  'wc1_pages_needed_other',
+  'wc_website_builder_other',
 ]);
 
 // Optional fields that should still show in admin view even when empty (they're meaningful)
@@ -57,6 +59,13 @@ const ALWAYS_SHOW_OPTIONAL = new Set([
   'q66_logo_upload', 'q67_brand_colours', 'q71_invoice_fields',
   'q76_existing_docs_upload', 'q77_writing_samples_upload',
   'q78_anything_else', 'q75_linkedin_keywords',
+  // Website copy optional fields that are meaningful context even when empty
+  'wc_headline_idea', 'wc_colour_preferences', 'wc_colour_palette_style',
+  'wc_competitor_urls', 'wc3_inspiration_urls', 'wc_disliked_urls',
+  'wc_logo_placement', 'wc_brand_guidelines_upload',
+  'wc_existing_copy_upload', 'wc_existing_images_upload', 'wc_existing_testimonials',
+  'wc_pages_other', 'wc_forms_needed', 'wc_legal_pages',
+  'wc_testimonials',
 ]);
 
 /**

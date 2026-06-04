@@ -155,3 +155,70 @@ export function getVisibleFieldIds(purchasedServiceIds: string[]): string[] {
 
   return fieldIds;
 }
+
+/**
+ * Get prefill suggestions for visible fields that declare a `prefillFrom` source.
+ *
+ * Returns a map of target field ID → suggested value, drawn from the source field's
+ * existing answer in `responses`. The UI layer uses this to offer a "use your previous
+ * answer" prompt that the user can accept or reject. This function never writes data.
+ *
+ * Only suggests for fields that are visible given the purchased services.
+ */
+export function getPrefillSuggestions(
+  purchasedServiceIds: string[],
+  responses: Record<string, any>,
+): Record<string, string> {
+  const visibleIds = new Set(getVisibleFieldIds(purchasedServiceIds));
+  const suggestions: Record<string, string> = {};
+
+  for (const section of allFormSections) {
+    for (const field of section.fields) {
+      if (!field.prefillFrom) continue;
+      if (!visibleIds.has(field.id)) continue;
+
+      const sourceValue = responses[field.prefillFrom];
+      if (sourceValue !== null && sourceValue !== undefined && sourceValue !== '') {
+        suggestions[field.id] = String(sourceValue);
+      }
+    }
+  }
+
+  return suggestions;
+}
+
+/**
+ * Get metadata about all fields that support prefill, for a given set of purchased services.
+ * Useful for the UI to know which fields to show prefill banners on.
+ */
+export function getPrefillableFields(
+  purchasedServiceIds: string[],
+): { fieldId: string; sourceFieldId: string; sourceLabel: string }[] {
+  const visibleIds = new Set(getVisibleFieldIds(purchasedServiceIds));
+  const result: { fieldId: string; sourceFieldId: string; sourceLabel: string }[] = [];
+
+  for (const section of allFormSections) {
+    for (const field of section.fields) {
+      if (!field.prefillFrom) continue;
+      if (!visibleIds.has(field.id)) continue;
+
+      // Find the source field's label
+      let sourceLabel = field.prefillFrom;
+      for (const s of allFormSections) {
+        const source = s.fields.find((f) => f.id === field.prefillFrom);
+        if (source) {
+          sourceLabel = source.label;
+          break;
+        }
+      }
+
+      result.push({
+        fieldId: field.id,
+        sourceFieldId: field.prefillFrom,
+        sourceLabel,
+      });
+    }
+  }
+
+  return result;
+}

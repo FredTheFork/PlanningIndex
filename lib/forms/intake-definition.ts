@@ -30,6 +30,13 @@ export interface FormField {
   subFields?: FormField[];
   default?: string;
   hasOtherOption?: boolean;
+  /**
+   * Declares that this field can be prefilled from another field's answer.
+   * The source and target remain SEPARATE fields with different IDs — the question
+   * framing differs. The UI layer reads this to offer a prefill suggestion that the
+   * user can accept or reject. This property does NOT cause automatic population.
+   */
+  prefillFrom?: string;
 }
 
 export interface FormSection {
@@ -338,16 +345,51 @@ export const allFormSections: FormSection[] = [
     sortOrder: 100,
   },
 
-  // ── SECTION 11 — WEBSITE COPY PACK ──
+  // ── SECTION 11 — WEBSITE COPY ──
   {
     id: 'website_copy',
-    title: 'Website Copy Pack',
-    description: 'Tell us about your website needs so we can write copy that reflects your brand and converts visitors.',
+    title: 'Website Copy',
+    description: 'Tell us about your website so we can write copy that reflects your brand, communicates your value, and converts visitors into clients.',
     usedIn: 'Website Copy Starter Pack',
     fields: [
-      { id: 'wc1_pages_needed', questionNumber: 'WC1', label: 'Which website pages do you need copy written for?', type: 'multi_select', required: true, options: ['Homepage', 'About page', 'Services page', 'Contact page', 'FAQ page', 'Other — please describe'] },
-      { id: 'wc2_primary_action', questionNumber: 'WC2', label: 'What is the single most important action you want a website visitor to take?', type: 'long_text', required: true, placeholder: 'e.g. Book a free discovery call / Fill out my enquiry form / Buy my online course.' },
+      // ── Website Structure and Pages ──
+      { id: 'wc1_pages_needed', questionNumber: 'WC1', label: 'Which website pages do you need copy written for?', type: 'multi_select', required: true, options: ['Homepage', 'About', 'Services', 'Contact', 'FAQ', 'Blog', 'Portfolio / Case Studies', 'Pricing', 'Testimonials', 'Other'], hasOtherOption: true, helpText: 'Select every page you want us to write. We\'ll tailor the copy for each one.' },
+      { id: 'wc_pages_other', questionNumber: 'WC4', label: 'Describe the custom page(s) you need.', type: 'long_text', required: false, placeholder: 'e.g. "A Process page explaining how I work step by step" or "A Resources page linking to free downloads."', conditionalOn: { field: 'wc1_pages_needed', value: 'Other' } },
+      { id: 'wc_service_page_count', questionNumber: 'WC5', label: 'How many individual service pages do you need?', type: 'single_choice', required: true, options: ['1', '2-3', '4-5', '6+', 'Depends — align with my service descriptions'], helpText: 'If you selected the Services page above, this tells us whether it\'s a single overview or separate pages per service.' },
+      { id: 'wc_nav_structure', questionNumber: 'WC6', label: 'What navigation structure do you prefer?', type: 'single_choice', required: true, options: ['Single page / scroll', 'Multi-page', 'One-page with sections'], helpText: 'This affects how we structure and link the copy together.' },
+
+      // ── Website Copy Tone and Messaging ──
+      { id: 'wc_headline_idea', questionNumber: 'WC7', label: 'Do you have a headline or tagline idea for your homepage?', type: 'short_text', required: false, placeholder: 'e.g. "Clear the chaos. Run your business." — Leave blank if you want us to create one.' },
+      { id: 'wc_hero_message', questionNumber: 'WC8', label: 'What is the key message for your homepage hero section?', type: 'long_text', required: true, placeholder: 'What should visitors understand within 5 seconds of landing on your site? e.g. "I help overwhelmed sole traders get their admin and compliance sorted so they can actually focus on growing their business."' },
+      { id: 'wc_differentiator', questionNumber: 'WC9', label: 'What makes you different — specifically for your website?', type: 'long_text', required: false, placeholder: 'What is the specific, genuine thing that sets you apart? If you\'ve already answered this in the documents section, we\'ll suggest that answer here — but you can tailor it for a website audience.', prefillFrom: 'q61_differentiator' },
+      { id: 'wc_problems_solved', questionNumber: 'WC10', label: 'What problems do you solve for your clients?', type: 'long_text', required: true, placeholder: 'What pain points or frustrations bring them to you? e.g. "They\'re drowning in paperwork, afraid of getting fined for non-compliance, and spending evenings on admin instead of with their family."', prefillFrom: 'q13_what_you_do' },
+      { id: 'wc_visitor_feeling', questionNumber: 'WC11', label: 'How do you want visitors to feel when they land on your website?', type: 'multi_select', required: true, maxSelections: 3, options: ['Confident', 'Inspired', 'Reassured', 'Curious', 'Excited', 'Informed', 'Supported'] },
+
+      // ── Visual and Brand Preferences (Website-Specific) ──
+      { id: 'wc_colour_preferences', questionNumber: 'WC12', label: 'What are your colour scheme preferences for the website?', type: 'long_text', required: false, placeholder: 'Describe colours, moods, or paste hex codes. e.g. "Deep navy and warm gold — professional but not stuffy" or "#1B3F7A, #F0C040, #FAFBFC."', prefillFrom: 'q67_brand_colours', helpText: 'This is more detailed than the brand colours question earlier — tell us how you want colours to work on screen.' },
+      { id: 'wc_colour_palette_style', questionNumber: 'WC13', label: 'What colour palette style appeals to you?', type: 'single_choice', required: false, options: ['Bold and vibrant', 'Clean and minimal', 'Warm and earthy', 'Dark and premium', 'Pastel / soft', 'I have specific brand colours'] },
+      { id: 'wc_font_style', questionNumber: 'WC14', label: 'What font style do you prefer?', type: 'single_choice', required: true, options: ['Modern sans-serif', 'Classic serif', 'Friendly rounded', 'Minimal / tech', 'No preference'] },
+      { id: 'wc_imagery_style', questionNumber: 'WC15', label: 'What imagery style suits your brand?', type: 'single_choice', required: true, options: ['Photography-led', 'Illustration-led', 'Minimal / icons', 'Mix of both', 'No preference'] },
+      { id: 'wc_logo_placement', questionNumber: 'WC16', label: 'Where should your logo sit?', type: 'single_choice', required: false, options: ['Top left', 'Top centre', 'No preference'] },
+      { id: 'wc_has_brand_guidelines', questionNumber: 'WC17', label: 'Do you have brand guidelines?', type: 'single_choice', required: true, options: ['Yes', 'No', 'Partially'] },
+      { id: 'wc_brand_guidelines_upload', questionNumber: 'WC18', label: 'Upload your brand guidelines.', type: 'file_upload', required: false, conditionalOn: { field: 'wc_has_brand_guidelines', value: ['Yes', 'Partially'] }, helpText: 'PDF or PNG preferred. This helps us match your existing visual identity.' },
+
+      // ── Competitor and Inspiration ──
+      { id: 'wc_competitor_urls', questionNumber: 'WC19', label: 'Are there competitor or fellow business websites you\'d like us to reference?', type: 'long_text', required: false, placeholder: 'Paste URLs of similar businesses. We\'ll study how they position themselves — not to copy, but to differentiate you.' },
       { id: 'wc3_inspiration_urls', questionNumber: 'WC3', label: 'Are there any websites — your own industry or otherwise — whose copy or overall feel you admire? Paste the URLs.', type: 'long_text', required: false, placeholder: 'We\'re not copying them. We\'re calibrating tone and style.' },
+      { id: 'wc_disliked_urls', questionNumber: 'WC20', label: 'Are there websites you actively do NOT like? Paste the URLs and tell us why.', type: 'long_text', required: false, placeholder: 'e.g. "example.com — too cluttered and aggressive" or "example.co.uk — feels cold and corporate." Helps us avoid what you hate.' },
+
+      // ── Functional Website Details ──
+      { id: 'wc2_primary_action', questionNumber: 'WC2', label: 'What is the single most important action you want a website visitor to take?', type: 'long_text', required: true, placeholder: 'e.g. Book a free discovery call / Fill out my enquiry form / Buy my online course / Sign up for my newsletter / Download my free guide.' },
+      { id: 'wc_forms_needed', questionNumber: 'WC21', label: 'Do you need any forms on your website?', type: 'multi_select', required: false, options: ['Contact form', 'Newsletter signup', 'Booking / scheduling', 'Quote request', 'File upload', 'No forms needed'] },
+      { id: 'wc_testimonials', questionNumber: 'WC22', label: 'What testimonials or reviews do you want to include on your website?', type: 'long_text', required: false, placeholder: 'Paste any testimonials you\'d like us to incorporate. Include the client name and context if possible.' },
+      { id: 'wc_legal_pages', questionNumber: 'WC23', label: 'Do you need any specific legal pages on your website?', type: 'multi_select', required: false, options: ['Privacy Policy', 'Terms and Conditions', 'Cookie Policy', 'Disclaimer', 'Accessibility Statement', 'None'] },
+      { id: 'wc_website_builder', questionNumber: 'WC24', label: 'What website builder are you using (or planning to use)?', type: 'single_choice', required: true, options: ['WordPress', 'Wix', 'Squarespace', 'Shopify', 'Custom / HTML', 'Not decided yet', 'Other'], hasOtherOption: true },
+
+      // ── Content You Already Have ──
+      { id: 'wc_existing_copy_upload', questionNumber: 'WC25', label: 'Upload any existing website copy you\'d like us to reference.', type: 'file_upload', required: false, helpText: 'If you have draft copy, an old website, or notes — upload them here so we can build on what you have.' },
+      { id: 'wc_existing_images_upload', questionNumber: 'WC26', label: 'Upload any existing images or photos you want to use on the website.', type: 'file_upload', required: false, helpText: 'Professional headshots, product photos, workspace shots. If you don\'t have any, we\'ll write copy that works with stock imagery.' },
+      { id: 'wc_existing_testimonials', questionNumber: 'WC27', label: 'Do you have existing testimonials or reviews that are already written?', type: 'long_text', required: false, placeholder: 'Paste them here if you haven\'t already uploaded them as a file. Separate from the question above — this is content you already have ready to go.' },
     ],
     serviceTags: ['website_copy_pack'],
     sortOrder: 110,

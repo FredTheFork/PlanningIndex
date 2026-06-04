@@ -113,6 +113,9 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       'About page',
       'Services page (aligned with your service sheets)',
       'Contact page',
+      'FAQ, Blog, Pricing, or Testimonials pages (as needed)',
+      'Website copy tailored to your brand voice and CTA',
+      'Legal page copy guidance (Privacy, Terms, Cookie, etc.)',
     ],
     requiresIntake: true,
     intakeSections: [
