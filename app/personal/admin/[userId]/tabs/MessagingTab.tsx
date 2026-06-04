@@ -54,43 +54,52 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const lastFetchTimeRef = useRef('');
   const componentActiveRef = useRef(true);
 
-  // Setup everything when user/userId are both available
   useEffect(() => {
-    // Must have both user and userId to proceed
-    if (!user?.id || !userId) {
+    componentActiveRef.current = true;
+    return () => {
+      componentActiveRef.current = false;
+    };
+  }, []);
+
+  // Compute and set conversation ID
+  useEffect(() => {
+    if (user && userId) {
+      const convId = [user.id, userId].sort().join('_');
+      setConversationId(convId);
+    }
+  }, [user, userId]);
+
+  // Load messages and setup subscriptions
+  useEffect(() => {
+    if (!conversationId || !user) {
       setLoading(false);
-      setConversationId('');
       return;
     }
 
-    // Compute conversation ID directly (don't rely on state)
-    const convId = [user.id, userId].sort().join('_');
-    setConversationId(convId);
-    componentActiveRef.current = true;
     setLoading(true);
+    lastFetchTimeRef.current = '';
 
-    // Load messages
-    const loadMessages = async () => {
+    // Fetch initial messages
+    const loadInitialMessages = async () => {
       try {
-        const { data: messagesData, error } = await supabase
+        const { data: msgs, error } = await supabase
           .from('client_messages')
           .select('*')
-          .eq('conversation_id', convId)
+          .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true });
 
         if (!componentActiveRef.current) return;
-
         if (error) {
-          console.error('Error fetching conversation:', error);
+          console.error('[MessagingTab] Query error:', error);
           setMessages([]);
         } else {
-          setMessages(messagesData || []);
-          if (messagesData && messagesData.length > 0) {
-            lastFetchTimeRef.current = messagesData[messagesData.length - 1].created_at;
+          setMessages(msgs || []);
+          if (msgs && msgs.length > 0) {
+            lastFetchTimeRef.current = msgs[msgs.length - 1].created_at;
           }
 
-          // Mark unread messages as read
-          const unreadIds = (messagesData || [])
+          // Mark unread as read
+          const unreadIds = (msgs || [])
             .filter((m) => m.recipient_id === user.id && !m.is_read)
             .map((m) => m.id);
           if (unreadIds.length > 0) {
@@ -102,52 +111,15 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           }
         }
       } catch (err) {
-        console.error('Error fetching conversation:', err);
-        setMessages([]);
+        console.error('[MessagingTab] Load error:', err);
       } finally {
         if (componentActiveRef.current) setLoading(false);
       }
     };
 
-    // Poll for new messages
-    const pollForNewMessages = async () => {
-      try {
-        let query = supabase
-          .from('client_messages')
-          .select('*')
-          .eq('conversation_id', convId)
-          .order('created_at', { ascending: true });
-        if (lastFetchTimeRef.current) {
-          query = query.gt('created_at', lastFetchTimeRef.current);
-        }
-        const { data: newMsgs, error } = await query;
-        if (!componentActiveRef.current || error || !newMsgs || newMsgs.length === 0) return;
+    loadInitialMessages();
 
-        setMessages((prev) => {
-          const existingIds = new Set(prev.map((m) => m.id));
-          const trulyNew = newMsgs.filter((m) => !existingIds.has(m.id));
-          if (trulyNew.length === 0) return prev;
-          return [...prev, ...trulyNew];
-        });
-        lastFetchTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
-
-        const unreadNew = newMsgs.filter((m) => m.recipient_id === user.id && !m.is_read);
-        if (unreadNew.length > 0) {
-          supabase
-            .from('client_messages')
-            .update({ is_read: true, read_at: new Date().toISOString() })
-            .in('id', unreadNew.map((m) => m.id))
-            .then();
-        }
-      } catch (err) {
-        console.error('Poll error:', err);
-      }
-    };
-
-    // Initial load
-    loadMessages();
-
-    // Fetch client preferences
+    // Fetch preferences
     supabase
       .from('client_communication_preferences')
       .select('*')
@@ -157,60 +129,138 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         if (componentActiveRef.current) setClientPreferences(prefs);
       });
 
-    // Realtime subscription
-    const channel = supabase.channel(`messages:${convId}`);
-    channel
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${convId}` },
-        (payload: any) => {
-          if (!componentActiveRef.current) return;
-          const newMsg = payload.new as Message;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            const tempIdx = prev.findIndex(
-              (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
-            );
-            if (tempIdx !== -1) return prev.map((m, i) => (i === tempIdx ? newMsg : m));
-            return [...prev, newMsg];
-          });
-          lastFetchTimeRef.current = newMsg.created_at;
-          if (newMsg.recipient_id === user.id && !newMsg.is_read) {
-            supabase.from('client_messages').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', newMsg.id).then();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${convId}` },
-        (payload: any) => {
-          if (!componentActiveRef.current) return;
-          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
-        }
-      )
-      .subscribe((status) => {
-        console.log('[MessagingTab] Subscription status:', status);
-      });
+    // Setup Realtime
+    const channel = supabase.channel(`messages:${conversationId}`);
 
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'client_messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload: any) => {
+        if (!componentActiveRef.current) return;
+        const newMsg = payload.new as Message;
+
+        setMessages((prev) => {
+          const exists = prev.some((m) => m.id === newMsg.id);
+          if (exists) return prev;
+
+          const tempIdx = prev.findIndex(
+            (m) =>
+              m.id.startsWith('temp_') &&
+              m.sender_id === newMsg.sender_id &&
+              m.message_content === newMsg.message_content
+          );
+          if (tempIdx !== -1) {
+            return prev.map((m, i) => (i === tempIdx ? newMsg : m));
+          }
+
+          return [...prev, newMsg];
+        });
+
+        lastFetchTimeRef.current = newMsg.created_at;
+
+        if (newMsg.recipient_id === user.id && !newMsg.is_read) {
+          supabase
+            .from('client_messages')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .eq('id', newMsg.id)
+            .then();
+        }
+      }
+    );
+
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'client_messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload: any) => {
+        if (!componentActiveRef.current) return;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === payload.new.id ? payload.new : m))
+        );
+      }
+    );
+
+    channel.subscribe();
     channelRef.current = channel;
 
-    // Start polling
-    pollingRef.current = setInterval(pollForNewMessages, POLL_INTERVAL);
+    // Poll for new messages
+    const pollMessages = async () => {
+      if (!componentActiveRef.current) return;
+      try {
+        let query = supabase
+          .from('client_messages')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
 
-    // Refetch on focus/visibility
-    const onFocus = () => { if (componentActiveRef.current) loadMessages(); };
-    const onVisibility = () => { if (document.visibilityState === 'visible' && componentActiveRef.current) loadMessages(); };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
+        if (lastFetchTimeRef.current) {
+          query = query.gt('created_at', lastFetchTimeRef.current);
+        }
+
+        const { data: newMsgs, error } = await query;
+
+        if (!componentActiveRef.current || error) return;
+        if (!newMsgs || newMsgs.length === 0) return;
+
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const trulyNew = newMsgs.filter((m) => !existingIds.has(m.id));
+          if (trulyNew.length === 0) return prev;
+          return [...prev, ...trulyNew];
+        });
+
+        lastFetchTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+
+        const unreadNew = newMsgs.filter(
+          (m) => m.recipient_id === user.id && !m.is_read
+        );
+        if (unreadNew.length > 0) {
+          supabase
+            .from('client_messages')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .in('id', unreadNew.map((m) => m.id))
+            .then();
+        }
+      } catch (err) {
+        console.error('[MessagingTab] Poll error:', err);
+      }
+    };
+
+    pollingRef.current = setInterval(pollMessages, POLL_INTERVAL);
+
+    // Refetch handlers
+    const handleFocus = () => {
+      if (componentActiveRef.current) loadInitialMessages();
+    };
+
+    const handleVisibility = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        componentActiveRef.current
+      ) {
+        loadInitialMessages();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      componentActiveRef.current = false;
       channel.unsubscribe();
-      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [user?.id, userId]);
+  }, [conversationId, user?.id]);
 
   // Reset componentActive on remount
   useEffect(() => {
