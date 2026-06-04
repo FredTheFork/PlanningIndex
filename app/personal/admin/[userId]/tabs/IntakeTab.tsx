@@ -46,6 +46,7 @@ const OTHER_TEXT_FIELDS = new Set([
   'q79_how_heard_other',
   'wc1_pages_needed_other',
   'wc_website_builder_other',
+  'sm1_platforms_other',
 ]);
 
 // Optional fields that should still show in admin view even when empty (they're meaningful)
@@ -66,6 +67,9 @@ const ALWAYS_SHOW_OPTIONAL = new Set([
   'wc_existing_copy_upload', 'wc_existing_images_upload', 'wc_existing_testimonials',
   'wc_pages_other', 'wc_forms_needed', 'wc_legal_pages',
   'wc_testimonials',
+  // Social media optional fields that are meaningful context even when empty
+  'sm3_avoid_topics', 'sm8_competitor_accounts', 'sm10_call_to_action',
+  'sm11_existing_accounts', 'sm13_upcoming_launches',
 ]);
 
 /**

@@ -159,6 +159,26 @@ LinkedIn URL: ${formatValue(r.q73_linkedin_url)}
 LinkedIn Target: ${formatValue(r.q74_linkedin_target)}
 LinkedIn Keywords: ${formatValue(r.q75_linkedin_keywords)}`);
 
+  // Section 9b: Social Media (only if social media fields are present)
+  const hasSocialMedia = r.sm1_platforms || r.sm2_content_types || r.sm4_posting_frequency;
+  if (hasSocialMedia) {
+    sections.push(`=== SOCIAL MEDIA CONTENT STRATEGY ===
+Platforms: ${formatValue(r.sm1_platforms)}
+${r.sm1_platforms_other ? `Platforms (Other): ${formatValue(r.sm1_platforms_other)}` : ''}
+Content Types: ${formatValue(r.sm2_content_types)}
+Topics to Avoid: ${formatValue(r.sm3_avoid_topics)}
+Posting Frequency Target: ${formatValue(r.sm4_posting_frequency)}
+Content Pillars: ${formatValue(r.sm5_content_pillars)}
+Personal Brand Boundaries: ${formatValue(r.sm6_personal_boundaries)}
+Hashtag Strategy: ${formatValue(r.sm7_hashtag_strategy)}
+Competitor Accounts Admired: ${formatValue(r.sm8_competitor_accounts)}
+Content Tone (Social vs Website): ${formatValue(r.sm9_content_tone)}
+Call-to-Action for Social Posts: ${formatValue(r.sm10_call_to_action)}
+Existing Accounts & Followers: ${formatValue(r.sm11_existing_accounts)}
+Content Calendar Preferences: ${formatValue(r.sm12_content_calendar)}
+Upcoming Launches or Events: ${formatValue(r.sm13_upcoming_launches)}`);
+  }
+
   // Section 10: Final
   sections.push(`=== FINAL DETAILS ===
 Anything Else: ${formatValue(r.q78_anything_else)}
@@ -179,7 +199,7 @@ ${noteKeys.map(k => `Question ${k}: ${notes[k]}`).join('\n\n')}`);
   return sections.join('\n\n');
 }
 
-const BRIEF_SYSTEM_PROMPT = `You are a professional business analyst creating a Master Client Brief for a UK sole trader document drafting service called Foundationary. This brief will be used by the document drafting team to create 10 bespoke business documents.
+const BRIEF_SYSTEM_PROMPT = `You are a professional business analyst creating a Master Client Brief for a UK sole trader document and content drafting service called Foundationary. This brief will be used by the drafting team to create bespoke business documents and/or social media content.
 
 Your task is to read the client's intake questionnaire responses and produce a clear, well-structured, comprehensive Master Brief that:
 
@@ -191,8 +211,9 @@ Your task is to read the client's intake questionnaire responses and produce a c
 6. Captures the brand voice, tone, and visual preferences
 7. Notes any past client issues and protective clauses needed
 8. Summarises LinkedIn and online presence goals
-9. Flags any risks, gaps, or inconsistencies in the client's answers
-10. Provides invoice and document formatting preferences
+9. If social media data is present, synthesises the social media content strategy (platforms, pillars, tone, boundaries, hashtag approach, CTA, calendar, competitor references)
+10. Flags any risks, gaps, or inconsistencies in the client's answers
+11. Provides invoice and document formatting preferences
 
 FORMAT REQUIREMENTS:
 - Use clear section headers with === delimiters

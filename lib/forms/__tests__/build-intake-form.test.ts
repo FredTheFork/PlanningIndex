@@ -575,3 +575,224 @@ describe('getServiceListDescription', () => {
     expect(getServiceListDescription(['unknown_id'], serviceNames)).toBe('your deliverables');
   });
 });
+
+// ── Social media expanded section ──
+
+describe('social media expanded section', () => {
+  it('contains the expanded set of social media fields', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const fieldIds = smSection.fields.map((f) => f.id);
+
+    // Original SM1-SM3 preserved
+    expect(fieldIds).toContain('sm1_platforms');
+    expect(fieldIds).toContain('sm2_content_types');
+    expect(fieldIds).toContain('sm3_avoid_topics');
+
+    // New SM4-SM13 fields
+    expect(fieldIds).toContain('sm4_posting_frequency');
+    expect(fieldIds).toContain('sm5_content_pillars');
+    expect(fieldIds).toContain('sm6_personal_boundaries');
+    expect(fieldIds).toContain('sm7_hashtag_strategy');
+    expect(fieldIds).toContain('sm8_competitor_accounts');
+    expect(fieldIds).toContain('sm9_content_tone');
+    expect(fieldIds).toContain('sm10_call_to_action');
+    expect(fieldIds).toContain('sm11_existing_accounts');
+    expect(fieldIds).toContain('sm12_content_calendar');
+    expect(fieldIds).toContain('sm13_upcoming_launches');
+  });
+
+  it('social media section has at least 12 fields', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    expect(smSection.fields.length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('sm4_posting_frequency has correct options', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const freqField = smSection.fields.find((f) => f.id === 'sm4_posting_frequency')!;
+    expect(freqField.type).toBe('single_choice');
+    expect(freqField.required).toBe(true);
+    expect(freqField.options).toEqual(['3x/week', '5x/week', 'Daily', '2x/day', 'Not sure']);
+  });
+
+  it('sm5_content_pillars is required long_text', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm5_content_pillars')!;
+    expect(field.type).toBe('long_text');
+    expect(field.required).toBe(true);
+  });
+
+  it('sm6_personal_boundaries is required long_text', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm6_personal_boundaries')!;
+    expect(field.type).toBe('long_text');
+    expect(field.required).toBe(true);
+  });
+
+  it('sm7_hashtag_strategy has correct options', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm7_hashtag_strategy')!;
+    expect(field.type).toBe('single_choice');
+    expect(field.required).toBe(true);
+    expect(field.options).toEqual(['Broad reach — popular hashtags for maximum visibility', 'Niche targeted — specific hashtags for your ideal audience', 'Mixed — a combination of both', 'No preference — let us decide']);
+  });
+
+  it('sm8_competitor_accounts is optional long_text', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm8_competitor_accounts')!;
+    expect(field.type).toBe('long_text');
+    expect(field.required).toBe(false);
+  });
+
+  it('sm9_content_tone has correct options', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm9_content_tone')!;
+    expect(field.type).toBe('single_choice');
+    expect(field.required).toBe(true);
+    expect(field.options).toEqual(['Same as overall brand tone', 'More casual/personal', 'More professional', 'More promotional']);
+  });
+
+  it('sm9_content_tone has prefillFrom referencing q62_tone_of_voice', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm9_content_tone')!;
+    expect(field.prefillFrom).toBe('q62_tone_of_voice');
+  });
+
+  it('sm10_call_to_action is optional long_text', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm10_call_to_action')!;
+    expect(field.type).toBe('long_text');
+    expect(field.required).toBe(false);
+  });
+
+  it('sm11_existing_accounts is optional long_text', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm11_existing_accounts')!;
+    expect(field.type).toBe('long_text');
+    expect(field.required).toBe(false);
+  });
+
+  it('sm12_content_calendar has correct options', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm12_content_calendar')!;
+    expect(field.type).toBe('single_choice');
+    expect(field.required).toBe(true);
+    expect(field.options).toEqual(['Weekly themed — each week has a focus topic', 'Rotating pillars — cycle through your content pillars evenly', 'Mix of types — vary educational, personal, and promotional posts', 'No preference — let us decide']);
+  });
+
+  it('sm13_upcoming_launches is optional long_text', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const field = smSection.fields.find((f) => f.id === 'sm13_upcoming_launches')!;
+    expect(field.type).toBe('long_text');
+    expect(field.required).toBe(false);
+  });
+
+  it('social media fields are not visible for business_foundations_pack only', () => {
+    const ids = getVisibleFieldIds(['business_foundations_pack']);
+    expect(ids).not.toContain('sm4_posting_frequency');
+    expect(ids).not.toContain('sm5_content_pillars');
+    expect(ids).not.toContain('sm9_content_tone');
+    expect(ids).not.toContain('sm12_content_calendar');
+  });
+
+  it('social media fields are visible for social_media_pack', () => {
+    const ids = getVisibleFieldIds(['social_media_pack']);
+    expect(ids).toContain('sm1_platforms');
+    expect(ids).toContain('sm4_posting_frequency');
+    expect(ids).toContain('sm5_content_pillars');
+    expect(ids).toContain('sm6_personal_boundaries');
+    expect(ids).toContain('sm7_hashtag_strategy');
+    expect(ids).toContain('sm9_content_tone');
+    expect(ids).toContain('sm12_content_calendar');
+  });
+
+  it('social media fields appear when all three services are combined', () => {
+    const sections = buildIntakeForm([
+      'business_foundations_pack',
+      'website_copy_pack',
+      'social_media_pack',
+    ]);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    expect(smSection).toBeDefined();
+    const fieldIds = smSection.fields.map((f) => f.id);
+    expect(fieldIds).toContain('sm4_posting_frequency');
+    expect(fieldIds).toContain('sm9_content_tone');
+  });
+
+  it('social_media_pack field count is significantly larger than the original 3 fields', () => {
+    const smCount = getTotalFieldCount(['social_media_pack']);
+    // The social media section alone now has 12 fields, plus shared section fields
+    expect(smCount).toBeGreaterThan(15);
+  });
+
+  it('standalone social_media_pack returns correct sections', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const ids = sections.map((s) => s.id);
+    expect(ids).toEqual([
+      'intro',
+      'business_identity',
+      'services',
+      'brand',
+      'final',
+      'social_media',
+    ]);
+  });
+
+  it('sm1_platforms has hasOtherOption enabled', () => {
+    const sections = buildIntakeForm(['social_media_pack']);
+    const smSection = sections.find((s) => s.id === 'social_media')!;
+    const platformsField = smSection.fields.find((f) => f.id === 'sm1_platforms')!;
+    expect(platformsField.hasOtherOption).toBe(true);
+  });
+
+  it('prefillFrom: suggests sm9_content_tone when q62_tone_of_voice is answered', () => {
+    const suggestions = getPrefillSuggestions(['social_media_pack'], {
+      q62_tone_of_voice: 'Warm and friendly',
+    });
+    expect(suggestions['sm9_content_tone']).toBe('Warm and friendly');
+  });
+
+  it('prefillFrom: does not suggest sm9_content_tone for business_foundations_pack only', () => {
+    const suggestions = getPrefillSuggestions(['business_foundations_pack'], {
+      q62_tone_of_voice: 'Warm and friendly',
+    });
+    expect(suggestions['sm9_content_tone']).toBeUndefined();
+  });
+
+  it('prefillFrom: sm9_content_tone appears in getPrefillableFields for social_media_pack', () => {
+    const fields = getPrefillableFields(['social_media_pack']);
+    const toneField = fields.find((f) => f.fieldId === 'sm9_content_tone');
+    expect(toneField).toBeDefined();
+    expect(toneField!.sourceFieldId).toBe('q62_tone_of_voice');
+    expect(toneField!.sourceLabel).toBeTruthy();
+  });
+
+  it('prefillFrom: sm9_content_tone does not appear in getPrefillableFields for business_foundations_pack only', () => {
+    const fields = getPrefillableFields(['business_foundations_pack']);
+    const toneField = fields.find((f) => f.fieldId === 'sm9_content_tone');
+    expect(toneField).toBeUndefined();
+  });
+
+  it('isFieldVisible returns true for social media fields when social_media_pack is purchased', () => {
+    expect(isFieldVisible('sm4_posting_frequency', 'social_media', ['social_media_pack'])).toBe(true);
+    expect(isFieldVisible('sm9_content_tone', 'social_media', ['social_media_pack'])).toBe(true);
+    expect(isFieldVisible('sm12_content_calendar', 'social_media', ['social_media_pack'])).toBe(true);
+  });
+
+  it('isFieldVisible returns false for social media fields when only business_foundations_pack is purchased', () => {
+    expect(isFieldVisible('sm4_posting_frequency', 'social_media', ['business_foundations_pack'])).toBe(false);
+    expect(isFieldVisible('sm9_content_tone', 'social_media', ['business_foundations_pack'])).toBe(false);
+  });
+});
