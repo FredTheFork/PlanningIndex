@@ -47,7 +47,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const [loading, setLoading] = useState(true);
   const [conversationId, setConversationId] = useState('');
   const [clientPreferences, setClientPreferences] = useState<any>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -267,10 +267,12 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
     componentActiveRef.current = true;
   }, []);
 
-  // Auto-scroll on messages change
+  // Auto-scroll chat container only on messages change
   useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
     const behavior = isInitialLoadRef.current ? 'instant' : 'smooth';
-    messagesEndRef.current?.scrollIntoView({ behavior });
+    container.scrollTo({ top: container.scrollHeight, behavior });
     isInitialLoadRef.current = false;
   }, [messages]);
 
@@ -363,7 +365,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
     if (!groupedMessages[dateKey]) groupedMessages[dateKey] = [];
     groupedMessages[dateKey].push(msg);
   });
-  const sortedDateKeys = Object.keys(groupedMessages).sort();
+  const sortedDateKeys = Object.keys(groupedMessages).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
@@ -447,7 +449,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
       {/* Right Panel - Messaging */}
       <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gradient-to-b from-gray-50 to-white">
+        <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 space-y-3 bg-gradient-to-b from-gray-50 to-white">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -502,7 +504,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
               ))}
             </>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         <div className="border-t border-gray-200 bg-white p-3 space-y-2">
