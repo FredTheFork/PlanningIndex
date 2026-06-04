@@ -2,30 +2,47 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Clock, FileText, ArrowRight } from 'lucide-react';
-import { stripeProducts, stripeMode } from '@/lib/stripe/config';
+import { ShieldCheck, Clock, FileText, ArrowRight, Check } from 'lucide-react';
+import { stripeMode } from '@/lib/stripe/config';
+import {
+  serviceCatalog,
+  getServiceById,
+  getCoreService,
+  getOptionalServices,
+  calculateTotal,
+  type ServiceCatalogEntry,
+} from '@/lib/services/service-catalog';
 import GuaranteeBadge from '@/components/ui/GuaranteeBadge';
-import AddOnSelector, { availableAddOns } from '@/components/ui/AddOnSelector';
+import ServiceSelector from '@/components/ui/AddOnSelector';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
-  const product = stripeProducts[0];
+  const coreService = getCoreService();
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([coreService.id]);
 
-  const addOnTotal = selectedAddOns.reduce((sum, id) => {
-    const addOn = availableAddOns.find(a => a.id === id);
-    return sum + (addOn?.price || 0);
-  }, 0);
-  const grandTotal = product.price + addOnTotal;
+  const { subtotal, discount, total } = calculateTotal(selectedServiceIds);
+  const hasSubscription = selectedServiceIds.some(
+    (id) => getServiceById(id)?.mode === 'subscription'
+  );
 
-  const toggleAddOn = (addOnId: string) => {
-    setSelectedAddOns(prev =>
-      prev.includes(addOnId) ? prev.filter(id => id !== addOnId) : [...prev, addOnId]
-    );
+  const toggleService = (serviceId: string) => {
+    setSelectedServiceIds((prev) => {
+      if (prev.includes(serviceId)) {
+        // Don't allow deselecting if it's the only service
+        if (prev.length === 1) return prev;
+        return prev.filter((id) => id !== serviceId);
+      }
+      return [...prev, serviceId];
+    });
   };
 
   const handleCheckout = async () => {
+    if (selectedServiceIds.length === 0) {
+      setError('Please select at least one service.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -42,9 +59,8 @@ export default function CheckoutPage() {
           'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
-          price_id: product.priceId,
+          service_ids: selectedServiceIds,
           mode: stripeMode,
-          add_ons: selectedAddOns,
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/checkout`,
         }),
@@ -74,18 +90,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const includedItems = [
-    'Bespoke Client Contract',
-    'Terms & Conditions',
-    'GDPR Privacy Policy',
-    'Professional Bio',
-    'Elevator Pitch (3 versions)',
-    'LinkedIn Profile Script',
-    'Professional Invoice Template',
-    'New Client Welcome Emails (x3)',
-    'Late Payment Letters (x3)',
-    'Service Description Sheets',
-  ];
+  const selectedCore = selectedServiceIds.find((id) => getServiceById(id)?.isCore);
 
   return (
     <div className="min-h-screen bg-off-white pt-24 pb-16">
@@ -96,7 +101,7 @@ export default function CheckoutPage() {
             Complete Your Purchase
           </h1>
           <p className="font-inter text-secondary-text text-lg">
-            Your business foundations, delivered within 24 hours of completing your intake form.
+            Choose the services you need. Each one works on its own — or combine them for a discount.
           </p>
         </div>
 
@@ -104,63 +109,107 @@ export default function CheckoutPage() {
           {/* Order summary */}
           <div className="md:col-span-3">
             <div className="bg-white rounded-lg border border-border p-8">
-              <h2 className="font-inter font-bold text-navy text-xl mb-1">
-                {product.name}
-              </h2>
-              <p className="font-inter text-secondary-text text-sm mb-6">
-                Complete business foundations pack for UK sole traders
-              </p>
+              {/* Core Pack Card */}
+              <div
+                onClick={() => toggleService(coreService.id)}
+                className={`border-2 rounded-lg p-5 cursor-pointer transition-all duration-200 mb-6 ${
+                  selectedCore
+                    ? 'border-medium-blue bg-blue-50'
+                    : 'border-border bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div
+                      className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 ${
+                        selectedCore ? 'bg-medium-blue' : 'border-2 border-gray-300 bg-white'
+                      }`}
+                    >
+                      {selectedCore && <Check size={14} className="text-white" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h2 className="font-inter font-bold text-dark-text text-lg">
+                          {coreService.name}
+                        </h2>
+                        <span className="font-inter font-bold text-navy">
+                          {coreService.priceLabel}
+                        </span>
+                      </div>
+                      <p className="font-inter text-secondary-text mt-1.5" style={{ fontSize: '0.85rem' }}>
+                        {coreService.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="border-t border-border pt-6 mb-6">
-                <h3 className="font-inter font-semibold text-navy text-sm mb-3">
-                  What's included:
-                </h3>
-                <ul className="space-y-2">
-                  {includedItems.map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <FileText size={16} className="text-medium-blue mt-0.5 shrink-0" />
-                      <span className="font-inter text-sm text-dark-text">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {selectedCore && (
+                  <div className="mt-3 pt-3 border-t border-border ml-8">
+                    <h3 className="font-inter font-semibold text-navy text-xs mb-2 uppercase tracking-wider">
+                      What's included
+                    </h3>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                      {coreService.includes.map((item) => (
+                        <div key={item} className="flex items-start gap-2">
+                          <FileText size={14} className="text-medium-blue mt-0.5 shrink-0" />
+                          <span className="font-inter text-secondary-text" style={{ fontSize: '0.8rem' }}>
+                            {item}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Add-ons Section */}
+              {/* Additional Services */}
               <div className="border-t border-border pt-6 mb-6">
-                <AddOnSelector
-                  addOns={availableAddOns}
-                  selectedAddOns={selectedAddOns}
-                  onToggle={toggleAddOn}
+                <ServiceSelector
+                  selectedServiceIds={selectedServiceIds}
+                  onToggle={toggleService}
                 />
               </div>
 
+              {/* Price Breakdown */}
               <div className="border-t border-border pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
-                    Core Pack
-                  </span>
-                  <span className="font-inter font-semibold text-navy">
-                    {product.currencySymbol}{product.price.toFixed(2)}
-                  </span>
-                </div>
-                {selectedAddOns.length > 0 && (
+                {selectedServiceIds.map((serviceId) => {
+                  const service = getServiceById(serviceId);
+                  if (!service) return null;
+                  return (
+                    <div key={serviceId} className="flex items-center justify-between mb-2">
+                      <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
+                        {service.name}
+                      </span>
+                      <span className="font-inter font-semibold text-navy">
+                        {service.currencySymbol}{service.price.toFixed(2)}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {discount > 0 && (
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
-                      Add-ons ({selectedAddOns.length})
+                    <span className="font-inter font-medium text-green-700" style={{ fontSize: '0.9rem' }}>
+                      Bundle discount
                     </span>
-                    <span className="font-inter font-semibold text-medium-blue">
-                      +{product.currencySymbol}{addOnTotal.toFixed(2)}
+                    <span className="font-inter font-semibold text-green-700">
+                      -£{discount.toFixed(2)}
                     </span>
                   </div>
                 )}
+
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
                   <span className="font-inter font-semibold text-navy">Total</span>
                   <span className="font-inter font-bold text-navy text-2xl">
-                    {product.currencySymbol}{grandTotal.toFixed(2)}
+                    £{total.toFixed(2)}
                   </span>
                 </div>
               </div>
-              <p className="font-inter text-secondary-text text-xs mt-1">One-time payment. No recurring charges.</p>
+              <p className="font-inter text-secondary-text text-xs mt-1">
+                {hasSubscription
+                  ? 'One-time charge for services + recurring subscription for Quarterly Refresh.'
+                  : 'One-time payment. No recurring charges.'}
+              </p>
             </div>
           </div>
 
@@ -191,7 +240,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={handleCheckout}
-                disabled={loading}
+                disabled={loading || selectedServiceIds.length === 0}
                 className="w-full font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ padding: '14px 24px', fontSize: '1rem' }}
               >
@@ -199,7 +248,7 @@ export default function CheckoutPage() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                 ) : (
                   <>
-                    Pay {product.currencySymbol}{grandTotal.toFixed(2)}
+                    Pay £{total.toFixed(2)}
                     <ArrowRight size={18} />
                   </>
                 )}

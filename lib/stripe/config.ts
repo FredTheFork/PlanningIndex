@@ -1,5 +1,22 @@
+// Stripe configuration — derives product data from the service catalog.
+// The single source of truth for services is lib/services/service-catalog.ts.
+
+import {
+  serviceCatalog,
+  getServiceById,
+  stripeMode,
+} from '@/lib/services/service-catalog';
+import type { ServiceCatalogEntry } from '@/lib/services/service-catalog';
+
+export { stripeMode };
+
+// ── Backward-compatible StripeProduct interface ──
+// Existing code that imports StripeProduct still works.
+
 export interface StripeProduct {
+  id: string;
   priceId: string;
+  productId: string;
   name: string;
   description: string;
   mode: 'payment' | 'subscription';
@@ -8,33 +25,30 @@ export interface StripeProduct {
   currencySymbol: string;
 }
 
-// Set NEXT_PUBLIC_STRIPE_MODE to 'test' or 'live' to switch between Stripe environments
-// Defaults to 'test' if not set
-const stripeMode = (process.env.NEXT_PUBLIC_STRIPE_MODE ?? 'test') as 'test' | 'live';
+// ── Build stripeProducts array from service catalog ──
 
-// Price IDs differ between test and live Stripe environments
-// You need to create the same product in both environments
-const priceIds: Record<string, { test: string; live: string }> = {
-  business_foundations_pack: {
-    test: 'price_1TZc9UGfxcDbzGRtniOLIJLE',
-    live: 'price_1TX34AGfxcDbzGRtxVtQN95g', // Update this with your live price ID
-  },
-};
+export const stripeProducts: StripeProduct[] = serviceCatalog.map((service) => ({
+  id: service.id,
+  priceId: service.stripePriceIds[stripeMode],
+  productId: service.stripeProductIds[stripeMode],
+  name: service.name,
+  description: service.description,
+  mode: service.mode,
+  price: service.price,
+  currency: service.currency,
+  currencySymbol: service.currencySymbol,
+}));
 
-export const stripeProducts: StripeProduct[] = [
-  {
-    priceId: priceIds.business_foundations_pack[stripeMode],
-    name: 'Business Foundations Pack',
-    description: 'Complete business foundations pack for UK sole traders — 10 bespoke documents delivered in 24 hours',
-    mode: 'payment',
-    price: 79.00,
-    currency: 'gbp',
-    currencySymbol: '£',
-  },
-];
+// ── Helpers ──
 
 export function getProductByPriceId(priceId: string): StripeProduct | undefined {
-  return stripeProducts.find(product => product.priceId === priceId);
+  return stripeProducts.find((product) => product.priceId === priceId);
 }
 
-export { stripeMode };
+export function getProductById(id: string): StripeProduct | undefined {
+  return stripeProducts.find((product) => product.id === id);
+}
+
+export function getCoreProduct(): StripeProduct {
+  return stripeProducts.find((p) => p.id === 'business_foundations_pack')!;
+}
