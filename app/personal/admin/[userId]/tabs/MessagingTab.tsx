@@ -97,9 +97,19 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           async (payload: any) => {
             if (isMounted) {
               if (payload.eventType === 'INSERT') {
-                setMessages((prev) =>
-                  prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new]
-                );
+                const newMsg = payload.new as Message;
+                setMessages((prev) => {
+                  if (prev.some((m) => m.id === newMsg.id)) return prev;
+
+                  const tempIdx = prev.findIndex(
+                    (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
+                  );
+                  if (tempIdx !== -1) {
+                    return prev.map((m, i) => (i === tempIdx ? newMsg : m));
+                  }
+
+                  return [...prev, newMsg];
+                });
               } else if (payload.eventType === 'UPDATE') {
                 setMessages((prev) =>
                   prev.map((m) => (m.id === payload.new.id ? payload.new : m))
@@ -195,10 +205,12 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
       if (insertedData && insertedData.length > 0) {
         const newMessage = insertedData[0];
-        // Replace optimistic message with real one
-        setMessages((prev) =>
-          prev.map((m) => (m.id === optimisticMessage.id ? newMessage : m))
-        );
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMessage.id)) {
+            return prev.filter((m) => m.id !== optimisticMessage.id);
+          }
+          return prev.map((m) => (m.id === optimisticMessage.id ? newMessage : m));
+        });
 
         await triggerMessageNotification({
           id: newMessage.id,

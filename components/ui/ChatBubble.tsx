@@ -10,6 +10,7 @@ interface Message {
   sender_id: string;
   recipient_id: string;
   message_content: string;
+  message_type: string;
   is_read: boolean;
   created_at: string;
 }
@@ -36,6 +37,7 @@ export default function ChatBubble() {
     if (!user) return;
 
     let isMounted = true;
+    let subscription: ReturnType<typeof supabase.channel> | null = null;
 
     const setup = async () => {
       try {
@@ -59,7 +61,7 @@ export default function ChatBubble() {
 
         if (isMounted) setUnreadCount(unread?.length || 0);
 
-        const subscription = supabase.channel(`messages:${convId}`);
+        subscription = supabase.channel(`messages:${convId}`);
         subscription
           .on(
             'postgres_changes',
@@ -70,27 +72,34 @@ export default function ChatBubble() {
               filter: `conversation_id=eq.${convId}`,
             },
             (payload) => {
-              if (isMounted && payload.new?.recipient_id === user.id) {
-                setMessages((prev) =>
-                  prev.some((m) => m.id === payload.new.id)
-                    ? prev
-                    : [...prev, payload.new as Message]
-                );
+              if (!isMounted) return;
 
-                if (!payload.new.is_read) {
-                  setUnreadCount((prev) => prev + 1);
-                  supabase
-                    .from('client_messages')
-                    .update({ is_read: true, read_at: new Date().toISOString() })
-                    .eq('id', payload.new.id)
-                    .then();
+              const newMsg = payload.new as Message;
+
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newMsg.id)) return prev;
+
+                const tempIdx = prev.findIndex(
+                  (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
+                );
+                if (tempIdx !== -1) {
+                  return prev.map((m, i) => (i === tempIdx ? newMsg : m));
                 }
+
+                return [...prev, newMsg];
+              });
+
+              if (newMsg.recipient_id === user.id && !newMsg.is_read) {
+                setUnreadCount((prev) => prev + 1);
+                supabase
+                  .from('client_messages')
+                  .update({ is_read: true, read_at: new Date().toISOString() })
+                  .eq('id', newMsg.id)
+                  .then();
               }
             }
           )
           .subscribe();
-
-        return () => subscription.unsubscribe();
       } catch (err) {
         console.error('Chat setup error:', err);
       }
@@ -99,6 +108,7 @@ export default function ChatBubble() {
     setup();
     return () => {
       isMounted = false;
+      if (subscription) subscription.unsubscribe();
     };
   }, [user]);
 
@@ -146,21 +156,55 @@ export default function ChatBubble() {
     if (!messageText.trim() || !user || !teamId) return;
 
     const text = messageText.trim();
+    const optimisticId = `temp_${Date.now()}`;
     setMessageText('');
     setSending(true);
+
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      sender_id: user.id,
+      recipient_id: teamId,
+      message_content: text,
+      message_type: 'general',
+      is_read: true,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
       const convId = [user.id, teamId].sort().join('_');
 
-      await supabase.from('client_messages').insert({
-        conversation_id: convId,
-        sender_id: user.id,
-        recipient_id: teamId,
-        message_content: text,
-        message_type: 'general',
-      });
+      const { data: insertedData, error } = await supabase
+        .from('client_messages')
+        .insert({
+          conversation_id: convId,
+          sender_id: user.id,
+          recipient_id: teamId,
+          message_content: text,
+          message_type: 'general',
+        })
+        .select('*');
+
+      if (error) {
+        console.error('Error sending message:', error);
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        setMessageText(text);
+        return;
+      }
+
+      if (insertedData && insertedData.length > 0) {
+        const realMsg = insertedData[0] as Message;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === realMsg.id)) {
+            return prev.filter((m) => m.id !== optimisticId);
+          }
+          return prev.map((m) => (m.id === optimisticId ? realMsg : m));
+        });
+      }
     } catch (err) {
       console.error('Error sending message:', err);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       setMessageText(text);
     } finally {
       setSending(false);
