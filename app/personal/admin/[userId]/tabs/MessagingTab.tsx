@@ -367,7 +367,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
                     {groupedMessages[dateKey].map((msg) => (
                       <div key={msg.id} className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
                         <div
-                          className={`max-w-xs rounded-xl px-3 py-2 text-sm ${
+                          className={`max-w-[83%] rounded-xl px-3 py-2 text-sm ${
                             msg.sender_id === user?.id
                               ? 'bg-[#1B3F7A] text-white rounded-br-none shadow-sm'
                               : 'bg-gray-100 text-gray-900 rounded-bl-none'
