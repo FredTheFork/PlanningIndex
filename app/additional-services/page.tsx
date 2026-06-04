@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
 import { generateBreadcrumbSchema, SITE_URL } from '@/lib/seo';
+import { getServiceById } from '@/lib/services/service-catalog';
 
 export const metadata: Metadata = {
   title: 'Additional Services | Optional Add-ons for UK Sole Traders',
@@ -94,7 +95,7 @@ function CoreMessage() {
 
 const services = [
   {
-    price: '£49 — one-time',
+    price: getServiceById('website_copy_pack')?.priceLabel ?? '£49 — one-time',
     title: 'Website Copy Starter Pack',
     desc: 'Professional website copy written in your voice, aligned with your services, and ready to paste into any website builder.',
     includes: [
@@ -106,7 +107,7 @@ const services = [
     whoFor: 'Ideal if you\'re building or refreshing a website and want it to sound credible, clear, and professional.',
   },
   {
-    price: '£49 — one-time',
+    price: getServiceById('social_media_pack')?.priceLabel ?? '£20 per 5 posts',
     title: 'Social Media Starter Pack',
     desc: '30 done-for-you posts tailored to your industry, audience, and offer.',
     includes: [
@@ -118,7 +119,7 @@ const services = [
     whoFor: 'Best for sole traders who want consistency without starting from a blank page.',
   },
   {
-    price: '£29 per quarter',
+    price: getServiceById('quarterly_refresh')?.priceLabel ?? '£29 every 4 months',
     title: 'Quarterly Document Refresh',
     desc: 'Keep your documents accurate as your business evolves.',
     includes: [

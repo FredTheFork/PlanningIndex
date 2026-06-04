@@ -159,6 +159,37 @@ LinkedIn URL: ${formatValue(r.q73_linkedin_url)}
 LinkedIn Target: ${formatValue(r.q74_linkedin_target)}
 LinkedIn Keywords: ${formatValue(r.q75_linkedin_keywords)}`);
 
+  // Section 9a: Website Copy (only if website copy fields are present)
+  const hasWebsiteCopy = r.wc1_pages_needed || r.wc_hero_message || r.wc2_primary_action;
+  if (hasWebsiteCopy) {
+    sections.push(`=== WEBSITE COPY ===
+Pages Needed: ${formatValue(r.wc1_pages_needed)}
+${r.wc1_pages_needed_other ? `Pages Needed (Other): ${formatValue(r.wc1_pages_needed_other)}` : ''}
+Custom Page Descriptions: ${formatValue(r.wc_pages_other)}
+Service Page Count: ${formatValue(r.wc_service_page_count)}
+Navigation Structure: ${formatValue(r.wc_nav_structure)}
+Headline/Tagline Idea: ${formatValue(r.wc_headline_idea)}
+Hero Message: ${formatValue(r.wc_hero_message)}
+Differentiator (Website): ${formatValue(r.wc_differentiator)}
+Problems Solved: ${formatValue(r.wc_problems_solved)}
+Desired Visitor Feeling: ${formatValue(r.wc_visitor_feeling)}
+Colour Preferences: ${formatValue(r.wc_colour_preferences)}
+Colour Palette Style: ${formatValue(r.wc_colour_palette_style)}
+Font Style: ${formatValue(r.wc_font_style)}
+Imagery Style: ${formatValue(r.wc_imagery_style)}
+Logo Placement: ${formatValue(r.wc_logo_placement)}
+Has Brand Guidelines: ${formatValue(r.wc_has_brand_guidelines)}
+Competitor URLs: ${formatValue(r.wc_competitor_urls)}
+Inspiration URLs: ${formatValue(r.wc3_inspiration_urls)}
+Disliked URLs: ${formatValue(r.wc_disliked_urls)}
+Primary Call-to-Action: ${formatValue(r.wc2_primary_action)}
+Forms Needed: ${formatValue(r.wc_forms_needed)}
+Testimonials: ${formatValue(r.wc_testimonials)}
+Legal Pages: ${formatValue(r.wc_legal_pages)}
+Website Builder: ${formatValue(r.wc_website_builder)}
+${r.wc_website_builder_other ? `Website Builder (Other): ${formatValue(r.wc_website_builder_other)}` : ''}`);
+  }
+
   // Section 9b: Social Media (only if social media fields are present)
   const hasSocialMedia = r.sm1_platforms || r.sm2_content_types || r.sm4_posting_frequency;
   if (hasSocialMedia) {
@@ -211,9 +242,10 @@ Your task is to read the client's intake questionnaire responses and produce a c
 6. Captures the brand voice, tone, and visual preferences
 7. Notes any past client issues and protective clauses needed
 8. Summarises LinkedIn and online presence goals
-9. If social media data is present, synthesises the social media content strategy (platforms, pillars, tone, boundaries, hashtag approach, CTA, calendar, competitor references)
-10. Flags any risks, gaps, or inconsistencies in the client's answers
-11. Provides invoice and document formatting preferences
+9. If website copy data is present, synthesises the website copy strategy (pages, messaging, visual preferences, competitors, CTA, forms, builder)
+10. If social media data is present, synthesises the social media content strategy (platforms, pillars, tone, boundaries, hashtag approach, CTA, calendar, competitor references)
+11. Flags any risks, gaps, or inconsistencies in the client's answers
+12. Provides invoice and document formatting preferences
 
 FORMAT REQUIREMENTS:
 - Use clear section headers with === delimiters

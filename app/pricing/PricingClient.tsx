@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
+import { getServiceById } from '@/lib/services/service-catalog';
 
 /* ─── shared data ─── */
 
@@ -54,7 +55,7 @@ const comparisonRows = [
 
 const upsells = [
   {
-    price: '£49 add-on',
+    price: getServiceById('website_copy_pack')?.priceLabel ?? '£49 — one-time',
     title: 'Website Copy Starter Pack',
     desc: 'Professional website copy written in your voice, SEO-aware, and ready to paste into any website builder.',
     features: [
@@ -65,7 +66,7 @@ const upsells = [
     ],
   },
   {
-    price: '£49 add-on',
+    price: getServiceById('social_media_pack')?.priceLabel ?? '£20 per 5 posts',
     title: 'Social Media Starter Pack',
     desc: '30 done-for-you posts for your chosen platforms — covering your expertise, your personality, and your offer.',
     features: [
@@ -76,7 +77,7 @@ const upsells = [
     ],
   },
   {
-    price: '£29/quarter',
+    price: getServiceById('quarterly_refresh')?.priceLabel ?? '£29 every 4 months',
     title: 'Quarterly Document Refresh',
     desc: 'Keep your documents current as your business evolves — one document updated every quarter.',
     features: [
