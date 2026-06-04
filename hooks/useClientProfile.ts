@@ -15,6 +15,7 @@ export interface ClientProfile {
   updated_at: string;
   admin_notes: string;
   purchased_upsells: string[];
+  intake_complete_for_services: string[];
 }
 
 export function useClientProfile() {

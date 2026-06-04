@@ -8,8 +8,9 @@ import {
   ArrowLeft, User, FileText, Clock, Save, AlertCircle, Briefcase, FileCheck,
   MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
   Download, Eye, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-  ChevronRight, FileDown, Send, Loader
+  ChevronRight, FileDown, Send, Loader, Package
 } from 'lucide-react';
+import { getServiceById } from '@/lib/services/service-catalog';
 
 // Tab components
 import OverviewTab from './tabs/OverviewTab';
@@ -28,6 +29,7 @@ interface ClientData {
     created_at: string;
     admin_notes: string;
     purchased_upsells: string[];
+    intake_complete_for_services: string[];
   } | null;
   intakeResponses: Record<string, any> | null;
   intakeMetadata: {
@@ -36,7 +38,16 @@ interface ClientData {
     last_saved_at: string;
     file_uploads: Record<string, any>;
     additional_notes: Record<string, any>;
+    purchased_service_ids: string[];
   } | null;
+  purchasedServices: {
+    id: string;
+    service_id: string;
+    status: string;
+    purchased_at: string;
+    expires_at: string | null;
+    stripe_subscription_id: string | null;
+  }[];
   email: string;
   authEmail?: string;
 }
@@ -56,6 +67,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
     profile: null,
     intakeResponses: null,
     intakeMetadata: null,
+    purchasedServices: [],
     email: '',
   });
   const [loading, setLoading] = useState(true);
@@ -84,6 +96,12 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         .eq('user_id', userId)
         .maybeSingle();
 
+      const { data: purchasedServices } = await supabase
+        .from('services_purchased')
+        .select('id, service_id, status, purchased_at, expires_at, stripe_subscription_id')
+        .eq('user_id', userId)
+        .order('purchased_at', { ascending: true });
+
       const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId);
 
       const email = intakeResult?.responses?.q7_document_email || userId.substring(0, 8) + '...';
@@ -97,7 +115,9 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           last_saved_at: intakeResult.last_saved_at,
           file_uploads: intakeResult.file_uploads || {},
           additional_notes: intakeResult.additional_notes || {},
+          purchased_service_ids: intakeResult.purchased_service_ids ?? [],
         } : null,
+        purchasedServices: purchasedServices ?? [],
         email,
         authEmail: authUser?.email,
       });
@@ -183,10 +203,29 @@ export default function AdminClientDetail({ params }: { params: { userId: string
             status={data.profile.delivery_status === 'delivered' ? 'success' : data.profile.delivery_status === 'in_progress' ? 'progress' : 'pending'}
           />
           <QuickStat
-            label="Upsells"
-            value={data.profile.purchased_upsells?.length || 0}
+            label="Services"
+            value={data.purchasedServices.length > 0 ? `${data.purchasedServices.length} active` : 'None'}
+            status={data.purchasedServices.length > 0 ? 'success' : 'pending'}
           />
         </div>
+
+        {/* Active Services */}
+        {data.purchasedServices.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-200">
+            {data.purchasedServices.map((ps) => {
+              const service = getServiceById(ps.service_id);
+              return (
+                <span
+                  key={ps.id}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#1B3F7A]/5 text-[#1B3F7A] rounded text-xs font-inter font-medium"
+                >
+                  <Package size={10} />
+                  {service?.name ?? ps.service_id}
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation */}

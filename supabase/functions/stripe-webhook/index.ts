@@ -30,6 +30,13 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
+// Services that require an intake form to be completed.
+const SERVICES_REQUIRING_INTAKE = [
+  'business_foundations_pack',
+  'website_copy_pack',
+  'social_media_pack',
+];
+
 Deno.serve(async (req) => {
   try {
     if (req.method === 'OPTIONS') {
@@ -78,13 +85,11 @@ Deno.serve(async (req) => {
 });
 
 async function handleEvent(event: Stripe.Event, stripe: Stripe) {
-  // Handle checkout.session.completed (one-time payments and initial subscription checkout)
   if (event.type === 'checkout.session.completed') {
     await handleCheckoutComplete(event, stripe);
     return;
   }
 
-  // Handle subscription lifecycle events
   if (event.type === 'customer.subscription.updated') {
     await handleSubscriptionUpdated(event);
     return;
@@ -103,10 +108,7 @@ async function handleEvent(event: Stripe.Event, stripe: Stripe) {
 async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
   const session = event.data.object as Stripe.Checkout.Session;
 
-  // Accept both 'payment' and 'subscription' mode sessions
   const isPaid = session.payment_status === 'paid';
-  // For subscription mode, the session may not have payment_status=paid immediately,
-  // but Stripe still fires this event once the checkout is complete.
   if (session.mode === 'payment' && !isPaid) {
     console.info(`Ignoring non-paid payment session: status=${session.payment_status}`);
     return;
@@ -129,13 +131,12 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
     .map((s: string) => s.trim())
     .filter(Boolean);
 
-  // Fallback: if no metadata, try to derive from line items
+  // Fallback: derive from line items if no metadata
   if (purchasedServiceIds.length === 0) {
     console.info('No service_ids in metadata, attempting to derive from line items');
     const lineItems = await stripe.checkout.sessions.listLineItems(checkoutSessionId);
     for (const item of lineItems.data) {
       if (item.price?.product) {
-        // Map product IDs back to service IDs
         const productId = typeof item.price.product === 'string' ? item.price.product : item.price.product.id;
         const mapping: Record<string, string> = {
           'prod_UdvhNsQZM3C2RL': 'business_foundations_pack',
@@ -147,7 +148,6 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
         }
       }
     }
-    // If still empty, default to core pack
     if (purchasedServiceIds.length === 0) {
       purchasedServiceIds.push('business_foundations_pack');
     }
@@ -157,7 +157,6 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
 
   // ── Step 1: Find or create user ──
   const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
-
   if (listError) {
     console.error('Failed to list users:', listError);
     return;
@@ -176,12 +175,10 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
       password: tempPassword,
       email_confirm: true,
     });
-
     if (createError || !newUser) {
       console.error('Failed to create user:', createError);
       return;
     }
-
     userId = newUser.user.id;
     console.info(`Created new user: ${userId} for email: ${customerEmail}`);
   }
@@ -204,7 +201,7 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
     }
   }
 
-  // ── Step 3: Create order record ──
+  // ── Step 3: Create order record with service_ids and amount_total ──
   const { data: existingOrder } = await supabase
     .from('orders')
     .select('id')
@@ -217,16 +214,48 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
       stripe_checkout_session_id: checkoutSessionId,
       stripe_payment_intent_id: paymentIntentId,
       status: 'paid',
+      service_ids: purchasedServiceIds,
+      amount_total: session.amount_total ?? 0,
     });
     if (orderError) {
       console.error('Failed to create order:', orderError);
     }
   }
 
-  // ── Step 4: Create or update client_profile with purchased services ──
+  // ── Step 4: Insert rows into services_purchased for each service ──
+  // Use upsert logic: if an active record for this user+service already exists, skip.
+  for (const serviceId of purchasedServiceIds) {
+    const { data: existingActive } = await supabase
+      .from('services_purchased')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('service_id', serviceId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!existingActive) {
+      const subscriptionId = session.subscription as string | null;
+
+      const { error: spError } = await supabase.from('services_purchased').insert({
+        user_id: userId,
+        service_id: serviceId,
+        stripe_checkout_session_id: checkoutSessionId,
+        stripe_subscription_id: subscriptionId && serviceId === 'quarterly_refresh'
+          ? subscriptionId
+          : null,
+        status: 'active',
+        purchased_at: new Date().toISOString(),
+      });
+      if (spError) {
+        console.error(`Failed to insert services_purchased for ${serviceId}:`, spError);
+      }
+    }
+  }
+
+  // ── Step 5: Create or update client_profile ──
   const { data: existingProfile } = await supabase
     .from('client_profiles')
-    .select('id, purchased_upsells')
+    .select('id, purchased_upsells, intake_complete_for_services')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -236,31 +265,28 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
       has_submitted_intake: false,
       delivery_status: 'not_started',
       purchased_upsells: purchasedServiceIds,
+      intake_complete_for_services: [],
     });
     if (profileError) {
       console.error('Failed to create client profile:', profileError);
     }
   } else {
-    // Existing user buying additional services: merge purchased_upsells
     const existingUpsells: string[] = existingProfile.purchased_upsells ?? [];
     const mergedUpsells = [...new Set([...existingUpsells, ...purchasedServiceIds])];
 
-    // If user already submitted intake but bought new services that require intake,
-    // reset has_submitted_intake so they complete the new sections
-    const servicesNeedingIntake = purchasedServiceIds.filter((id) => {
-      const needsIntake = [
-        'business_foundations_pack',
-        'website_copy_pack',
-        'social_media_pack',
-      ];
-      return needsIntake.includes(id);
-    });
+    const existingCompleteFor: string[] = existingProfile.intake_complete_for_services ?? [];
+
+    // Determine if any newly purchased services require intake that isn't yet complete
+    const newServicesNeedingIntake = purchasedServiceIds.filter(
+      (id) => SERVICES_REQUIRING_INTAKE.includes(id) && !existingCompleteFor.includes(id)
+    );
 
     const updateData: Record<string, any> = {
       purchased_upsells: mergedUpsells,
     };
 
-    if (servicesNeedingIntake.length > 0) {
+    // If there are new services that need intake (not yet complete), reset the flag
+    if (newServicesNeedingIntake.length > 0) {
       updateData.has_submitted_intake = false;
     }
 
@@ -274,10 +300,10 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
     }
   }
 
-  // ── Step 5: Create or update intake_responses ──
+  // ── Step 6: Create or update intake_responses with purchased_service_ids ──
   const { data: existingResponses } = await supabase
     .from('intake_responses')
-    .select('id')
+    .select('id, purchased_service_ids')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -287,13 +313,28 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
       form_version: 'v3',
       responses: {},
       current_section: 0,
+      purchased_service_ids: purchasedServiceIds,
+      form_section_completions: {},
     });
     if (responsesError) {
       console.error('Failed to create intake responses:', responsesError);
     }
+  } else {
+    // Merge purchased_service_ids for existing user buying additional services
+    const existingServiceIds: string[] = existingResponses.purchased_service_ids ?? [];
+    const mergedServiceIds = [...new Set([...existingServiceIds, ...purchasedServiceIds])];
+
+    const { error: updateError } = await supabase
+      .from('intake_responses')
+      .update({ purchased_service_ids: mergedServiceIds })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Failed to update intake responses:', updateError);
+    }
   }
 
-  // ── Step 6: Record in stripe_orders with actual amounts ──
+  // ── Step 7: Record in stripe_orders with actual amounts ──
   const { data: existingStripeOrder } = await supabase
     .from('stripe_orders')
     .select('id')
@@ -301,15 +342,12 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
     .maybeSingle();
 
   if (!existingStripeOrder) {
-    const amountSubtotal = session.amount_subtotal ?? 0;
-    const amountTotal = session.amount_total ?? 0;
-
     const { error: stripeOrderError } = await supabase.from('stripe_orders').insert({
       checkout_session_id: checkoutSessionId,
       payment_intent_id: paymentIntentId,
       customer_id: customerId,
-      amount_subtotal: amountSubtotal,
-      amount_total: amountTotal,
+      amount_subtotal: session.amount_subtotal ?? 0,
+      amount_total: session.amount_total ?? 0,
       currency: session.currency ?? 'gbp',
       payment_status: isPaid ? 'paid' : 'pending',
       status: 'completed',
@@ -328,8 +366,26 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
   console.info(`Subscription updated: ${subscription.id}, status: ${subscription.status}`);
 
-  // Could update services_purchased table status here when that table exists.
-  // For now, just log it.
+  const { data: spRecord } = await supabase
+    .from('services_purchased')
+    .select('id, service_id, user_id')
+    .eq('stripe_subscription_id', subscription.id)
+    .maybeSingle();
+
+  if (!spRecord) {
+    console.info(`No services_purchased record found for subscription ${subscription.id}`);
+    return;
+  }
+
+  if (subscription.status === 'active' || subscription.status === 'trialing') {
+    await supabase
+      .from('services_purchased')
+      .update({ status: 'active' })
+      .eq('id', spRecord.id);
+    console.info(`Set services_purchased ${spRecord.service_id} to active for user ${spRecord.user_id}`);
+  } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+    console.info(`Subscription ${subscription.id} is ${subscription.status}, leaving as-is`);
+  }
 }
 
 // ── Subscription Deleted ──
@@ -338,6 +394,45 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
   console.info(`Subscription deleted: ${subscription.id}, status: ${subscription.status}`);
 
-  // Could mark service as cancelled in services_purchased table when that table exists.
-  // For now, just log it.
+  const { data: spRecord } = await supabase
+    .from('services_purchased')
+    .select('id, service_id, user_id')
+    .eq('stripe_subscription_id', subscription.id)
+    .maybeSingle();
+
+  if (!spRecord) {
+    console.info(`No services_purchased record found for subscription ${subscription.id}`);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('services_purchased')
+    .update({
+      status: 'cancelled',
+      expires_at: new Date().toISOString(),
+    })
+    .eq('id', spRecord.id);
+
+  if (error) {
+    console.error(`Failed to cancel services_purchased:`, error);
+  } else {
+    console.info(`Cancelled services_purchased ${spRecord.service_id} for user ${spRecord.user_id}`);
+  }
+
+  // Also remove from client_profiles.purchased_upsells
+  const { data: profile } = await supabase
+    .from('client_profiles')
+    .select('id, purchased_upsells')
+    .eq('user_id', spRecord.user_id)
+    .maybeSingle();
+
+  if (profile) {
+    const updatedUpsells = (profile.purchased_upsells ?? []).filter(
+      (id: string) => id !== spRecord.service_id
+    );
+    await supabase
+      .from('client_profiles')
+      .update({ purchased_upsells: updatedUpsells })
+      .eq('id', profile.id);
+  }
 }
