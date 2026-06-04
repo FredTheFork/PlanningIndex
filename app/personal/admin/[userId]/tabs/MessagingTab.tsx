@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, MessageSquare, Phone, Loader, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,6 +39,9 @@ const getMessageGroupKey = (date: string) => {
   return new Date(date).toDateString();
 };
 
+const POLL_INTERVAL = 3000;
+const MAX_RETRIES = 3;
+
 export default function MessagingTab({ userId, data, refreshData }: MessagingTabProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,14 +53,262 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const [clientPreferences, setClientPreferences] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const retryCountRef = useRef(0);
+  const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isMountedRef = useRef(true);
+  const lastFetchTimeRef = useRef<string>('');
+  const convIdRef = useRef('');
 
+  // Stable ref for conversation ID to avoid stale closures
+  useEffect(() => {
+    convIdRef.current = conversationId;
+  }, [conversationId]);
+
+  const fetchConversation = useCallback(async () => {
+    if (!user) return;
+
+    const convId = [user.id, userId].sort().join('_');
+    setConversationId(convId);
+
+    try {
+      const { data: messagesData, error } = await supabase
+        .from('client_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      if (!isMountedRef.current) return;
+
+      if (error) {
+        console.error('Error fetching conversation:', error);
+        return;
+      }
+
+      setMessages(messagesData || []);
+      if (messagesData && messagesData.length > 0) {
+        lastFetchTimeRef.current = messagesData[messagesData.length - 1].created_at;
+      }
+
+      // Mark client messages as read
+      const unreadIds = (messagesData || [])
+        .filter((m) => m.recipient_id === user.id && !m.is_read)
+        .map((m) => m.id);
+
+      if (unreadIds.length > 0) {
+        await supabase
+          .from('client_messages')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .in('id', unreadIds);
+      }
+    } catch (err) {
+      console.error('Error fetching conversation:', err);
+    } finally {
+      if (isMountedRef.current) setLoading(false);
+    }
+  }, [user, userId]);
+
+  // Poll for new messages (lightweight - only fetches messages newer than last known)
+  const pollForNewMessages = useCallback(async () => {
+    const convId = convIdRef.current;
+    if (!convId || !user) return;
+
+    try {
+      let query = supabase
+        .from('client_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      if (lastFetchTimeRef.current) {
+        query = query.gt('created_at', lastFetchTimeRef.current);
+      }
+
+      const { data: newMessages, error } = await query;
+
+      if (!isMountedRef.current) return;
+      if (error || !newMessages || newMessages.length === 0) return;
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const trulyNew = newMessages.filter((m) => !existingIds.has(m.id));
+        if (trulyNew.length === 0) return prev;
+        return [...prev, ...trulyNew];
+      });
+
+      lastFetchTimeRef.current = newMessages[newMessages.length - 1].created_at;
+
+      // Mark new unread messages
+      const unreadNew = newMessages.filter(
+        (m) => m.recipient_id === user.id && !m.is_read
+      );
+      if (unreadNew.length > 0) {
+        await supabase
+          .from('client_messages')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .in('id', unreadNew.map((m) => m.id));
+      }
+    } catch {
+      // Silent fail for polling - don't spam console
+    }
+  }, [user]);
+
+  const startPolling = useCallback(() => {
+    if (pollingRef.current) return;
+    pollingRef.current = setInterval(pollForNewMessages, POLL_INTERVAL);
+  }, [pollForNewMessages]);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  // Setup Realtime subscription with retry logic
+  const setupSubscription = useCallback(() => {
+    const convId = convIdRef.current;
+    if (!user || !convId) return;
+
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
+
+    const subscription = supabase.channel(`messages:${convId}`, {
+      config: { broadcast: { self: true } },
+    });
+
+    subscription
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'client_messages',
+          filter: `conversation_id=eq.${convId}`,
+        },
+        (payload: any) => {
+          if (!isMountedRef.current) return;
+
+          const newMsg = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+
+            const tempIdx = prev.findIndex(
+              (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
+            );
+            if (tempIdx !== -1) {
+              return prev.map((m, i) => (i === tempIdx ? newMsg : m));
+            }
+
+            return [...prev, newMsg];
+          });
+
+          lastFetchTimeRef.current = newMsg.created_at;
+
+          // Mark incoming unread messages
+          if (newMsg.recipient_id === user.id && !newMsg.is_read) {
+            supabase
+              .from('client_messages')
+              .update({ is_read: true, read_at: new Date().toISOString() })
+              .eq('id', newMsg.id)
+              .then();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'client_messages',
+          filter: `conversation_id=eq.${convId}`,
+        },
+        (payload: any) => {
+          if (!isMountedRef.current) return;
+
+          setMessages((prev) =>
+            prev.map((m) => (m.id === payload.new.id ? payload.new : m))
+          );
+        }
+      )
+      .subscribe((status) => {
+        console.log('[MessagingTab] Subscription status:', status);
+
+        if (status === 'SUBSCRIBED') {
+          retryCountRef.current = 0;
+          // Use both Realtime and polling for reliability
+          startPolling();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (retryCountRef.current < MAX_RETRIES) {
+            retryCountRef.current++;
+            const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
+            console.log(`[MessagingTab] Retrying subscription in ${delay}ms (attempt ${retryCountRef.current}/${MAX_RETRIES})`);
+            setTimeout(() => {
+              if (isMountedRef.current) setupSubscription();
+            }, delay);
+          } else {
+            console.warn('[MessagingTab] Max retries reached, falling back to polling only');
+          }
+          // Always poll regardless of Realtime status
+          startPolling();
+        }
+      });
+
+    subscriptionRef.current = subscription;
+  }, [user, startPolling]);
+
+  // Initial load
   useEffect(() => {
     if (user && userId) {
       fetchConversation();
       fetchClientPreferences();
     }
-  }, [user, userId]);
+  }, [user, userId, fetchConversation]);
 
+  // Setup subscription after conversation ID is determined
+  useEffect(() => {
+    if (user && conversationId) {
+      setupSubscription();
+
+      return () => {
+        isMountedRef.current = false;
+        stopPolling();
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          subscriptionRef.current = null;
+        }
+      };
+    }
+    return () => {
+      isMountedRef.current = false;
+      stopPolling();
+    };
+  }, [user, conversationId, setupSubscription, stopPolling]);
+
+  // Re-fetch on window focus to catch messages missed during background
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isMountedRef.current) {
+        fetchConversation();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && isMountedRef.current) {
+        fetchConversation();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchConversation]);
+
+  // Auto-scroll on new messages
   useEffect(() => {
     const behavior = isInitialLoadRef.current ? ('instant' as ScrollBehavior) : ('smooth' as ScrollBehavior);
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -72,147 +323,46 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         .eq('user_id', userId)
         .maybeSingle();
 
-      setClientPreferences(prefs);
+      if (isMountedRef.current) setClientPreferences(prefs);
     } catch (err) {
       console.error('Error fetching preferences:', err);
-    }
-  };
-
-  useEffect(() => {
-    if (user && conversationId) {
-      let isMounted = true;
-
-      const subscription = supabase.channel(`messages:${conversationId}`);
-
-      subscription
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'client_messages',
-            filter: `conversation_id=eq.${conversationId}`,
-          },
-          (payload: any) => {
-            if (!isMounted) return;
-
-            const newMsg = payload.new as Message;
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === newMsg.id)) return prev;
-
-              const tempIdx = prev.findIndex(
-                (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
-              );
-              if (tempIdx !== -1) {
-                return prev.map((m, i) => (i === tempIdx ? newMsg : m));
-              }
-
-              return [...prev, newMsg];
-            });
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'client_messages',
-            filter: `conversation_id=eq.${conversationId}`,
-          },
-          (payload: any) => {
-            if (!isMounted) return;
-
-            setMessages((prev) =>
-              prev.map((m) => (m.id === payload.new.id ? payload.new : m))
-            );
-          }
-        )
-        .subscribe((status) => {
-          if (status !== 'SUBSCRIBED' && status !== 'CHANNEL_ERROR') {
-            console.log('MessagingTab subscription status:', status);
-          }
-        });
-
-      return () => {
-        isMounted = false;
-        subscription.unsubscribe();
-      };
-    }
-  }, [user, conversationId]);
-
-  const fetchConversation = async () => {
-    setLoading(true);
-
-    try {
-      if (!user) return;
-
-      const convId = [user.id, userId].sort().join('_');
-      setConversationId(convId);
-
-      const { data: messagesData, error } = await supabase
-        .from('client_messages')
-        .select('*')
-        .eq('conversation_id', convId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching conversation:', error);
-        setMessages([]);
-        return;
-      }
-
-      setMessages(messagesData || []);
-
-      // Mark client messages as read
-      const unreadIds =
-        messagesData
-          ?.filter((m) => m.recipient_id === user.id && !m.is_read)
-          .map((m) => m.id) || [];
-
-      if (unreadIds.length > 0) {
-        await supabase
-          .from('client_messages')
-          .update({ is_read: true, read_at: new Date().toISOString() })
-          .in('id', unreadIds);
-      }
-    } catch (err) {
-      console.error('Error fetching conversation:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const sendMessage = async () => {
     if (!messageText.trim() || !user || !conversationId) return;
 
+    const text = messageText.trim();
     const optimisticMessage: Message = {
       id: `temp_${Date.now()}`,
       sender_id: user.id,
       recipient_id: userId,
-      message_content: messageText.trim(),
+      message_content: text,
       message_type: messageType,
       is_read: true,
       created_at: new Date().toISOString(),
     };
 
-    // Add optimistic message immediately
     setMessages((prev) => [...prev, optimisticMessage]);
     setMessageText('');
     setSending(true);
 
     try {
-      const { data: insertedData, error } = await supabase.from('client_messages').insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        recipient_id: userId,
-        message_content: optimisticMessage.message_content,
-        message_type: messageType,
-      }).select('*');
+      const { data: insertedData, error } = await supabase
+        .from('client_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          recipient_id: userId,
+          message_content: text,
+          message_type: messageType,
+        })
+        .select('*');
 
       if (error) {
         console.error('Error sending message:', error);
         setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
-        setMessageText(optimisticMessage.message_content);
+        setMessageText(text);
         return;
       }
 
@@ -225,6 +375,8 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           return prev.map((m) => (m.id === optimisticMessage.id ? newMessage : m));
         });
 
+        lastFetchTimeRef.current = newMessage.created_at;
+
         await triggerMessageNotification({
           id: newMessage.id,
           sender_id: newMessage.sender_id,
@@ -233,16 +385,13 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           message_type: newMessage.message_type,
           created_at: newMessage.created_at,
         });
-      } else if (!error) {
-        // Insert succeeded but .select('*') returned no rows (possible RLS timing issue)
-        // The optimistic message stays; realtime will replace it, or a refresh will load it
       }
 
       setMessageType('general');
     } catch (err) {
       console.error('Error sending message:', err);
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
-      setMessageText(optimisticMessage.message_content);
+      setMessageText(text);
     } finally {
       setSending(false);
     }
@@ -336,7 +485,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
               {clientPreferences.sms_notifications_enabled && (
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 size={14} className="text-purple-600" />
+                  <CheckCircle2 size={14} className="text-emerald-600" />
                   <span className="font-inter text-xs text-gray-700">SMS enabled</span>
                 </div>
               )}
@@ -405,8 +554,8 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
                             <p className={`text-xs font-inter font-semibold mb-1 opacity-75 ${
                               msg.sender_id === user?.id ? 'text-blue-100' : 'text-gray-700'
                             }`}>
-                              {msg.message_type === 'document_query' && '📄 Document'}
-                              {msg.message_type === 'intake_query' && '📋 Intake'}
+                              {msg.message_type === 'document_query' && 'Document'}
+                              {msg.message_type === 'intake_query' && 'Intake'}
                             </p>
                           )}
                           <p className="font-inter break-words leading-snug">{msg.message_content}</p>
@@ -451,7 +600,12 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
               type="text"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
               placeholder="Type message..."
               maxLength={500}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:border-transparent font-inter text-sm"

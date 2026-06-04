@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, X, MessageCircle, Loader } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,6 +15,9 @@ interface Message {
   created_at: string;
 }
 
+const POLL_INTERVAL = 3000;
+const MAX_RETRIES = 3;
+
 export default function ChatBubble() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -26,18 +29,188 @@ export default function ChatBubble() {
   const [teamId, setTeamId] = useState('');
   const [teamName, setTeamName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const retryCountRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const lastFetchTimeRef = useRef('');
+  const teamIdRef = useRef('');
 
   useEffect(() => {
-    if (isOpen && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
-    }
-  }, [messages, isOpen]);
+    teamIdRef.current = teamId;
+  }, [teamId]);
 
+  const loadMessages = useCallback(async () => {
+    if (!user || !teamIdRef.current) return;
+
+    const convId = [user.id, teamIdRef.current].sort().join('_');
+
+    try {
+      const { data } = await supabase
+        .from('client_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      if (!isMountedRef.current) return;
+
+      if (data) {
+        setMessages(data);
+        if (data.length > 0) {
+          lastFetchTimeRef.current = data[data.length - 1].created_at;
+        }
+
+        const unreadIds = data
+          .filter((m) => m.recipient_id === user.id && !m.is_read)
+          .map((m) => m.id);
+
+        if (unreadIds.length > 0) {
+          await supabase
+            .from('client_messages')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .in('id', unreadIds);
+
+          setUnreadCount(0);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading messages:', err);
+    }
+  }, [user]);
+
+  const pollForNewMessages = useCallback(async () => {
+    if (!user || !teamIdRef.current) return;
+
+    const convId = [user.id, teamIdRef.current].sort().join('_');
+
+    try {
+      let query = supabase
+        .from('client_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      if (lastFetchTimeRef.current) {
+        query = query.gt('created_at', lastFetchTimeRef.current);
+      }
+
+      const { data: newMessages, error } = await query;
+
+      if (!isMountedRef.current || error || !newMessages || newMessages.length === 0) return;
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const trulyNew = newMessages.filter((m) => !existingIds.has(m.id));
+        if (trulyNew.length === 0) return prev;
+        return [...prev, ...trulyNew];
+      });
+
+      lastFetchTimeRef.current = newMessages[newMessages.length - 1].created_at;
+
+      const unreadNew = newMessages.filter(
+        (m) => m.recipient_id === user.id && !m.is_read
+      );
+      if (unreadNew.length > 0) {
+        await supabase
+          .from('client_messages')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .in('id', unreadNew.map((m) => m.id));
+        setUnreadCount(0);
+      }
+    } catch {
+      // Silent fail for polling
+    }
+  }, [user]);
+
+  const startPolling = useCallback(() => {
+    if (pollingRef.current) return;
+    pollingRef.current = setInterval(pollForNewMessages, POLL_INTERVAL);
+  }, [pollForNewMessages]);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  const setupSubscription = useCallback((convId: string) => {
+    if (!user) return;
+
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
+
+    const subscription = supabase.channel(`messages:${convId}`, {
+      config: { broadcast: { self: true } },
+    });
+
+    subscription
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'client_messages',
+          filter: `conversation_id=eq.${convId}`,
+        },
+        (payload) => {
+          if (!isMountedRef.current) return;
+
+          const newMsg = payload.new as Message;
+
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+
+            const tempIdx = prev.findIndex(
+              (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
+            );
+            if (tempIdx !== -1) {
+              return prev.map((m, i) => (i === tempIdx ? newMsg : m));
+            }
+
+            return [...prev, newMsg];
+          });
+
+          lastFetchTimeRef.current = newMsg.created_at;
+
+          if (newMsg.recipient_id === user.id && !newMsg.is_read) {
+            setUnreadCount((prev) => Math.max(0, prev - 1));
+            supabase
+              .from('client_messages')
+              .update({ is_read: true, read_at: new Date().toISOString() })
+              .eq('id', newMsg.id)
+              .then();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[ChatBubble] Subscription status:', status);
+
+        if (status === 'SUBSCRIBED') {
+          retryCountRef.current = 0;
+          startPolling();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (retryCountRef.current < MAX_RETRIES) {
+            retryCountRef.current++;
+            const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
+            setTimeout(() => {
+              if (isMountedRef.current) setupSubscription(convId);
+            }, delay);
+          }
+          startPolling();
+        }
+      });
+
+    subscriptionRef.current = subscription;
+  }, [user, startPolling]);
+
+  // Initial setup
   useEffect(() => {
     if (!user) return;
 
-    let isMounted = true;
-    let subscription: ReturnType<typeof supabase.channel> | null = null;
+    isMountedRef.current = true;
 
     const setup = async () => {
       try {
@@ -47,110 +220,79 @@ export default function ChatBubble() {
           .limit(1)
           .maybeSingle();
 
-        if (!isMounted || !admin) return;
+        if (!isMountedRef.current || !admin) return;
 
-        const convId = [user.id, admin.user_id].sort().join('_');
         setTeamId(admin.user_id);
+        teamIdRef.current = admin.user_id;
         setTeamName(admin.display_name || 'Support Team');
 
-        const { data: unread } = await supabase
+        const convId = [user.id, admin.user_id].sort().join('_');
+
+        const { count } = await supabase
           .from('client_messages')
           .select('id', { count: 'exact', head: true })
           .eq('recipient_id', user.id)
           .eq('is_read', false);
 
-        if (isMounted) setUnreadCount(unread?.length || 0);
+        if (isMountedRef.current) setUnreadCount(count || 0);
 
-        subscription = supabase.channel(`messages:${convId}`);
-        subscription
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'client_messages',
-              filter: `conversation_id=eq.${convId}`,
-            },
-            (payload) => {
-              if (!isMounted) return;
-
-              const newMsg = payload.new as Message;
-
-              setMessages((prev) => {
-                if (prev.some((m) => m.id === newMsg.id)) return prev;
-
-                const tempIdx = prev.findIndex(
-                  (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
-                );
-                if (tempIdx !== -1) {
-                  return prev.map((m, i) => (i === tempIdx ? newMsg : m));
-                }
-
-                return [...prev, newMsg];
-              });
-
-              if (newMsg.recipient_id === user.id && !newMsg.is_read) {
-                setUnreadCount((prev) => prev + 1);
-                supabase
-                  .from('client_messages')
-                  .update({ is_read: true, read_at: new Date().toISOString() })
-                  .eq('id', newMsg.id)
-                  .then();
-              }
-            }
-          )
-          .subscribe();
+        setupSubscription(convId);
       } catch (err) {
         console.error('Chat setup error:', err);
       }
     };
 
     setup();
+
     return () => {
-      isMounted = false;
-      if (subscription) subscription.unsubscribe();
+      isMountedRef.current = false;
+      stopPolling();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
-  }, [user]);
+  }, [user, setupSubscription, stopPolling]);
 
+  // Load messages when chat is opened
   useEffect(() => {
-    if (!user || !teamId) return;
-
-    const loadMessages = async () => {
+    if (isOpen && user && teamId) {
       setLoading(true);
-      try {
-        const convId = [user.id, teamId].sort().join('_');
+      loadMessages().finally(() => {
+        if (isMountedRef.current) setLoading(false);
+      });
+    }
+  }, [isOpen, user, teamId, loadMessages]);
 
-        const { data } = await supabase
-          .from('client_messages')
-          .select('*')
-          .eq('conversation_id', convId)
-          .order('created_at', { ascending: true });
-
-        if (data) {
-          setMessages(data);
-
-          const unreadIds = data
-            .filter((m) => m.recipient_id === user.id && !m.is_read)
-            .map((m) => m.id);
-
-          if (unreadIds.length > 0) {
-            await supabase
-              .from('client_messages')
-              .update({ is_read: true, read_at: new Date().toISOString() })
-              .in('id', unreadIds);
-
-            setUnreadCount(0);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading messages:', err);
-      } finally {
-        setLoading(false);
+  // Re-fetch on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isMountedRef.current && isOpen) {
+        loadMessages();
       }
     };
 
-    loadMessages();
-  }, [user, teamId]);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && isMountedRef.current && isOpen) {
+        loadMessages();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isOpen, loadMessages]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    if (isOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
+    }
+  }, [messages, isOpen]);
 
   const sendMessage = async () => {
     if (!messageText.trim() || !user || !teamId) return;
@@ -195,6 +337,7 @@ export default function ChatBubble() {
 
       if (insertedData && insertedData.length > 0) {
         const realMsg = insertedData[0] as Message;
+        lastFetchTimeRef.current = realMsg.created_at;
         setMessages((prev) => {
           if (prev.some((m) => m.id === realMsg.id)) {
             return prev.filter((m) => m.id !== optimisticId);
@@ -296,7 +439,7 @@ export default function ChatBubble() {
                   type="text"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       sendMessage();
