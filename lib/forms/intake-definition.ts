@@ -1,5 +1,6 @@
-// Foundationary Intake Form V2 — Full Question Definition
-// Maps to all 10 deliverables in the Business Foundations Pack
+// Foundationary Intake Form V3 — Unified Service-Aware Question Definition
+// Each section declares which services it serves via serviceTags.
+// Use buildIntakeForm(purchasedServiceIds) to assemble the correct form.
 
 export type FieldType =
   | 'short_text'
@@ -37,6 +38,17 @@ export interface FormSection {
   description: string;
   usedIn: string;
   fields: FormField[];
+  /** Service IDs this section is relevant for. Used by buildIntakeForm() for de-duplication. */
+  serviceTags: string[];
+  /** Controls presentation order regardless of which services are purchased. */
+  sortOrder: number;
+  /**
+   * Per-field service filtering within a shared section.
+   * Key = field ID, value = service IDs that need this field.
+   * If a field is not listed here, it shows for all services that include this section.
+   * If a field IS listed, it only shows when the user purchased at least one listed service.
+   */
+  fieldServiceTags?: Record<string, string[]>;
 }
 
 // Service repeater sub-fields (Q15)
@@ -102,14 +114,20 @@ const serviceSubFields: FormField[] = [
   },
 ];
 
-export const intakeFormSections: FormSection[] = [
+// ── UNIFIED FORM SECTIONS ──
+// All sections for all services in one array, tagged with serviceTags and sortOrder.
+// Use buildIntakeForm(purchasedServiceIds) to get the right sections for any purchase combination.
+
+export const allFormSections: FormSection[] = [
   // ── INTRO PAGE ──
   {
     id: 'intro',
     title: 'Welcome to Foundationary',
-    description: 'This questionnaire is the only information we will use to build your Business Foundations Pack. Please answer every question as fully and honestly as you can — the more detail you give us, the more tailored and precise your documents will be.\n\nEstimated time: 20-30 minutes.\n\nThere are no wrong answers. Write the way you speak. We will turn it into something professional.\n\nYour documents will be ready within 24 hours of submission.',
+    description: 'This questionnaire is the only information we will use to build your deliverables. Please answer every question as fully and honestly as you can — the more detail you give us, the more tailored and precise your documents will be.\n\nEstimated time: 20-30 minutes.\n\nThere are no wrong answers. Write the way you speak. We will turn it into something professional.\n\nYour deliverables will be ready within 24 hours of submission.',
     usedIn: '',
     fields: [],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    sortOrder: 0,
   },
 
   // ── SECTION 1 — BUSINESS IDENTITY ──
@@ -132,6 +150,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q11_social_platforms', questionNumber: 'Q11', label: 'Which social media platforms do you actively use for your business?', type: 'multi_select', required: false, options: ['LinkedIn', 'Instagram', 'TikTok', 'Facebook Page', 'X (Twitter)', 'WhatsApp Business', 'Pinterest', 'None yet'] },
       { id: 'q12_social_links', questionNumber: 'Q12', label: 'Please paste the links to any active social media profiles', type: 'long_text', required: false, placeholder: 'One per line', conditionalOn: { field: 'q11_social_platforms', value: 'None yet', notEqual: true } },
     ],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    sortOrder: 10,
   },
 
   // ── SECTION 2 — YOUR SERVICES ──
@@ -148,6 +168,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q17_inform_subcontractors', questionNumber: 'Q17', label: 'Should your clients be informed in their contract that subcontractors may be involved in delivering their work?', type: 'single_choice', required: false, options: ['Yes', 'No'], conditionalOn: { field: 'q16_uses_subcontractors', value: 'Yes' }, helpText: 'Most clients will select yes. Being transparent about this protects you legally.' },
       { id: 'q18_sends_proposal', questionNumber: 'Q18', label: 'Do you typically send a proposal or quote before a client formally engages you?', type: 'single_choice', required: true, options: ['Yes — I always send a proposal first', 'Sometimes — depends on the project', 'No — we agree verbally and get started'] },
     ],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    sortOrder: 20,
   },
 
   // ── SECTION 3 — YOUR CLIENTS & HOW YOU WORK ──
@@ -164,6 +186,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q23_dispute_details', questionNumber: 'Q23', label: 'Please describe what happened in any of the above situations.', type: 'long_text', required: false, placeholder: 'You don\'t need to name anyone. The more detail you give here, the more precisely we can tailor your contract clauses.', conditionalOn: { field: 'q22_client_issues', value: 'None of the above', notEqual: true }, helpText: 'Strongly encouraged — this directly shapes your protective clauses.' },
       { id: 'q24_client_concerns', questionNumber: 'Q24', label: 'What are your biggest concerns or worries when working with clients?', type: 'long_text', required: false, placeholder: 'e.g. Clients not taking the work seriously, projects dragging on past the agreed timeline, being asked to do things outside the original brief.' },
     ],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack'],
+    sortOrder: 30,
   },
 
   // ── SECTION 4 — PRICING, PAYMENT & PROTECTION ──
@@ -185,6 +209,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q34_vat_registered', questionNumber: 'Q34', label: 'Are you VAT registered?', type: 'single_choice', required: true, options: ['Yes', 'No'] },
       { id: 'q35_vat_number', questionNumber: 'Q35', label: 'What is your VAT number?', type: 'short_text', required: false, placeholder: 'e.g. GB123456789', conditionalOn: { field: 'q34_vat_registered', value: 'Yes' } },
     ],
+    serviceTags: ['business_foundations_pack'],
+    sortOrder: 40,
   },
 
   // ── SECTION 5 — GDPR & DATA PROTECTION ──
@@ -208,6 +234,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q47_uses_cookies', questionNumber: 'Q47', label: 'Do you use cookies or tracking tools on your website?', type: 'single_choice', required: false, options: ['Yes', 'No', 'I\'m not sure'], conditionalOn: { field: 'q9_has_website', value: 'Yes — I have a live website' } },
       { id: 'q48_tracking_tools', questionNumber: 'Q48', label: 'Which tracking tools do you use?', type: 'multi_select', required: false, options: ['Google Analytics', 'Meta (Facebook) Pixel', 'TikTok Pixel', 'Hotjar or Microsoft Clarity', 'Cookie consent banner tool', 'Other'], conditionalOn: { field: 'q47_uses_cookies', value: 'Yes' }, hasOtherOption: true },
     ],
+    serviceTags: ['business_foundations_pack'],
+    sortOrder: 50,
   },
 
   // ── SECTION 6 — LEGAL & RISK ──
@@ -224,6 +252,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q53_specific_clauses', questionNumber: 'Q53', label: 'Are there any specific protections, clauses, or wording you know you want included in your documents?', type: 'long_text', required: false, placeholder: 'e.g. "I want a very clear clause about what happens if a client disappears mid-project. I also want it clearly stated that my working hours are Monday to Thursday only."' },
       { id: 'q54_exclusions', questionNumber: 'Q54', label: 'Is there anything you know you do NOT want included?', type: 'long_text', required: false, placeholder: 'Any clauses, wording, or approaches you want excluded from your documents.' },
     ],
+    serviceTags: ['business_foundations_pack'],
+    sortOrder: 60,
   },
 
   // ── SECTION 7 — YOUR VOICE, STORY & BRAND ──
@@ -248,6 +278,13 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q67_brand_colours', questionNumber: 'Q67', label: 'What are your brand colours?', type: 'short_text', required: false, placeholder: 'Hex codes if you have them. If not, describe: "deep navy blue and warm gold" or "sage green and off-white."' },
       { id: 'q68_visual_style', questionNumber: 'Q68', label: 'How do you want your documents to feel visually?', type: 'single_choice', required: true, options: ['Clean and modern / minimal', 'Corporate and formal', 'Warm and friendly', 'Premium and luxury', 'Simple — I just want it to work'] },
     ],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    sortOrder: 70,
+    // q67_brand_colours is only needed by website-copy (for colour scheme choices).
+    // For documents-only purchases, it's not essential for document generation.
+    fieldServiceTags: {
+      'q67_brand_colours': ['website_copy_pack', 'social_media_pack'],
+    },
   },
 
   // ── SECTION 8 — INVOICE PREFERENCES ──
@@ -261,6 +298,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q70_invoice_due_date', questionNumber: 'Q70', label: 'What should invoices default to as a payment due date?', type: 'short_text', required: true, placeholder: 'e.g. 7 days from invoice date / 14 days from invoice date / Due on receipt', helpText: 'This should match your payment terms in Section 4.' },
       { id: 'q71_invoice_fields', questionNumber: 'Q71', label: 'What optional fields do you want included on your invoice template?', type: 'multi_select', required: false, options: ['Purchase order (PO) number field', 'VAT breakdown section', 'Notes / message to client section', 'Payment terms summary at the bottom', 'Signature field'] },
     ],
+    serviceTags: ['business_foundations_pack'],
+    sortOrder: 80,
   },
 
   // ── SECTION 9 — LINKEDIN PROFILE ──
@@ -275,6 +314,8 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q74_linkedin_target', questionNumber: 'Q74', label: 'What kind of clients or opportunities do you want to attract through LinkedIn?', type: 'long_text', required: true, placeholder: 'Be specific. "New clients" is not enough. "Small e-commerce business owners who need monthly bookkeeping support on a retainer basis" gives us what we need.' },
       { id: 'q75_linkedin_keywords', questionNumber: 'Q75', label: 'What keywords or services do you want people to find you for on LinkedIn?', type: 'long_text', required: false, placeholder: 'e.g. VA services, email management, social media scheduling, virtual assistant for coaches, online business support.' },
     ],
+    serviceTags: ['business_foundations_pack'],
+    sortOrder: 90,
   },
 
   // ── SECTION 10 — FINAL CONFIRMATION ──
@@ -293,32 +334,50 @@ export const intakeFormSections: FormSection[] = [
       { id: 'q82_consent_not_legal', questionNumber: 'Q82', label: 'I understand that Foundationary provides document drafting support only and not legal advice. I will seek independent legal advice before relying on these documents in any dispute or legal proceeding.', type: 'checkbox', required: true },
       { id: 'q83_consent_accuracy', questionNumber: 'Q83', label: 'I confirm that all information I have provided in this form is accurate and complete to the best of my knowledge.', type: 'checkbox', required: true },
     ],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    sortOrder: 100,
   },
-];
 
-// ── PART B — UPSELL SUPPLEMENT ──
-
-export const upsellFormSections: FormSection[] = [
+  // ── SECTION 11 — WEBSITE COPY PACK ──
   {
     id: 'website_copy',
     title: 'Website Copy Pack',
-    description: 'Only shown if you purchased the Website Copy Add-On.',
+    description: 'Tell us about your website needs so we can write copy that reflects your brand and converts visitors.',
     usedIn: 'Website Copy Starter Pack',
     fields: [
       { id: 'wc1_pages_needed', questionNumber: 'WC1', label: 'Which website pages do you need copy written for?', type: 'multi_select', required: true, options: ['Homepage', 'About page', 'Services page', 'Contact page', 'FAQ page', 'Other — please describe'] },
       { id: 'wc2_primary_action', questionNumber: 'WC2', label: 'What is the single most important action you want a website visitor to take?', type: 'long_text', required: true, placeholder: 'e.g. Book a free discovery call / Fill out my enquiry form / Buy my online course.' },
       { id: 'wc3_inspiration_urls', questionNumber: 'WC3', label: 'Are there any websites — your own industry or otherwise — whose copy or overall feel you admire? Paste the URLs.', type: 'long_text', required: false, placeholder: 'We\'re not copying them. We\'re calibrating tone and style.' },
     ],
+    serviceTags: ['website_copy_pack'],
+    sortOrder: 110,
   },
+
+  // ── SECTION 12 — SOCIAL MEDIA PACK ──
   {
     id: 'social_media',
     title: 'Social Media Pack',
-    description: 'Only shown if you purchased the Social Media Starter Pack.',
+    description: 'Tell us about your social media presence so we can create posts that match your brand and engage your audience.',
     usedIn: 'Social Media Starter Pack',
     fields: [
       { id: 'sm1_platforms', questionNumber: 'SM1', label: 'Which platforms are you focusing on right now?', type: 'multi_select', required: true, options: ['LinkedIn', 'Instagram', 'TikTok', 'Facebook', 'X (Twitter)', 'Pinterest', 'Other'], hasOtherOption: true },
       { id: 'sm2_content_types', questionNumber: 'SM2', label: 'What type of content do you want? Select everything that fits your brand.', type: 'multi_select', required: true, options: ['Educational — teach your audience something useful', 'Personal / behind-the-scenes — show the human behind the business', 'Authority / expert — position you as the go-to in your niche', 'Promotional — direct sells and offers', 'Storytelling — client wins, your journey, case studies', 'Inspirational / motivational', 'Relatable / humorous'] },
       { id: 'sm3_avoid_topics', questionNumber: 'SM3', label: 'Are there any topics, clients, or personal details you NEVER want mentioned publicly?', type: 'long_text', required: false, placeholder: 'e.g. Don\'t reference my previous employer. Don\'t use my children\'s names or images.' },
     ],
+    serviceTags: ['social_media_pack'],
+    sortOrder: 120,
   },
 ];
+
+// ── BACKWARD COMPATIBILITY ──
+// These deprecated aliases keep existing imports working during the transition.
+
+/** @deprecated Use buildIntakeForm(['business_foundations_pack']) from build-intake-form.ts instead. */
+export const intakeFormSections: FormSection[] = allFormSections.filter(
+  (s) => s.serviceTags.includes('business_foundations_pack') && s.id !== 'intro',
+);
+
+/** @deprecated Use buildIntakeForm(['website_copy_pack', 'social_media_pack']) from build-intake-form.ts instead. */
+export const upsellFormSections: FormSection[] = allFormSections.filter(
+  (s) => s.id === 'website_copy' || s.id === 'social_media',
+);

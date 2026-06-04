@@ -70,6 +70,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     ],
     requiresIntake: true,
     intakeSections: [
+      'intro',
       'business_identity',
       'services',
       'clients',
@@ -115,6 +116,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     ],
     requiresIntake: true,
     intakeSections: [
+      'intro',
       'business_identity',
       'services',
       'clients',
@@ -155,6 +157,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     ],
     requiresIntake: true,
     intakeSections: [
+      'intro',
       'business_identity',
       'services',
       'brand',
@@ -271,3 +274,65 @@ export function calculateTotal(selectedServiceIds: string[]): {
 }
 
 export { stripeMode };
+
+// ── Service-Form Mapping Validation ──
+// Ensures intakeSections in the catalog match the serviceTags on form sections.
+
+import { allFormSections } from '../forms/intake-definition';
+
+/**
+ * Validate that each service's intakeSections array matches the sections
+ * whose serviceTags include that service ID. Logs warnings for mismatches.
+ * Returns true if all mappings are consistent.
+ */
+export function validateServiceIntakeMapping(): boolean {
+  let valid = true;
+
+  for (const service of serviceCatalog) {
+    // Derive expected sections from serviceTags on form sections
+    const expectedSections = allFormSections
+      .filter((section) => section.serviceTags.includes(service.id))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((section) => section.id);
+
+    const catalogSections = [...service.intakeSections].sort();
+
+    // Check for missing sections (in form but not in catalog)
+    const missing = expectedSections.filter(
+      (id) => !service.intakeSections.includes(id),
+    );
+    // Check for extra sections (in catalog but not in form)
+    const extra = service.intakeSections.filter(
+      (id) => !expectedSections.includes(id),
+    );
+
+    if (missing.length > 0 || extra.length > 0) {
+      valid = false;
+      if (typeof console !== 'undefined') {
+        console.warn(
+          `[ServiceIntakeMapping] Mismatch for "${service.id}":`,
+          missing.length > 0 ? `missing in catalog: [${missing.join(', ')}]` : '',
+          extra.length > 0 ? `extra in catalog: [${extra.join(', ')}]` : '',
+        );
+      }
+    }
+  }
+
+  return valid;
+}
+
+/**
+ * Derive intakeSections from the form section serviceTags for a given service.
+ * This is the canonical source — the catalog's intakeSections should match this.
+ */
+export function deriveIntakeSections(serviceId: string): string[] {
+  return allFormSections
+    .filter((section) => section.serviceTags.includes(serviceId))
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((section) => section.id);
+}
+
+// Run validation in development mode
+if (process.env.NODE_ENV === 'development') {
+  validateServiceIntakeMapping();
+}
