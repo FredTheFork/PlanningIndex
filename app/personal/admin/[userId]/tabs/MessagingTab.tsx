@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Send, MessageSquare, Phone, Loader, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,18 +29,14 @@ const formatMessageDate = (date: string) => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-
   if (msgDate.toDateString() === today.toDateString()) return 'Today';
   if (msgDate.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return msgDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-const getMessageGroupKey = (date: string) => {
-  return new Date(date).toDateString();
-};
+const getMessageGroupKey = (date: string) => new Date(date).toDateString();
 
 const POLL_INTERVAL = 3000;
-const MAX_RETRIES = 3;
 
 export default function MessagingTab({ userId, data, refreshData }: MessagingTabProps) {
   const { user } = useAuth();
@@ -54,22 +50,21 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const retryCountRef = useRef(0);
-  const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const isMountedRef = useRef(true);
-  const lastFetchTimeRef = useRef<string>('');
-  const convIdRef = useRef('');
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastFetchTimeRef = useRef('');
+  const componentActiveRef = useRef(true);
 
-  // Stable ref for conversation ID to avoid stale closures
+  // Compute conversation ID whenever user/userId change
   useEffect(() => {
-    convIdRef.current = conversationId;
-  }, [conversationId]);
+    if (user?.id && userId) {
+      const convId = [user.id, userId].sort().join('_');
+      setConversationId(convId);
+    }
+  }, [user?.id, userId]);
 
-  const fetchConversation = useCallback(async () => {
-    if (!user) return;
-
-    const convId = [user.id, userId].sort().join('_');
-    setConversationId(convId);
+  // Main data fetch — always sets loading=false when done
+  const loadMessages = async (convId: string) => {
+    if (!user) { setLoading(false); return; }
 
     try {
       const { data: messagesData, error } = await supabase
@@ -78,263 +73,166 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         .eq('conversation_id', convId)
         .order('created_at', { ascending: true });
 
-      if (!isMountedRef.current) return;
+      if (!componentActiveRef.current) return;
 
       if (error) {
         console.error('Error fetching conversation:', error);
-        return;
-      }
+        setMessages([]);
+      } else {
+        setMessages(messagesData || []);
+        if (messagesData && messagesData.length > 0) {
+          lastFetchTimeRef.current = messagesData[messagesData.length - 1].created_at;
+        }
 
-      setMessages(messagesData || []);
-      if (messagesData && messagesData.length > 0) {
-        lastFetchTimeRef.current = messagesData[messagesData.length - 1].created_at;
-      }
-
-      // Mark client messages as read
-      const unreadIds = (messagesData || [])
-        .filter((m) => m.recipient_id === user.id && !m.is_read)
-        .map((m) => m.id);
-
-      if (unreadIds.length > 0) {
-        await supabase
-          .from('client_messages')
-          .update({ is_read: true, read_at: new Date().toISOString() })
-          .in('id', unreadIds);
+        // Mark unread messages as read
+        const unreadIds = (messagesData || [])
+          .filter((m) => m.recipient_id === user.id && !m.is_read)
+          .map((m) => m.id);
+        if (unreadIds.length > 0) {
+          supabase
+            .from('client_messages')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .in('id', unreadIds)
+            .then();
+        }
       }
     } catch (err) {
       console.error('Error fetching conversation:', err);
     } finally {
-      if (isMountedRef.current) setLoading(false);
+      setLoading(false);
     }
-  }, [user, userId]);
+  };
 
-  // Poll for new messages (lightweight - only fetches messages newer than last known)
-  const pollForNewMessages = useCallback(async () => {
-    const convId = convIdRef.current;
-    if (!convId || !user) return;
-
+  // Poll for new messages (fetches only messages newer than last known)
+  const pollForNewMessages = async (convId: string) => {
+    if (!user) return;
     try {
       let query = supabase
         .from('client_messages')
         .select('*')
         .eq('conversation_id', convId)
         .order('created_at', { ascending: true });
-
       if (lastFetchTimeRef.current) {
         query = query.gt('created_at', lastFetchTimeRef.current);
       }
-
-      const { data: newMessages, error } = await query;
-
-      if (!isMountedRef.current) return;
-      if (error || !newMessages || newMessages.length === 0) return;
+      const { data: newMsgs, error } = await query;
+      if (!componentActiveRef.current || error || !newMsgs || newMsgs.length === 0) return;
 
       setMessages((prev) => {
         const existingIds = new Set(prev.map((m) => m.id));
-        const trulyNew = newMessages.filter((m) => !existingIds.has(m.id));
+        const trulyNew = newMsgs.filter((m) => !existingIds.has(m.id));
         if (trulyNew.length === 0) return prev;
         return [...prev, ...trulyNew];
       });
+      lastFetchTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
 
-      lastFetchTimeRef.current = newMessages[newMessages.length - 1].created_at;
-
-      // Mark new unread messages
-      const unreadNew = newMessages.filter(
-        (m) => m.recipient_id === user.id && !m.is_read
-      );
+      const unreadNew = newMsgs.filter((m) => m.recipient_id === user.id && !m.is_read);
       if (unreadNew.length > 0) {
-        await supabase
+        supabase
           .from('client_messages')
           .update({ is_read: true, read_at: new Date().toISOString() })
-          .in('id', unreadNew.map((m) => m.id));
+          .in('id', unreadNew.map((m) => m.id))
+          .then();
       }
     } catch {
-      // Silent fail for polling - don't spam console
+      // silent
     }
-  }, [user]);
+  };
 
-  const startPolling = useCallback(() => {
-    if (pollingRef.current) return;
-    pollingRef.current = setInterval(pollForNewMessages, POLL_INTERVAL);
-  }, [pollForNewMessages]);
-
-  const stopPolling = useCallback(() => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-  }, []);
-
-  // Setup Realtime subscription with retry logic
-  const setupSubscription = useCallback(() => {
-    const convId = convIdRef.current;
-    if (!user || !convId) return;
-
-    // Clean up existing subscription
-    if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
-      subscriptionRef.current = null;
+  // Setup Realtime subscription + polling whenever we have a conversationId
+  useEffect(() => {
+    if (!conversationId || !user) {
+      setLoading(false);
+      return;
     }
 
-    const subscription = supabase.channel(`messages:${convId}`, {
-      config: { broadcast: { self: true } },
-    });
+    // Initial load
+    loadMessages(conversationId);
 
-    subscription
+    // Fetch client preferences
+    supabase
+      .from('client_communication_preferences')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data: prefs }) => {
+        if (componentActiveRef.current) setClientPreferences(prefs);
+      });
+
+    // Realtime subscription
+    const channel = supabase.channel(`messages:${conversationId}`);
+    channel
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'client_messages',
-          filter: `conversation_id=eq.${convId}`,
-        },
+        { event: 'INSERT', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${conversationId}` },
         (payload: any) => {
-          if (!isMountedRef.current) return;
-
+          if (!componentActiveRef.current) return;
           const newMsg = payload.new as Message;
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
-
             const tempIdx = prev.findIndex(
               (m) => m.id.startsWith('temp_') && m.sender_id === newMsg.sender_id && m.message_content === newMsg.message_content
             );
-            if (tempIdx !== -1) {
-              return prev.map((m, i) => (i === tempIdx ? newMsg : m));
-            }
-
+            if (tempIdx !== -1) return prev.map((m, i) => (i === tempIdx ? newMsg : m));
             return [...prev, newMsg];
           });
-
           lastFetchTimeRef.current = newMsg.created_at;
-
-          // Mark incoming unread messages
           if (newMsg.recipient_id === user.id && !newMsg.is_read) {
-            supabase
-              .from('client_messages')
-              .update({ is_read: true, read_at: new Date().toISOString() })
-              .eq('id', newMsg.id)
-              .then();
+            supabase.from('client_messages').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', newMsg.id).then();
           }
         }
       )
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'client_messages',
-          filter: `conversation_id=eq.${convId}`,
-        },
+        { event: 'UPDATE', schema: 'public', table: 'client_messages', filter: `conversation_id=eq.${conversationId}` },
         (payload: any) => {
-          if (!isMountedRef.current) return;
-
-          setMessages((prev) =>
-            prev.map((m) => (m.id === payload.new.id ? payload.new : m))
-          );
+          if (!componentActiveRef.current) return;
+          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
         }
       )
       .subscribe((status) => {
         console.log('[MessagingTab] Subscription status:', status);
-
-        if (status === 'SUBSCRIBED') {
-          retryCountRef.current = 0;
-          // Use both Realtime and polling for reliability
-          startPolling();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          if (retryCountRef.current < MAX_RETRIES) {
-            retryCountRef.current++;
-            const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
-            console.log(`[MessagingTab] Retrying subscription in ${delay}ms (attempt ${retryCountRef.current}/${MAX_RETRIES})`);
-            setTimeout(() => {
-              if (isMountedRef.current) setupSubscription();
-            }, delay);
-          } else {
-            console.warn('[MessagingTab] Max retries reached, falling back to polling only');
-          }
-          // Always poll regardless of Realtime status
-          startPolling();
-        }
       });
 
-    subscriptionRef.current = subscription;
-  }, [user, startPolling]);
+    channelRef.current = channel;
 
-  // Initial load
-  useEffect(() => {
-    if (user && userId) {
-      fetchConversation();
-      fetchClientPreferences();
-    }
-  }, [user, userId, fetchConversation]);
+    // Start polling as a reliable fallback
+    pollingRef.current = setInterval(() => pollForNewMessages(conversationId), POLL_INTERVAL);
 
-  // Setup subscription after conversation ID is determined
-  useEffect(() => {
-    if (user && conversationId) {
-      setupSubscription();
-
-      return () => {
-        isMountedRef.current = false;
-        stopPolling();
-        if (subscriptionRef.current) {
-          subscriptionRef.current.unsubscribe();
-          subscriptionRef.current = null;
-        }
-      };
-    }
-    return () => {
-      isMountedRef.current = false;
-      stopPolling();
-    };
-  }, [user, conversationId, setupSubscription, stopPolling]);
-
-  // Re-fetch on window focus to catch messages missed during background
-  useEffect(() => {
-    const handleFocus = () => {
-      if (isMountedRef.current) {
-        fetchConversation();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && isMountedRef.current) {
-        fetchConversation();
-      }
-    });
+    // Refetch on focus/visibility
+    const onFocus = () => loadMessages(conversationId);
+    const onVisibility = () => { if (document.visibilityState === 'visible') loadMessages(conversationId); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      componentActiveRef.current = false;
+      channel.unsubscribe();
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [fetchConversation]);
+  }, [conversationId, user?.id]);
 
-  // Auto-scroll on new messages
+  // Reset componentActive on remount
   useEffect(() => {
-    const behavior = isInitialLoadRef.current ? ('instant' as ScrollBehavior) : ('smooth' as ScrollBehavior);
+    componentActiveRef.current = true;
+  }, []);
+
+  // Auto-scroll on messages change
+  useEffect(() => {
+    const behavior = isInitialLoadRef.current ? 'instant' : 'smooth';
     messagesEndRef.current?.scrollIntoView({ behavior });
     isInitialLoadRef.current = false;
   }, [messages]);
 
-  const fetchClientPreferences = async () => {
-    try {
-      const { data: prefs } = await supabase
-        .from('client_communication_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (isMountedRef.current) setClientPreferences(prefs);
-    } catch (err) {
-      console.error('Error fetching preferences:', err);
-    }
-  };
-
   const sendMessage = async () => {
     if (!messageText.trim() || !user || !conversationId) return;
-
     const text = messageText.trim();
+    const optimisticId = `temp_${Date.now()}`;
+
     const optimisticMessage: Message = {
-      id: `temp_${Date.now()}`,
+      id: optimisticId,
       sender_id: user.id,
       recipient_id: userId,
       message_content: text,
@@ -361,23 +259,22 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
       if (error) {
         console.error('Error sending message:', error);
-        setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         setMessageText(text);
         return;
       }
 
       if (insertedData && insertedData.length > 0) {
         const newMessage = insertedData[0];
+        lastFetchTimeRef.current = newMessage.created_at;
         setMessages((prev) => {
           if (prev.some((m) => m.id === newMessage.id)) {
-            return prev.filter((m) => m.id !== optimisticMessage.id);
+            return prev.filter((m) => m.id !== optimisticId);
           }
-          return prev.map((m) => (m.id === optimisticMessage.id ? newMessage : m));
+          return prev.map((m) => (m.id === optimisticId ? newMessage : m));
         });
 
-        lastFetchTimeRef.current = newMessage.created_at;
-
-        await triggerMessageNotification({
+        triggerMessageNotification({
           id: newMessage.id,
           sender_id: newMessage.sender_id,
           recipient_id: newMessage.recipient_id,
@@ -390,7 +287,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
       setMessageType('general');
     } catch (err) {
       console.error('Error sending message:', err);
-      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       setMessageText(text);
     } finally {
       setSending(false);
@@ -412,22 +309,18 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const unreadCount = messages.filter((m) => m.sender_id === userId && !m.is_read).length;
   const totalMessages = messages.length;
 
-  // Group messages by date
   const groupedMessages: { [key: string]: Message[] } = {};
   messages.forEach((msg) => {
     const dateKey = getMessageGroupKey(msg.created_at);
-    if (!groupedMessages[dateKey]) {
-      groupedMessages[dateKey] = [];
-    }
+    if (!groupedMessages[dateKey]) groupedMessages[dateKey] = [];
     groupedMessages[dateKey].push(msg);
   });
   const sortedDateKeys = Object.keys(groupedMessages).sort();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
-      {/* Left Panel - Conversation Info */}
+      {/* Left Panel */}
       <div className="lg:col-span-1 space-y-4 overflow-y-auto">
-        {/* Client Card */}
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-[#1B3F7A] to-[#2C68C4] rounded-lg flex items-center justify-center">
@@ -438,8 +331,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
               <p className="font-inter text-gray-600 text-xs">Client</p>
             </div>
           </div>
-
-          {/* Conversation Stats */}
           <div className="space-y-2 text-sm">
             <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
               <span className="font-inter text-gray-600 text-xs">Total Messages</span>
@@ -454,42 +345,35 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           </div>
         </div>
 
-        {/* Communication Preferences */}
         {clientPreferences && (
           <div className="bg-white rounded-lg border border-gray-200 p-5">
             <h4 className="font-inter font-semibold text-gray-900 text-sm mb-3">Contact Info</h4>
-
             {clientPreferences.phone_number && (
               <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200">
                 <Phone size={16} className="text-gray-500 shrink-0" />
                 <p className="font-inter text-sm text-gray-700 break-all">{clientPreferences.phone_number}</p>
               </div>
             )}
-
             <div className="space-y-2">
               <p className="font-inter text-xs text-gray-600 font-medium uppercase tracking-wider mb-2">Notifications</p>
-
               {clientPreferences.email_notifications_enabled && (
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-blue-600" />
                   <span className="font-inter text-xs text-gray-700">Email enabled</span>
                 </div>
               )}
-
               {clientPreferences.push_notifications_enabled && (
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-green-600" />
                   <span className="font-inter text-xs text-gray-700">Push enabled</span>
                 </div>
               )}
-
               {clientPreferences.sms_notifications_enabled && (
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-emerald-600" />
                   <span className="font-inter text-xs text-gray-700">SMS enabled</span>
                 </div>
               )}
-
               {!clientPreferences.email_notifications_enabled &&
                !clientPreferences.push_notifications_enabled &&
                !clientPreferences.sms_notifications_enabled && (
@@ -502,7 +386,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           </div>
         )}
 
-        {/* Quick Info */}
         <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
           <div className="flex items-start gap-2">
             <Clock size={16} className="text-blue-600 shrink-0 mt-0.5" />
@@ -516,7 +399,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
       {/* Right Panel - Messaging */}
       <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col h-full">
-        {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gradient-to-b from-gray-50 to-white">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
@@ -530,7 +412,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
             <>
               {sortedDateKeys.map((dateKey) => (
                 <div key={dateKey}>
-                  {/* Date separator */}
                   <div className="flex items-center gap-2 my-2">
                     <div className="flex-1 border-t border-gray-200" />
                     <p className="text-xs font-inter text-gray-500 font-medium px-1">
@@ -538,8 +419,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
                     </p>
                     <div className="flex-1 border-t border-gray-200" />
                   </div>
-
-                  {/* Messages for this date */}
                   <div className="space-y-1.5">
                     {groupedMessages[dateKey].map((msg) => (
                       <div key={msg.id} className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
@@ -563,14 +442,9 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
                             msg.sender_id === user?.id ? 'text-blue-100' : 'text-gray-600'
                           }`}>
                             <span>
-                              {new Date(msg.created_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
-                            {msg.sender_id !== user?.id && msg.is_read && (
-                              <CheckCircle2 size={12} />
-                            )}
+                            {msg.sender_id !== user?.id && msg.is_read && <CheckCircle2 size={12} />}
                           </div>
                         </div>
                       </div>
@@ -583,7 +457,6 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
         <div className="border-t border-gray-200 bg-white p-3 space-y-2">
           <select
             value={messageType}
@@ -594,18 +467,12 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
             <option value="document_query">Document question</option>
             <option value="intake_query">Intake question</option>
           </select>
-
           <div className="flex gap-2">
             <input
               type="text"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
               placeholder="Type message..."
               maxLength={500}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:border-transparent font-inter text-sm"
@@ -615,18 +482,11 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
               disabled={!messageText.trim() || sending}
               className="bg-[#1B3F7A] hover:bg-[#2C68C4] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md px-3 py-2 transition-colors flex items-center justify-center"
             >
-              {sending ? (
-                <Loader size={16} className="animate-spin" />
-              ) : (
-                <Send size={16} />
-              )}
+              {sending ? <Loader size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
           </div>
-
           {messageText.length > 400 && (
-            <p className="font-inter text-xs text-gray-500 text-right">
-              {messageText.length}/500
-            </p>
+            <p className="font-inter text-xs text-gray-500 text-right">{messageText.length}/500</p>
           )}
         </div>
       </div>
