@@ -1,26 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Clock, FileText, ArrowRight, Check } from 'lucide-react';
+import { ShieldCheck, Clock, ArrowRight, Check, AlertCircle, Zap } from 'lucide-react';
 import { stripeMode } from '@/lib/stripe/config';
 import {
   serviceCatalog,
   getServiceById,
-  getCoreService,
-  getOptionalServices,
   calculateTotal,
   getBundleSavingsMessage,
-  type ServiceCatalogEntry,
 } from '@/lib/services/service-catalog';
+import { buildIntakeForm } from '@/lib/forms/build-intake-form';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase/client';
 import GuaranteeBadge from '@/components/ui/GuaranteeBadge';
-import ServiceSelector from '@/components/ui/AddOnSelector';
 
 export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const coreService = getCoreService();
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([coreService.id]);
+  const { user } = useAuth();
+  const [purchasedServices, setPurchasedServices] = useState<string[]>([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(!!user);
+
+  useEffect(() => {
+    if (!user) {
+      setSelectedServiceIds(['business_foundations_pack']);
+      setIsLoadingProfile(false);
+      return;
+    }
+
+    const fetchPurchasedServices = async () => {
+      try {
+        const { data, error: err } = await supabase
+          .from('client_profiles')
+          .select('purchased_upsells')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (err) {
+          console.error('Error fetching purchased services:', err);
+        }
+
+        if (data?.purchased_upsells && Array.isArray(data.purchased_upsells)) {
+          setPurchasedServices(data.purchased_upsells);
+        }
+      } catch (err) {
+        console.error('Failed to fetch purchased services:', err);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchPurchasedServices();
+  }, [user]);
 
   const { subtotal, discount, total } = calculateTotal(selectedServiceIds);
   const savingsMessage = getBundleSavingsMessage(selectedServiceIds);
@@ -29,10 +62,25 @@ export default function CheckoutPage() {
     (id) => getServiceById(id)?.mode === 'subscription'
   );
 
+  const intakeSections = buildIntakeForm(selectedServiceIds);
+  const sectionCount = intakeSections.length;
+  const estimatedMinutes = Math.ceil(sectionCount * 2.5);
+
+  const availableServices = serviceCatalog.filter(
+    (service) => !purchasedServices.includes(service.id)
+  );
+
+  const isRepurchaseAttempt = user && purchasedServices.length > 0 && selectedServiceIds.every(
+    (id) => purchasedServices.includes(id)
+  );
+
   const toggleService = (serviceId: string) => {
+    if (purchasedServices.includes(serviceId)) {
+      return;
+    }
+
     setSelectedServiceIds((prev) => {
       if (prev.includes(serviceId)) {
-        // Don't allow deselecting if it's the only service
         if (prev.length === 1) return prev;
         return prev.filter((id) => id !== serviceId);
       }
@@ -43,6 +91,11 @@ export default function CheckoutPage() {
   const handleCheckout = async () => {
     if (selectedServiceIds.length === 0) {
       setError('Please select at least one service.');
+      return;
+    }
+
+    if (isRepurchaseAttempt) {
+      setError('You already own these services. Please select a new service to add.');
       return;
     }
 
@@ -93,162 +146,224 @@ export default function CheckoutPage() {
     }
   };
 
-  const selectedCore = selectedServiceIds.find((id) => getServiceById(id)?.isCore);
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-off-white pt-24 pb-16 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-off-white pt-24 pb-16">
-      <div className="max-w-[900px] mx-auto px-6">
+      <div className="max-w-[1000px] mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="font-inter font-bold text-navy text-3xl mb-3">
-            Complete Your Purchase
+            {user && purchasedServices.length > 0 ? 'Add More Services' : 'Complete Your Purchase'}
           </h1>
           <p className="font-inter text-secondary-text text-lg">
-            Choose the services you need. Each one works on its own — or combine them for a discount.
+            {user && purchasedServices.length > 0
+              ? 'Enhance your package with additional services.'
+              : 'Choose the services you need. Each one works on its own — or combine them for a discount.'}
           </p>
         </div>
 
-        <div className="grid md:grid-cols-5 gap-8">
-          {/* Order summary */}
-          <div className="md:col-span-3">
+        {/* Current services section for logged-in returning customers */}
+        {user && purchasedServices.length > 0 && (
+          <div className="mb-8 bg-navy bg-opacity-5 border border-medium-blue rounded-lg p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <Check size={20} className="text-success shrink-0 mt-0.5" />
+              <div>
+                <h2 className="font-inter font-semibold text-navy">Your Current Services</h2>
+                <p className="font-inter text-secondary-text text-sm mt-1">
+                  You already own the following:
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {purchasedServices.map((serviceId) => {
+                const service = getServiceById(serviceId);
+                return (
+                  <div
+                    key={serviceId}
+                    className="bg-white border border-border rounded-lg px-4 py-2 inline-flex items-center gap-2"
+                  >
+                    <Check size={16} className="text-success" />
+                    <span className="font-inter font-medium text-dark-text">
+                      {service?.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Service selection grid */}
+          <div className="lg:col-span-2">
             <div className="bg-white rounded-lg border border-border p-8">
-              {/* Core Pack Card */}
-              <div
-                onClick={() => toggleService(coreService.id)}
-                className={`border-2 rounded-lg p-5 cursor-pointer transition-all duration-200 mb-6 ${
-                  selectedCore
-                    ? 'border-medium-blue bg-blue-50'
-                    : 'border-border bg-white hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-start gap-3 flex-1">
+              <h2 className="font-inter font-bold text-navy text-xl mb-6">
+                {user && purchasedServices.length > 0 ? 'Available Services' : 'Select Your Services'}
+              </h2>
+
+              {/* All available services as independent cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {availableServices.map((service) => {
+                  const isSelected = selectedServiceIds.includes(service.id);
+                  const isDisabled = purchasedServices.includes(service.id);
+
+                  return (
                     <div
-                      className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 ${
-                        selectedCore ? 'bg-medium-blue' : 'border-2 border-gray-300 bg-white'
+                      key={service.id}
+                      onClick={() => !isDisabled && toggleService(service.id)}
+                      className={`border-2 rounded-lg p-5 transition-all duration-200 ${
+                        isDisabled
+                          ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                          : isSelected
+                            ? 'border-medium-blue bg-blue-50 cursor-pointer'
+                            : 'border-border bg-white hover:border-gray-300 cursor-pointer'
                       }`}
                     >
-                      {selectedCore && <Check size={14} className="text-white" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h2 className="font-inter font-bold text-dark-text text-lg">
-                          {coreService.name}
-                        </h2>
-                        <span className="font-inter font-bold text-navy">
-                          {coreService.priceLabel}
-                        </span>
+                      <div className="flex items-start gap-3 mb-2">
+                        <div
+                          className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 ${
+                            isDisabled
+                              ? 'bg-gray-300'
+                              : isSelected
+                                ? 'bg-medium-blue'
+                                : 'border-2 border-gray-300 bg-white'
+                          }`}
+                        >
+                          {(isSelected || isDisabled) && (
+                            <Check size={14} className="text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-inter font-bold text-dark-text" style={{ fontSize: '0.95rem' }}>
+                            {service.name}
+                          </h3>
+                          {!isDisabled && (
+                            <p className="font-inter font-semibold text-navy mt-1">
+                              {service.priceLabel}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <p className="font-inter text-secondary-text mt-1.5" style={{ fontSize: '0.85rem' }}>
-                        {coreService.description}
+                      <p
+                        className={`font-inter text-secondary-text mt-2 ${
+                          isDisabled ? 'line-through' : ''
+                        }`}
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        {service.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Intake sections preview */}
+              {selectedServiceIds.length > 0 && (
+                <div className="border-t border-border pt-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                    <Zap size={20} className="text-medium-blue shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-inter font-semibold text-navy">
+                        Your intake will cover {sectionCount} section{sectionCount !== 1 ? 's' : ''}, approx {estimatedMinutes} minutes
+                      </p>
+                      <p className="font-inter text-secondary-text text-sm mt-1">
+                        Answer questions tailored to {selectedServiceIds.length === 1 ? 'this service' : 'your selected services'}. You can save and resume anytime.
                       </p>
                     </div>
                   </div>
                 </div>
-
-                {selectedCore && (
-                  <div className="mt-3 pt-3 border-t border-border ml-8">
-                    <h3 className="font-inter font-semibold text-navy text-xs mb-2 uppercase tracking-wider">
-                      What's included
-                    </h3>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                      {coreService.includes.map((item) => (
-                        <div key={item} className="flex items-start gap-2">
-                          <FileText size={14} className="text-medium-blue mt-0.5 shrink-0" />
-                          <span className="font-inter text-secondary-text" style={{ fontSize: '0.8rem' }}>
-                            {item}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Additional Services */}
-              <div className="border-t border-border pt-6 mb-6">
-                <ServiceSelector
-                  selectedServiceIds={selectedServiceIds}
-                  onToggle={toggleService}
-                />
-              </div>
+              )}
 
               {/* Price Breakdown */}
-              <div className="border-t border-border pt-4">
-                {savingsMessage && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 flex items-center gap-3">
-                    {isBestValue && (
-                      <span className="bg-green-600 text-white text-xs font-inter font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0">
-                        Best Value
-                      </span>
-                    )}
-                    <p className="font-inter font-semibold text-green-800" style={{ fontSize: '0.9rem' }}>
-                      {savingsMessage}
-                    </p>
+              {selectedServiceIds.length > 0 && (
+                <div className="border-t border-border pt-6 mt-6">
+                  {savingsMessage && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 flex items-center gap-3">
+                      {isBestValue && (
+                        <span className="bg-green-600 text-white text-xs font-inter font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0">
+                          Best Value
+                        </span>
+                      )}
+                      <p className="font-inter font-semibold text-green-800" style={{ fontSize: '0.9rem' }}>
+                        {savingsMessage}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 mb-3">
+                    {selectedServiceIds.map((serviceId) => {
+                      const service = getServiceById(serviceId);
+                      if (!service) return null;
+                      return (
+                        <div key={serviceId} className="flex items-center justify-between">
+                          <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
+                            {service.name}
+                          </span>
+                          <span className="font-inter font-semibold text-navy">
+                            £{service.price.toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-                {selectedServiceIds.map((serviceId) => {
-                  const service = getServiceById(serviceId);
-                  if (!service) return null;
-                  return (
-                    <div key={serviceId} className="flex items-center justify-between mb-2">
-                      <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
-                        {service.name}
+
+                  {discount > 0 && (
+                    <div className="flex items-center justify-between mb-3 pt-2 border-t border-gray-200">
+                      <span className="font-inter font-medium text-green-700" style={{ fontSize: '0.9rem' }}>
+                        Bundle discount
                       </span>
-                      <span className="font-inter font-semibold text-navy">
-                        {service.currencySymbol}{service.price.toFixed(2)}
+                      <span className="font-inter font-semibold text-green-700">
+                        -£{discount.toFixed(2)}
                       </span>
                     </div>
-                  );
-                })}
+                  )}
 
-                {discount > 0 && (
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-inter font-medium text-green-700" style={{ fontSize: '0.9rem' }}>
-                      Bundle discount
-                    </span>
-                    <span className="font-inter font-semibold text-green-700">
-                      -£{discount.toFixed(2)}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+                    <span className="font-inter font-bold text-navy">Total</span>
+                    <span className="font-inter font-bold text-navy text-2xl">
+                      £{total.toFixed(2)}
                     </span>
                   </div>
-                )}
 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
-                  <span className="font-inter font-semibold text-navy">Total</span>
-                  <span className="font-inter font-bold text-navy text-2xl">
-                    £{total.toFixed(2)}
-                  </span>
+                  <p className="font-inter text-secondary-text text-xs mt-3">
+                    {hasSubscription
+                      ? 'One-time charge for services + recurring subscription for Quarterly Refresh.'
+                      : 'One-time payment. No recurring charges.'}
+                  </p>
                 </div>
-              </div>
-              <p className="font-inter text-secondary-text text-xs mt-1">
-                {hasSubscription
-                  ? 'One-time charge for services + recurring subscription for Quarterly Refresh.'
-                  : 'One-time payment. No recurring charges.'}
-              </p>
+              )}
             </div>
           </div>
 
-          {/* Checkout action */}
-          <div className="md:col-span-2">
+          {/* Checkout sidebar */}
+          <div>
             <div className="bg-white rounded-lg border border-border p-8 sticky top-24">
               {/* Guarantee Badge */}
               <div className="mb-6">
                 <GuaranteeBadge size="small" />
               </div>
 
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <ShieldCheck size={18} className="text-success" />
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-success shrink-0" />
                   <span className="font-inter font-medium text-sm text-dark-text">Secure checkout via Stripe</span>
                 </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={18} className="text-medium-blue" />
+                <div className="flex items-center gap-2">
+                  <Clock size={18} className="text-medium-blue shrink-0" />
                   <span className="font-inter font-medium text-sm text-dark-text">24-hour delivery after intake</span>
                 </div>
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-2">
+                  <AlertCircle size={18} className="text-danger shrink-0 mt-0.5" />
                   <p className="font-inter text-sm text-danger">{error}</p>
                 </div>
               )}
@@ -261,6 +376,8 @@ export default function CheckoutPage() {
               >
                 {loading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                ) : selectedServiceIds.length === 0 ? (
+                  'Select a Service'
                 ) : (
                   <>
                     Pay £{total.toFixed(2)}
@@ -270,15 +387,15 @@ export default function CheckoutPage() {
               </button>
 
               <p className="font-inter text-secondary-text text-xs mt-4 text-center">
-                No account needed. You'll receive a login link after payment.
+                {user ? 'Ready to proceed' : "No account needed - you'll get a login link after payment."}
               </p>
 
               <div className="mt-6 pt-4 border-t border-border">
                 <Link
                   href="/pricing"
-                  className="font-inter text-medium-blue text-sm hover:underline"
+                  className="font-inter text-medium-blue text-sm hover:underline block text-center"
                 >
-                  View full pricing details
+                  View full pricing
                 </Link>
               </div>
             </div>
