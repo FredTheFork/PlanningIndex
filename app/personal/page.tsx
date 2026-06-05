@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { FileText, ArrowRight, Clock, CheckCircle2, FolderOpen } from 'lucide-react';
+import { FileText, ArrowRight, Clock, CheckCircle2, FolderOpen, RefreshCw } from 'lucide-react';
 
 export default function PersonalOverview() {
   const router = useRouter();
@@ -123,6 +123,31 @@ export default function PersonalOverview() {
             : 'Pending delivery'}
         />
       </div>
+
+      {/* Quarterly refresh subscription card */}
+      {profile.purchased_upsells?.includes('quarterly_refresh') && (
+        <div className="mt-4 bg-white rounded-lg border border-teal-200 p-5">
+          <div className="flex items-start gap-3">
+            <div className="bg-teal-50 rounded-lg p-2 shrink-0">
+              <RefreshCw size={18} className="text-teal-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-inter font-semibold text-[#1B3F7A] text-sm">
+                  Quarterly Document Refresh
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-50 text-teal-700 rounded text-xs font-inter font-medium">
+                  <CheckCircle2 size={10} />
+                  Active
+                </span>
+              </div>
+              <p className="font-inter text-gray-600 text-sm">
+                Your documents can be refreshed each quarter as your business evolves — pricing changes, new services, updated GDPR policies, and more. Contact us when you need updates.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

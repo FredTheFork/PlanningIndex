@@ -90,6 +90,11 @@ async function handleEvent(event: Stripe.Event, stripe: Stripe) {
     return;
   }
 
+  if (event.type === 'customer.subscription.created') {
+    await handleSubscriptionCreated(event);
+    return;
+  }
+
   if (event.type === 'customer.subscription.updated') {
     await handleSubscriptionUpdated(event);
     return;
@@ -360,6 +365,56 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
   console.info(`Successfully processed checkout for ${customerEmail}, services: ${purchasedServiceIds.join(',')}`);
 }
 
+// ── Subscription Created ──
+
+async function handleSubscriptionCreated(event: Stripe.Event) {
+  const subscription = event.data.object as Stripe.Subscription;
+  console.info(`Subscription created: ${subscription.id}, status: ${subscription.status}`);
+
+  const customerId = typeof subscription.customer === 'string'
+    ? subscription.customer
+    : subscription.customer.id;
+
+  const { data: customerMapping } = await supabase
+    .from('stripe_customers')
+    .select('user_id')
+    .eq('customer_id', customerId)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (!customerMapping) {
+    console.info(`No user found for customer ${customerId} on subscription.created`);
+    return;
+  }
+
+  const userId = customerMapping.user_id;
+  const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+  const periodStart = new Date(subscription.current_period_start * 1000).toISOString();
+  const newStatus = (subscription.status === 'active' || subscription.status === 'trialing')
+    ? 'active'
+    : 'pending';
+
+  const { error } = await supabase
+    .from('services_purchased')
+    .update({
+      status: newStatus,
+      stripe_subscription_id: subscription.id,
+      expires_at: periodEnd,
+      next_billing_date: periodEnd,
+      subscription_period_start: periodStart,
+      subscription_period_end: periodEnd,
+    })
+    .eq('user_id', userId)
+    .eq('service_id', 'quarterly_refresh')
+    .eq('stripe_subscription_id', subscription.id);
+
+  if (error) {
+    console.error('Failed to update services_purchased on subscription.created:', error);
+  } else {
+    console.info(`Updated quarterly_refresh subscription for user ${userId}, next billing: ${periodEnd}`);
+  }
+}
+
 // ── Subscription Updated ──
 
 async function handleSubscriptionUpdated(event: Stripe.Event) {
@@ -377,14 +432,32 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     return;
   }
 
+  const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+  const periodStart = new Date(subscription.current_period_start * 1000).toISOString();
+
   if (subscription.status === 'active' || subscription.status === 'trialing') {
+    const { error } = await supabase
+      .from('services_purchased')
+      .update({
+        status: 'active',
+        expires_at: periodEnd,
+        next_billing_date: periodEnd,
+        subscription_period_start: periodStart,
+        subscription_period_end: periodEnd,
+      })
+      .eq('id', spRecord.id);
+
+    if (error) {
+      console.error('Failed to update services_purchased on subscription.updated:', error);
+    } else {
+      console.info(`Updated subscription period for ${spRecord.service_id}, user ${spRecord.user_id}, next billing: ${periodEnd}`);
+    }
+  } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
     await supabase
       .from('services_purchased')
-      .update({ status: 'active' })
+      .update({ status: 'past_due' })
       .eq('id', spRecord.id);
-    console.info(`Set services_purchased ${spRecord.service_id} to active for user ${spRecord.user_id}`);
-  } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
-    console.info(`Subscription ${subscription.id} is ${subscription.status}, leaving as-is`);
+    console.info(`Subscription ${subscription.id} is ${subscription.status}, marked past_due`);
   }
 }
 

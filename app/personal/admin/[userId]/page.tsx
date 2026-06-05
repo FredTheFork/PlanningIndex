@@ -18,6 +18,7 @@ import BriefTab from './tabs/BriefTab';
 import DocumentsTab from './tabs/DocumentsTab';
 import IntakeTab from './tabs/IntakeTab';
 import MessagingTab from './tabs/MessagingTab';
+import SubscriptionTab from './tabs/SubscriptionTab';
 
 interface ClientData {
   profile: {
@@ -47,6 +48,9 @@ interface ClientData {
     purchased_at: string;
     expires_at: string | null;
     stripe_subscription_id: string | null;
+    next_billing_date: string | null;
+    subscription_period_start: string | null;
+    subscription_period_end: string | null;
   }[];
   email: string;
   authEmail?: string;
@@ -58,6 +62,7 @@ const TABS = [
   { id: 'documents', label: 'Documents', icon: FileText },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
   { id: 'messaging', label: 'Messaging', icon: Send },
+  { id: 'subscription', label: 'Subscription', icon: RefreshCw },
 ];
 
 export default function AdminClientDetail({ params }: { params: { userId: string } }) {
@@ -98,7 +103,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
 
       const { data: purchasedServices } = await supabase
         .from('services_purchased')
-        .select('id, service_id, status, purchased_at, expires_at, stripe_subscription_id')
+        .select('id, service_id, status, purchased_at, expires_at, stripe_subscription_id, next_billing_date, subscription_period_start, subscription_period_end')
         .eq('user_id', userId)
         .order('purchased_at', { ascending: true });
 
@@ -182,7 +187,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <QuickStatusBadges profile={data.profile} />
+            <QuickStatusBadges profile={data.profile} purchasedServices={data.purchasedServices} />
           </div>
         </div>
 
@@ -270,6 +275,9 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           {activeTab === 'messaging' && (
             <MessagingTab userId={userId} data={data} refreshData={refreshData} />
           )}
+          {activeTab === 'subscription' && (
+            <SubscriptionTab userId={userId} data={data} refreshData={refreshData} />
+          )}
         </div>
       </div>
     </div>
@@ -277,9 +285,13 @@ export default function AdminClientDetail({ params }: { params: { userId: string
 }
 
 // Quick Status Badges
-function QuickStatusBadges({ profile }: { profile: any }) {
+function QuickStatusBadges({ profile, purchasedServices }: { profile: any; purchasedServices: any[] }) {
+  const hasActiveRefresh = purchasedServices.some(
+    s => s.service_id === 'quarterly_refresh' && s.status === 'active'
+  );
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
       {profile.has_submitted_intake ? (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-inter font-medium">
           <CheckCircle2 size={12} />
@@ -295,6 +307,12 @@ function QuickStatusBadges({ profile }: { profile: any }) {
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-inter font-medium">
           <CheckCircle2 size={12} />
           Delivered
+        </span>
+      )}
+      {hasActiveRefresh && (
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-xs font-inter font-medium">
+          <RefreshCw size={12} />
+          Refresh Active
         </span>
       )}
     </div>

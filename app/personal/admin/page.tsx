@@ -23,6 +23,7 @@ interface ClientRow {
   brief_status?: string;
   documents_count?: number;
   risk_level?: string;
+  has_quarterly_refresh?: boolean;
 }
 
 export default function AdminDashboard() {
@@ -110,6 +111,24 @@ export default function AdminDashboard() {
             });
           }
         }
+
+        // Fetch quarterly refresh subscription status
+        const { data: refreshSubs } = await supabase
+          .from('services_purchased')
+          .select('user_id')
+          .in('user_id', userIds)
+          .eq('service_id', 'quarterly_refresh')
+          .eq('status', 'active');
+
+        if (refreshSubs) {
+          for (const sub of refreshSubs) {
+            const existing = clientDataMap.get(sub.user_id) || {};
+            clientDataMap.set(sub.user_id, {
+              ...existing,
+              has_quarterly_refresh: true,
+            });
+          }
+        }
       }
 
       const clientRows: ClientRow[] = profiles.map(p => {
@@ -128,6 +147,7 @@ export default function AdminDashboard() {
           brief_status: data.brief_status,
           documents_count: data.documents_count || 0,
           risk_level: data.risk_level,
+          has_quarterly_refresh: data.has_quarterly_refresh ?? false,
         };
       });
 
@@ -384,6 +404,7 @@ export default function AdminDashboard() {
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Brief</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Docs</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Status</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Refresh</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Created</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-right px-4 py-2.5 w-20"></th>
                 </tr>
@@ -445,6 +466,16 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={client.delivery_status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {client.has_quarterly_refresh ? (
+                        <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">
+                          <RefreshCw size={10} />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="font-inter text-xs text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-inter text-xs text-gray-600">

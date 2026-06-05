@@ -42,6 +42,11 @@ export default function PersonalStatus() {
         ? 'Available in Documents'
         : 'Pending',
     },
+    ...(profile.purchased_upsells?.includes('quarterly_refresh') ? [{
+      label: 'Quarterly Refresh Active',
+      complete: true,
+      detail: 'Your documents can be refreshed each quarter — contact us when you need updates.',
+    }] : []),
   ];
 
   return (
