@@ -40,7 +40,7 @@ const upsells = [
   },
   {
     title: 'Social Media Starter Pack',
-    price: '£49 add-on',
+    price: '£120 — 30 posts',
     desc: '30 done-for-you posts tailored to your industry, audience and tone. Captions, hashtags, image ideas.',
   },
   {
@@ -146,6 +146,13 @@ export default function Pricing() {
               </p>
             </div>
           ))}
+        </div>
+
+        {/* Bundle savings note */}
+        <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-5 text-center">
+          <p className="font-inter font-semibold text-green-800" style={{ fontSize: '0.9rem' }}>
+            Bundle and save — add any two services and save £9. Add all three and save £18.
+          </p>
         </div>
       </div>
     </section>

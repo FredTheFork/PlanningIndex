@@ -10,6 +10,7 @@ import {
   getCoreService,
   getOptionalServices,
   calculateTotal,
+  getBundleSavingsMessage,
   type ServiceCatalogEntry,
 } from '@/lib/services/service-catalog';
 import GuaranteeBadge from '@/components/ui/GuaranteeBadge';
@@ -22,6 +23,8 @@ export default function CheckoutPage() {
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([coreService.id]);
 
   const { subtotal, discount, total } = calculateTotal(selectedServiceIds);
+  const savingsMessage = getBundleSavingsMessage(selectedServiceIds);
+  const isBestValue = selectedServiceIds.length >= 3 && discount > 0;
   const hasSubscription = selectedServiceIds.some(
     (id) => getServiceById(id)?.mode === 'subscription'
   );
@@ -172,6 +175,18 @@ export default function CheckoutPage() {
 
               {/* Price Breakdown */}
               <div className="border-t border-border pt-4">
+                {savingsMessage && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 flex items-center gap-3">
+                    {isBestValue && (
+                      <span className="bg-green-600 text-white text-xs font-inter font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0">
+                        Best Value
+                      </span>
+                    )}
+                    <p className="font-inter font-semibold text-green-800" style={{ fontSize: '0.9rem' }}>
+                      {savingsMessage}
+                    </p>
+                  </div>
+                )}
                 {selectedServiceIds.map((serviceId) => {
                   const service = getServiceById(serviceId);
                   if (!service) return null;

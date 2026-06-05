@@ -94,18 +94,22 @@ function getService(id: string): ServiceEntry | undefined {
 }
 
 function calculateBundleDiscount(serviceIds: string[]): number {
+  const processedPairs = new Set<string>();
   let total = 0;
   for (const id of serviceIds) {
     const service = getService(id);
     if (!service?.discountWhenBundledWith) continue;
     for (const bundle of service.discountWhenBundledWith) {
       if (serviceIds.includes(bundle.serviceId)) {
-        total += bundle.amountOff;
+        const pairKey = [id, bundle.serviceId].sort().join(':');
+        if (!processedPairs.has(pairKey)) {
+          processedPairs.add(pairKey);
+          total += bundle.amountOff;
+        }
       }
     }
   }
-  // Each bundle is defined from both sides, so halve to avoid double-counting.
-  return Math.round(total / 2);
+  return total;
 }
 
 /**
@@ -243,11 +247,25 @@ Deno.serve(async (req) => {
     const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
 
     if (discountAmount > 0) {
+      const discountAmountGBP = discountAmount / 100;
+      const serviceNames: Record<string, string> = {
+        business_foundations_pack: 'Docs',
+        website_copy_pack: 'Website Copy',
+        social_media_pack: 'Social Media',
+        quarterly_refresh: 'Quarterly Refresh',
+      };
+      let couponName: string;
+      if (selectedServiceIds.length >= 3) {
+        couponName = `3-Service Bundle — Save £${discountAmountGBP}`;
+      } else {
+        const names = selectedServiceIds.map((id) => serviceNames[id] ?? id);
+        couponName = `${names.join(' + ')} Bundle — Save £${discountAmountGBP}`;
+      }
       const coupon = await stripe.coupons.create({
         amount_off: discountAmount,
         currency: 'gbp',
         duration: 'once',
-        name: 'Bundle discount',
+        name: couponName,
       });
       discounts.push({ coupon: coupon.id });
     }

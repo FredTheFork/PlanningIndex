@@ -173,7 +173,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     ],
     sortOrder: 3,
     isCore: false,
-    priceLabel: '£20 per 5 posts',
+    priceLabel: '£120 — 30 posts',
   },
   {
     id: 'quarterly_refresh',
@@ -241,8 +241,10 @@ export function getStripeProductId(serviceId: string): string | undefined {
 /**
  * Calculate the total discount for a given set of selected service IDs.
  * A discount only applies when BOTH services in a bundle are selected.
+ * Uses canonical pair keys to avoid double-counting since bundles are defined from both sides.
  */
 export function calculateBundleDiscount(selectedServiceIds: string[]): number {
+  const processedPairs = new Set<string>();
   let totalDiscount = 0;
 
   for (const serviceId of selectedServiceIds) {
@@ -251,13 +253,28 @@ export function calculateBundleDiscount(selectedServiceIds: string[]): number {
 
     for (const bundle of service.discountWhenBundledWith) {
       if (selectedServiceIds.includes(bundle.serviceId)) {
-        totalDiscount += bundle.amountOff;
+        const pairKey = [serviceId, bundle.serviceId].sort().join(':');
+        if (!processedPairs.has(pairKey)) {
+          processedPairs.add(pairKey);
+          totalDiscount += bundle.amountOff;
+        }
       }
     }
   }
 
-  // Each bundle discount is defined from both sides, so divide by 2 to avoid double-counting.
-  return totalDiscount / 2;
+  return totalDiscount;
+}
+
+/**
+ * Returns a user-facing savings message for the current selection, or null if no discount applies.
+ */
+export function getBundleSavingsMessage(selectedServiceIds: string[]): string | null {
+  const discount = calculateBundleDiscount(selectedServiceIds);
+  if (discount <= 0) return null;
+  if (selectedServiceIds.length >= 3) {
+    return `Best value — you're saving £${discount}`;
+  }
+  return `You're saving £${discount} — bundle discount applied`;
 }
 
 /** Calculate the total price for a set of selected service IDs, including bundle discounts. */

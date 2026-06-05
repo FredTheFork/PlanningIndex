@@ -32,6 +32,14 @@ export { availableAddOns };
 
 // ── Service Selector Component ──
 
+function getPotentialSaving(serviceId: string, currentSelectedIds: string[]): number {
+  if (currentSelectedIds.includes(serviceId)) return 0;
+  const withService = [...currentSelectedIds, serviceId];
+  const currentDiscount = calculateBundleDiscount(currentSelectedIds);
+  const newDiscount = calculateBundleDiscount(withService);
+  return newDiscount - currentDiscount;
+}
+
 interface ServiceSelectorProps {
   /** Service IDs that are already selected (e.g. pre-selected core pack). */
   selectedServiceIds: string[];
@@ -97,9 +105,20 @@ export default function ServiceSelector({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-inter font-semibold text-dark-text" style={{ fontSize: '0.95rem' }}>
-                      {service.name}
-                    </h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-inter font-semibold text-dark-text" style={{ fontSize: '0.95rem' }}>
+                        {service.name}
+                      </h4>
+                      {!isSelected && (() => {
+                        const saving = getPotentialSaving(service.id, selectedServiceIds);
+                        if (saving <= 0) return null;
+                        return (
+                          <span className="inline-flex items-center px-2 py-0.5 bg-green-50 border border-green-200 rounded-full text-green-700 font-inter font-medium shrink-0" style={{ fontSize: '0.72rem' }}>
+                            Add to save £{saving}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <span className="font-inter font-bold text-navy" style={{ fontSize: '0.95rem' }}>
                       {service.priceLabel}
                     </span>
