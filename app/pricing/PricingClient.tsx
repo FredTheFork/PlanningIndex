@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
-import { getServiceById } from '@/lib/services/service-catalog';
+import { ChevronDown, Check, ShoppingCart, Package, ArrowRight, Zap, ShieldCheck, Clock } from 'lucide-react';
+import {
+  serviceCatalog,
+  getServiceById,
+  calculateTotal,
+  getBundleSavingsMessage,
+} from '@/lib/services/service-catalog';
+import { buildIntakeForm } from '@/lib/forms/build-intake-form';
+import { useAuth } from '@/hooks/useAuth';
+import { useClientProfile } from '@/hooks/useClientProfile';
+import GuaranteeBadge from '@/components/ui/GuaranteeBadge';
 
 /* ─── shared data ─── */
 
@@ -15,8 +24,8 @@ const documents = [
   { num: '05', title: 'Elevator Pitch (3 Versions)', desc: "30-second, 2-minute, and written versions. Never stumble over 'so what do you do?' again." },
   { num: '06', title: 'LinkedIn Profile Script', desc: 'Headline, full About section, and Featured section — keyword-optimised and ready to copy-paste.' },
   { num: '07', title: 'Professional Invoice Template', desc: 'UK-formatted, VAT-ready, with your branding and the correct statutory late payment interest notice.' },
-  { num: '08', title: 'New Client Welcome Emails (×3)', desc: "The onboarding sequence that makes every client feel like they've hired a professional firm, not a one-person business." },
-  { num: '09', title: 'Late Payment Letters (×3)', desc: 'Friendly reminder → formal demand → Letter Before Action. All legally sound. All ready to send.' },
+  { num: '08', title: 'New Client Welcome Emails (x3)', desc: "The onboarding sequence that makes every client feel like they've hired a professional firm, not a one-person business." },
+  { num: '09', title: 'Late Payment Letters (x3)', desc: 'Friendly reminder → formal demand → Letter Before Action. All legally sound. All ready to send.' },
   { num: '10', title: 'Service Description Sheets', desc: "One-page professional breakdown per service — what's in, what's out, who it's for, what they get." },
 ];
 
@@ -28,8 +37,8 @@ const packFeatures = [
   'Elevator Pitch (3 Versions)',
   'LinkedIn Profile Script',
   'Professional Invoice Template',
-  'New Client Welcome Emails (×3)',
-  'Late Payment Letters (×3)',
+  'New Client Welcome Emails (x3)',
+  'Late Payment Letters (x3)',
   'Service Description Sheets',
 ];
 
@@ -53,46 +62,22 @@ const comparisonRows = [
   { feature: 'Typical cost', foundationary: '£79', solicitor: '£500–£2,000+', diy: '£30–£80/yr', ai: 'Free*' },
 ];
 
-const upsells = [
-  {
-    price: getServiceById('website_copy_pack')?.priceLabel ?? '£49 — one-time',
-    title: 'Website Copy Starter Pack',
-    desc: 'Professional website copy written in your voice, SEO-aware, and ready to paste into any website builder.',
-    features: [
-      'Homepage copy (hero, benefits, CTA)',
-      'About page',
-      'Services page (linked to your service description sheets)',
-      'Contact page',
-    ],
-  },
-  {
-    price: getServiceById('social_media_pack')?.priceLabel ?? '£20 per 5 posts',
-    title: 'Social Media Starter Pack',
-    desc: '30 done-for-you posts for your chosen platforms — covering your expertise, your personality, and your offer.',
-    features: [
-      'Mix of educational, promotional, and personal posts',
-      'Tailored to your industry and audience',
-      'Caption, hashtag suggestions, and image brief included',
-      'Covers 4–6 weeks of content',
-    ],
-  },
-  {
-    price: getServiceById('quarterly_refresh')?.priceLabel ?? '£29 every 4 months',
-    title: 'Quarterly Document Refresh',
-    desc: 'Keep your documents current as your business evolves — one document updated every quarter.',
-    features: [
-      'Pricing changes reflected in T&Cs and invoice template',
-      'New services added to contracts and description sheets',
-      'GDPR policy updated if tools or data practices change',
-      'Annual subscription — cancel anytime',
-    ],
-  },
-];
-
 const faqs = [
   {
     q: 'Is this really a one-time payment?',
     a: 'Yes. £79 is the total cost for all 10 documents. There is no subscription, no monthly fee, and no further charges unless you choose to add an optional extra. The Quarterly Document Refresh is the only recurring option and it is entirely your choice.',
+  },
+  {
+    q: 'Can I buy services separately without the core pack?',
+    a: 'Yes. The Website Copy Starter Pack (£49) and the Social Media Starter Pack (£120) can each be purchased on their own. The Quarterly Document Refresh (£29/4 months) is an add-on that requires you to own at least the Business Foundations Pack first, since it updates documents from that pack.',
+  },
+  {
+    q: 'What if I buy the core pack first and then add another service later?',
+    a: 'You can add any service at any time. When you add a second service, the bundle discount (£9 off) is automatically applied at checkout. Your existing intake answers are saved, so the additional questionnaire sections are the only new ones you need to fill in — you won\'t repeat anything.',
+  },
+  {
+    q: 'What does the intake form look like for different combinations?',
+    a: 'The intake form is tailored to the services you select. The Business Foundations Pack covers 11 sections (business identity, services, clients, pricing, GDPR, legal, brand, and more). Adding Website Copy adds a website-specific section. Adding Social Media adds a social media section. Sections that overlap between services are shared — you only answer them once.',
   },
   {
     q: 'What if I only need some of the documents?',
@@ -113,6 +98,10 @@ const faqs = [
   {
     q: 'What if my business grows and I need to update things?',
     a: 'The editable Word format makes minor updates straightforward to do yourself. If you want us to handle updates professionally, the Quarterly Document Refresh (£29/quarter) covers one document per quarter — new services, pricing changes, GDPR updates, and anything else that evolves.',
+  },
+  {
+    q: 'How does the bundle discount work?',
+    a: 'When you buy the Business Foundations Pack together with either the Website Copy Pack or the Social Media Pack, you save £9 automatically. Buy all three together and you save £18. The discount is applied at checkout — no code needed. If you already own the core pack and add a service later, the discount still applies.',
   },
 ];
 
@@ -176,19 +165,19 @@ function PageHeader() {
         </span>
         <h1
           className="font-inter font-extrabold text-white mt-3"
-          style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+          style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
         >
-          One price. No surprises.
+          Every service. Clear pricing. No surprises.
         </h1>
         <p
           className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
           style={{
             fontSize: '1.05rem',
             color: 'rgba(255,255,255,0.85)',
-            maxWidth: 560,
+            maxWidth: 600,
           }}
         >
-          £79 once. Everything you need to run your business properly from day one — no subscription, no upsells required, no ongoing cost unless you want one.
+          Start with the core pack, add services as you need them, or build your own bundle and save.
         </p>
       </div>
     </section>
@@ -359,7 +348,37 @@ function ComparisonSection() {
   );
 }
 
-function MainPricingSection() {
+/* ─── 3. Core Pack — Flagship Section ─── */
+
+function CorePackSection({ ownsCore }: { ownsCore: boolean }) {
+  if (ownsCore) {
+    return (
+      <section className="bg-white py-24 px-6">
+        <div className="mx-auto" style={{ maxWidth: 960 }}>
+          <SectionLabel>THE PACK</SectionLabel>
+          <h2
+            className="font-inter font-bold text-dark-text"
+            style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)' }}
+          >
+            Business Foundations Pack
+          </h2>
+
+          <div className="mt-8 bg-green-50 border-2 border-success rounded-2xl p-8 flex items-start gap-4">
+            <Check size={24} className="text-success shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-inter font-semibold text-navy" style={{ fontSize: '1.1rem' }}>
+                You already own the Business Foundations Pack
+              </h3>
+              <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
+                Your 10 bespoke documents have been delivered. Add services below to build on your foundation — bundle discounts still apply.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="bg-white py-24 px-6">
       <div className="mx-auto" style={{ maxWidth: 960 }}>
@@ -434,15 +453,15 @@ function MainPricingSection() {
               <div className="border-t border-border my-6" />
 
               <Link
-                href="/checkout"
+                href="/checkout?services=business_foundations_pack"
                 className="block w-full text-center font-inter font-bold text-white bg-navy rounded-[10px] hover:bg-medium-blue hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(27,63,122,0.3)] transition-all duration-200"
                 style={{ padding: '16px', fontSize: '1rem' }}
               >
-                Get My Business Foundations Pack
+                Buy Now — £79
               </Link>
 
               <div className="flex justify-center gap-4 mt-4 flex-wrap">
-                {['🔒 Secure via Stripe', '📄 PDF + Word formats', '🇬🇧 UK law compliant'].map((t) => (
+                {['Secure via Stripe', 'PDF + Word formats', 'UK law compliant'].map((t) => (
                   <span key={t} className="font-inter font-normal text-secondary-text" style={{ fontSize: '0.75rem' }}>
                     {t}
                   </span>
@@ -500,62 +519,546 @@ function MainPricingSection() {
   );
 }
 
-function UpsellsSection() {
+/* ─── 4. Standalone Services Section ─── */
+
+const standaloneServices = [
+  {
+    id: 'website_copy_pack' as const,
+    bestFor: 'Building or refreshing a website',
+    whoFor: 'Ideal if you\'re building a website and want it to sound credible, clear, and professional.',
+  },
+  {
+    id: 'social_media_pack' as const,
+    bestFor: 'Consistent social presence',
+    whoFor: 'Best for sole traders who want consistency without starting from a blank page.',
+  },
+];
+
+function StandaloneServiceCard({
+  serviceId,
+  bestFor,
+  whoFor,
+  ownsCore,
+  alreadyOwned,
+}: {
+  serviceId: string;
+  bestFor: string;
+  whoFor: string;
+  ownsCore: boolean;
+  alreadyOwned: boolean;
+}) {
+  const service = getServiceById(serviceId);
+  if (!service) return null;
+
+  const bundleDiscount = service.discountWhenBundledWith?.find(
+    (d) => d.serviceId === 'business_foundations_pack'
+  );
+
+  if (alreadyOwned) {
+    return (
+      <div className="bg-white border-2 border-success rounded-2xl p-8 flex flex-col relative overflow-hidden">
+        <div className="absolute top-0 right-0 bg-success text-white font-inter font-semibold px-4 py-1.5 rounded-bl-xl" style={{ fontSize: '0.75rem' }}>
+          OWNED
+        </div>
+        <span
+          className="inline-block bg-off-white border border-medium-blue rounded-full font-inter font-bold text-navy self-start"
+          style={{ padding: '4px 14px', fontSize: '0.9rem' }}
+        >
+          {service.priceLabel}
+        </span>
+        <h3 className="font-inter font-bold text-dark-text mt-4" style={{ fontSize: '1.1rem' }}>
+          {service.name}
+        </h3>
+        <p
+          className="font-inter font-normal text-secondary-text mt-2.5 leading-[1.65]"
+          style={{ fontSize: '0.9rem' }}
+        >
+          {service.description}
+        </p>
+        <div className="flex flex-col gap-2.5 mt-5">
+          {service.includes.map((f) => (
+            <div key={f} className="flex items-start gap-2.5">
+              <span className="text-success font-bold shrink-0">✓</span>
+              <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.875rem' }}>
+                {f}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-border mt-6 pt-5 mt-auto">
+          <div className="flex items-center gap-2">
+            <Check size={18} className="text-success" />
+            <span className="font-inter font-semibold text-success" style={{ fontSize: '0.9rem' }}>
+              You own this service
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-border rounded-2xl p-8 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200 flex flex-col">
+      <span
+        className="inline-block bg-off-white border border-medium-blue rounded-full font-inter font-bold text-navy self-start"
+        style={{ padding: '4px 14px', fontSize: '0.9rem' }}
+      >
+        {service.priceLabel}
+      </span>
+      <span
+        className="inline-block font-inter font-medium text-medium-blue mt-3"
+        style={{ fontSize: '0.8rem' }}
+      >
+        Best for: {bestFor}
+      </span>
+      <h3 className="font-inter font-bold text-dark-text mt-3" style={{ fontSize: '1.1rem' }}>
+        {service.name}
+      </h3>
+      <p
+        className="font-inter font-normal text-secondary-text mt-2.5 leading-[1.65]"
+        style={{ fontSize: '0.9rem' }}
+      >
+        {service.description}
+      </p>
+      <div className="flex flex-col gap-2.5 mt-5">
+        {service.includes.map((f) => (
+          <div key={f} className="flex items-start gap-2.5">
+            <span className="text-medium-blue font-bold shrink-0">✓</span>
+            <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.875rem' }}>
+              {f}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-border mt-6 pt-5">
+        <p className="font-inter font-normal text-secondary-text leading-[1.6]" style={{ fontSize: '0.85rem' }}>
+          {whoFor}
+        </p>
+      </div>
+
+      {/* Purchase actions */}
+      <div className="flex flex-col gap-2.5 mt-6 mt-auto">
+        <Link
+          href={`/checkout?services=${serviceId}`}
+          className="w-full text-center font-inter font-bold text-white bg-navy rounded-lg hover:bg-medium-blue transition-colors duration-200 flex items-center justify-center gap-2"
+          style={{ padding: '12px 20px', fontSize: '0.9rem', minHeight: 44 }}
+        >
+          <ShoppingCart size={16} />
+          Buy Now — {service.priceLabel}
+        </Link>
+
+        {!ownsCore && bundleDiscount && (
+          <Link
+            href={`/checkout?services=business_foundations_pack,${serviceId}`}
+            className="w-full text-center font-inter font-semibold text-navy bg-off-white border border-medium-blue rounded-lg hover:bg-white hover:shadow-[0_4px_16px_rgba(27,63,122,0.1)] transition-all duration-200 flex items-center justify-center gap-2"
+            style={{ padding: '12px 20px', fontSize: '0.9rem', minHeight: 44 }}
+          >
+            <Package size={16} />
+            Bundle with Foundations Pack — save £{bundleDiscount.amountOff}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StandaloneServicesSection({ purchasedServiceIds }: { purchasedServiceIds: string[] }) {
+  const ownsCore = purchasedServiceIds.includes('business_foundations_pack');
+
   return (
     <section className="bg-off-white py-20 px-6">
       <div className="mx-auto" style={{ maxWidth: 960 }}>
-        <SectionLabel>OPTIONAL ADD-ONS</SectionLabel>
+        <SectionLabel>ALSO AVAILABLE SEPARATELY</SectionLabel>
         <h2
           className="font-inter font-bold text-dark-text"
           style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)' }}
         >
-          Add more. Pay only for what you need.
+          Standalone services you can buy on their own
         </h2>
         <p
           className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
-          style={{ fontSize: '1rem' }}
+          style={{ fontSize: '1rem', maxWidth: 560 }}
         >
-          These are optional extras. The core pack is complete on its own. If you want to go further, add any of these at checkout.
+          These work independently. Buy them with or without the core pack — bundle with the Business Foundations Pack and save £9 each.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-          {upsells.map((u) => (
-            <div
-              key={u.title}
-              className="bg-white border border-border rounded-2xl p-8 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200"
-            >
-              <span
-                className="inline-block bg-off-white border border-medium-blue rounded-full font-inter font-bold text-navy"
-                style={{ padding: '4px 14px', fontSize: '0.9rem' }}
-              >
-                {u.price}
-              </span>
-              <h3 className="font-inter font-bold text-dark-text mt-4" style={{ fontSize: '1.1rem' }}>
-                {u.title}
-              </h3>
-              <p
-                className="font-inter font-normal text-secondary-text mt-2.5 leading-[1.65]"
-                style={{ fontSize: '0.9rem' }}
-              >
-                {u.desc}
-              </p>
-              <div className="flex flex-col gap-2.5 mt-5">
-                {u.features.map((f) => (
-                  <div key={f} className="flex items-start gap-2.5">
-                    <span className="text-medium-blue font-bold shrink-0">✓</span>
-                    <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.875rem' }}>
-                      {f}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+          {standaloneServices.map((s) => (
+            <StandaloneServiceCard
+              key={s.id}
+              serviceId={s.id}
+              bestFor={s.bestFor}
+              whoFor={s.whoFor}
+              ownsCore={ownsCore}
+              alreadyOwned={purchasedServiceIds.includes(s.id)}
+            />
           ))}
         </div>
       </div>
     </section>
   );
 }
+
+/* ─── 5. Build Your Bundle — Interactive Section ─── */
+
+function BuildYourBundleSection({ purchasedServiceIds }: { purchasedServiceIds: string[] }) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const ownsCore = purchasedServiceIds.includes('business_foundations_pack');
+  const availableServices = serviceCatalog.filter(
+    (s) => !purchasedServiceIds.includes(s.id)
+  );
+
+  const toggleService = (serviceId: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
+  const effectiveIds = ownsCore
+    ? [...new Set([...selectedIds, 'business_foundations_pack'])]
+    : selectedIds;
+  const { subtotal, discount, total } = calculateTotal(effectiveIds);
+  const savingsMessage = getBundleSavingsMessage(effectiveIds);
+  const isBestValue = effectiveIds.length >= 3 && discount > 0;
+
+  const intakeSections = selectedIds.length > 0 ? buildIntakeForm(effectiveIds) : [];
+  const sectionCount = intakeSections.length;
+  const estimatedMinutes = Math.ceil(sectionCount * 2.5);
+  const hasSubscription = selectedIds.some(
+    (id) => getServiceById(id)?.mode === 'subscription'
+  );
+
+  // Pre-select core pack if user doesn't own it and hasn't selected anything
+  useEffect(() => {
+    if (!ownsCore && selectedIds.length === 0) {
+      setSelectedIds(['business_foundations_pack']);
+    }
+  }, [ownsCore]);
+
+  return (
+    <section className="bg-white py-24 px-6">
+      <div className="mx-auto" style={{ maxWidth: 960 }}>
+        <SectionLabel>BUILD YOUR BUNDLE</SectionLabel>
+        <h2
+          className="font-inter font-bold text-dark-text"
+          style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)' }}
+        >
+          Mix and match — save when you combine
+        </h2>
+        <p
+          className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
+          style={{ fontSize: '1rem', maxWidth: 560 }}
+        >
+          Select the services you want. Bundle discounts are applied automatically — no code needed.
+        </p>
+
+        <div className="flex flex-col lg:flex-row gap-10 mt-12">
+          {/* Service selection */}
+          <div className="lg:w-3/5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {availableServices.map((service) => {
+                const isSelected = selectedIds.includes(service.id);
+                const isCore = service.isCore;
+                const bundleDiscount = service.discountWhenBundledWith?.find(
+                  (d) => d.serviceId === 'business_foundations_pack'
+                );
+
+                return (
+                  <button
+                    key={service.id}
+                    onClick={() => toggleService(service.id)}
+                    className={`text-left border-2 rounded-xl p-5 transition-all duration-200 ${
+                      isSelected
+                        ? 'border-medium-blue bg-blue-50'
+                        : 'border-border bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 ${
+                          isSelected
+                            ? 'bg-medium-blue'
+                            : 'border-2 border-gray-300 bg-white'
+                        }`}
+                      >
+                        {isSelected && <Check size={14} className="text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {isCore && (
+                          <span
+                            className="inline-block bg-navy text-white font-inter font-semibold rounded-full mb-2"
+                            style={{ padding: '2px 10px', fontSize: '0.65rem', letterSpacing: '0.08em' }}
+                          >
+                            FLAGSHIP
+                          </span>
+                        )}
+                        <h3 className="font-inter font-bold text-dark-text" style={{ fontSize: '0.95rem' }}>
+                          {service.name}
+                        </h3>
+                        <p className="font-inter font-semibold text-navy mt-1">
+                          {service.priceLabel}
+                        </p>
+                        {bundleDiscount && (
+                          <p className="font-inter font-medium text-green-700 mt-1" style={{ fontSize: '0.8rem' }}>
+                            Save £{bundleDiscount.amountOff} when bundled
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {ownsCore && (
+              <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+                <Check size={18} className="text-success shrink-0" />
+                <p className="font-inter font-medium text-green-800" style={{ fontSize: '0.85rem' }}>
+                  Business Foundations Pack included (you already own it)
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Price summary sidebar */}
+          <div className="lg:w-2/5">
+            <div className="bg-white border border-border rounded-xl p-8 sticky top-24"
+              style={{ boxShadow: '0 8px 32px rgba(27,63,122,0.08)' }}
+            >
+              <h3 className="font-inter font-bold text-navy" style={{ fontSize: '1.1rem' }}>
+                Your selection
+              </h3>
+
+              {selectedIds.length === 0 && !ownsCore && (
+                <p className="font-inter font-normal text-secondary-text mt-4" style={{ fontSize: '0.9rem' }}>
+                  Select a service to see your price.
+                </p>
+              )}
+
+              {(selectedIds.length > 0 || ownsCore) && (
+                <>
+                  {savingsMessage && (
+                    <div className={`mt-4 rounded-lg p-4 flex items-start gap-3 ${isBestValue ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}>
+                      {isBestValue && (
+                        <span className="bg-green-600 text-white text-xs font-inter font-bold px-2 py-1 rounded-full uppercase tracking-wide shrink-0">
+                          Best Value
+                        </span>
+                      )}
+                      <p className={`font-inter font-semibold ${isBestValue ? 'text-green-800' : 'text-navy'}`} style={{ fontSize: '0.9rem' }}>
+                        {savingsMessage}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 mb-3 mt-5">
+                    {ownsCore && (
+                      <div className="flex items-center justify-between">
+                        <span className="font-inter text-success flex items-center gap-1.5" style={{ fontSize: '0.9rem' }}>
+                          <Check size={14} />
+                          Business Foundations Pack
+                        </span>
+                        <span className="font-inter font-medium text-success" style={{ fontSize: '0.85rem' }}>
+                          Owned
+                        </span>
+                      </div>
+                    )}
+                    {selectedIds
+                      .filter((id) => !(ownsCore && id === 'business_foundations_pack'))
+                      .map((serviceId) => {
+                        const service = getServiceById(serviceId);
+                        if (!service) return null;
+                        return (
+                          <div key={serviceId} className="flex items-center justify-between">
+                            <span className="font-inter text-secondary-text" style={{ fontSize: '0.9rem' }}>
+                              {service.name}
+                            </span>
+                            <span className="font-inter font-semibold text-navy">
+                              £{service.price.toFixed(2)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {discount > 0 && (
+                    <div className="flex items-center justify-between mb-3 pt-2 border-t border-gray-200">
+                      <span className="font-inter font-medium text-green-700" style={{ fontSize: '0.9rem' }}>
+                        Bundle discount
+                      </span>
+                      <span className="font-inter font-semibold text-green-700">
+                        -£{discount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+                    <span className="font-inter font-bold text-navy">Total</span>
+                    <span className="font-inter font-bold text-navy text-2xl">
+                      £{total.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {hasSubscription && (
+                    <p className="font-inter text-secondary-text text-xs mt-3">
+                      One-time charge for services + recurring subscription for Quarterly Refresh.
+                    </p>
+                  )}
+
+                  {/* Intake preview */}
+                  {sectionCount > 0 && (
+                    <div className="mt-5 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                      <Zap size={18} className="text-medium-blue shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-inter font-semibold text-navy" style={{ fontSize: '0.85rem' }}>
+                          Intake covers {sectionCount} sections, approx {estimatedMinutes} min
+                        </p>
+                        <p className="font-inter text-secondary-text mt-1" style={{ fontSize: '0.75rem' }}>
+                          Answer questions tailored to your selection. Save and resume anytime.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-5 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck size={16} className="text-success shrink-0" />
+                      <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.8rem' }}>
+                        Secure checkout via Stripe
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-medium-blue shrink-0" />
+                      <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.8rem' }}>
+                        24-hour delivery after intake
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/checkout?services=${effectiveIds.join(',')}`}
+                    className={`w-full mt-6 text-center font-inter font-bold text-white rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                      selectedIds.length === 0
+                        ? 'bg-gray-300 cursor-not-allowed pointer-events-none'
+                        : 'bg-navy hover:bg-medium-blue hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(27,63,122,0.3)]'
+                    }`}
+                    style={{ padding: '14px 24px', fontSize: '1rem', minHeight: 48 }}
+                    onClick={(e) => {
+                      if (selectedIds.length === 0) e.preventDefault();
+                    }}
+                  >
+                    {selectedIds.length === 0 ? (
+                      'Select a service'
+                    ) : (
+                      <>
+                        <ShoppingCart size={18} />
+                        Buy Now — £{total.toFixed(2)}
+                      </>
+                    )}
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── 6. Quarterly Refresh Section ─── */
+
+function QuarterlyRefreshSection({ purchasedServiceIds }: { purchasedServiceIds: string[] }) {
+  const service = getServiceById('quarterly_refresh');
+  if (!service) return null;
+
+  const alreadyOwned = purchasedServiceIds.includes('quarterly_refresh');
+  const ownsCore = purchasedServiceIds.includes('business_foundations_pack');
+
+  if (alreadyOwned) {
+    return (
+      <section className="bg-off-white py-16 px-6">
+        <div className="mx-auto" style={{ maxWidth: 760 }}>
+          <div className="bg-white border-2 border-success rounded-2xl p-8 flex items-start gap-4">
+            <Check size={22} className="text-success shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-inter font-bold text-dark-text" style={{ fontSize: '1.1rem' }}>
+                Quarterly Document Refresh — Active
+              </h3>
+              <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
+                Your subscription is active. One document update per quarter, keeping everything current as your business evolves.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-off-white py-16 px-6">
+      <div className="mx-auto" style={{ maxWidth: 760 }}>
+        <SectionLabel>ONGOING SUPPORT</SectionLabel>
+        <h2
+          className="font-inter font-bold text-dark-text"
+          style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)' }}
+        >
+          Quarterly Document Refresh
+        </h2>
+        <p
+          className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
+          style={{ fontSize: '1rem', maxWidth: 560 }}
+        >
+          Keep your documents accurate as your business evolves. One document updated every quarter.
+        </p>
+
+        <div className="bg-white border border-border rounded-2xl p-8 mt-8 flex flex-col sm:flex-row gap-8 items-start">
+          <div className="flex-1">
+            <span
+              className="inline-block bg-off-white border border-medium-blue rounded-full font-inter font-bold text-navy"
+              style={{ padding: '4px 14px', fontSize: '0.9rem' }}
+            >
+              {service.priceLabel}
+            </span>
+            <div className="flex flex-col gap-2.5 mt-5">
+              {service.includes.map((f) => (
+                <div key={f} className="flex items-start gap-2.5">
+                  <span className="text-medium-blue font-bold shrink-0">✓</span>
+                  <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.875rem' }}>
+                    {f}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="font-inter font-normal text-secondary-text mt-4 leading-[1.6]" style={{ fontSize: '0.85rem' }}>
+              Optional ongoing service. Cancel anytime.
+            </p>
+          </div>
+
+          <div className="sm:text-right flex flex-col items-start sm:items-end gap-3">
+            {!ownsCore && (
+              <p className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.8rem' }}>
+                Requires the Business Foundations Pack
+              </p>
+            )}
+            <Link
+              href={ownsCore ? `/checkout?services=quarterly_refresh` : `/checkout?services=business_foundations_pack,quarterly_refresh`}
+              className="font-inter font-bold text-white bg-navy rounded-lg hover:bg-medium-blue transition-colors duration-200 flex items-center gap-2"
+              style={{ padding: '12px 24px', fontSize: '0.9rem', minHeight: 44 }}
+            >
+              <ShoppingCart size={16} />
+              Add to Order
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── 7. FAQ Section ─── */
 
 function FAQItem({ item, isOpen, onToggle }: { item: typeof faqs[number]; isOpen: boolean; onToggle: () => void }) {
   return (
@@ -575,7 +1078,7 @@ function FAQItem({ item, isOpen, onToggle }: { item: typeof faqs[number]; isOpen
       </button>
       <div
         className="overflow-hidden transition-all duration-300"
-        style={{ maxHeight: isOpen ? 300 : 0 }}
+        style={{ maxHeight: isOpen ? 500 : 0 }}
       >
         <p
           className="font-inter font-normal text-secondary-text pt-3 leading-[1.7]"
@@ -599,7 +1102,7 @@ function FAQSection() {
           className="font-inter font-bold text-dark-text"
           style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.2rem)' }}
         >
-          Questions about pricing
+          Questions about pricing and bundles
         </h2>
 
         <div className="mt-10">
@@ -616,6 +1119,8 @@ function FAQSection() {
     </section>
   );
 }
+
+/* ─── 8. Final CTA ─── */
 
 function FinalCTA() {
   return (
@@ -637,29 +1142,57 @@ function FinalCTA() {
           className="font-inter font-normal mt-4 leading-[1.7]"
           style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
         >
-          One questionnaire. One payment of £79. Ten documents delivered to your inbox within 24 hours.
+          Start with the core pack, or build your own bundle — either way, you get documents tailored to your business, delivered in 24 hours.
         </p>
-        <Link
-          href="/checkout"
-          className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
-          style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
-        >
-          Get My Business Foundations Pack
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+          <Link
+            href="/checkout?services=business_foundations_pack"
+            className="font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 flex items-center gap-2"
+            style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
+          >
+            <ShoppingCart size={18} />
+            Get the Business Foundations Pack
+          </Link>
+          <Link
+            href="/additional-services"
+            className="font-inter font-semibold text-white border-2 border-white rounded-lg hover:bg-white hover:text-navy transition-all duration-200 flex items-center gap-2"
+            style={{ padding: '16px 32px', fontSize: '0.95rem', minHeight: 48 }}
+          >
+            <Package size={18} />
+            Browse All Services
+          </Link>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ─── main page ─── */
+/* ─── Main Page ─── */
 
 export default function PricingPage() {
+  const { user, loading: authLoading } = useAuth();
+  const { purchasedServiceIds, loading: profileLoading } = useClientProfile();
+  const loading = authLoading || profileLoading;
+
+  if (loading) {
+    return (
+      <>
+        <PageHeader />
+        <div className="bg-off-white py-24 px-6 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-navy" />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader />
       <ComparisonSection />
-      <MainPricingSection />
-      <UpsellsSection />
+      <CorePackSection ownsCore={purchasedServiceIds.includes('business_foundations_pack')} />
+      <StandaloneServicesSection purchasedServiceIds={purchasedServiceIds} />
+      <BuildYourBundleSection purchasedServiceIds={purchasedServiceIds} />
+      <QuarterlyRefreshSection purchasedServiceIds={purchasedServiceIds} />
       <FAQSection />
       <FinalCTA />
     </>
