@@ -37,6 +37,25 @@ const SERVICES_REQUIRING_INTAKE = [
   'social_media_pack',
 ];
 
+// Mapping from service ID to the intake form section IDs it requires.
+// Used when an existing user buys an additional service to determine
+// which new sections need to be completed.
+const SERVICE_INTAKE_SECTIONS: Record<string, string[]> = {
+  business_foundations_pack: [
+    'intro', 'business_identity', 'services', 'clients', 'pricing',
+    'gdpr', 'legal', 'brand', 'invoice', 'linkedin', 'final',
+  ],
+  website_copy_pack: [
+    'intro', 'business_identity', 'services', 'clients', 'brand',
+    'website_copy', 'final',
+  ],
+  social_media_pack: [
+    'intro', 'business_identity', 'services', 'brand',
+    'social_media', 'final',
+  ],
+  quarterly_refresh: [],
+};
+
 Deno.serve(async (req) => {
   try {
     if (req.method === 'OPTIONS') {
@@ -228,7 +247,9 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
   }
 
   // ── Step 4: Insert rows into services_purchased for each service ──
-  // Use upsert logic: if an active record for this user+service already exists, skip.
+  // Use check-before-insert: if an active record for this user+service already exists, skip.
+  const subscriptionId = session.subscription as string | null;
+
   for (const serviceId of purchasedServiceIds) {
     const { data: existingActive } = await supabase
       .from('services_purchased')
@@ -239,21 +260,26 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
       .maybeSingle();
 
     if (!existingActive) {
-      const subscriptionId = session.subscription as string | null;
-
-      const { error: spError } = await supabase.from('services_purchased').insert({
+      const insertData: Record<string, any> = {
         user_id: userId,
         service_id: serviceId,
         stripe_checkout_session_id: checkoutSessionId,
-        stripe_subscription_id: subscriptionId && serviceId === 'quarterly_refresh'
-          ? subscriptionId
-          : null,
         status: 'active',
         purchased_at: new Date().toISOString(),
-      });
+      };
+
+      // For subscription-mode services (quarterly_refresh), store the subscription ID
+      // and billing period from the checkout session
+      if (subscriptionId && serviceId === 'quarterly_refresh') {
+        insertData.stripe_subscription_id = subscriptionId;
+      }
+
+      const { error: spError } = await supabase.from('services_purchased').insert(insertData);
       if (spError) {
         console.error(`Failed to insert services_purchased for ${serviceId}:`, spError);
       }
+    } else {
+      console.info(`Active services_purchased already exists for user ${userId}, service ${serviceId} — skipping`);
     }
   }
 
@@ -276,6 +302,7 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
       console.error('Failed to create client profile:', profileError);
     }
   } else {
+    // Append new service IDs to existing purchased_upsells (do not overwrite)
     const existingUpsells: string[] = existingProfile.purchased_upsells ?? [];
     const mergedUpsells = [...new Set([...existingUpsells, ...purchasedServiceIds])];
 
@@ -308,14 +335,14 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
   // ── Step 6: Create or update intake_responses with purchased_service_ids ──
   const { data: existingResponses } = await supabase
     .from('intake_responses')
-    .select('id, purchased_service_ids')
+    .select('id, purchased_service_ids, form_section_completions')
     .eq('user_id', userId)
     .maybeSingle();
 
   if (!existingResponses) {
     const { error: responsesError } = await supabase.from('intake_responses').insert({
       user_id: userId,
-      form_version: 'v3',
+      form_version: 'v4',
       responses: {},
       current_section: 0,
       purchased_service_ids: purchasedServiceIds,
@@ -329,9 +356,34 @@ async function handleCheckoutComplete(event: Stripe.Event, stripe: Stripe) {
     const existingServiceIds: string[] = existingResponses.purchased_service_ids ?? [];
     const mergedServiceIds = [...new Set([...existingServiceIds, ...purchasedServiceIds])];
 
+    // Recalculate which sections need to be completed based on the new full set of services.
+    // For any section required by the new services that hasn't been completed yet,
+    // ensure it appears as incomplete in form_section_completions.
+    const existingCompletions: Record<string, boolean> = existingResponses.form_section_completions ?? {};
+
+    // Build the set of all required sections across all purchased services
+    const allRequiredSections = new Set<string>();
+    for (const sid of mergedServiceIds) {
+      const sections = SERVICE_INTAKE_SECTIONS[sid] ?? [];
+      for (const section of sections) {
+        allRequiredSections.add(section);
+      }
+    }
+
+    // Update completions: mark any new required section as incomplete if not already completed
+    const updatedCompletions = { ...existingCompletions };
+    for (const section of allRequiredSections) {
+      if (updatedCompletions[section] === undefined) {
+        updatedCompletions[section] = false;
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('intake_responses')
-      .update({ purchased_service_ids: mergedServiceIds })
+      .update({
+        purchased_service_ids: mergedServiceIds,
+        form_section_completions: updatedCompletions,
+      })
       .eq('user_id', userId);
 
     if (updateError) {
@@ -390,28 +442,124 @@ async function handleSubscriptionCreated(event: Stripe.Event) {
   const userId = customerMapping.user_id;
   const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
   const periodStart = new Date(subscription.current_period_start * 1000).toISOString();
-  const newStatus = (subscription.status === 'active' || subscription.status === 'trialing')
-    ? 'active'
-    : 'pending';
 
-  const { error } = await supabase
+  // Derive service_id from metadata, defaulting to quarterly_refresh
+  const serviceId = subscription.metadata?.service_id ?? 'quarterly_refresh';
+  const checkoutSessionId = subscription.metadata?.checkout_session_id ?? '';
+
+  // Check if an active services_purchased row already exists for this user+service
+  const { data: existingActive } = await supabase
     .from('services_purchased')
-    .update({
-      status: newStatus,
+    .select('id, stripe_subscription_id')
+    .eq('user_id', userId)
+    .eq('service_id', serviceId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  if (existingActive) {
+    // Update the existing row with subscription details
+    const newStatus = (subscription.status === 'active' || subscription.status === 'trialing')
+      ? 'active'
+      : 'pending';
+
+    const { error } = await supabase
+      .from('services_purchased')
+      .update({
+        status: newStatus,
+        stripe_subscription_id: subscription.id,
+        stripe_checkout_session_id: checkoutSessionId || existingActive.stripe_checkout_session_id,
+        expires_at: periodEnd,
+        next_billing_date: periodEnd,
+        subscription_period_start: periodStart,
+        subscription_period_end: periodEnd,
+      })
+      .eq('id', existingActive.id);
+
+    if (error) {
+      console.error('Failed to update services_purchased on subscription.created:', error);
+    } else {
+      console.info(`Updated ${serviceId} subscription for user ${userId}, next billing: ${periodEnd}`);
+    }
+  } else {
+    // Insert a new services_purchased row for the subscription
+    const newStatus = (subscription.status === 'active' || subscription.status === 'trialing')
+      ? 'active'
+      : 'pending';
+
+    const { error } = await supabase.from('services_purchased').insert({
+      user_id: userId,
+      service_id: serviceId,
+      stripe_checkout_session_id: checkoutSessionId,
       stripe_subscription_id: subscription.id,
+      status: newStatus,
+      purchased_at: new Date().toISOString(),
       expires_at: periodEnd,
       next_billing_date: periodEnd,
       subscription_period_start: periodStart,
       subscription_period_end: periodEnd,
-    })
-    .eq('user_id', userId)
-    .eq('service_id', 'quarterly_refresh')
-    .eq('stripe_subscription_id', subscription.id);
+    });
 
-  if (error) {
-    console.error('Failed to update services_purchased on subscription.created:', error);
-  } else {
-    console.info(`Updated quarterly_refresh subscription for user ${userId}, next billing: ${periodEnd}`);
+    if (error) {
+      console.error('Failed to insert services_purchased on subscription.created:', error);
+    } else {
+      console.info(`Created ${serviceId} subscription for user ${userId}, next billing: ${periodEnd}`);
+    }
+  }
+
+  // Ensure client_profiles.purchased_upsells includes this service
+  const { data: profile } = await supabase
+    .from('client_profiles')
+    .select('id, purchased_upsells, intake_complete_for_services')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (profile) {
+    const existingUpsells: string[] = profile.purchased_upsells ?? [];
+    if (!existingUpsells.includes(serviceId)) {
+      const mergedUpsells = [...existingUpsells, serviceId];
+      const { error: updateError } = await supabase
+        .from('client_profiles')
+        .update({ purchased_upsells: mergedUpsells })
+        .eq('id', profile.id);
+      if (updateError) {
+        console.error('Failed to update client_profiles on subscription.created:', updateError);
+      }
+    }
+  }
+
+  // Ensure intake_responses.purchased_service_ids includes this service
+  const { data: intakeResponse } = await supabase
+    .from('intake_responses')
+    .select('id, purchased_service_ids, form_section_completions')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (intakeResponse) {
+    const existingServiceIds: string[] = intakeResponse.purchased_service_ids ?? [];
+    if (!existingServiceIds.includes(serviceId)) {
+      const mergedServiceIds = [...existingServiceIds, serviceId];
+
+      // Recalculate section completions for the new service
+      const existingCompletions: Record<string, boolean> = intakeResponse.form_section_completions ?? {};
+      const updatedCompletions = { ...existingCompletions };
+      const sections = SERVICE_INTAKE_SECTIONS[serviceId] ?? [];
+      for (const section of sections) {
+        if (updatedCompletions[section] === undefined) {
+          updatedCompletions[section] = false;
+        }
+      }
+
+      const { error: updateError } = await supabase
+        .from('intake_responses')
+        .update({
+          purchased_service_ids: mergedServiceIds,
+          form_section_completions: updatedCompletions,
+        })
+        .eq('id', intakeResponse.id);
+      if (updateError) {
+        console.error('Failed to update intake_responses on subscription.created:', updateError);
+      }
+    }
   }
 }
 
