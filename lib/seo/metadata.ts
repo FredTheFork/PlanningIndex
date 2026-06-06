@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { SITE_CONFIG, SITE_URL, OG_IMAGES } from './config';
 
-export interface PageSEO {
+interface PageSEO {
   title: string;
   description: string;
   path: string;
@@ -15,7 +15,7 @@ export interface PageSEO {
   noIndex?: boolean;
 }
 
-export function generatePageMetadata({
+function generatePageMetadata({
   title,
   description,
   path,
@@ -88,7 +88,7 @@ export function generatePageMetadata({
   return metadata;
 }
 
-export function generateArticleMetadata(article: {
+function generateArticleMetadata(article: {
   title: string;
   description: string;
   slug: string;

@@ -425,11 +425,11 @@ export const allFormSections: FormSection[] = [
 // These deprecated aliases keep existing imports working during the transition.
 
 /** @deprecated Use buildIntakeForm(['business_foundations_pack']) from build-intake-form.ts instead. */
-export const intakeFormSections: FormSection[] = allFormSections.filter(
+const intakeFormSections: FormSection[] = allFormSections.filter(
   (s) => s.serviceTags.includes('business_foundations_pack') && s.id !== 'intro',
 );
 
 /** @deprecated Use buildIntakeForm(['website_copy_pack', 'social_media_pack']) from build-intake-form.ts instead. */
-export const upsellFormSections: FormSection[] = allFormSections.filter(
+const upsellFormSections: FormSection[] = allFormSections.filter(
   (s) => s.id === 'website_copy' || s.id === 'social_media',
 );

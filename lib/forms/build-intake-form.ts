@@ -54,7 +54,7 @@ export function buildIntakeForm(purchasedServiceIds: string[]): FormSection[] {
  * Count the total number of fillable fields for a given set of purchased service IDs.
  * Excludes repeating_section parents — counts their sub-fields instead (multiplied by minItems).
  */
-export function getTotalFieldCount(purchasedServiceIds: string[]): number {
+function getTotalFieldCount(purchasedServiceIds: string[]): number {
   const sections = buildIntakeForm(purchasedServiceIds);
 
   let count = 0;
@@ -73,7 +73,7 @@ export function getTotalFieldCount(purchasedServiceIds: string[]): number {
 /**
  * Convenience wrapper: get the intake form for a single service.
  */
-export function getSectionsForService(serviceId: string): FormSection[] {
+function getSectionsForService(serviceId: string): FormSection[] {
   return buildIntakeForm([serviceId]);
 }
 
@@ -81,7 +81,7 @@ export function getSectionsForService(serviceId: string): FormSection[] {
  * Get the list of section IDs that a given service requires.
  * Derived from serviceTags on each section — the single source of truth.
  */
-export function getSectionIdsForService(serviceId: string): string[] {
+function getSectionIdsForService(serviceId: string): string[] {
   return allFormSections
     .filter((section) => section.serviceTags.includes(serviceId))
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -93,7 +93,7 @@ export function getSectionIdsForService(serviceId: string): string[] {
  * Returns a natural language string like "Business Foundations Pack and Website Copy Starter Pack"
  * or just "Business Foundations Pack" for a single service.
  */
-export function getServiceListDescription(
+function getServiceListDescription(
   purchasedServiceIds: string[],
   serviceNames: Record<string, string>,
 ): string {
@@ -114,7 +114,7 @@ export function getServiceListDescription(
  * Check if a specific field should be visible for the given purchased services,
  * taking both section-level serviceTags and field-level fieldServiceTags into account.
  */
-export function isFieldVisible(
+function isFieldVisible(
   fieldId: string,
   sectionId: string,
   purchasedServiceIds: string[],
@@ -137,7 +137,7 @@ export function isFieldVisible(
 /**
  * Get all field IDs that are visible for a given set of purchased services.
  */
-export function getVisibleFieldIds(purchasedServiceIds: string[]): string[] {
+function getVisibleFieldIds(purchasedServiceIds: string[]): string[] {
   const sections = buildIntakeForm(purchasedServiceIds);
   const fieldIds: string[] = [];
 
@@ -165,7 +165,7 @@ export function getVisibleFieldIds(purchasedServiceIds: string[]): string[] {
  *
  * Only suggests for fields that are visible given the purchased services.
  */
-export function getPrefillSuggestions(
+function getPrefillSuggestions(
   purchasedServiceIds: string[],
   responses: Record<string, any>,
 ): Record<string, string> {
@@ -191,7 +191,7 @@ export function getPrefillSuggestions(
  * Get metadata about all fields that support prefill, for a given set of purchased services.
  * Useful for the UI to know which fields to show prefill banners on.
  */
-export function getPrefillableFields(
+function getPrefillableFields(
   purchasedServiceIds: string[],
 ): { fieldId: string; sourceFieldId: string; sourceLabel: string }[] {
   const visibleIds = new Set(getVisibleFieldIds(purchasedServiceIds));

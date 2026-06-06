@@ -13,7 +13,7 @@ export { stripeMode };
 // ── Backward-compatible StripeProduct interface ──
 // Existing code that imports StripeProduct still works.
 
-export interface StripeProduct {
+interface StripeProduct {
   id: string;
   priceId: string;
   productId: string;
@@ -27,7 +27,7 @@ export interface StripeProduct {
 
 // ── Build stripeProducts array from service catalog ──
 
-export const stripeProducts: StripeProduct[] = serviceCatalog.map((service) => ({
+const stripeProducts: StripeProduct[] = serviceCatalog.map((service) => ({
   id: service.id,
   priceId: service.stripePriceIds[stripeMode],
   productId: service.stripeProductIds[stripeMode],
@@ -41,14 +41,14 @@ export const stripeProducts: StripeProduct[] = serviceCatalog.map((service) => (
 
 // ── Helpers ──
 
-export function getProductByPriceId(priceId: string): StripeProduct | undefined {
+function getProductByPriceId(priceId: string): StripeProduct | undefined {
   return stripeProducts.find((product) => product.priceId === priceId);
 }
 
-export function getProductById(id: string): StripeProduct | undefined {
+function getProductById(id: string): StripeProduct | undefined {
   return stripeProducts.find((product) => product.id === id);
 }
 
-export function getCoreProduct(): StripeProduct {
+function getCoreProduct(): StripeProduct {
   return stripeProducts.find((p) => p.id === 'business_foundations_pack')!;
 }

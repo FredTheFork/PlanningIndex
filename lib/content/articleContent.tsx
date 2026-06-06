@@ -13,7 +13,7 @@ export interface Article {
 }
 
 // Sole Trader Setup Guide
-export const SoleTraderSetupArticle: Article = {
+const SoleTraderSetupArticle: Article = {
   id: 'sole-trader-business-setup-guide-uk',
   slug: 'sole-trader-business-setup-guide-uk',
   title: 'Sole Trader Business Setup Guide: UK',
@@ -424,7 +424,7 @@ export const SoleTraderSetupArticle: Article = {
 };
 
 // GDPR Compliance Article
-export const GdprArticle: Article = {
+const GdprArticle: Article = {
   id: 'gdpr-compliance-for-sole-traders-uk',
   slug: 'gdpr-compliance-for-sole-traders-uk',
   title: 'GDPR Compliance for UK Sole Traders',
@@ -858,7 +858,7 @@ export const GdprArticle: Article = {
 };
 
 // Client Contract Article
-export const ClientContractArticle: Article = {
+const ClientContractArticle: Article = {
   id: 'client-contract-essentials-uk-freelancers',
   slug: 'client-contract-essentials-uk-freelancers',
   title: 'Client Contract Essentials for UK Freelancers',
@@ -1320,7 +1320,7 @@ export const ClientContractArticle: Article = {
 };
 
 // Invoice Article
-export const InvoiceArticle: Article = {
+const InvoiceArticle: Article = {
   id: 'invoice-template-best-practices-uk',
   slug: 'invoice-template-best-practices-uk',
   title: 'Invoice Template Best Practices for UK Businesses',
@@ -1822,7 +1822,7 @@ export const InvoiceArticle: Article = {
 };
 
 // Late Payment Article
-export const LatePaymentArticle: Article = {
+const LatePaymentArticle: Article = {
   id: 'late-payment-fees-uk-law',
   slug: 'late-payment-fees-uk-law',
   title: 'Late Payment Fees and UK Law',

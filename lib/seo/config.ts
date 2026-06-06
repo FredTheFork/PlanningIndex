@@ -59,7 +59,7 @@ export const OG_IMAGES = {
   about: `${SITE_URL}/og/about.png`,
 };
 
-export const NAVIGATION = {
+const NAVIGATION = {
   main: [
     { name: 'What\'s Included', href: '/whats-included' },
     { name: 'Pricing', href: '/pricing' },

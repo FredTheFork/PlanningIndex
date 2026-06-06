@@ -2,7 +2,7 @@ import { SITE_CONFIG, SITE_URL, SOCIAL_LINKS } from './config';
 
 // JSON-LD Schema Generators for Foundationary
 
-export function generateOrganizationSchema() {
+function generateOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -30,7 +30,7 @@ export function generateOrganizationSchema() {
   };
 }
 
-export function generateWebSiteSchema() {
+function generateWebSiteSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -191,7 +191,7 @@ export function generateHowToSchema(steps: Array<{ name: string; text: string }>
   };
 }
 
-export function generateLocalBusinessSchema() {
+function generateLocalBusinessSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',

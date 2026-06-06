@@ -2,7 +2,7 @@
 // Defines every purchasable service as a first-class entity.
 // This is the single source of truth for what we sell.
 
-export type ServiceMode = 'payment' | 'subscription';
+type ServiceMode = 'payment' | 'subscription';
 
 export interface ServiceCatalogEntry {
   id: string;
@@ -214,26 +214,26 @@ export function getServiceById(id: string): ServiceCatalogEntry | undefined {
   return serviceCatalog.find((s) => s.id === id);
 }
 
-export function getCoreService(): ServiceCatalogEntry {
+function getCoreService(): ServiceCatalogEntry {
   return serviceCatalog.find((s) => s.isCore)!;
 }
 
-export function getStandaloneServices(): ServiceCatalogEntry[] {
+function getStandaloneServices(): ServiceCatalogEntry[] {
   return serviceCatalog.filter((s) => s.isStandalone);
 }
 
-export function getOptionalServices(): ServiceCatalogEntry[] {
+function getOptionalServices(): ServiceCatalogEntry[] {
   return serviceCatalog.filter((s) => !s.isCore);
 }
 
 /** Get the active Stripe price ID for a service, based on current mode. */
-export function getStripePriceId(serviceId: string): string | undefined {
+function getStripePriceId(serviceId: string): string | undefined {
   const service = getServiceById(serviceId);
   return service?.stripePriceIds[stripeMode];
 }
 
 /** Get the active Stripe product ID for a service, based on current mode. */
-export function getStripeProductId(serviceId: string): string | undefined {
+function getStripeProductId(serviceId: string): string | undefined {
   const service = getServiceById(serviceId);
   return service?.stripeProductIds[stripeMode];
 }
@@ -243,7 +243,7 @@ export function getStripeProductId(serviceId: string): string | undefined {
  * A discount only applies when BOTH services in a bundle are selected.
  * Uses canonical pair keys to avoid double-counting since bundles are defined from both sides.
  */
-export function calculateBundleDiscount(selectedServiceIds: string[]): number {
+function calculateBundleDiscount(selectedServiceIds: string[]): number {
   const processedPairs = new Set<string>();
   let totalDiscount = 0;
 
@@ -305,7 +305,7 @@ import { allFormSections } from '../forms/intake-definition';
  * whose serviceTags include that service ID. Logs warnings for mismatches.
  * Returns true if all mappings are consistent.
  */
-export function validateServiceIntakeMapping(): boolean {
+function validateServiceIntakeMapping(): boolean {
   let valid = true;
 
   for (const service of serviceCatalog) {
@@ -345,7 +345,7 @@ export function validateServiceIntakeMapping(): boolean {
  * Derive intakeSections from the form section serviceTags for a given service.
  * This is the canonical source — the catalog's intakeSections should match this.
  */
-export function deriveIntakeSections(serviceId: string): string[] {
+function deriveIntakeSections(serviceId: string): string[] {
   return allFormSections
     .filter((section) => section.serviceTags.includes(serviceId))
     .sort((a, b) => a.sortOrder - b.sortOrder)
