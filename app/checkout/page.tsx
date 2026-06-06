@@ -32,18 +32,26 @@ export default function CheckoutPage() {
 
     const fetchPurchasedServices = async () => {
       try {
-        const { data, error: err } = await supabase
-          .from('client_profiles')
-          .select('purchased_upsells')
+        // Primary source: services_purchased table (canonical)
+        const { data: services, error: svcErr } = await supabase
+          .from('services_purchased')
+          .select('service_id')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .eq('status', 'active');
 
-        if (err) {
-          console.error('Error fetching purchased services:', err);
-        }
+        if (!svcErr && services && services.length > 0) {
+          setPurchasedServices(services.map((s: any) => s.service_id));
+        } else {
+          // Fallback: client_profiles.purchased_upsells (legacy)
+          const { data: profile, error: profileErr } = await supabase
+            .from('client_profiles')
+            .select('purchased_upsells')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (data?.purchased_upsells && Array.isArray(data.purchased_upsells)) {
-          setPurchasedServices(data.purchased_upsells);
+          if (!profileErr && profile?.purchased_upsells && Array.isArray(profile.purchased_upsells)) {
+            setPurchasedServices(profile.purchased_upsells);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch purchased services:', err);

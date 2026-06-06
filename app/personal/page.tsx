@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { supabase } from '@/lib/supabase/client';
 import { FileText, ArrowRight, Clock, CheckCircle2, FolderOpen, RefreshCw } from 'lucide-react';
 
 export default function PersonalOverview() {
@@ -13,6 +14,28 @@ export default function PersonalOverview() {
   const { user } = useAuth();
   const { profile } = useClientProfile();
   const { isAdmin } = useIsAdmin();
+  const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>([]);
+
+  // Derive purchased services from services_purchased (canonical source)
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchServices = async () => {
+      const { data } = await supabase
+        .from('services_purchased')
+        .select('service_id')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (data && data.length > 0) {
+        setPurchasedServiceIds(data.map((s: any) => s.service_id));
+      } else if (profile?.purchased_upsells) {
+        setPurchasedServiceIds(profile.purchased_upsells);
+      }
+    };
+
+    fetchServices();
+  }, [user, profile?.purchased_upsells]);
 
   // Redirect admin users to admin dashboard
   useEffect(() => {
@@ -125,7 +148,7 @@ export default function PersonalOverview() {
       </div>
 
       {/* Quarterly refresh subscription card */}
-      {profile.purchased_upsells?.includes('quarterly_refresh') && (
+      {purchasedServiceIds.includes('quarterly_refresh') && (
         <div className="mt-4 bg-white rounded-lg border border-teal-200 p-5">
           <div className="flex items-start gap-3">
             <div className="bg-teal-50 rounded-lg p-2 shrink-0">
