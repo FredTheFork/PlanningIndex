@@ -6,6 +6,10 @@ import {
   RefreshCw, Calendar, CheckCircle2, Clock, AlertTriangle,
   XCircle, Plus, FileText, CreditCard, Zap,
 } from 'lucide-react';
+import {
+  getDocumentTypesListForService,
+  getDocumentLabel,
+} from '@/lib/services/document-configs';
 
 interface SubscriptionTabProps {
   userId: string;
@@ -15,18 +19,20 @@ interface SubscriptionTabProps {
 
 interface RefreshJob {
   id: string;
+  service_id: string;
   status: string;
-  documents_to_refresh: string[];
-  admin_notes: string | null;
-  client_notes: string | null;
-  requested_at: string;
-  started_at: string | null;
-  completed_at: string | null;
+  document_types: string[];
+  update_instructions: string;
+  documents_completed: string[];
+  documents_failed: string[];
   error_message: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 interface SubscriptionRecord {
   id: string;
+  service_id: string;
   status: string;
   purchased_at: string;
   expires_at: string | null;
@@ -36,25 +42,12 @@ interface SubscriptionRecord {
   subscription_period_end: string | null;
 }
 
-const DOCUMENT_OPTIONS = [
-  { id: 'terms_and_conditions', label: 'Terms & Conditions' },
-  { id: 'service_agreement_contract', label: 'Client Contract' },
-  { id: 'gdpr_privacy_policy', label: 'GDPR Privacy Policy' },
-  { id: 'professional_invoice_template', label: 'Invoice Template' },
-  { id: 'service_description_sheets', label: 'Service Description Sheets' },
-  { id: 'professional_bio', label: 'Professional Bio' },
-  { id: 'linkedin_profile_script', label: 'LinkedIn Profile Script' },
-  { id: 'welcome_email_sequence', label: 'Welcome Email Sequence' },
-  { id: 'late_payment_letters', label: 'Late Payment Letters' },
-  { id: 'elevator_pitch', label: 'Elevator Pitch' },
-];
-
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; Icon: any }> = {
   active:     { color: 'text-green-700',  bg: 'bg-green-50',  label: 'Active',      Icon: CheckCircle2 },
   cancelled:  { color: 'text-red-600',    bg: 'bg-red-50',    label: 'Cancelled',   Icon: XCircle },
   past_due:   { color: 'text-amber-700',  bg: 'bg-amber-50',  label: 'Past Due',    Icon: AlertTriangle },
   pending:    { color: 'text-gray-600',   bg: 'bg-gray-100',  label: 'Pending',     Icon: Clock },
-  in_progress:{ color: 'text-blue-600',   bg: 'bg-blue-50',   label: 'In Progress', Icon: RefreshCw },
+  processing: { color: 'text-blue-600',   bg: 'bg-blue-50',   label: 'Processing',  Icon: RefreshCw },
   completed:  { color: 'text-green-600',  bg: 'bg-green-50',  label: 'Completed',   Icon: CheckCircle2 },
   failed:     { color: 'text-red-600',    bg: 'bg-red-50',    label: 'Failed',      Icon: AlertTriangle },
   expired:    { color: 'text-gray-600',   bg: 'bg-gray-100',  label: 'Expired',     Icon: XCircle },
@@ -78,41 +71,43 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function SubscriptionTab({ userId, refreshData }: SubscriptionTabProps) {
-  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
+export default function SubscriptionTab({ userId, data, refreshData }: SubscriptionTabProps) {
+  const purchasedServices: SubscriptionRecord[] = data?.purchasedServices ?? [];
+  const documentServiceIds = purchasedServices
+    .filter(s => s.service_id !== 'quarterly_refresh')
+    .map(s => s.service_id);
+
+  const refreshSub = purchasedServices.find(s => s.service_id === 'quarterly_refresh') ?? null;
+
   const [refreshJobs, setRefreshJobs] = useState<RefreshJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewJob, setShowNewJob] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(documentServiceIds[0] ?? '');
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
-  const [adminNotes, setAdminNotes] = useState('');
+  const [updateInstructions, setUpdateInstructions] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => {
-    fetchData();
+    fetchJobs();
   }, [userId]);
 
-  const fetchData = async () => {
+  const fetchJobs = async () => {
     setLoading(true);
-
-    const { data: sub } = await supabase
-      .from('services_purchased')
-      .select('id, status, purchased_at, expires_at, stripe_subscription_id, next_billing_date, subscription_period_start, subscription_period_end')
-      .eq('user_id', userId)
-      .eq('service_id', 'quarterly_refresh')
-      .maybeSingle();
-
-    setSubscription(sub ?? null);
 
     const { data: jobs } = await supabase
       .from('document_refresh_jobs')
       .select('*')
-      .eq('user_id', userId)
-      .order('requested_at', { ascending: false });
+      .eq('client_id', userId)
+      .order('created_at', { ascending: false });
 
     setRefreshJobs(jobs ?? []);
     setLoading(false);
   };
+
+  const docOptionsForService = selectedServiceId
+    ? getDocumentTypesListForService(selectedServiceId)
+    : [];
 
   const toggleDoc = (id: string) => {
     setSelectedDocs(prev =>
@@ -120,9 +115,26 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
     );
   };
 
+  const selectAllDocs = () => {
+    setSelectedDocs(docOptionsForService.map(d => d.id));
+  };
+
+  const handleServiceChange = (serviceId: string) => {
+    setSelectedServiceId(serviceId);
+    setSelectedDocs([]);
+  };
+
   const handleCreateRefreshJob = async () => {
+    if (!selectedServiceId) {
+      setMessage({ text: 'Please select a service.', ok: false });
+      return;
+    }
     if (selectedDocs.length === 0) {
       setMessage({ text: 'Please select at least one document to refresh.', ok: false });
+      return;
+    }
+    if (!updateInstructions.trim()) {
+      setMessage({ text: 'Please describe what needs updating.', ok: false });
       return;
     }
     setSubmitting(true);
@@ -140,8 +152,9 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
           },
           body: JSON.stringify({
             user_id: userId,
-            documents_to_refresh: selectedDocs,
-            admin_notes: adminNotes || null,
+            service_id: selectedServiceId,
+            document_types: selectedDocs,
+            update_instructions: updateInstructions.trim(),
           }),
         }
       );
@@ -149,11 +162,11 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setMessage({ text: 'Refresh job created successfully.', ok: true });
+        setMessage({ text: `Refresh completed: ${result.completed?.length ?? 0} updated, ${result.failed?.length ?? 0} failed.`, ok: true });
         setShowNewJob(false);
         setSelectedDocs([]);
-        setAdminNotes('');
-        await fetchData();
+        setUpdateInstructions('');
+        await fetchJobs();
         refreshData();
       } else {
         setMessage({ text: result.error ?? 'Failed to create refresh job.', ok: false });
@@ -174,7 +187,7 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
     );
   }
 
-  if (!subscription) {
+  if (!refreshSub) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
         <CreditCard size={48} className="text-gray-300 mx-auto mb-4" />
@@ -186,11 +199,10 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
     );
   }
 
-  const nextBilling = subscription.next_billing_date ?? subscription.expires_at;
+  const nextBilling = refreshSub.next_billing_date ?? refreshSub.expires_at;
 
   return (
     <div className="space-y-5">
-      {/* Feedback message */}
       {message && (
         <div className={`rounded-lg p-4 border ${message.ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
           <p className="font-inter text-sm font-medium">{message.text}</p>
@@ -204,18 +216,18 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
             <h3 className="font-inter font-bold text-[#1B3F7A] text-lg">Quarterly Document Refresh</h3>
             <p className="font-inter text-gray-500 text-sm mt-0.5">Subscription Details</p>
           </div>
-          <StatusBadge status={subscription.status} />
+          <StatusBadge status={refreshSub.status} />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
           <div>
             <p className="font-inter text-gray-500 text-xs mb-1">Started</p>
-            <p className="font-inter font-semibold text-gray-900 text-sm">{formatDate(subscription.purchased_at)}</p>
+            <p className="font-inter font-semibold text-gray-900 text-sm">{formatDate(refreshSub.purchased_at)}</p>
           </div>
-          {subscription.subscription_period_start && (
+          {refreshSub.subscription_period_start && (
             <div>
               <p className="font-inter text-gray-500 text-xs mb-1">Period Start</p>
-              <p className="font-inter font-semibold text-gray-900 text-sm">{formatDate(subscription.subscription_period_start)}</p>
+              <p className="font-inter font-semibold text-gray-900 text-sm">{formatDate(refreshSub.subscription_period_start)}</p>
             </div>
           )}
           {nextBilling && (
@@ -227,17 +239,17 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
               </p>
             </div>
           )}
-          {subscription.stripe_subscription_id && (
+          {refreshSub.stripe_subscription_id && (
             <div>
               <p className="font-inter text-gray-500 text-xs mb-1">Stripe ID</p>
-              <p className="font-mono text-gray-700 text-xs truncate">{subscription.stripe_subscription_id}</p>
+              <p className="font-mono text-gray-700 text-xs truncate">{refreshSub.stripe_subscription_id}</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Initiate Refresh */}
-      {subscription.status === 'active' && (
+      {refreshSub.status === 'active' && documentServiceIds.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-1">
             <h3 className="font-inter font-bold text-[#1B3F7A] text-lg">Initiate Document Refresh</h3>
@@ -254,54 +266,94 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
 
           {showNewJob && (
             <div className="mt-4 space-y-4">
+              {/* Service selector */}
               <div>
                 <label className="block font-inter font-semibold text-gray-800 text-sm mb-2">
-                  Documents to Refresh
+                  Service
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {DOCUMENT_OPTIONS.map((doc) => (
-                    <label key={doc.id} className="flex items-center gap-2.5 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={selectedDocs.includes(doc.id)}
-                        onChange={() => toggleDoc(doc.id)}
-                        className="rounded border-gray-300 text-[#1B3F7A] focus:ring-[#2C68C4]"
-                      />
-                      <span className="font-inter text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                        {doc.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                <select
+                  value={selectedServiceId}
+                  onChange={(e) => handleServiceChange(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md font-inter text-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4]"
+                >
+                  {documentServiceIds.map(sid => {
+                    const catalog = data?.purchasedServices?.find((s: any) => s.service_id === sid);
+                    return (
+                      <option key={sid} value={sid}>
+                        {sid === 'business_foundations_pack' ? 'Business Foundations Pack'
+                          : sid === 'website_copy_pack' ? 'Website Copy Pack'
+                          : sid === 'social_media_pack' ? 'Social Media Pack'
+                          : sid}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
 
+              {/* Document selection */}
+              {docOptionsForService.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-inter font-semibold text-gray-800 text-sm">
+                      Documents to Refresh
+                    </label>
+                    <button
+                      type="button"
+                      onClick={selectAllDocs}
+                      className="font-inter text-xs text-[#2C68C4] hover:underline"
+                    >
+                      Select all
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {docOptionsForService.map((doc) => (
+                      <label key={doc.id} className="flex items-center gap-2.5 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={selectedDocs.includes(doc.id)}
+                          onChange={() => toggleDoc(doc.id)}
+                          className="rounded border-gray-300 text-[#1B3F7A] focus:ring-[#2C68C4]"
+                        />
+                        <span className="font-inter text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
+                          {doc.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Update instructions */}
               <div>
                 <label className="block font-inter font-semibold text-gray-800 text-sm mb-2">
-                  Admin Notes
+                  Update Instructions
                 </label>
                 <textarea
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  rows={3}
-                  placeholder="What needs updating — pricing changes, new services, GDPR updates..."
+                  value={updateInstructions}
+                  onChange={(e) => setUpdateInstructions(e.target.value)}
+                  rows={4}
+                  placeholder="Describe what has changed — e.g. 'Price changed from £500 to £600 for service X', 'Added a new service: Y', 'Updated GDPR data retention from 2 years to 3 years'..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-md font-inter text-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] resize-none"
                 />
+                <p className="font-inter text-gray-400 text-xs mt-1">
+                  Only the affected documents will be regenerated. Unchanged sections will be preserved.
+                </p>
               </div>
 
               <div className="flex items-center gap-3 pt-1">
                 <button
                   onClick={handleCreateRefreshJob}
-                  disabled={submitting || selectedDocs.length === 0}
+                  disabled={submitting || selectedDocs.length === 0 || !updateInstructions.trim()}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded-md font-inter text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
-                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Creating...</>
+                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Processing...</>
                   ) : (
-                    <><Zap size={15} /> Create Refresh Job</>
+                    <><Zap size={15} /> Refresh Documents</>
                   )}
                 </button>
                 <button
-                  onClick={() => { setShowNewJob(false); setSelectedDocs([]); setAdminNotes(''); }}
+                  onClick={() => { setShowNewJob(false); setSelectedDocs([]); setUpdateInstructions(''); }}
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
                 >
                   Cancel
@@ -329,7 +381,13 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
                   <div className="flex items-center gap-2.5">
                     <StatusBadge status={job.status} size="sm" />
                     <span className="font-inter text-gray-500 text-xs">
-                      {new Date(job.requested_at).toLocaleDateString('en-GB', {
+                      {job.service_id === 'business_foundations_pack' ? 'Business Foundations'
+                        : job.service_id === 'website_copy_pack' ? 'Website Copy'
+                        : job.service_id === 'social_media_pack' ? 'Social Media'
+                        : job.service_id}
+                    </span>
+                    <span className="font-inter text-gray-400 text-xs">
+                      {new Date(job.created_at).toLocaleDateString('en-GB', {
                         day: 'numeric', month: 'short', year: 'numeric',
                         hour: '2-digit', minute: '2-digit',
                       })}
@@ -342,25 +400,32 @@ export default function SubscriptionTab({ userId, refreshData }: SubscriptionTab
                   )}
                 </div>
 
-                {job.documents_to_refresh.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {job.documents_to_refresh.map((docId) => {
-                      const label = DOCUMENT_OPTIONS.find(d => d.id === docId)?.label ?? docId;
-                      return (
-                        <span key={docId} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-gray-200 rounded text-xs font-inter text-gray-700">
-                          <FileText size={10} />
-                          {label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {job.admin_notes && (
-                  <p className="font-inter text-gray-600 text-xs">
-                    <span className="font-semibold">Notes:</span> {job.admin_notes}
+                {job.update_instructions && (
+                  <p className="font-inter text-gray-700 text-sm mb-2">
+                    {job.update_instructions}
                   </p>
                 )}
+
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(job.document_types ?? []).map((docId) => {
+                    const label = getDocumentLabel(docId) ?? docId;
+                    const isCompleted = (job.documents_completed ?? []).includes(docId);
+                    const isFailed = (job.documents_failed ?? []).includes(docId);
+                    return (
+                      <span
+                        key={docId}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 border rounded text-xs font-inter ${
+                          isCompleted ? 'bg-green-50 border-green-200 text-green-700'
+                          : isFailed ? 'bg-red-50 border-red-200 text-red-700'
+                          : 'bg-white border-gray-200 text-gray-700'
+                        }`}
+                      >
+                        <FileText size={10} />
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
 
                 {job.error_message && (
                   <p className="font-inter text-red-600 text-xs mt-1">

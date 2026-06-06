@@ -21,10 +21,10 @@ const DOCUMENT_TYPE_TO_SERVICE_ID: Record<string, string> = {
   elevator_pitch: "business_foundations_pack",
   linkedin_profile_script: "business_foundations_pack",
   service_description_sheets: "business_foundations_pack",
-  homepage_copy: "website_copy_pack",
-  about_page_copy: "website_copy_pack",
-  services_page_copy: "website_copy_pack",
-  contact_page_copy: "website_copy_pack",
+  website_homepage: "website_copy_pack",
+  website_about: "website_copy_pack",
+  website_services: "website_copy_pack",
+  website_contact: "website_copy_pack",
   social_media_posts: "social_media_pack",
 };
 
@@ -32,6 +32,8 @@ interface DocumentRequest {
   user_id: string;
   document_type: string;
   service_id?: string;
+  /** For quarterly refresh: update instructions describing what changed. */
+  update_instructions?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -40,7 +42,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { user_id, document_type, service_id }: DocumentRequest = await req.json();
+    const { user_id, document_type, service_id, update_instructions }: DocumentRequest = await req.json();
 
     if (!user_id || !document_type) {
       return new Response(
@@ -51,6 +53,8 @@ Deno.serve(async (req: Request) => {
 
     // Resolve service_id: explicit > inferred from mapping
     const resolvedServiceId = service_id || DOCUMENT_TYPE_TO_SERVICE_ID[document_type];
+
+    const isRefresh = !!update_instructions?.trim();
 
     // Get document label
     const documentLabel = getDocumentLabel(document_type);
@@ -127,25 +131,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!briefContent) {
-      // Mark as failed — no brief
-      const failPayload = {
-        status: "failed",
-        error_message: "No client brief found. Generate a brief first.",
-      };
-      const failUrl = existing?.length > 0
-        ? `${SUPABASE_URL}/rest/v1/generated_documents?id=eq.${existing[0].id}`
-        : `${SUPABASE_URL}/rest/v1/generated_documents?client_id=eq.${user_id}&document_type=eq.${document_type}`;
-      await fetch(failUrl, {
-        method: "PATCH",
-        headers: {
-          apikey: SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify(failPayload),
-      });
-
+      await markFailed(existing, user_id, document_type, "No client brief found. Generate a brief first.");
       return new Response(
         JSON.stringify({ error: "No client brief found" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -155,28 +141,36 @@ Deno.serve(async (req: Request) => {
     // Get the system prompt for this document type
     const systemPrompt = getSystemPrompt(document_type);
     if (!systemPrompt) {
-      const failPayload = {
-        status: "failed",
-        error_message: `No system prompt found for document type: ${document_type}`,
-      };
-      const failUrl = existing?.length > 0
-        ? `${SUPABASE_URL}/rest/v1/generated_documents?id=eq.${existing[0].id}`
-        : `${SUPABASE_URL}/rest/v1/generated_documents?client_id=eq.${user_id}&document_type=eq.${document_type}`;
-      await fetch(failUrl, {
-        method: "PATCH",
-        headers: {
-          apikey: SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify(failPayload),
-      });
-
+      await markFailed(existing, user_id, document_type, `No system prompt found for document type: ${document_type}`);
       return new Response(
         JSON.stringify({ error: `No system prompt for document type: ${document_type}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // For refresh: fetch existing document content to reference
+    let existingContent: string | null = null;
+    if (isRefresh) {
+      const existingDocUrl = `${SUPABASE_URL}/rest/v1/generated_documents?client_id=eq.${user_id}&document_type=eq.${document_type}&select=content_text`;
+      const existingDocRes = await fetch(existingDocUrl, {
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        },
+      });
+      const existingDocData = await existingDocRes.json();
+      existingContent = existingDocData?.[0]?.content_text || null;
+    }
+
+    // Build the full prompt
+    let fullPrompt: string;
+    if (isRefresh && existingContent) {
+      fullPrompt = `${systemPrompt}\n\n=== EXISTING DOCUMENT ===\n${existingContent}\n=== END EXISTING DOCUMENT ===\n\n=== CLIENT BRIEF ===\n${briefContent}\n=== END BRIEF ===\n\n=== UPDATE INSTRUCTIONS ===\n${update_instructions}\n=== END UPDATE INSTRUCTIONS ===\n\nYou are updating an EXISTING document based on the update instructions above. Apply the changes described in the update instructions to the existing document. Keep all unchanged sections intact. Produce the COMPLETE updated document — not just the changed sections. The output must be a full, publication-ready document with all changes incorporated.`;
+    } else if (isRefresh) {
+      // Refresh requested but no existing content — treat as initial generation
+      fullPrompt = `${systemPrompt}\n\n=== CLIENT BRIEF ===\n${briefContent}\n=== END BRIEF ===\n\n=== UPDATE INSTRUCTIONS ===\n${update_instructions}\n=== END UPDATE INSTRUCTIONS ===\n\nNo existing document was found. Generate a complete document incorporating the update instructions above as part of the initial creation. Produce a full, publication-ready document.`;
+    } else {
+      fullPrompt = `${systemPrompt}\n\n=== CLIENT BRIEF ===\n${briefContent}\n=== END BRIEF ===\n\nNow generate the complete document as described above.`;
     }
 
     // Generate the document using Claude API
@@ -184,7 +178,9 @@ Deno.serve(async (req: Request) => {
     let generatedContent: string;
     let modelUsed: string;
 
-    const fullPrompt = `${systemPrompt}\n\n=== CLIENT BRIEF ===\n${briefContent}\n=== END BRIEF ===\n\nNow generate the complete document as described above.`;
+    const claudeSystemPrompt = isRefresh
+      ? "You are a professional document generator for UK sole traders. You are updating an existing document based on update instructions. Produce the complete updated document with all changes incorporated. Keep unchanged sections exactly as they were. UK English throughout."
+      : "You are a professional document generator for UK sole traders. Produce complete, publication-ready documents using real data from the client brief. No placeholders except signature fields. UK English throughout.";
 
     if (ANTHROPIC_API_KEY) {
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -197,7 +193,7 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 16000,
-          system: "You are a professional document generator for UK sole traders. Produce complete, publication-ready documents using real data from the client brief. No placeholders except signature fields. UK English throughout.",
+          system: claudeSystemPrompt,
           messages: [{ role: "user", content: fullPrompt }],
         }),
       });
@@ -239,7 +235,7 @@ Deno.serve(async (req: Request) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, model: modelUsed, document_type }),
+      JSON.stringify({ success: true, model: modelUsed, document_type, refreshed: isRefresh }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -251,7 +247,34 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-// ─── System Prompts (mirrors document-configs.ts) ────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────────
+
+async function markFailed(
+  existing: any[] | null,
+  userId: string,
+  docType: string,
+  errorMessage: string,
+) {
+  const failPayload = {
+    status: "failed",
+    error_message: errorMessage,
+  };
+  const failUrl = existing?.length > 0
+    ? `${SUPABASE_URL}/rest/v1/generated_documents?id=eq.${existing[0].id}`
+    : `${SUPABASE_URL}/rest/v1/generated_documents?client_id=eq.${userId}&document_type=eq.${docType}`;
+  await fetch(failUrl, {
+    method: "PATCH",
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(failPayload),
+  });
+}
+
+// ─── Document Labels (mirrors document-configs.ts) ─────────────────────────────
 
 function getDocumentLabel(docType: string): string {
   const labels: Record<string, string> = {
@@ -265,14 +288,16 @@ function getDocumentLabel(docType: string): string {
     elevator_pitch: "Elevator Pitch",
     linkedin_profile_script: "LinkedIn Profile Script",
     service_description_sheets: "Service Description Sheets",
-    homepage_copy: "Homepage Copy",
-    about_page_copy: "About Page Copy",
-    services_page_copy: "Services Page Copy",
-    contact_page_copy: "Contact Page Copy",
+    website_homepage: "Homepage Copy",
+    website_about: "About Page Copy",
+    website_services: "Services Page Copy",
+    website_contact: "Contact Page Copy",
     social_media_posts: "Social Media Posts (30)",
   };
   return labels[docType] || docType;
 }
+
+// ─── System Prompts (mirrors document-configs.ts) ──────────────────────────────
 
 function getSystemPrompt(docType: string): string | undefined {
   const prompts: Record<string, string> = {
@@ -343,36 +368,190 @@ KEYWORD STRATEGY (primary + secondary), HEADLINE OPTIONS (3, max 220 chars), ABO
 
     service_description_sheets: `You are a professional business copywriter producing service description sheets. One sheet per service from Q15. Each sheet: Service at a Glance, What's Included, What's Not Included, Who It's For, Process and Timeline, Results, Investment, Get Started, Scope Note. Apply tone from Q62. UK English.`,
 
-    homepage_copy: `You are a professional website copywriter for UK sole traders. Write compelling homepage copy with:
-=== HERO === (headline max 10 words, subheadline, CTA)
-=== BENEFITS === (3–5 benefit blocks with headline + description)
-=== SOCIAL PROOF === (credibility section)
-=== FINAL CTA === (urgency + button)
-UK English. Client's tone of voice. Ready to paste into website builder. No placeholders — use real data from brief.`,
+    website_homepage: `You are a professional website copywriter and conversion specialist for UK sole traders. Write compelling homepage copy designed to convert visitors into enquiries.
 
-    about_page_copy: `Write a professional About page for a UK sole trader website.
-=== OPENING === (belief/observation, not "I am")
-=== THE STORY === (business origin from brief, 150–250 words)
-=== VALUES AND APPROACH === (3–4 principles)
-=== WHY WORK WITH [BUSINESS] === (2–3 specific reasons)
-=== CTA === (specific next step)
-Target: 400–600 words. UK English. No clichés.`,
+STRUCTURE AND DESIGN TEMPLATE:
 
-    services_page_copy: `Write a Services page for a UK sole trader website. For each service:
-Description (2–3 sentences), What's included (3–6 bullets), What's not included (2–4 bullets), Expected outcome, Investment/price
-Page intro (2–3 sentences). CTA at end. UK English. Clear, confident. Only services from the brief.`,
+=== HERO SECTION ===
+- Headline: maximum 10 words, benefit-led, speaks to the ideal client's primary pain point
+- Subheadline: 1–2 sentences expanding on the headline with specificity
+- Primary CTA button text: action-oriented (e.g. "Book Your Free Discovery Call")
+- Supporting line below CTA: risk-reducer (e.g. "No obligation — 15-minute chat")
 
-    contact_page_copy: `Write Contact page copy for a UK sole trader website.
-=== HEADING === (friendly, not "Contact Us")
-=== WELCOME TEXT === (2–3 sentences)
-=== HOW TO REACH === (preferred method, email, phone, hours)
-=== WHAT HAPPENS NEXT === (2–3 sentences)
-Target: 150–250 words. UK English. Warm, professional.`,
+=== BENEFITS SECTION ===
+- Section heading: benefit-focused, not "Our Benefits"
+- 3–5 benefit blocks, each with:
+  - Benefit headline (6 words max)
+  - Benefit description (2–3 sentences explaining the transformation)
+- Order: most compelling benefit first
 
-    social_media_posts: `Create 30 social media posts for a UK sole trader.
-Categories: 10 Educational, 10 Promotional, 10 Personal/trust.
-Each post: Post number + category, Caption (ready to post), Hashtags (3–5), Image prompt (1–2 sentences), Platform suggestion.
-UK English. Client's brand voice. No generic motivational quotes. Make every post specific to their business. Space across 4–6 weeks. Include carousel/thread format suggestions.`,
+=== SOCIAL PROOF / CREDIBILITY SECTION ===
+- Trust indicators: years of experience, number of clients, relevant qualifications
+- Optional testimonial placeholder: "[Client Testimonial]"
+- Professional affiliations or certifications if mentioned in brief
+
+=== FINAL CTA SECTION ===
+- Restate the primary outcome
+- CTA button (same as hero or slight variation)
+- Urgency or scarcity element if applicable
+
+RULES:
+- UK English throughout
+- Use the client's tone of voice from the brief
+- No placeholders except [Client Testimonial] — use real data from brief
+- No generic marketing language — every word specific to this business
+- Headlines and CTAs must be ready to paste into a website builder
+- No markdown formatting — use plain text with section markers as shown`,
+
+    website_about: `You are a professional website copywriter and brand storyteller for UK sole traders. Write an About page that builds trust and connection without clichés.
+
+STRUCTURE AND DESIGN TEMPLATE:
+
+=== OPENING ===
+- Start with a belief, observation, or surprising statement about their industry
+- NOT "I am [name] and I help [target] with [service]"
+- 2–3 sentences that immediately signal expertise and perspective
+
+=== THE STORY ===
+- Business origin: why they started, what they saw was missing
+- Draw from background and experience in the brief
+- 150–250 words
+- Show, don't tell — specific moments, not vague claims
+
+=== VALUES AND APPROACH ===
+- 3–4 named principles with a sentence each
+- Each principle should differentiate, not state the obvious
+- Format: "Principle Name — One sentence explanation"
+
+=== WHY WORK WITH [BUSINESS NAME] ===
+- 2–3 specific, concrete reasons
+- Each reason backed by something from the brief (experience, results, process)
+- Not generic ("we care about quality") — specific ("we've helped 47 clients in [industry]")
+
+=== CTA ===
+- Specific next step, not "Get in Touch"
+- Match the service they most want to sell
+- One sentence
+
+RULES:
+- Target: 400–600 words total
+- UK English throughout
+- Client's tone of voice from the brief
+- No "passionate about", "dedicated to", "combined experience of"
+- No markdown — use === SECTION === markers
+- Every claim must trace back to data in the brief`,
+
+    website_services: `You are a professional website copywriter for UK sole traders. Write a Services page that clearly presents what the business offers, aligned with the service descriptions from the brief.
+
+STRUCTURE AND DESIGN TEMPLATE:
+
+=== PAGE INTRO ===
+- 2–3 sentences setting up what follows
+- Benefit-led, not feature-led
+- Speaks to the ideal client's situation
+
+=== SERVICE BLOCKS (one per service from the brief) ===
+For each service:
+- Service Name: clear, client-facing name
+- Description: 2–3 sentences explaining what it is and who it's for
+- What's Included: 3–6 bullet points (use actual inclusions from brief)
+- What's Not Included: 2–4 bullet points (manage expectations)
+- Expected Outcome: 1–2 sentences describing the result
+- Investment: pricing from brief, or "Contact for pricing" if not specified
+
+=== CTA SECTION ===
+- Heading: action-oriented
+- 1–2 sentences encouraging next step
+- CTA button text
+
+RULES:
+- UK English throughout
+- Client's tone of voice from the brief
+- Only include services mentioned in the brief — no invented services
+- No markdown formatting — use plain text with === markers
+- Clear, confident, jargon-free language
+- Each service block ready to paste into a website builder`,
+
+    website_contact: `You are a professional website copywriter for UK sole traders. Write Contact page copy that makes reaching out feel easy and natural.
+
+STRUCTURE AND DESIGN TEMPLATE:
+
+=== HEADING ===
+- Friendly and approachable, NOT "Contact Us"
+- Reflect the business personality from the brief
+
+=== WELCOME TEXT ===
+- 2–3 warm sentences acknowledging the visitor's intent
+- Remove friction: "Here's how to reach me" tone
+- Hint at what happens after they make contact
+
+=== HOW TO REACH ===
+- Preferred contact method with brief explanation why
+- Email address from brief
+- Phone number from brief (if provided)
+- Business hours / availability window
+- Social media links if mentioned in brief
+
+=== WHAT HAPPENS NEXT ===
+- 2–3 sentences describing the process after initial contact
+- Sets expectations and reduces anxiety
+- e.g. "I'll reply within 24 hours with a few questions to see if we're a good fit."
+
+=== MAP / LOCATION (if applicable) ===
+- Brief location mention from address in brief
+- "[Map placeholder]" for website builder integration
+
+RULES:
+- Target: 150–250 words total
+- UK English throughout
+- Client's tone of voice from the brief
+- Use real contact details from the brief — no placeholders for email/phone
+- No markdown — use === SECTION === markers
+- Warm, professional, never pushy`,
+
+    social_media_posts: `You are a social media strategist and copywriter for UK sole traders and small businesses. You create scroll-stopping, authentic content that builds trust and drives enquiries.
+
+ROLE AND APPROACH:
+- Write as if you are the business owner posting personally — not an agency
+- Every post must be specific to this business, its services, and its audience
+- Avoid generic motivational quotes or filler — each post must add value
+- Use UK English spelling and conventions
+- Write in the tone of voice specified in the brief (Q62)
+- Never use words from the avoid list (Q63)
+
+CONTENT DISTRIBUTION (30 posts across 4–6 weeks):
+- 10 Educational posts (tips, insights, how-tos, myth-busting related to their expertise)
+- 10 Promotional posts (service highlights, case studies, limited offers, social proof)
+- 10 Personal/trust posts (behind-the-scenes, values, origin story, personality)
+
+VARIETY REQUIREMENTS:
+- Mix short punchy posts (1–2 sentences) with longer storytelling posts (3–5 paragraphs)
+- Include at least 2 carousel/thread-format posts (numbered steps or listicles)
+- At least 2 posts must directly reference specific services from the brief (Q15)
+- At least 2 posts must reference the business differentiator (Q61)
+- Include at least 1 client testimonial / success story format post
+- Include at least 1 "myth vs fact" or common misconception post
+- Space promotional posts evenly — no more than 2 consecutive promotional posts
+
+POST ELEMENTS — for each of the 30 posts provide:
+- Post number (1–30) and category tag [EDUCATIONAL], [PROMOTIONAL], or [PERSONAL]
+- Caption: complete post text — ready to copy-paste, no editing required
+- Hashtags: 3–5 relevant hashtags (mix broad industry + niche + branded)
+- Image: 1–2 sentence prompt describing what the image should show
+- Platform: best-fit platform (LinkedIn, Instagram, Facebook, or X)
+- Week and Day: suggested posting schedule across 4–6 weeks
+
+FORMATTING: Number each post 1–30. Use this structure:
+
+POST N [CATEGORY]
+Caption: [full post text]
+Hashtags: #[tag1] #[tag2] #[tag3]
+Image: [image prompt]
+Platform: [suggested platform]
+Week: [1–6]
+Day: [Mon–Fri]
+
+Separate posts with a blank line. No introductory or concluding commentary.`,
   };
 
   return prompts[docType];

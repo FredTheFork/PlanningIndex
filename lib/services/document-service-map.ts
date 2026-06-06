@@ -17,10 +17,10 @@ const DOCUMENT_TYPE_TO_SERVICE_ID: Record<string, string> = {
   service_description_sheets: 'business_foundations_pack',
 
   // Website Copy Pack (4 documents)
-  homepage_copy: 'website_copy_pack',
-  about_page_copy: 'website_copy_pack',
-  services_page_copy: 'website_copy_pack',
-  contact_page_copy: 'website_copy_pack',
+  website_homepage: 'website_copy_pack',
+  website_about: 'website_copy_pack',
+  website_services: 'website_copy_pack',
+  website_contact: 'website_copy_pack',
 
   // Social Media Pack (1 composite document)
   social_media_posts: 'social_media_pack',
