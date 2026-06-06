@@ -7,6 +7,7 @@ import {
   RefreshCw, ArrowRight, Mail, Phone, MapPin, CreditCard, ExternalLink,
   MessageSquare, DollarSign, Package, Calendar, Plus, StickyNote, FileText
 } from 'lucide-react';
+import { getDocumentTypesForService } from '@/lib/services/document-service-map';
 
 interface OverviewTabProps {
   userId: string;
@@ -106,18 +107,18 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
     setActionMessage('');
 
     try {
-      const documentTypes = [
-        'terms_and_conditions',
-        'service_agreement_contract',
-        'gdpr_privacy_policy',
-        'professional_invoice_template',
-        'late_payment_letters',
-        'welcome_email_sequence',
-        'professional_bio',
-        'elevator_pitch',
-        'linkedin_profile_script',
-        'service_description_sheets',
-      ];
+      // Derive document types from all purchased services
+      const purchasedServiceIds = data.purchasedServices?.map((s: any) => s.service_id) || [];
+      const documentTypes: string[] = [];
+      const serviceMap: Record<string, string> = {};
+      for (const serviceId of purchasedServiceIds) {
+        for (const docType of getDocumentTypesForService(serviceId)) {
+          if (!documentTypes.includes(docType)) {
+            documentTypes.push(docType);
+            serviceMap[docType] = serviceId;
+          }
+        }
+      }
 
       let successCount = 0;
       let failCount = 0;
@@ -135,6 +136,7 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
               body: JSON.stringify({
                 user_id: userId,
                 document_type: docType,
+                service_id: serviceMap[docType],
               }),
             }
           );
@@ -289,10 +291,10 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
             </div>
             <div>
               <h4 className="font-inter font-semibold text-gray-900">Documents</h4>
-              <p className="font-inter text-gray-600 text-sm">10 document types</p>
+              <p className="font-inter text-gray-600 text-sm">Generated documents</p>
             </div>
           </div>
-          <DocumentsStatusCount userId={userId} />
+          <DocumentsStatusCount userId={userId} purchasedServiceIds={data.purchasedServices?.map((s: any) => s.service_id) || []} />
         </div>
 
         {/* Delivery Status */}
@@ -548,12 +550,21 @@ function BriefStatusBadge({ userId }: { userId: string }) {
   );
 }
 
-function DocumentsStatusCount({ userId }: { userId: string }) {
-  const [counts, setCounts] = useState({ total: 0, completed: 0, delivered: 0 });
+function DocumentsStatusCount({ userId, purchasedServiceIds }: { userId: string; purchasedServiceIds: string[] }) {
+  const [counts, setCounts] = useState({ total: 0, completed: 0, delivered: 0, expected: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCounts = async () => {
+      // Compute expected document count from purchased services
+      const expectedTypes = new Set<string>();
+      for (const serviceId of purchasedServiceIds) {
+        for (const docType of getDocumentTypesForService(serviceId)) {
+          expectedTypes.add(docType);
+        }
+      }
+      const expected = expectedTypes.size;
+
       const { count: total } = await supabase
         .from('generated_documents')
         .select('*', { count: 'exact', head: true })
@@ -571,11 +582,11 @@ function DocumentsStatusCount({ userId }: { userId: string }) {
         .eq('client_id', userId)
         .eq('delivered_to_client', true);
 
-      setCounts({ total: total || 0, completed: completed || 0, delivered: delivered || 0 });
+      setCounts({ total: total || 0, completed: completed || 0, delivered: delivered || 0, expected });
       setLoading(false);
     };
     fetchCounts();
-  }, [userId]);
+  }, [userId, purchasedServiceIds]);
 
   if (loading) {
     return <div className="animate-pulse h-4 bg-gray-200 rounded w-20" />;
@@ -585,7 +596,7 @@ function DocumentsStatusCount({ userId }: { userId: string }) {
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
         <span className="font-inter text-gray-600">Generated</span>
-        <span className="font-inter text-gray-900">{counts.total} / 10</span>
+        <span className="font-inter text-gray-900">{counts.total} / {counts.expected || counts.total}</span>
       </div>
       <div className="flex items-center justify-between text-sm">
         <span className="font-inter text-gray-600">Completed</span>

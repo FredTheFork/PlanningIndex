@@ -6,8 +6,9 @@ import { supabase } from '@/lib/supabase/client';
 import {
   Users, FileText, Clock, CheckCircle2, Search, ChevronRight,
   Filter, Download, RefreshCw, AlertTriangle, Briefcase, Send,
-  Calendar, X, TrendingUp, BarChart3, Inbox
+  Calendar, X, TrendingUp, BarChart3, Inbox, Package
 } from 'lucide-react';
+import { getServiceById } from '@/lib/services/service-catalog';
 
 interface ClientRow {
   user_id: string;
@@ -24,6 +25,7 @@ interface ClientRow {
   documents_count?: number;
   risk_level?: string;
   has_quarterly_refresh?: boolean;
+  purchased_services?: Array<{ service_id: string; status: string }>;
 }
 
 export default function AdminDashboard() {
@@ -129,6 +131,30 @@ export default function AdminDashboard() {
             });
           }
         }
+
+        // Fetch all purchased services per client
+        const { data: allServices } = await supabase
+          .from('services_purchased')
+          .select('user_id, service_id, status')
+          .in('user_id', userIds)
+          .eq('status', 'active');
+
+        if (allServices) {
+          const servicesByUser = new Map<string, Array<{ service_id: string; status: string }>>();
+          for (const svc of allServices) {
+            const list = servicesByUser.get(svc.user_id) || [];
+            list.push({ service_id: svc.service_id, status: svc.status });
+            servicesByUser.set(svc.user_id, list);
+          }
+          for (const [uid, svcs] of servicesByUser) {
+            const existing = clientDataMap.get(uid) || {};
+            clientDataMap.set(uid, {
+              ...existing,
+              purchased_services: svcs,
+              has_quarterly_refresh: svcs.some(s => s.service_id === 'quarterly_refresh'),
+            });
+          }
+        }
       }
 
       const clientRows: ClientRow[] = profiles.map(p => {
@@ -148,6 +174,7 @@ export default function AdminDashboard() {
           documents_count: data.documents_count || 0,
           risk_level: data.risk_level,
           has_quarterly_refresh: data.has_quarterly_refresh ?? false,
+          purchased_services: data.purchased_services || [],
         };
       });
 
@@ -388,7 +415,7 @@ export default function AdminDashboard() {
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full min-w-[950px]">
               <thead>
                 <tr className="bg-[#FAFBFC] border-b border-gray-200">
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5 w-10">
@@ -403,6 +430,7 @@ export default function AdminDashboard() {
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Intake</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Brief</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Docs</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Services</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Status</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Refresh</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Created</th>
@@ -461,6 +489,31 @@ export default function AdminDashboard() {
                         </span>
                         {client.risk_level && (
                           <RiskBadge level={client.risk_level} />
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(client.purchased_services || []).map((svc: { service_id: string; status: string }) => {
+                          const service = getServiceById(svc.service_id);
+                          const name = service?.name?.replace(' Pack', '').replace(' Starter', '') ?? svc.service_id;
+                          const isSubscription = service?.mode === 'subscription';
+                          return (
+                            <span
+                              key={svc.service_id}
+                              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${
+                                isSubscription
+                                  ? 'bg-teal-50 text-teal-700'
+                                  : 'bg-[#1B3F7A]/5 text-[#1B3F7A]'
+                              }`}
+                            >
+                              <Package size={9} />
+                              {name}
+                            </span>
+                          );
+                        })}
+                        {(!client.purchased_services || client.purchased_services.length === 0) && (
+                          <span className="font-inter text-xs text-gray-400">—</span>
                         )}
                       </div>
                     </td>

@@ -16,8 +16,14 @@ const DOCUMENT_TYPE_TO_SERVICE_ID: Record<string, string> = {
   linkedin_profile_script: 'business_foundations_pack',
   service_description_sheets: 'business_foundations_pack',
 
-  // Website Copy Pack — document types will be added when generation is implemented
-  // Social Media Pack — document types will be added when generation is implemented
+  // Website Copy Pack (4 documents)
+  homepage_copy: 'website_copy_pack',
+  about_page_copy: 'website_copy_pack',
+  services_page_copy: 'website_copy_pack',
+  contact_page_copy: 'website_copy_pack',
+
+  // Social Media Pack (1 composite document)
+  social_media_posts: 'social_media_pack',
 };
 
 /** Look up which service owns a given document type. */

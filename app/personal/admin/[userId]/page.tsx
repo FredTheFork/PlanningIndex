@@ -17,6 +17,7 @@ import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 import OverviewTab from './tabs/OverviewTab';
 import BriefTab from './tabs/BriefTab';
 import DocumentsTab from './tabs/DocumentsTab';
+import ServicesTab from './tabs/ServicesTab';
 import IntakeTab from './tabs/IntakeTab';
 import MessagingTab from './tabs/MessagingTab';
 import SubscriptionTab from './tabs/SubscriptionTab';
@@ -61,6 +62,7 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: User },
   { id: 'brief', label: 'Master Brief', icon: Briefcase },
   { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'services', label: 'Services', icon: Package },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
   { id: 'messaging', label: 'Messaging', icon: Send },
   { id: 'subscription', label: 'Subscription', icon: RefreshCw },
@@ -269,6 +271,9 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           )}
           {activeTab === 'documents' && (
             <DocumentsTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'services' && (
+            <ServicesTab userId={userId} data={data} refreshData={refreshData} />
           )}
           {activeTab === 'intake' && (
             <IntakeTab userId={userId} data={data} refreshData={refreshData} />
