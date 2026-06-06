@@ -688,7 +688,7 @@ DESIGN TEMPLATE NOTES:
 
 // ─── Combined exports ────────────────────────────────────────────────────────
 
-export const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
+const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
   ...BUSINESS_FOUNDATIONS_PROMPTS,
   ...WEBSITE_COPY_PROMPTS,
   ...SOCIAL_MEDIA_PROMPTS,
@@ -697,7 +697,7 @@ export const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
 const CONFIG_MAP = new Map(ALL_DOCUMENT_CONFIGS.map(c => [c.document_type, c]));
 
 /** Look up the full config for a document type. */
-export function getDocumentConfig(documentType: string): DocumentConfig | undefined {
+function getDocumentConfig(documentType: string): DocumentConfig | undefined {
   return CONFIG_MAP.get(documentType);
 }
 

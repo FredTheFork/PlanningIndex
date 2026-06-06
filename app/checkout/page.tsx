@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ShieldCheck, Clock, ArrowRight, Check, AlertCircle, Zap } from 'lucide-react';
 import { stripeMode } from '@/lib/stripe/config';
 import {
@@ -15,18 +16,27 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase/client';
 import GuaranteeBadge from '@/components/ui/GuaranteeBadge';
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
+  const searchParams = useSearchParams();
+  const preselectedParam = searchParams.get('services');
+  const preselectedIds = preselectedParam
+    ? preselectedParam.split(',').filter((id) => getServiceById(id))
+    : [];
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { user } = useAuth();
   const [purchasedServices, setPurchasedServices] = useState<string[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(!!user);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      setSelectedServiceIds(['business_foundations_pack']);
+      const defaultIds = preselectedIds.length > 0 ? preselectedIds : ['business_foundations_pack'];
+      setSelectedServiceIds(defaultIds);
       setIsLoadingProfile(false);
+      setInitialized(true);
       return;
     }
 
@@ -57,11 +67,28 @@ export default function CheckoutPage() {
         console.error('Failed to fetch purchased services:', err);
       } finally {
         setIsLoadingProfile(false);
+        setInitialized(true);
       }
     };
 
     fetchPurchasedServices();
   }, [user]);
+
+  // Set selected services once purchased services are loaded
+  useEffect(() => {
+    if (!initialized) return;
+    if (selectedServiceIds.length > 0) return;
+
+    if (preselectedIds.length > 0) {
+      const valid = preselectedIds.filter((id) => !purchasedServices.includes(id));
+      setSelectedServiceIds(valid.length > 0 ? valid : []);
+    } else if (purchasedServices.length > 0) {
+      // Returning customer — don't pre-select anything
+      setSelectedServiceIds([]);
+    } else {
+      setSelectedServiceIds(['business_foundations_pack']);
+    }
+  }, [initialized]);
 
   const { subtotal, discount, total } = calculateTotal(selectedServiceIds);
   const savingsMessage = getBundleSavingsMessage(selectedServiceIds);
@@ -411,5 +438,19 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-off-white pt-24 pb-16 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy" />
+        </div>
+      }
+    >
+      <CheckoutPageInner />
+    </Suspense>
   );
 }

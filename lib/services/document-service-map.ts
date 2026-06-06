@@ -27,7 +27,7 @@ const DOCUMENT_TYPE_TO_SERVICE_ID: Record<string, string> = {
 };
 
 /** Look up which service owns a given document type. */
-export function getServiceIdForDocumentType(documentType: string): string | undefined {
+function getServiceIdForDocumentType(documentType: string): string | undefined {
   return DOCUMENT_TYPE_TO_SERVICE_ID[documentType];
 }
 
@@ -44,7 +44,7 @@ export function isServiceDocumentService(serviceId: string): boolean {
 }
 
 /** Group an array of documents by their owning service. */
-export function groupDocumentsByService<T extends { document_type: string }>(
+function groupDocumentsByService<T extends { document_type: string }>(
   documents: T[],
 ): Map<string, T[]> {
   const map = new Map<string, T[]>();

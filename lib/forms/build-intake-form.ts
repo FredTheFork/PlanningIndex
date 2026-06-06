@@ -81,7 +81,7 @@ function getSectionsForService(serviceId: string): FormSection[] {
  * Get the list of section IDs that a given service requires.
  * Derived from serviceTags on each section — the single source of truth.
  */
-export function getSectionIdsForService(serviceId: string): string[] {
+function getSectionIdsForService(serviceId: string): string[] {
   return allFormSections
     .filter((section) => section.serviceTags.includes(serviceId))
     .sort((a, b) => a.sortOrder - b.sortOrder)

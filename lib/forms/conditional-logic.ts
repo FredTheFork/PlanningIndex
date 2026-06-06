@@ -49,7 +49,7 @@ export function getVisibleFields(
  * Validate a single field's value against its definition.
  * Returns an error message or null if valid.
  */
-export function validateField(
+function validateField(
   field: FormField,
   value: any,
   responses: Record<string, any>,
