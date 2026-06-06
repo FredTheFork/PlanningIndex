@@ -81,5 +81,7 @@ export function useClientProfile() {
     return isIntakeFullyComplete(purchasedServiceIds, profile.intake_complete_for_services || []);
   }, [profile, purchasedServiceIds]);
 
-  return { profile, loading: authLoading || loading, purchasedServiceIds, intakeFullyComplete };
+  const intakeCompleteForServices = profile?.intake_complete_for_services || [];
+
+  return { profile, loading: authLoading || loading, purchasedServiceIds, intakeFullyComplete, intakeCompleteForServices };
 }

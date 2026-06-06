@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { getServiceById } from '@/lib/services/service-catalog';
+import { getDocumentTypesForService, isServiceDocumentService } from '@/lib/services/document-service-map';
 import { Lock, Clock, FileText, Eye, EyeOff, Download } from 'lucide-react';
 
 interface DeliveredDoc {
@@ -19,11 +21,12 @@ interface DeliveredDoc {
 }
 
 export default function PersonalDocuments() {
-  const { profile, loading: profileLoading } = useClientProfile();
+  const { profile, loading: profileLoading, purchasedServiceIds } = useClientProfile();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<DeliveredDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('all');
 
   useEffect(() => {
     if (!user) return;
@@ -99,6 +102,17 @@ export default function PersonalDocuments() {
     return `${diffDays} days remaining`;
   };
 
+  // Compute which document-producing services the user has purchased
+  const docServiceIds = purchasedServiceIds.filter(isServiceDocumentService);
+
+  // Filter documents based on selected service tab
+  const filteredDocuments = selectedServiceId === 'all'
+    ? documents
+    : documents.filter((doc) => {
+        const typesForService = new Set(getDocumentTypesForService(selectedServiceId));
+        return typesForService.has(doc.document_type);
+      });
+
   if (profileLoading || loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -109,7 +123,13 @@ export default function PersonalDocuments() {
 
   if (!profile) return null;
 
-  const hasDocuments = documents.length > 0;
+  const hasDocuments = filteredDocuments.length > 0;
+
+  // Earliest auto-delete among filtered docs
+  const earliestAutoDelete = filteredDocuments
+    .map((d) => d.auto_delete_at)
+    .filter(Boolean)
+    .sort()[0];
 
   return (
     <div>
@@ -118,14 +138,50 @@ export default function PersonalDocuments() {
           Documents
         </h1>
         <p className="font-inter text-gray-600 text-sm">
-          Access your business foundations pack documents.
+          {selectedServiceId === 'all'
+            ? 'Access your documents.'
+            : `Access your ${getServiceById(selectedServiceId)?.name ?? 'service'} documents.`}
         </p>
       </div>
+
+      {/* Service filter tabs — only show when user has multiple document-producing services */}
+      {docServiceIds.length > 1 && (
+        <div className="mb-6">
+          <div className="flex gap-1 bg-white rounded-lg border border-gray-200 p-1 overflow-x-auto">
+            <button
+              onClick={() => setSelectedServiceId('all')}
+              className={`px-4 py-2 rounded-md font-inter text-sm font-medium transition-colors whitespace-nowrap ${
+                selectedServiceId === 'all'
+                  ? 'bg-[#1B3F7A] text-white'
+                  : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
+              }`}
+            >
+              All Documents
+            </button>
+            {docServiceIds.map((sid) => {
+              const service = getServiceById(sid);
+              return (
+                <button
+                  key={sid}
+                  onClick={() => setSelectedServiceId(sid)}
+                  className={`px-4 py-2 rounded-md font-inter text-sm font-medium transition-colors whitespace-nowrap ${
+                    selectedServiceId === sid
+                      ? 'bg-[#1B3F7A] text-white'
+                      : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
+                  }`}
+                >
+                  {service?.name ?? sid}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {hasDocuments ? (
         <div className="space-y-6">
           {/* Expiry notice */}
-          {documents.length > 0 && documents[0].auto_delete_at && (
+          {earliestAutoDelete && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
               <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
               <div>
@@ -133,7 +189,7 @@ export default function PersonalDocuments() {
                   Documents are available for a limited time
                 </p>
                 <p className="font-inter text-amber-700 text-xs mt-1">
-                  {getTimeRemaining(documents[0].auto_delete_at)} — Please download and save copies to your own device.
+                  {getTimeRemaining(earliestAutoDelete)} — Please download and save copies to your own device.
                   We recommend keeping backups in at least two separate locations.
                 </p>
               </div>
@@ -142,7 +198,7 @@ export default function PersonalDocuments() {
 
           {/* Document list */}
           <div className="flex flex-col gap-3">
-            {documents.map(doc => (
+            {filteredDocuments.map(doc => (
               <DocumentCard
                 key={doc.id}
                 doc={doc}

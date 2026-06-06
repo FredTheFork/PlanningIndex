@@ -1,21 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield } from 'lucide-react';
+import { getServiceById } from '@/lib/services/service-catalog';
+import { isServiceDocumentService } from '@/lib/services/document-service-map';
+import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw } from 'lucide-react';
 import ChatBubble from '@/components/ui/ChatBubble';
-
-const clientNavItems = [
-  { label: 'Overview', href: '/personal', icon: LayoutDashboard },
-  { label: 'Intake Form', href: '/personal/intake', icon: FileText },
-  { label: 'Status', href: '/personal/status', icon: BarChart3 },
-  { label: 'Documents', href: '/personal/documents', icon: FolderOpen },
-];
 
 const adminNavItems = [
   { label: 'Dashboard', href: '/personal/admin', icon: LayoutDashboard },
@@ -29,7 +24,7 @@ export default function PersonalLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
-  const { profile } = useClientProfile();
+  const { profile, purchasedServiceIds } = useClientProfile();
   const { isAdmin } = useIsAdmin();
   const { unreadCount } = useUnreadMessages();
 
@@ -38,6 +33,25 @@ export default function PersonalLayout({
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  // Build dynamic client nav based on purchased services
+  const clientNavItems = useMemo(() => {
+    const items = [
+      { label: 'Overview', href: '/personal', icon: LayoutDashboard },
+      { label: 'Intake Form', href: '/personal/intake', icon: FileText },
+    ];
+
+    // Show Status and Documents only if the user has at least one document-producing service
+    const hasDocService = purchasedServiceIds.some(isServiceDocumentService);
+    if (hasDocService) {
+      items.push(
+        { label: 'Status', href: '/personal/status', icon: BarChart3 },
+        { label: 'Documents', href: '/personal/documents', icon: FolderOpen },
+      );
+    }
+
+    return items;
+  }, [purchasedServiceIds]);
 
   if (authLoading) {
     return (
@@ -88,7 +102,7 @@ export default function PersonalLayout({
           {/* Sidebar */}
           <nav className="md:w-48 shrink-0">
             <div className="bg-white rounded-lg border border-gray-200 p-2">
-          {navItems.map((item) => {
+              {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 const isMessages = item.label === 'Messages';
                 return (
@@ -115,13 +129,36 @@ export default function PersonalLayout({
               })}
             </div>
 
-            {/* Status indicator for regular clients */}
+            {/* Status indicator + service badges for regular clients */}
             {!isAdmin && profile && (
               <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
                 <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
                   Delivery Status
                 </p>
                 <DeliveryStatusBadge status={profile.delivery_status} />
+
+                {/* Service badges */}
+                {purchasedServiceIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
+                    {purchasedServiceIds.map((sid) => {
+                      const service = getServiceById(sid);
+                      const isRefresh = sid === 'quarterly_refresh';
+                      return (
+                        <span
+                          key={sid}
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${
+                            isRefresh
+                              ? 'bg-teal-50 text-teal-700'
+                              : 'bg-[#1B3F7A]/5 text-[#1B3F7A]'
+                          }`}
+                        >
+                          {isRefresh ? <RefreshCw size={9} /> : <Package size={9} />}
+                          {service?.name?.split(' ')[0] ?? sid}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </nav>
