@@ -1,41 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { supabase } from '@/lib/supabase/client';
 import { FileText, ArrowRight, Clock, CheckCircle2, FolderOpen, RefreshCw } from 'lucide-react';
 
 export default function PersonalOverview() {
   const router = useRouter();
   const { user } = useAuth();
-  const { profile } = useClientProfile();
+  const { profile, intakeFullyComplete, purchasedServiceIds: profilePurchasedIds } = useClientProfile();
   const { isAdmin } = useIsAdmin();
-  const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>([]);
 
-  // Derive purchased services from services_purchased (canonical source)
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchServices = async () => {
-      const { data } = await supabase
-        .from('services_purchased')
-        .select('service_id')
-        .eq('user_id', user.id)
-        .eq('status', 'active');
-
-      if (data && data.length > 0) {
-        setPurchasedServiceIds(data.map((s: any) => s.service_id));
-      } else if (profile?.purchased_upsells) {
-        setPurchasedServiceIds(profile.purchased_upsells);
-      }
-    };
-
-    fetchServices();
-  }, [user, profile?.purchased_upsells]);
+  // Derive purchased services from the hook (canonical source: services_purchased table)
+  const purchasedServiceIds = profilePurchasedIds;
 
   // Redirect admin users to admin dashboard
   useEffect(() => {
@@ -58,6 +38,16 @@ export default function PersonalOverview() {
         title: 'Complete your intake form',
         description: 'Tell us about your business so we can create your bespoke documents.',
         action: 'Start Intake Form',
+        link: '/personal/intake',
+        icon: FileText,
+      };
+    }
+
+    if (!intakeFullyComplete) {
+      return {
+        title: 'Complete new intake sections',
+        description: 'You have new sections to complete for your additional services.',
+        action: 'Complete Intake',
         link: '/personal/intake',
         icon: FileText,
       };
@@ -124,10 +114,12 @@ export default function PersonalOverview() {
       <div className="grid sm:grid-cols-3 gap-4">
         <StatusCard
           label="Intake Form"
-          complete={profile.has_submitted_intake}
-          detail={profile.has_submitted_intake
-            ? `Submitted ${profile.intake_submitted_at ? new Date(profile.intake_submitted_at).toLocaleDateString() : ''}`
-            : 'Not yet submitted'}
+          complete={intakeFullyComplete}
+          detail={!profile.has_submitted_intake
+            ? 'Not yet submitted'
+            : !intakeFullyComplete
+            ? 'New sections needed'
+            : `Complete ${profile.intake_submitted_at ? new Date(profile.intake_submitted_at).toLocaleDateString() : ''}`}
         />
         <StatusCard
           label="Document Preparation"

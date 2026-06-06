@@ -30,6 +30,7 @@ export default function IntakeWizard() {
     submitting,
     newSectionIds,
     completedSectionIds,
+    intakeFullyComplete,
     updateField,
     setCurrentSection,
     submitForm,
@@ -47,8 +48,8 @@ export default function IntakeWizard() {
 
   // Determine display mode
   const hasSubmitted = !!data?.submitted_at;
-  const isNewSectionsMode = hasSubmitted && newSectionIds.length > 0;
-  const isFullyComplete = hasSubmitted && newSectionIds.length === 0;
+  const isNewSectionsMode = hasSubmitted && !intakeFullyComplete && newSectionIds.length > 0;
+  const isFullyComplete = hasSubmitted && intakeFullyComplete;
 
   // Compute prefill suggestions
   const prefillSuggestions = useMemo(() => {

@@ -1,35 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
-import { supabase } from '@/lib/supabase/client';
 import { CheckCircle2, Clock } from 'lucide-react';
 
 export default function PersonalStatus() {
-  const { user } = useAuth();
-  const { profile, loading } = useClientProfile();
-  const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchServices = async () => {
-      const { data } = await supabase
-        .from('services_purchased')
-        .select('service_id')
-        .eq('user_id', user.id)
-        .eq('status', 'active');
-
-      if (data && data.length > 0) {
-        setPurchasedServiceIds(data.map((s: any) => s.service_id));
-      } else if (profile?.purchased_upsells) {
-        setPurchasedServiceIds(profile.purchased_upsells);
-      }
-    };
-
-    fetchServices();
-  }, [user, profile?.purchased_upsells]);
+  const { profile, loading, intakeFullyComplete, purchasedServiceIds } = useClientProfile();
 
   if (loading) {
     return (
@@ -44,14 +19,18 @@ export default function PersonalStatus() {
   const steps = [
     {
       label: 'Intake form submitted',
-      complete: profile.has_submitted_intake,
-      detail: profile.intake_submitted_at
-        ? new Date(profile.intake_submitted_at).toLocaleDateString('en-GB', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })
-        : 'Not yet submitted',
+      complete: intakeFullyComplete,
+      detail: !profile.has_submitted_intake
+        ? 'Not yet submitted'
+        : !intakeFullyComplete
+        ? 'New sections needed for additional services'
+        : profile.intake_submitted_at
+          ? new Date(profile.intake_submitted_at).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })
+          : 'Submitted',
     },
     {
       label: 'Documents being prepared',

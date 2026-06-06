@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
+import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 
 export interface ClientProfile {
   id: string;
@@ -21,6 +22,7 @@ export interface ClientProfile {
 export function useClientProfile() {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export function useClientProfile() {
 
     if (!user) {
       setProfile(null);
+      setPurchasedServiceIds([]);
       setLoading(false);
       return;
     }
@@ -46,6 +49,21 @@ export function useClientProfile() {
         }
 
         setProfile(data);
+
+        // Derive purchased service IDs from services_purchased (canonical source)
+        const { data: services } = await supabase
+          .from('services_purchased')
+          .select('service_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        if (services && services.length > 0) {
+          setPurchasedServiceIds(services.map((s: any) => s.service_id));
+        } else if (data?.purchased_upsells) {
+          setPurchasedServiceIds(['business_foundations_pack', ...data.purchased_upsells]);
+        } else {
+          setPurchasedServiceIds(['business_foundations_pack']);
+        }
       } catch (error) {
         console.error('Error fetching client profile:', error);
       } finally {
@@ -56,5 +74,12 @@ export function useClientProfile() {
     fetchProfile();
   }, [user, authLoading]);
 
-  return { profile, loading: authLoading || loading };
+  // Computed: is intake fully complete for all purchased services?
+  const intakeFullyComplete = useMemo(() => {
+    if (!profile) return false;
+    if (!profile.has_submitted_intake) return false;
+    return isIntakeFullyComplete(purchasedServiceIds, profile.intake_complete_for_services || []);
+  }, [profile, purchasedServiceIds]);
+
+  return { profile, loading: authLoading || loading, purchasedServiceIds, intakeFullyComplete };
 }

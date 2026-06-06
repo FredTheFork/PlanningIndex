@@ -81,11 +81,46 @@ function getSectionsForService(serviceId: string): FormSection[] {
  * Get the list of section IDs that a given service requires.
  * Derived from serviceTags on each section — the single source of truth.
  */
-function getSectionIdsForService(serviceId: string): string[] {
+export function getSectionIdsForService(serviceId: string): string[] {
   return allFormSections
     .filter((section) => section.serviceTags.includes(serviceId))
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((section) => section.id);
+}
+
+/**
+ * Determine which purchased services have their intake sections fully completed.
+ *
+ * For each service in purchasedServiceIds, checks whether ALL sections required
+ * by that service have sectionProgress[sectionId] === true. A service is only
+ * "intake complete" when every section it needs is done.
+ *
+ * This is the canonical way to compute intake_complete_for_services — it ensures
+ * that buying a new service doesn't accidentally mark it as intake-complete.
+ */
+export function getCompletedServiceIds(
+  purchasedServiceIds: string[],
+  sectionProgress: Record<string, boolean>,
+): string[] {
+  return purchasedServiceIds.filter((serviceId) => {
+    const requiredSectionIds = getSectionIdsForService(serviceId);
+    // Services with no intake sections (e.g. quarterly_refresh) are always complete
+    if (requiredSectionIds.length === 0) return true;
+    return requiredSectionIds.every((sectionId) => sectionProgress[sectionId] === true);
+  });
+}
+
+/**
+ * Check whether intake is fully complete for all purchased services.
+ * Returns true when every purchased service has its intake sections completed.
+ */
+export function isIntakeFullyComplete(
+  purchasedServiceIds: string[],
+  intakeCompleteForServices: string[],
+): boolean {
+  if (purchasedServiceIds.length === 0) return false;
+  const completedSet = new Set(intakeCompleteForServices);
+  return purchasedServiceIds.every((id) => completedSet.has(id));
 }
 
 /**

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
-import { buildIntakeForm } from '@/lib/forms/build-intake-form';
+import { buildIntakeForm, getCompletedServiceIds, isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 import { FormSection } from '@/lib/forms/intake-definition';
 import { isSectionComplete } from '@/lib/forms/conditional-logic';
 
@@ -226,6 +226,9 @@ export function useIntakeResponses() {
         sectionProgress[section.id] = isSectionComplete(section.fields, responses);
       }
 
+      // Compute which services have ALL their sections completed
+      const completedServiceIds = getCompletedServiceIds(purchasedServiceIds, sectionProgress);
+
       const now = new Date().toISOString();
       const { error } = await supabase
         .from('intake_responses')
@@ -233,7 +236,8 @@ export function useIntakeResponses() {
           responses,
           submitted_at: now,
           section_progress: sectionProgress,
-          intake_complete_for_services: purchasedServiceIds,
+          intake_complete_for_services: completedServiceIds,
+          purchased_service_ids: purchasedServiceIds,
           last_saved_at: now,
         })
         .eq('user_id', user.id);
@@ -249,7 +253,7 @@ export function useIntakeResponses() {
         .update({
           has_submitted_intake: true,
           intake_submitted_at: now,
-          intake_complete_for_services: purchasedServiceIds,
+          intake_complete_for_services: completedServiceIds,
         })
         .eq('user_id', user.id);
 
@@ -262,7 +266,7 @@ export function useIntakeResponses() {
         responses,
         submitted_at: now,
         section_progress: sectionProgress,
-        intake_complete_for_services: purchasedServiceIds,
+        intake_complete_for_services: completedServiceIds,
       } : prev);
 
       return true;
@@ -315,10 +319,7 @@ export function useIntakeResponses() {
   const newSectionIds = (() => {
     if (!data?.submitted_at) return [];
     const completedFor = data.intake_complete_for_services || [];
-    const missingServices = purchasedServiceIds.filter(
-      (id) => !completedFor.includes(id)
-    );
-    if (missingServices.length === 0) return [];
+    if (isIntakeFullyComplete(purchasedServiceIds, completedFor)) return [];
 
     const existingSectionIds = new Set(
       buildIntakeForm(completedFor.length > 0 ? completedFor : ['business_foundations_pack'])
@@ -327,6 +328,12 @@ export function useIntakeResponses() {
     return formSections
       .filter((s) => !existingSectionIds.has(s.id))
       .map((s) => s.id);
+  })();
+
+  // Whether intake is fully complete for all purchased services
+  const intakeFullyComplete = (() => {
+    if (!data?.submitted_at) return false;
+    return isIntakeFullyComplete(purchasedServiceIds, data.intake_complete_for_services || []);
   })();
 
   // Which sections are already completed (read-only for resubmissions)
@@ -349,6 +356,7 @@ export function useIntakeResponses() {
     submitting,
     newSectionIds,
     completedSectionIds,
+    intakeFullyComplete,
     updateField,
     setCurrentSection,
     submitForm,

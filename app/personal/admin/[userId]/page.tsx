@@ -11,6 +11,7 @@ import {
   ChevronRight, FileDown, Send, Loader, Package
 } from 'lucide-react';
 import { getServiceById } from '@/lib/services/service-catalog';
+import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 
 // Tab components
 import OverviewTab from './tabs/OverviewTab';
@@ -199,8 +200,8 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           />
           <QuickStat
             label="Intake"
-            value={data.profile.has_submitted_intake ? 'Submitted' : 'Pending'}
-            status={data.profile.has_submitted_intake ? 'success' : 'pending'}
+            value={!data.profile.has_submitted_intake ? 'Pending' : isIntakeFullyComplete(data.purchasedServices.map((s: any) => s.service_id), data.profile.intake_complete_for_services || []) ? 'Complete' : 'Partial'}
+            status={!data.profile.has_submitted_intake ? 'pending' : isIntakeFullyComplete(data.purchasedServices.map((s: any) => s.service_id), data.profile.intake_complete_for_services || []) ? 'success' : 'progress'}
           />
           <QuickStat
             label="Delivery"
@@ -290,9 +291,17 @@ function QuickStatusBadges({ profile, purchasedServices }: { profile: any; purch
     s => s.service_id === 'quarterly_refresh' && s.status === 'active'
   );
 
+  const purchasedServiceIds = purchasedServices.map((s: any) => s.service_id);
+  const intakeComplete = isIntakeFullyComplete(purchasedServiceIds, profile.intake_complete_for_services || []);
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {profile.has_submitted_intake ? (
+      {!profile.has_submitted_intake ? (
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 rounded-md text-xs font-inter font-medium">
+          <Clock size={12} />
+          Intake Pending
+        </span>
+      ) : intakeComplete ? (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-inter font-medium">
           <CheckCircle2 size={12} />
           Intake Complete
@@ -300,7 +309,7 @@ function QuickStatusBadges({ profile, purchasedServices }: { profile: any; purch
       ) : (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 rounded-md text-xs font-inter font-medium">
           <Clock size={12} />
-          Intake Pending
+          Intake Partial
         </span>
       )}
       {profile.delivery_status === 'delivered' && (
