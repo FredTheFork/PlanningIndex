@@ -16,6 +16,36 @@ const supabaseHeaders = {
   Prefer: "return=representation",
 };
 
+// ── Service catalog (price ID → service ID mapping) ──
+
+const SERVICE_CATALOG: Record<string, { stripePriceIds: { test: string; live: string } }> = {
+  business_foundations_pack: {
+    stripePriceIds: {
+      test: "price_1TZc9UGfxcDbzGRtniOLIJLE",
+      live: "price_1TX34AGfxcDbzGRtxVtQN95g",
+    },
+  },
+  website_copy_pack: {
+    stripePriceIds: { test: "", live: "" },
+  },
+  social_media_pack: {
+    stripePriceIds: { test: "", live: "" },
+  },
+  quarterly_refresh: {
+    stripePriceIds: { test: "", live: "" },
+  },
+};
+
+function findServiceIdByPriceId(priceId: string): string | null {
+  if (!priceId) return null;
+  for (const [id, entry] of Object.entries(SERVICE_CATALOG)) {
+    if (entry.stripePriceIds.test === priceId || entry.stripePriceIds.live === priceId) {
+      return id;
+    }
+  }
+  return null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -252,6 +282,7 @@ Deno.serve(async (req: Request) => {
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object;
 
+      // Update stripe_subscriptions status
       await fetch(
         `${SUPABASE_URL}/rest/v1/stripe_subscriptions?subscription_id=eq.${subscription.id}`,
         {
@@ -264,7 +295,79 @@ Deno.serve(async (req: Request) => {
         },
       );
 
-      console.log(`customer.subscription.deleted: Subscription ${subscription.id}`);
+      // Mark the service as cancelled in services_purchased
+      const stripeCustomerId = typeof subscription.customer === "string"
+        ? subscription.customer
+        : subscription.customer?.id || "";
+
+      if (stripeCustomerId) {
+        // Resolve user_id from stripe_customers
+        const customerRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/stripe_customers?customer_id=eq.${stripeCustomerId}&select=user_id`,
+          { headers: supabaseHeaders },
+        );
+        const customers = await customerRes.json();
+        const userId = customers?.[0]?.user_id;
+
+        if (userId) {
+          // Map price_id to service catalog ID
+          const priceId = subscription.items?.data?.[0]?.price?.id || "";
+          const serviceId = findServiceIdByPriceId(priceId);
+
+          // Update services_purchased: set status to cancelled for this subscription
+          const spRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/services_purchased?user_id=eq.${userId}&stripe_subscription_id=eq.${subscription.id}`,
+            {
+              method: "PATCH",
+              headers: supabaseHeaders,
+              body: JSON.stringify({
+                status: "cancelled",
+                expires_at: new Date().toISOString(),
+              }),
+            },
+          );
+
+          if (spRes.ok) {
+            const updated = await spRes.json();
+            if (!updated || updated.length === 0) {
+              // No row found by subscription_id — try by service_id if we mapped it
+              if (serviceId) {
+                await fetch(
+                  `${SUPABASE_URL}/rest/v1/services_purchased?user_id=eq.${userId}&service_id=eq.${serviceId}&status=eq.active`,
+                  {
+                    method: "PATCH",
+                    headers: supabaseHeaders,
+                    body: JSON.stringify({
+                      status: "cancelled",
+                      expires_at: new Date().toISOString(),
+                    }),
+                  },
+                );
+              }
+            }
+          }
+
+          // Cancel any pending document_refresh_jobs for this user's subscription
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/document_refresh_jobs?user_id=eq.${userId}&status=eq.pending`,
+            {
+              method: "PATCH",
+              headers: supabaseHeaders,
+              body: JSON.stringify({
+                status: "cancelled",
+                error_message: "Subscription cancelled — refresh not permitted",
+                updated_at: new Date().toISOString(),
+              }),
+            },
+          );
+
+          console.log(`customer.subscription.deleted: Subscription ${subscription.id}, user ${userId}, service ${serviceId || "unknown"}`);
+        } else {
+          console.log(`customer.subscription.deleted: Subscription ${subscription.id}, customer ${stripeCustomerId} — could not resolve user`);
+        }
+      } else {
+        console.log(`customer.subscription.deleted: Subscription ${subscription.id} — no customer ID`);
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

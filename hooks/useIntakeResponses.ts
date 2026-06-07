@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { useClientProfile } from './useClientProfile';
-import { buildIntakeForm, getCompletedServiceIds, isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
+import { buildIntakeForm, isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 import { FormSection } from '@/lib/forms/intake-definition';
 import { isSectionComplete } from '@/lib/forms/conditional-logic';
+
 
 interface IntakeData {
   id: string;
@@ -46,18 +47,53 @@ export function useIntakeResponses() {
   // Track when we last saved to detect conflicts
   const localLastSavedRef = useRef<string | null>(null);
 
-  // Derive purchased service IDs — prefer profileServiceIds from useClientProfile
-  // which handles all schema variations (stripe_* tables, services_purchased, etc.)
+  // Derive purchased service IDs — verify via server-side endpoint
+  // to prevent client-side manipulation of which sections appear.
   useEffect(() => {
     if (!user) return;
 
-    if (profileServiceIds.length > 0) {
-      setPurchasedServiceIds(profileServiceIds);
-      return;
-    }
+    const verifyServices = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          // Fallback to profile-derived IDs if no session
+          setPurchasedServiceIds(
+            profileServiceIds.length > 0
+              ? profileServiceIds
+              : ['business_foundations_pack']
+          );
+          return;
+        }
 
-    // Fallback: default for new users
-    setPurchasedServiceIds(['business_foundations_pack']);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/intake-auth`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const serverIds: string[] = data.purchased_service_ids || [];
+          if (serverIds.length > 0) {
+            setPurchasedServiceIds(serverIds);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Server-side service verification failed, falling back to profile:', err);
+      }
+
+      // Fallback: use profileServiceIds from useClientProfile
+      setPurchasedServiceIds(
+        profileServiceIds.length > 0
+          ? profileServiceIds
+          : ['business_foundations_pack']
+      );
+    };
+
+    verifyServices();
   }, [user, profileServiceIds]);
 
   // Build form sections when service IDs change
@@ -222,60 +258,56 @@ export function useIntakeResponses() {
     }
   }, [user]);
 
-  // Submit the form
+  // Submit the form via server-side endpoint for security
   const submitForm = useCallback(async (responses: Record<string, any>) => {
     if (!user) return false;
 
     setSubmitting(true);
     try {
-      const sectionProgress: Record<string, boolean> = {};
-      for (const section of formSections) {
-        sectionProgress[section.id] = isSectionComplete(section.fields, responses);
-      }
-
-      const completedServiceIds = getCompletedServiceIds(purchasedServiceIds, sectionProgress);
-
-      const now = new Date().toISOString();
-      const { error } = await supabase
-        .from('intake_responses')
-        .update({
-          responses,
-          submitted_at: now,
-          section_progress: sectionProgress,
-          intake_complete_for_services: completedServiceIds,
-          purchased_service_ids: purchasedServiceIds,
-          last_saved_at: now,
-        })
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Submit error:', error);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No session token for submission');
+        setSubmitting(false);
         return false;
       }
 
-      // Update client_profiles
-      const { error: profileError } = await supabase
-        .from('client_profiles')
-        .update({
-          has_submitted_intake: true,
-          intake_submitted_at: now,
-          intake_complete_for_services: completedServiceIds,
-        })
-        .eq('user_id', user.id);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/intake-submit`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          responses,
+          current_section_id: data?.current_section_id || 'intro',
+        }),
+      });
 
-      if (profileError) {
-        console.error('Profile update error:', profileError);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Submit error:', errData.error || res.status);
+        return false;
       }
 
-      localLastSavedRef.current = now;
+      const result = await res.json();
+
+      // Update local state with server-confirmed data
+      localLastSavedRef.current = result.submitted_at;
 
       setData((prev) => prev ? {
         ...prev,
-        responses,
-        submitted_at: now,
-        section_progress: sectionProgress,
-        intake_complete_for_services: completedServiceIds,
+        responses: result.rejected_fields
+          ? Object.fromEntries(Object.entries(responses).filter(([k]) => !result.rejected_fields.includes(k)))
+          : responses,
+        submitted_at: result.submitted_at,
+        purchased_service_ids: result.purchased_service_ids,
+        intake_complete_for_services: result.intake_complete_for_services,
       } : prev);
+
+      // Sync purchased service IDs from server
+      if (result.purchased_service_ids) {
+        setPurchasedServiceIds(result.purchased_service_ids);
+      }
 
       return true;
     } catch (err) {
@@ -284,7 +316,7 @@ export function useIntakeResponses() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, formSections, purchasedServiceIds]);
+  }, [user, data?.current_section_id]);
 
   // Upload a file to intake-uploads bucket
   const uploadFile = useCallback(async (fieldId: string, file: File) => {

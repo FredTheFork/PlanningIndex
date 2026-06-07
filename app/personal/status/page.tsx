@@ -6,7 +6,7 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { getServiceDeliveryStatuses } from '@/lib/services/service-status';
 import { getDocumentTypesForService, isServiceDocumentService } from '@/lib/services/document-service-map';
-import { CheckCircle2, Clock, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Clock, RefreshCw, XCircle } from 'lucide-react';
 
 interface DocRow {
   document_type: string;
@@ -17,6 +17,7 @@ interface DocRow {
 export default function PersonalStatus() {
   const { profile, loading, purchasedServiceIds, intakeCompleteForServices } = useClientProfile();
   const [documents, setDocuments] = useState<DocRow[]>([]);
+  const [hasCancelledRefresh, setHasCancelledRefresh] = useState(false);
 
   useEffect(() => {
     if (!profile?.user_id) return;
@@ -27,7 +28,61 @@ export default function PersonalStatus() {
         .eq('client_id', profile.user_id);
       setDocuments(data || []);
     };
+
+    // Check for cancelled quarterly refresh subscription
+    const checkRefreshStatus = async () => {
+      if (!profile?.user_id) return;
+      try {
+        // Check services_purchased for cancelled quarterly_refresh
+        const { data: sp } = await supabase
+          .from('services_purchased')
+          .select('status')
+          .eq('user_id', profile.user_id)
+          .eq('service_id', 'quarterly_refresh')
+          .maybeSingle();
+
+        if (sp?.status === 'cancelled') {
+          setHasCancelledRefresh(true);
+          return;
+        }
+
+        // Also check stripe_subscriptions via stripe_customers
+        const { data: customer } = await supabase
+          .from('stripe_customers')
+          .select('customer_id')
+          .eq('user_id', profile.user_id)
+          .maybeSingle();
+
+        if (customer?.customer_id) {
+          const { data: subs } = await supabase
+            .from('stripe_subscriptions')
+            .select('status, price_id')
+            .eq('customer_id', customer.customer_id);
+
+          if (subs) {
+            const cancelledRefresh = subs.find((s: any) =>
+              s.status === 'canceled' && s.price_id
+            );
+            if (cancelledRefresh) {
+              // Verify it's a quarterly_refresh price
+              const { getServiceById } = await import('@/lib/services/service-catalog');
+              const service = subs.find((s: any) => {
+                // Simple check: if it's a subscription that was cancelled
+                return s.status === 'canceled';
+              });
+              if (service) {
+                setHasCancelledRefresh(true);
+              }
+            }
+          }
+        }
+      } catch {
+        // Non-critical check — don't block rendering
+      }
+    };
+
     fetchDocs();
+    checkRefreshStatus();
   }, [profile?.user_id]);
 
   if (loading) {
@@ -107,7 +162,7 @@ export default function PersonalStatus() {
       )}
 
       {/* Quarterly Refresh section */}
-      {hasRefresh && (
+      {hasRefresh && !hasCancelledRefresh && (
         <div className="mt-6 bg-white rounded-lg border border-teal-200 p-5">
           <div className="flex items-start gap-3">
             <div className="bg-teal-50 rounded-lg p-2 shrink-0">
@@ -125,6 +180,29 @@ export default function PersonalStatus() {
               </div>
               <p className="font-inter text-gray-600 text-sm">
                 Your documents can be refreshed each quarter as your business evolves — pricing changes, new services, updated GDPR policies, and more. Contact us when you need updates.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {hasCancelledRefresh && (
+        <div className="mt-6 bg-white rounded-lg border border-gray-200 p-5">
+          <div className="flex items-start gap-3">
+            <div className="bg-gray-50 rounded-lg p-2 shrink-0">
+              <RefreshCw size={18} className="text-gray-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-inter font-semibold text-gray-500 text-sm">
+                  Quarterly Document Refresh
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-inter font-medium">
+                  <XCircle size={10} />
+                  Cancelled
+                </span>
+              </div>
+              <p className="font-inter text-gray-500 text-sm">
+                Your Quarterly Document Refresh subscription has ended. Document refreshes are no longer available. To reactivate, visit the pricing page.
               </p>
             </div>
           </div>

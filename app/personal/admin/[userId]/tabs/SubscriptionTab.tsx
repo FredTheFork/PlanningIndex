@@ -248,6 +248,22 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
         </div>
       </div>
 
+      {/* Cancelled subscription warning */}
+      {refreshSub.status === 'cancelled' && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-inter font-semibold text-red-800 text-sm">
+              Subscription cancelled — refreshes not permitted
+            </p>
+            <p className="font-inter text-red-700 text-xs mt-1">
+              This client's Quarterly Document Refresh subscription has been cancelled.
+              Document refreshes cannot be initiated until the subscription is reactivated.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Initiate Refresh */}
       {refreshSub.status === 'active' && documentServiceIds.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
