@@ -42,17 +42,58 @@ function CheckoutPageInner() {
 
     const fetchPurchasedServices = async () => {
       try {
-        // Primary source: services_purchased table (canonical)
-        const { data: services, error: svcErr } = await supabase
-          .from('services_purchased')
-          .select('service_id')
-          .eq('user_id', user.id)
-          .eq('status', 'active');
+        const ids = new Set<string>();
 
-        if (!svcErr && services && services.length > 0) {
-          setPurchasedServices(services.map((s: any) => s.service_id));
-        } else {
-          // Fallback: client_profiles.purchased_upsells (legacy)
+        // Primary: stripe_customers + stripe_orders + stripe_subscriptions (live schema)
+        const { data: customer } = await supabase
+          .from('stripe_customers')
+          .select('customer_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (customer?.customer_id) {
+          const { data: orders } = await supabase
+            .from('stripe_orders')
+            .select('checkout_session_id, status')
+            .eq('customer_id', customer.customer_id)
+            .eq('status', 'completed');
+
+          if (orders && orders.length > 0) {
+            ids.add('business_foundations_pack');
+          }
+
+          const { data: subs } = await supabase
+            .from('stripe_subscriptions')
+            .select('price_id, status')
+            .eq('customer_id', customer.customer_id);
+
+          if (subs) {
+            for (const sub of subs) {
+              if (sub.status === 'active' || sub.status === 'trialing') {
+                const svc = serviceCatalog.find(
+                  (s) => s.stripePriceIds.test === sub.price_id || s.stripePriceIds.live === sub.price_id
+                );
+                if (svc) ids.add(svc.id);
+              }
+            }
+          }
+        }
+
+        // Fallback: services_purchased table
+        if (ids.size === 0) {
+          const { data: services, error: svcErr } = await supabase
+            .from('services_purchased')
+            .select('service_id')
+            .eq('user_id', user.id)
+            .eq('status', 'active');
+
+          if (!svcErr && services && services.length > 0) {
+            services.forEach((s: any) => ids.add(s.service_id));
+          }
+        }
+
+        // Fallback: client_profiles.purchased_upsells
+        if (ids.size === 0) {
           const { data: profile, error: profileErr } = await supabase
             .from('client_profiles')
             .select('purchased_upsells')
@@ -60,9 +101,12 @@ function CheckoutPageInner() {
             .maybeSingle();
 
           if (!profileErr && profile?.purchased_upsells && Array.isArray(profile.purchased_upsells)) {
-            setPurchasedServices(profile.purchased_upsells);
+            ids.add('business_foundations_pack');
+            profile.purchased_upsells.forEach((id: string) => ids.add(id));
           }
         }
+
+        setPurchasedServices(Array.from(ids));
       } catch (err) {
         console.error('Failed to fetch purchased services:', err);
       } finally {

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
+import { serviceCatalog, stripeMode } from '@/lib/services/service-catalog';
 
 export interface ClientProfile {
   id: string;
@@ -37,33 +38,20 @@ export function useClientProfile() {
 
     const fetchProfile = async () => {
       try {
+        // Try client_profiles table (may not exist in all environments)
         const { data, error } = await supabase
           .from('client_profiles')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching client profile:', error);
-          return;
+        if (!error && data) {
+          setProfile(data);
         }
 
-        setProfile(data);
-
-        // Derive purchased service IDs from services_purchased (canonical source)
-        const { data: services } = await supabase
-          .from('services_purchased')
-          .select('service_id')
-          .eq('user_id', user.id)
-          .eq('status', 'active');
-
-        if (services && services.length > 0) {
-          setPurchasedServiceIds(services.map((s: any) => s.service_id));
-        } else if (data?.purchased_upsells) {
-          setPurchasedServiceIds(['business_foundations_pack', ...data.purchased_upsells]);
-        } else {
-          setPurchasedServiceIds(['business_foundations_pack']);
-        }
+        // Derive purchased services from live schema
+        const purchasedIds = await derivePurchasedServices(user.id);
+        setPurchasedServiceIds(purchasedIds);
       } catch (error) {
         console.error('Error fetching client profile:', error);
       } finally {
@@ -74,7 +62,6 @@ export function useClientProfile() {
     fetchProfile();
   }, [user, authLoading]);
 
-  // Computed: is intake fully complete for all purchased services?
   const intakeFullyComplete = useMemo(() => {
     if (!profile) return false;
     if (!profile.has_submitted_intake) return false;
@@ -84,4 +71,91 @@ export function useClientProfile() {
   const intakeCompleteForServices = profile?.intake_complete_for_services || [];
 
   return { profile, loading: authLoading || loading, purchasedServiceIds, intakeFullyComplete, intakeCompleteForServices };
+}
+
+/** Map a Stripe price_id back to a service catalog entry ID. */
+function findServiceIdByPriceId(priceId: string): string | null {
+  if (!priceId) return null;
+  for (const service of serviceCatalog) {
+    if (
+      service.stripePriceIds.test === priceId ||
+      service.stripePriceIds.live === priceId
+    ) {
+      return service.id;
+    }
+  }
+  return null;
+}
+
+/**
+ * Derive which services a user has purchased.
+ * Tries the live stripe_* schema first, then falls back to
+ * services_purchased, then client_profiles.purchased_upsells.
+ */
+async function derivePurchasedServices(userId: string): Promise<string[]> {
+  const ids = new Set<string>();
+
+  // 1. Check stripe_customers to get the Stripe customer ID
+  const { data: customer } = await supabase
+    .from('stripe_customers')
+    .select('customer_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (customer?.customer_id) {
+    // 2. Completed orders = one-time purchases
+    const { data: orders } = await supabase
+      .from('stripe_orders')
+      .select('checkout_session_id, status')
+      .eq('customer_id', customer.customer_id)
+      .eq('status', 'completed');
+
+    if (orders && orders.length > 0) {
+      ids.add('business_foundations_pack');
+    }
+
+    // 3. Active subscriptions
+    const { data: subs } = await supabase
+      .from('stripe_subscriptions')
+      .select('price_id, status')
+      .eq('customer_id', customer.customer_id);
+
+    if (subs) {
+      for (const sub of subs) {
+        if (sub.status === 'active' || sub.status === 'trialing') {
+          const serviceId = findServiceIdByPriceId(sub.price_id);
+          if (serviceId) ids.add(serviceId);
+        }
+      }
+    }
+  }
+
+  // Fallback: try services_purchased table
+  if (ids.size === 0) {
+    const { data: services } = await supabase
+      .from('services_purchased')
+      .select('service_id')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    if (services && services.length > 0) {
+      services.forEach((s: any) => ids.add(s.service_id));
+    }
+  }
+
+  // Fallback: try client_profiles.purchased_upsells
+  if (ids.size === 0) {
+    const { data: profile } = await supabase
+      .from('client_profiles')
+      .select('purchased_upsells')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (profile?.purchased_upsells && Array.isArray(profile.purchased_upsells)) {
+      ids.add('business_foundations_pack');
+      profile.purchased_upsells.forEach((id: string) => ids.add(id));
+    }
+  }
+
+  return Array.from(ids);
 }
