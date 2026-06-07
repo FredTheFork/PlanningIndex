@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { Save, Clock } from 'lucide-react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Save, Clock, AlertTriangle } from 'lucide-react';
 import { useIntakeResponses } from '@/hooks/useIntakeResponses';
 import { useClientProfile } from '@/hooks/useClientProfile';
-import { validateSection } from '@/lib/forms/conditional-logic';
+import { validateSection, isFieldConditionallyVisible } from '@/lib/forms/conditional-logic';
+import { validateSectionWithZod } from '@/lib/forms/validations';
 import { allFormSections } from '@/lib/forms/intake-definition';
 import SectionRenderer from './SectionRenderer';
 import ReadOnlySection from './ReadOnlySection';
@@ -36,6 +37,8 @@ export default function IntakeWizard() {
     submitForm,
     uploadFile,
     removeFile,
+    conflictDetected,
+    dismissConflict,
   } = useIntakeResponses();
 
   const { profile } = useClientProfile();
@@ -46,7 +49,6 @@ export default function IntakeWizard() {
   const currentSectionId = data?.current_section_id || 'intro';
   const currentSection = formSections.find((s) => s.id === currentSectionId);
 
-  // Determine display mode
   const hasSubmitted = !!data?.submitted_at;
   const isNewSectionsMode = hasSubmitted && !intakeFullyComplete && newSectionIds.length > 0;
   const isFullyComplete = hasSubmitted && intakeFullyComplete;
@@ -68,7 +70,6 @@ export default function IntakeWizard() {
     return suggestions;
   }, [data?.responses]);
 
-  // Section titles map for the banner
   const sectionTitles = useMemo(
     () => Object.fromEntries(formSections.map((s) => [s.id, s.title])),
     [formSections]
@@ -87,10 +88,13 @@ export default function IntakeWizard() {
   const handleUpdateField = useCallback(
     (fieldId: string, value: any) => {
       updateField(fieldId, value);
-      // Clear error for this field
       setErrors((prev) => {
         const next = { ...prev };
         delete next[fieldId];
+        // Also clear repeating section sub-field errors
+        Object.keys(next).forEach((key) => {
+          if (key.startsWith(fieldId + '[')) delete next[key];
+        });
         return next;
       });
     },
@@ -102,7 +106,6 @@ export default function IntakeWizard() {
       const fileMeta = await uploadFile(fieldId, file);
       if (!fileMeta) return null;
 
-      // Add file metadata to the field's value array
       const currentFiles = data?.responses?.[fieldId] || [];
       updateField(fieldId, [...currentFiles, fileMeta]);
       return fileMeta;
@@ -122,20 +125,62 @@ export default function IntakeWizard() {
     [removeFile, data?.responses, updateField]
   );
 
-  const handleSubmit = useCallback(async () => {
-    if (!data?.responses || !currentSection) return;
+  // Validate current section using Zod + conditional logic
+  const validateCurrentSection = useCallback((): boolean => {
+    if (!data?.responses || !currentSection) return true;
+    if (currentSectionId === 'intro') return true;
 
-    // Validate all sections
+    // In new-sections mode, only validate new sections
+    if (isNewSectionsMode && !newSectionIds.includes(currentSection.id)) return true;
+
+    // Zod validation
+    const zodErrors = validateSectionWithZod(currentSection.id, data.responses);
+
+    // Also run conditional-logic validation for conditional fields
+    const conditionalErrors = validateSection(currentSection.fields, data.responses);
+
+    // Merge: Zod errors take priority, conditional errors fill gaps
+    const merged = { ...zodErrors, ...conditionalErrors };
+
+    // Filter out errors for fields that are not visible (conditional)
+    const visibleFieldIds = new Set(
+      currentSection.fields
+        .filter((f) => isFieldConditionallyVisible(f, data.responses))
+        .map((f) => f.id)
+    );
+
+    const filteredErrors: Record<string, string> = {};
+    for (const [key, msg] of Object.entries(merged)) {
+      // For repeating section sub-fields like "q15_services[0].service_name"
+      const baseFieldId = key.split('[')[0];
+      if (visibleFieldIds.has(baseFieldId) || key.includes('[')) {
+        filteredErrors[key] = msg;
+      }
+    }
+
+    if (Object.keys(filteredErrors).length > 0) {
+      setErrors(filteredErrors);
+      setShowValidationSummary(true);
+      return false;
+    }
+
+    setErrors({});
+    setShowValidationSummary(false);
+    return true;
+  }, [data?.responses, currentSection, currentSectionId, isNewSectionsMode, newSectionIds]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!data?.responses) return;
+
     const allErrors: Record<string, string> = {};
 
     for (const section of formSections) {
       if (section.id === 'intro') continue;
-
-      // In new-sections mode, only validate new sections
       if (isNewSectionsMode && !newSectionIds.includes(section.id)) continue;
 
-      const sectionErrors = validateSection(section.fields, data.responses);
-      Object.assign(allErrors, sectionErrors);
+      const zodErrors = validateSectionWithZod(section.id, data.responses);
+      const conditionalErrors = validateSection(section.fields, data.responses);
+      Object.assign(allErrors, zodErrors, conditionalErrors);
     }
 
     if (Object.keys(allErrors).length > 0) {
@@ -157,6 +202,21 @@ export default function IntakeWizard() {
       el.focus?.();
     }
   }, []);
+
+  // Jump to first incomplete section on mount (for returning users with new services)
+  useEffect(() => {
+    if (loading || !data) return;
+    if (!isNewSectionsMode) return;
+    if (currentSectionId !== 'intro') return;
+
+    // If user has new sections to complete, navigate to the first one
+    const firstNewSection = formSections.find((s) =>
+      newSectionIds.includes(s.id)
+    );
+    if (firstNewSection) {
+      setCurrentSection(firstNewSection.id);
+    }
+  }, [loading, data, isNewSectionsMode, newSectionIds, formSections, currentSectionId, setCurrentSection]);
 
   // Loading state
   if (loading) {
@@ -183,18 +243,8 @@ export default function IntakeWizard() {
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <div className="flex items-start gap-4">
             <div className="bg-green-100 rounded-lg p-3 shrink-0">
-              <svg
-                className="w-6 h-6 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
+              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div>
@@ -226,7 +276,6 @@ export default function IntakeWizard() {
     );
   }
 
-  // Intro section needs special navigation
   const isOnIntro = currentSectionId === 'intro';
 
   return (
@@ -270,6 +319,28 @@ export default function IntakeWizard() {
             if (firstNewSection) handleNavigate(firstNewSection.id);
           }}
         />
+      )}
+
+      {/* Autosave conflict warning */}
+      {conflictDetected && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+          <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-inter font-semibold text-amber-800 text-sm">
+              This form was updated in another tab or session
+            </p>
+            <p className="font-inter text-amber-700 text-xs mt-1">
+              Your local changes may overwrite the other session&apos;s edits. Continue with caution.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={dismissConflict}
+            className="font-inter font-medium text-amber-700 text-xs hover:underline shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
       )}
 
       {/* Progress bar */}
@@ -350,6 +421,7 @@ export default function IntakeWizard() {
         sections={formSections}
         currentSectionId={currentSectionId}
         onNavigate={handleNavigate}
+        onValidateAndNext={validateCurrentSection}
         onSubmit={handleSubmit}
         submitting={submitting}
         completedSectionIds={completedSectionIds}

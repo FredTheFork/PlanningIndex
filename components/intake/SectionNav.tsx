@@ -7,6 +7,7 @@ interface SectionNavProps {
   sections: FormSection[];
   currentSectionId: string;
   onNavigate: (sectionId: string) => void;
+  onValidateAndNext: () => boolean;
   onSubmit: () => void;
   submitting: boolean;
   completedSectionIds: string[];
@@ -17,6 +18,7 @@ export default function SectionNav({
   sections,
   currentSectionId,
   onNavigate,
+  onValidateAndNext,
   onSubmit,
   submitting,
   completedSectionIds,
@@ -29,8 +31,19 @@ export default function SectionNav({
   const isLastSection = currentIndex === sections.length - 1;
   const isIntro = currentSectionId === 'intro';
 
-  // Determine if we're in "new sections" mode (resubmitting after additional purchase)
   const isNewSectionsMode = newSectionIds.length > 0;
+
+  const handleNext = () => {
+    if (isIntro) {
+      const next = sections[currentIndex + 1];
+      if (next) onNavigate(next.id);
+      return;
+    }
+    const valid = onValidateAndNext();
+    if (valid && nextSection) {
+      onNavigate(nextSection.id);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between mt-6">
@@ -70,7 +83,7 @@ export default function SectionNav({
       ) : nextSection ? (
         <button
           type="button"
-          onClick={() => onNavigate(nextSection.id)}
+          onClick={handleNext}
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-md font-inter font-semibold text-sm text-white bg-[#1B3F7A] hover:bg-[#2C68C4] transition-colors"
         >
           {isIntro ? 'Begin' : 'Continue'}

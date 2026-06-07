@@ -2,6 +2,14 @@
 // Pure, deterministic — no side effects or database calls.
 
 import { allFormSections, FormSection, FormField } from './intake-definition';
+import { getSectionSchema } from './validations';
+import type { z } from 'zod';
+
+export interface IntakeFormResult {
+  sections: FormSection[];
+  /** Zod schemas keyed by section ID. Null for intro section. */
+  schemas: Record<string, z.ZodObject<any> | null>;
+}
 
 /**
  * Build the intake form for a given set of purchased service IDs.
@@ -10,7 +18,7 @@ import { allFormSections, FormSection, FormField } from './intake-definition';
  * 2. Sorts by sortOrder ascending
  * 3. De-duplicates by section id (a section matching multiple services appears once)
  * 4. Filters fields within each section based on fieldServiceTags
- * 5. Returns the assembled, ordered, de-duplicated list
+ * 5. Returns the assembled, ordered, de-duplicated list + Zod schemas
  */
 export function buildIntakeForm(purchasedServiceIds: string[]): FormSection[] {
   if (purchasedServiceIds.length === 0) return [];
@@ -48,6 +56,21 @@ export function buildIntakeForm(purchasedServiceIds: string[]): FormSection[] {
 
     return { ...section, fields: filteredFields };
   });
+}
+
+/**
+ * Build intake form with Zod schemas.
+ * Returns both sections and per-section validation schemas.
+ */
+export function buildIntakeFormWithSchemas(purchasedServiceIds: string[]): IntakeFormResult {
+  const sections = buildIntakeForm(purchasedServiceIds);
+  const schemas: Record<string, z.ZodObject<any> | null> = {};
+
+  for (const section of sections) {
+    schemas[section.id] = getSectionSchema(section.id);
+  }
+
+  return { sections, schemas };
 }
 
 /**

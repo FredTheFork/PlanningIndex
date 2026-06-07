@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
+import { useClientProfile } from './useClientProfile';
 import { buildIntakeForm, getCompletedServiceIds, isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 import { FormSection } from '@/lib/forms/intake-definition';
 import { isSectionComplete } from '@/lib/forms/conditional-logic';
@@ -30,6 +31,7 @@ const SERVICE_NAMES: Record<string, string> = {
 
 export function useIntakeResponses() {
   const { user, loading: authLoading } = useAuth();
+  const { purchasedServiceIds: profileServiceIds } = useClientProfile();
   const [data, setData] = useState<IntakeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,48 +39,26 @@ export function useIntakeResponses() {
   const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>([]);
   const [formSections, setFormSections] = useState<FormSection[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [conflictDetected, setConflictDetected] = useState(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingResponsesRef = useRef<Record<string, any> | null>(null);
+  // Track when we last saved to detect conflicts
+  const localLastSavedRef = useRef<string | null>(null);
 
-  // Derive purchased service IDs from services_purchased table
+  // Derive purchased service IDs — prefer profileServiceIds from useClientProfile
+  // which handles all schema variations (stripe_* tables, services_purchased, etc.)
   useEffect(() => {
     if (!user) return;
 
-    const fetchServiceIds = async () => {
-      const { data: services } = await supabase
-        .from('services_purchased')
-        .select('service_id')
-        .eq('user_id', user.id)
-        .eq('status', 'active');
+    if (profileServiceIds.length > 0) {
+      setPurchasedServiceIds(profileServiceIds);
+      return;
+    }
 
-      const activeIds = (services || []).map((s: any) => s.service_id);
-
-      if (activeIds.length > 0) {
-        setPurchasedServiceIds(activeIds);
-      } else {
-        // Backward compat: check client_profiles.purchased_upsells
-        const { data: profile } = await supabase
-          .from('client_profiles')
-          .select('purchased_upsells, has_submitted_intake')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        const upsellIds = profile?.purchased_upsells || [];
-        if (upsellIds.length > 0) {
-          setPurchasedServiceIds(['business_foundations_pack', ...upsellIds]);
-        } else if (profile?.has_submitted_intake) {
-          // Legacy submissions without service tracking
-          setPurchasedServiceIds(['business_foundations_pack']);
-        } else {
-          // Default for new users
-          setPurchasedServiceIds(['business_foundations_pack']);
-        }
-      }
-    };
-
-    fetchServiceIds();
-  }, [user]);
+    // Fallback: default for new users
+    setPurchasedServiceIds(['business_foundations_pack']);
+  }, [user, profileServiceIds]);
 
   // Build form sections when service IDs change
   useEffect(() => {
@@ -123,6 +103,7 @@ export function useIntakeResponses() {
           last_visited_at: row.last_visited_at,
         });
         setLastSaved(row.last_saved_at ? new Date(row.last_saved_at) : null);
+        localLastSavedRef.current = row.last_saved_at;
 
         // If row has purchased_service_ids, prefer those over derived ones
         if (row.purchased_service_ids && row.purchased_service_ids.length > 0) {
@@ -136,12 +117,38 @@ export function useIntakeResponses() {
     fetchData();
   }, [user, authLoading]);
 
+  // Check for autosave conflicts before writing
+  const checkForConflicts = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+
+    const { data: row } = await supabase
+      .from('intake_responses')
+      .select('last_saved_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!row?.last_saved_at) return false;
+
+    // If the DB's last_saved_at is newer than our local ref, another session wrote
+    if (localLastSavedRef.current && row.last_saved_at > localLastSavedRef.current) {
+      return true;
+    }
+
+    return false;
+  }, [user]);
+
   // Debounced save to database
   const saveToDatabase = useCallback(async (responses: Record<string, any>) => {
     if (!user) return;
 
     setSaving(true);
     try {
+      // Check for conflicts before writing
+      const hasConflict = await checkForConflicts();
+      if (hasConflict) {
+        setConflictDetected(true);
+      }
+
       const now = new Date().toISOString();
 
       // Compute section_progress from responses
@@ -167,6 +174,7 @@ export function useIntakeResponses() {
       if (error) {
         console.error('Autosave error:', error);
       } else {
+        localLastSavedRef.current = now;
         setLastSaved(new Date());
       }
     } catch (err) {
@@ -174,7 +182,7 @@ export function useIntakeResponses() {
     } finally {
       setSaving(false);
     }
-  }, [user, formSections, data?.current_section_id, purchasedServiceIds]);
+  }, [user, formSections, data?.current_section_id, purchasedServiceIds, checkForConflicts]);
 
   // Update a single field value and trigger debounced save
   const updateField = useCallback((fieldId: string, value: any) => {
@@ -203,7 +211,6 @@ export function useIntakeResponses() {
       return { ...prev, current_section_id: sectionId };
     });
 
-    // Also save to DB
     if (user) {
       supabase
         .from('intake_responses')
@@ -226,7 +233,6 @@ export function useIntakeResponses() {
         sectionProgress[section.id] = isSectionComplete(section.fields, responses);
       }
 
-      // Compute which services have ALL their sections completed
       const completedServiceIds = getCompletedServiceIds(purchasedServiceIds, sectionProgress);
 
       const now = new Date().toISOString();
@@ -260,6 +266,8 @@ export function useIntakeResponses() {
       if (profileError) {
         console.error('Profile update error:', profileError);
       }
+
+      localLastSavedRef.current = now;
 
       setData((prev) => prev ? {
         ...prev,
@@ -315,6 +323,11 @@ export function useIntakeResponses() {
     }
   }, [user]);
 
+  // Dismiss conflict warning
+  const dismissConflict = useCallback(() => {
+    setConflictDetected(false);
+  }, []);
+
   // Get new sections (for users who already submitted but purchased additional services)
   const newSectionIds = (() => {
     if (!data?.submitted_at) return [];
@@ -330,13 +343,11 @@ export function useIntakeResponses() {
       .map((s) => s.id);
   })();
 
-  // Whether intake is fully complete for all purchased services
   const intakeFullyComplete = (() => {
     if (!data?.submitted_at) return false;
     return isIntakeFullyComplete(purchasedServiceIds, data.intake_complete_for_services || []);
   })();
 
-  // Which sections are already completed (read-only for resubmissions)
   const completedSectionIds = (() => {
     if (!data?.submitted_at) return [];
     const progress = data.section_progress || {};
@@ -357,6 +368,8 @@ export function useIntakeResponses() {
     newSectionIds,
     completedSectionIds,
     intakeFullyComplete,
+    conflictDetected,
+    dismissConflict,
     updateField,
     setCurrentSection,
     submitForm,
