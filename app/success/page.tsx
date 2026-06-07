@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
@@ -18,23 +18,75 @@ function SuccessContent() {
   const [error, setError] = useState('');
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [userId, setUserId] = useState('');
+  const [emailLoading, setEmailLoading] = useState(true);
 
+  // Auto-fetch email from Stripe checkout session
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
     if (!sessionId) {
+      setEmailLoading(false);
       setStatus('set_password');
       return;
     }
 
-    // Check if user is already logged in
+    const fetchSessionEmail = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        const res = await fetch(
+          `${supabaseUrl}/functions/v1/stripe-checkout?session_id=${sessionId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${anonKey}`,
+            },
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.email) {
+            setEmail(data.email.toLowerCase());
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch session email:', err);
+      } finally {
+        setEmailLoading(false);
+      }
+    };
+
+    // Check if already logged in first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         router.replace('/personal');
         return;
       }
+      fetchSessionEmail();
       setStatus('set_password');
     });
   }, [searchParams, router]);
+
+  const callSetPassword = useCallback(async (emailToSend: string, passwordToSend: string, retries = 2): Promise<Response> => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const response = await fetch(`${supabaseUrl}/functions/v1/set-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`,
+      },
+      body: JSON.stringify({ email: emailToSend, password: passwordToSend }),
+    });
+
+    if (response.status === 404 && retries > 0) {
+      // Cold start — wait and retry
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return callSetPassword(emailToSend, passwordToSend, retries - 1);
+    }
+
+    return response;
+  }, []);
 
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,16 +101,7 @@ function SuccessContent() {
     setError('');
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const response = await fetch(`${supabaseUrl}/functions/v1/set-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`,
-        },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
-      });
+      const response = await callSetPassword(email.trim().toLowerCase(), password);
 
       if (response.status === 404) {
         setError('The password service is starting up. Please wait 30 seconds and try again.');
@@ -72,7 +115,7 @@ function SuccessContent() {
         return;
       }
 
-      // Password set -- now sign in
+      // Password set — now sign in
       setSettingPassword(false);
       setSigningIn(true);
 
@@ -148,7 +191,9 @@ function SuccessContent() {
             </div>
             <div>
               <p className="font-inter font-semibold text-navy text-sm">Set your password</p>
-              <p className="font-inter text-secondary-text text-xs">Use the email you paid with</p>
+              <p className="font-inter text-secondary-text text-xs">
+                {email ? 'Using the email from your checkout' : 'Use the email you paid with'}
+              </p>
             </div>
           </div>
 
@@ -167,10 +212,13 @@ function SuccessContent() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="The email you used at checkout"
+                placeholder={emailLoading ? 'Loading...' : 'The email you used at checkout'}
                 required
                 autoFocus
-                className="block w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-medium-blue focus:border-medium-blue font-inter text-sm"
+                readOnly={!!email && !emailLoading}
+                className={`block w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-medium-blue focus:border-medium-blue font-inter text-sm ${
+                  email && !emailLoading ? 'bg-gray-50 text-gray-700' : ''
+                }`}
               />
             </div>
 
@@ -200,7 +248,7 @@ function SuccessContent() {
 
             <button
               type="submit"
-              disabled={settingPassword || signingIn}
+              disabled={settingPassword || signingIn || emailLoading}
               className="w-full font-inter font-semibold text-white bg-navy rounded-md hover:bg-medium-blue transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ padding: '12px 24px', fontSize: '0.95rem' }}
             >
