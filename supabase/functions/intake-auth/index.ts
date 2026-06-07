@@ -6,176 +6,141 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-const adminHeaders = {
-  apikey: SERVICE_ROLE_KEY,
-  Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-  "Content-Type": "application/json",
-};
-
-// ── Service catalog (price ID mapping) ──
-
-const SERVICE_CATALOG: Record<string, { stripePriceIds: { test: string; live: string } }> = {
-  business_foundations_pack: {
-    stripePriceIds: {
-      test: "price_1TZc9UGfxcDbzGRtniOLIJLE",
-      live: "price_1TX34AGfxcDbzGRtxVtQN95g",
-    },
-  },
-  website_copy_pack: {
-    stripePriceIds: { test: "", live: "" },
-  },
-  social_media_pack: {
-    stripePriceIds: { test: "", live: "" },
-  },
-  quarterly_refresh: {
-    stripePriceIds: { test: "", live: "" },
-  },
-};
-
-function findServiceIdByPriceId(priceId: string): string | null {
-  if (!priceId) return null;
-  for (const [id, entry] of Object.entries(SERVICE_CATALOG)) {
-    if (entry.stripePriceIds.test === priceId || entry.stripePriceIds.live === priceId) {
-      return id;
-    }
-  }
-  return null;
-}
-
-// ── Derive purchased services from DB (server-side, authoritative) ──
-
-async function derivePurchasedServices(userId: string): Promise<string[]> {
-  const ids = new Set<string>();
-
-  // 1. Check stripe_customers → stripe_orders (one-time purchases)
-  const customerRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/stripe_customers?user_id=eq.${userId}&select=customer_id`,
-    { headers: adminHeaders },
-  );
-  const customers = await customerRes.json();
-
-  if (customers?.length > 0) {
-    const customerId = customers[0].customer_id;
-
-    const ordersRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/stripe_orders?customer_id=eq.${customerId}&status=eq.completed&select=checkout_session_id`,
-      { headers: adminHeaders },
-    );
-    const orders = await ordersRes.json();
-    if (orders?.length > 0) {
-      ids.add("business_foundations_pack");
-    }
-
-    const subsRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/stripe_subscriptions?customer_id=eq.${customerId}&select=price_id,status`,
-      { headers: adminHeaders },
-    );
-    const subs = await subsRes.json();
-    if (subs) {
-      for (const sub of subs) {
-        if (sub.status === "active" || sub.status === "trialing") {
-          const serviceId = findServiceIdByPriceId(sub.price_id);
-          if (serviceId) ids.add(serviceId);
-        }
-      }
-    }
-  }
-
-  // 2. Fallback: services_purchased table
-  if (ids.size === 0) {
-    const spRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/services_purchased?user_id=eq.${userId}&status=eq.active&select=service_id`,
-      { headers: adminHeaders },
-    );
-    const services = await spRes.json();
-    if (services?.length > 0) {
-      for (const s of services) ids.add(s.service_id);
-    }
-  }
-
-  // 3. Fallback: client_profiles.purchased_upsells
-  if (ids.size === 0) {
-    const profileRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/client_profiles?user_id=eq.${userId}&select=purchased_upsells`,
-      { headers: adminHeaders },
-    );
-    const profile = await profileRes.json();
-    if (profile?.length > 0 && profile[0].purchased_upsells) {
-      ids.add("business_foundations_pack");
-      for (const id of profile[0].purchased_upsells) ids.add(id);
-    }
-  }
-
-  return Array.from(ids);
-}
+const SERVICE_CATALOG_IDS = [
+  "business_foundations_pack",
+  "website_copy_pack",
+  "social_media_pack",
+  "quarterly_refresh",
+];
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const sb = createClient(supabaseUrl, supabaseServiceKey);
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization" }), {
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await sb.auth.getUser(token);
 
-    // Verify the user's JWT
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        apikey: SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!userRes.ok) {
+    if (authErr || !user) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userData = await userRes.json();
-    const userId = userData.id;
+    // Derive purchased services server-side
+    const ids = new Set<string>();
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "User ID not found" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Check stripe_customers
+    const { data: customer } = await sb
+      .from("stripe_customers")
+      .select("customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (customer?.customer_id) {
+      const { data: orders } = await sb
+        .from("stripe_orders")
+        .select("checkout_session_id, status")
+        .eq("customer_id", customer.customer_id)
+        .eq("status", "completed");
+
+      if (orders && orders.length > 0) {
+        ids.add("business_foundations_pack");
+      }
+
+      const { data: subs } = await sb
+        .from("stripe_subscriptions")
+        .select("price_id, status")
+        .eq("customer_id", customer.customer_id);
+
+      if (subs) {
+        for (const sub of subs) {
+          if (sub.status === "active" || sub.status === "trialing") {
+            // Map price_id back to service_id
+            const { data: priceMappings } = await sb
+              .from("services_purchased")
+              .select("service_id")
+              .eq("user_id", user.id)
+              .eq("stripe_price_id", sub.price_id)
+              .eq("status", "active")
+              .limit(1);
+
+            if (priceMappings && priceMappings.length > 0) {
+              ids.add(priceMappings[0].service_id);
+            }
+          }
+        }
+      }
     }
 
-    // Get server-side authoritative purchased service IDs
-    const purchasedServiceIds = await derivePurchasedServices(userId);
+    // Fallback: services_purchased
+    if (ids.size === 0) {
+      const { data: services } = await sb
+        .from("services_purchased")
+        .select("service_id")
+        .eq("user_id", user.id)
+        .eq("status", "active");
 
-    return new Response(
-      JSON.stringify({
-        purchased_service_ids: purchasedServiceIds,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+      if (services && services.length > 0) {
+        services.forEach((s: { service_id: string }) => ids.add(s.service_id));
+      }
+    }
+
+    // Fallback: client_profiles
+    if (ids.size === 0) {
+      const { data: profile } = await sb
+        .from("client_profiles")
+        .select("purchased_upsells")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profile?.purchased_upsells && Array.isArray(profile.purchased_upsells)) {
+        ids.add("business_foundations_pack");
+        profile.purchased_upsells.forEach((id: string) => ids.add(id));
+      }
+    }
+
+    // Fallback: intake_responses.purchased_service_ids
+    if (ids.size === 0) {
+      const { data: intake } = await sb
+        .from("intake_responses")
+        .select("purchased_service_ids")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (intake?.purchased_service_ids && Array.isArray(intake.purchased_service_ids)) {
+        intake.purchased_service_ids.forEach((id: string) => ids.add(id));
+      }
+    }
+
+    // Default to business_foundations_pack if nothing found
+    const purchasedServiceIds = ids.size > 0
+      ? Array.from(ids).filter((id) => SERVICE_CATALOG_IDS.includes(id))
+      : ["business_foundations_pack"];
+
+    return new Response(JSON.stringify({ purchased_service_ids: purchasedServiceIds }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[intake-auth] Error:", message);
-    return new Response(JSON.stringify({ error: message }), {
+    console.error("Intake auth error:", err);
+    return new Response(JSON.stringify({ error: err.message || "Authorization failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

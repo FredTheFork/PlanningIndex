@@ -106,12 +106,19 @@ async function derivePurchasedServices(userId: string): Promise<string[]> {
     // 2. Completed orders = one-time purchases
     const { data: orders } = await supabase
       .from('stripe_orders')
-      .select('checkout_session_id, status')
+      .select('checkout_session_id, status, service_ids')
       .eq('customer_id', customer.customer_id)
       .eq('status', 'completed');
 
     if (orders && orders.length > 0) {
-      ids.add('business_foundations_pack');
+      for (const order of orders) {
+        if (order.service_ids && Array.isArray(order.service_ids) && order.service_ids.length > 0) {
+          order.service_ids.forEach((id: string) => ids.add(id));
+        } else {
+          // Legacy orders without service_ids — assume business_foundations_pack
+          ids.add('business_foundations_pack');
+        }
+      }
     }
 
     // 3. Active subscriptions
@@ -130,17 +137,15 @@ async function derivePurchasedServices(userId: string): Promise<string[]> {
     }
   }
 
-  // Fallback: try services_purchased table
-  if (ids.size === 0) {
-    const { data: services } = await supabase
-      .from('services_purchased')
-      .select('service_id')
-      .eq('user_id', userId)
-      .eq('status', 'active');
+  // Also check services_purchased table (populated by webhook)
+  const { data: services } = await supabase
+    .from('services_purchased')
+    .select('service_id')
+    .eq('user_id', userId)
+    .eq('status', 'active');
 
-    if (services && services.length > 0) {
-      services.forEach((s: any) => ids.add(s.service_id));
-    }
+  if (services && services.length > 0) {
+    services.forEach((s: any) => ids.add(s.service_id));
   }
 
   // Fallback: try client_profiles.purchased_upsells

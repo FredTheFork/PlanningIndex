@@ -54,12 +54,19 @@ function CheckoutPageInner() {
         if (customer?.customer_id) {
           const { data: orders } = await supabase
             .from('stripe_orders')
-            .select('checkout_session_id, status')
+            .select('checkout_session_id, status, service_ids')
             .eq('customer_id', customer.customer_id)
             .eq('status', 'completed');
 
           if (orders && orders.length > 0) {
-            ids.add('business_foundations_pack');
+            for (const order of orders) {
+              if (order.service_ids && Array.isArray(order.service_ids) && order.service_ids.length > 0) {
+                order.service_ids.forEach((id: string) => ids.add(id));
+              } else {
+                // Legacy orders without service_ids — assume business_foundations_pack
+                ids.add('business_foundations_pack');
+              }
+            }
           }
 
           const { data: subs } = await supabase
@@ -101,6 +108,7 @@ function CheckoutPageInner() {
             .maybeSingle();
 
           if (!profileErr && profile?.purchased_upsells && Array.isArray(profile.purchased_upsells)) {
+            // purchased_upsells contains non-core service IDs; core pack is assumed
             ids.add('business_foundations_pack');
             profile.purchased_upsells.forEach((id: string) => ids.add(id));
           }

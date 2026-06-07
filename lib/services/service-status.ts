@@ -158,7 +158,7 @@ export function sortNextSteps(steps: ServiceNextStep[]): ServiceNextStep[] {
  * Returns false if the quarterly_refresh subscription is cancelled/expired.
  * Used to block refresh requests for inactive subscriptions.
  */
-export function isRefreshEligible(purchasedServices: { service_id: string; status: string }[]): boolean {
+function isRefreshEligible(purchasedServices: { service_id: string; status: string }[]): boolean {
   const refresh = purchasedServices.find((s) => s.service_id === 'quarterly_refresh');
   if (!refresh) return false;
   return refresh.status === 'active';

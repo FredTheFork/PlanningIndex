@@ -60,18 +60,15 @@ export default function PersonalStatus() {
             .eq('customer_id', customer.customer_id);
 
           if (subs) {
-            const cancelledRefresh = subs.find((s: any) =>
-              s.status === 'canceled' && s.price_id
-            );
-            if (cancelledRefresh) {
-              // Verify it's a quarterly_refresh price
-              const { getServiceById } = await import('@/lib/services/service-catalog');
-              const service = subs.find((s: any) => {
-                // Simple check: if it's a subscription that was cancelled
-                return s.status === 'canceled';
-              });
-              if (service) {
-                setHasCancelledRefresh(true);
+            for (const sub of subs) {
+              if (sub.status === 'canceled' && sub.price_id) {
+                // Verify the cancelled subscription is actually quarterly_refresh
+                const { getServiceById } = await import('@/lib/services/service-catalog');
+                const service = getServiceById('quarterly_refresh');
+                if (service && (service.stripePriceIds.test === sub.price_id || service.stripePriceIds.live === sub.price_id)) {
+                  setHasCancelledRefresh(true);
+                  break;
+                }
               }
             }
           }

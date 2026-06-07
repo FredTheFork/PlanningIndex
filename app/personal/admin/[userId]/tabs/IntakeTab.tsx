@@ -141,16 +141,26 @@ function getDisplayFieldsForSection(
 export default function IntakeTab({ userId, data, refreshData }: IntakeTabProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
-  // Determine purchased service IDs from intake responses or client profile
+  // Determine purchased service IDs from intake metadata, profile, or purchased services list
   const purchasedServiceIds: string[] = useMemo(() => {
-    const ids = data?.intakeMetadata?.purchased_service_ids
-      || data?.profile?.purchased_upsells
-      || [];
-    // Always include business_foundations_pack if no specific IDs found (backward compat)
-    if (ids.length === 0 && data?.profile?.has_submitted_intake) {
+    const metadataIds = data?.intakeMetadata?.purchased_service_ids;
+    if (metadataIds && metadataIds.length > 0) return metadataIds;
+
+    // Fall back to services_purchased list
+    const serviceIds = data?.purchasedServices?.map((ps: any) => ps.service_id);
+    if (serviceIds && serviceIds.length > 0) return serviceIds;
+
+    // Fall back to profile
+    const profileIds = data?.profile?.purchased_upsells;
+    if (profileIds && profileIds.length > 0) {
+      return ['business_foundations_pack', ...profileIds];
+    }
+
+    // Legacy: assume business_foundations_pack if profile exists
+    if (data?.profile?.has_submitted_intake) {
       return ['business_foundations_pack'];
     }
-    return ids;
+    return [];
   }, [data]);
 
   // Build the form sections for this user's purchased services
@@ -374,25 +384,6 @@ export default function IntakeTab({ userId, data, refreshData }: IntakeTabProps)
           </div>
         )}
       </div>
-
-      {/* Additional Notes */}
-      {data.intakeMetadata?.additional_notes && Object.keys(data.intakeMetadata.additional_notes).length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-          <h4 className="font-inter font-semibold text-amber-900 text-sm mb-3">
-            Additional Notes from Client
-          </h4>
-          <div className="space-y-2">
-            {Object.entries(data.intakeMetadata.additional_notes).map(([key, value]: [string, any]) => (
-              value && value.trim() && (
-                <div key={key} className="border-b border-amber-200 pb-2 last:border-b-0">
-                  <p className="font-inter font-medium text-amber-900 text-xs mb-1">Question {key}</p>
-                  <p className="font-inter text-amber-800 text-sm">{value}</p>
-                </div>
-              )
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Sections — derived from buildIntakeForm() */}
       <div className="space-y-3">

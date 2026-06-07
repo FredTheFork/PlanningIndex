@@ -60,7 +60,7 @@ const servicesRepeatingSchema = z.array(serviceItemSchema).min(1, 'At least one 
 // Each returns a Zod object schema for the section's fields.
 // Conditional fields are handled at validation time by the caller.
 
-export function getBusinessIdentitySchema(): z.ZodObject<any> {
+function getBusinessIdentitySchema(): z.ZodObject<any> {
   return z.object({
     q1_legal_name: nonEmptyString,
     q2_business_name: nonEmptyString,
@@ -77,7 +77,7 @@ export function getBusinessIdentitySchema(): z.ZodObject<any> {
   });
 }
 
-export function getServicesSchema(): z.ZodObject<any> {
+function getServicesSchema(): z.ZodObject<any> {
   return z.object({
     q13_what_you_do: nonEmptyString,
     q14_flagship_service: nonEmptyString,
@@ -88,7 +88,7 @@ export function getServicesSchema(): z.ZodObject<any> {
   });
 }
 
-export function getClientsSchema(): z.ZodObject<any> {
+function getClientsSchema(): z.ZodObject<any> {
   return z.object({
     q19_client_type: singleChoice(['Mainly individuals / consumers', 'Mainly businesses', 'Both equally'], true),
     q20_ideal_client: nonEmptyString,
@@ -99,7 +99,7 @@ export function getClientsSchema(): z.ZodObject<any> {
   });
 }
 
-export function getPricingSchema(): z.ZodObject<any> {
+function getPricingSchema(): z.ZodObject<any> {
   return z.object({
     q25_pricing_model: multiSelect(['Fixed project fee', 'Hourly rate', 'Monthly retainer', 'Day rate', 'Milestone / stage payments', 'Subscription', 'Other'], true),
     q26_payment_terms: singleChoice(['100% payment required upfront before work begins', '50% upfront / 50% on completion', 'Invoice on completion — due within 7 days', 'Invoice on completion — due within 14 days', 'Invoice on completion — due within 30 days', 'I use milestone payments — invoice at agreed stages', 'Custom arrangement'], true),
@@ -115,7 +115,7 @@ export function getPricingSchema(): z.ZodObject<any> {
   });
 }
 
-export function getGdprSchema(): z.ZodObject<any> {
+function getGdprSchema(): z.ZodObject<any> {
   return z.object({
     q36_data_collected: multiSelect(['Full names', 'Email addresses', 'Phone numbers', 'Home or business addresses', 'Financial / billing details', 'Bank account information', 'Copies of ID documents', 'Project files and creative work', 'Health or medical information', 'Information about their employees or staff', 'Other'], true),
     q37_data_collection_method: multiSelect(['Email correspondence', 'Phone or video calls', 'Written contracts or agreements', 'Online forms or questionnaires', 'Social media messages', 'In-person meetings', 'Payment processors (e.g. Stripe, PayPal)', 'Third-party booking or scheduling tools', 'Other'], true),
@@ -133,7 +133,7 @@ export function getGdprSchema(): z.ZodObject<any> {
   });
 }
 
-export function getLegalSchema(): z.ZodObject<any> {
+function getLegalSchema(): z.ZodObject<any> {
   return z.object({
     q49_regulated_services: singleChoice(['Yes', 'No'], true),
     q50_regulatory_detail: optionalString,
@@ -144,7 +144,7 @@ export function getLegalSchema(): z.ZodObject<any> {
   });
 }
 
-export function getBrandSchema(): z.ZodObject<any> {
+function getBrandSchema(): z.ZodObject<any> {
   return z.object({
     q55_first_name: nonEmptyString,
     q56_business_story: nonEmptyString,
@@ -163,7 +163,7 @@ export function getBrandSchema(): z.ZodObject<any> {
   });
 }
 
-export function getInvoiceSchema(): z.ZodObject<any> {
+function getInvoiceSchema(): z.ZodObject<any> {
   return z.object({
     q69_bank_details: nonEmptyString,
     q70_invoice_due_date: nonEmptyString,
@@ -171,7 +171,7 @@ export function getInvoiceSchema(): z.ZodObject<any> {
   });
 }
 
-export function getLinkedinSchema(): z.ZodObject<any> {
+function getLinkedinSchema(): z.ZodObject<any> {
   return z.object({
     q72_linkedin_usage: singleChoice(['Yes — I use it actively', 'I have a profile but rarely use it', 'No — I don\'t have a profile'], true),
     q73_linkedin_url: optionalUrl,
@@ -180,7 +180,7 @@ export function getLinkedinSchema(): z.ZodObject<any> {
   });
 }
 
-export function getFinalSchema(): z.ZodObject<any> {
+function getFinalSchema(): z.ZodObject<any> {
   return z.object({
     q76_existing_docs_upload: fileUpload,
     q77_writing_samples_upload: fileUpload,
@@ -193,7 +193,7 @@ export function getFinalSchema(): z.ZodObject<any> {
   });
 }
 
-export function getWebsiteCopySchema(): z.ZodObject<any> {
+function getWebsiteCopySchema(): z.ZodObject<any> {
   return z.object({
     wc1_pages_needed: multiSelect(['Homepage', 'About', 'Services', 'Contact', 'FAQ', 'Blog', 'Portfolio / Case Studies', 'Pricing', 'Testimonials', 'Other'], true),
     wc_pages_other: optionalString,
@@ -225,7 +225,7 @@ export function getWebsiteCopySchema(): z.ZodObject<any> {
   });
 }
 
-export function getSocialMediaSchema(): z.ZodObject<any> {
+function getSocialMediaSchema(): z.ZodObject<any> {
   return z.object({
     sm1_platforms: multiSelect(['LinkedIn', 'Instagram', 'TikTok', 'Facebook', 'X (Twitter)', 'Pinterest', 'Other'], true),
     sm2_content_types: multiSelect(['Educational — teach your audience something useful', 'Personal / behind-the-scenes — show the human behind the business', 'Authority / expert — position you as the go-to in your niche', 'Promotional — direct sells and offers', 'Storytelling — client wins, your journey, case studies', 'Inspirational / motivational', 'Relatable / humorous'], true),

@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import Stripe from "npm:stripe@17.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,43 +7,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Service catalog — must match lib/services/service-catalog.ts
-const SERVICES: Record<string, {
-  name: string;
-  priceIds: { test: string; live: string };
-  mode: "payment" | "subscription";
-}> = {
-  business_foundations_pack: {
-    name: "Business Foundations Pack",
-    priceIds: {
+const SERVICE_CATALOG = [
+  {
+    id: "business_foundations_pack",
+    mode: "payment",
+    price: 79,
+    stripePriceIds: {
       test: "price_1TZc9UGfxcDbzGRtniOLIJLE",
       live: "price_1TX34AGfxcDbzGRtxVtQN95g",
     },
-    mode: "payment",
   },
-  website_copy_pack: {
-    name: "Website Copy Starter Pack",
-    priceIds: { test: "", live: "" },
+  {
+    id: "website_copy_pack",
     mode: "payment",
+    price: 49,
+    stripePriceIds: { test: "", live: "" },
   },
-  social_media_pack: {
-    name: "Social Media Starter Pack",
-    priceIds: { test: "", live: "" },
+  {
+    id: "social_media_pack",
     mode: "payment",
+    price: 120,
+    stripePriceIds: { test: "", live: "" },
   },
-  quarterly_refresh: {
-    name: "Quarterly Document Refresh",
-    priceIds: { test: "", live: "" },
+  {
+    id: "quarterly_refresh",
     mode: "subscription",
+    price: 29,
+    stripePriceIds: { test: "", live: "" },
   },
-};
-
-// Bundle discounts — when both services in a pair are selected
-const BUNDLE_DISCOUNTS: Record<string, Record<string, number>> = {
-  business_foundations_pack: { website_copy_pack: 9, social_media_pack: 9 },
-  website_copy_pack: { business_foundations_pack: 9 },
-  social_media_pack: { business_foundations_pack: 9 },
-};
+];
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -50,187 +43,134 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { service_ids, mode, success_url, cancel_url } = await req.json();
-
-    if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "service_ids is required and must be a non-empty array" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const stripeMode = mode === "live" ? "live" : "test";
-    const stripeKey = stripeMode === "live"
-      ? Deno.env.get("STRIPE_SECRET_KEY_LIVE")
-      : Deno.env.get("STRIPE_SECRET_KEY");
-
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
-      return new Response(
-        JSON.stringify({ error: "Stripe key not configured for " + stripeMode + " mode" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Stripe key not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Validate service IDs and collect line items
-    const lineItems: Array<{ price: string; quantity: number }> = [];
-    const validatedIds: string[] = [];
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    for (const id of service_ids) {
-      const service = SERVICES[id];
+    const { service_ids, mode, success_url, cancel_url } = await req.json();
+    if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
+      return new Response(JSON.stringify({ error: "service_ids is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const stripeMode = mode || "test";
+
+    // Get or create Stripe customer
+    const authHeader = req.headers.get("Authorization");
+    let customerId: string | undefined;
+
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { createClient } = await import("npm:@supabase/supabase-js@2");
+      const sb = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: { user } } = await sb.auth.getUser(token);
+      if (user?.email) {
+        const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+        } else {
+          const customer = await stripe.customers.create({ email: user.email });
+          customerId = customer.id;
+        }
+
+        // Save customer mapping
+        const { error: upsertErr } = await sb
+          .from("stripe_customers")
+          .upsert({ user_id: user.id, customer_id: customerId }, { onConflict: "user_id" });
+        if (upsertErr) console.error("Failed to upsert stripe_customers:", upsertErr);
+      }
+    }
+
+    // Build line items
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+    const bundleDiscounts: { serviceId: string; amountOff: number }[] = [];
+
+    for (const serviceId of service_ids) {
+      const service = SERVICE_CATALOG.find((s) => s.id === serviceId);
       if (!service) {
-        return new Response(
-          JSON.stringify({ error: `Unknown service: ${id}` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ error: `Unknown service: ${serviceId}` }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      const priceId = service.priceIds[stripeMode];
+      const priceId = service.stripePriceIds[stripeMode as "test" | "live"];
       if (!priceId) {
         return new Response(
-          JSON.stringify({ error: `No Stripe price configured for ${service.name} in ${stripeMode} mode. Create the product in Stripe Dashboard first.` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          JSON.stringify({ error: `Service ${serviceId} is not yet available for purchase. Please contact support.` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       lineItems.push({ price: priceId, quantity: 1 });
-      validatedIds.push(id);
     }
 
-    // Determine checkout mode
-    const hasSubscription = validatedIds.some((id) => SERVICES[id]?.mode === "subscription");
-    const hasPayment = validatedIds.some((id) => SERVICES[id]?.mode === "payment");
+    // Calculate bundle discounts
+    const hasBusiness = service_ids.includes("business_foundations_pack");
+    const hasWebsite = service_ids.includes("website_copy_pack");
+    const hasSocial = service_ids.includes("social_media_pack");
 
-    // Calculate bundle discounts as coupons
-    let couponAmount = 0;
-    const processedPairs = new Set<string>();
-    for (const id of validatedIds) {
-      const bundles = BUNDLE_DISCOUNTS[id];
-      if (!bundles) continue;
-      for (const [partnerId, amountOff] of Object.entries(bundles)) {
-        if (validatedIds.includes(partnerId)) {
-          const pairKey = [id, partnerId].sort().join(":");
-          if (!processedPairs.has(pairKey)) {
-            processedPairs.add(pairKey);
-            couponAmount += amountOff;
-          }
-        }
-      }
+    const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
+    if (hasBusiness && hasWebsite) {
+      discounts.push({ coupon: undefined }); // Will use custom amount
     }
 
-    // Build checkout session parameters
-    const sessionParams: Record<string, unknown> = {
-      payment_method_types: ["card"],
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: service_ids.some((id) => SERVICE_CATALOG.find((s) => s.id === id)?.mode === "subscription")
+        ? "subscription"
+        : "payment",
       line_items: lineItems,
-      mode: hasSubscription && !hasPayment ? "subscription" : "payment",
-      success_url: success_url || `${new URL(req.url).origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${new URL(req.url).origin}/checkout`,
-      metadata: {
-        service_ids: validatedIds.join(","),
-      },
+      success_url,
+      cancel_url,
+      payment_method_types: ["card"],
+      metadata: { service_ids: service_ids.join(",") },
     };
 
-    // Apply bundle discount as a coupon if applicable
-    if (couponAmount > 0) {
-      // Create a one-time coupon for this checkout
-      const couponRes = await fetch("https://api.stripe.com/v1/coupons", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${stripeKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          "amount_off": String(couponAmount * 100), // Convert to pence
-          currency: "gbp",
-          duration: "once",
-          name: `Bundle discount — save £${couponAmount}`,
-        }),
+    if (customerId) {
+      sessionParams.customer = customerId;
+      sessionParams.customer_update = { name: "auto" };
+    }
+
+    // If mixing payment + subscription, we need to split into separate sessions
+    // Stripe Checkout doesn't support mixed modes in one session
+    const hasPayment = service_ids.some((id) => SERVICE_CATALOG.find((s) => s.id === id)?.mode === "payment");
+    const hasSubscription = service_ids.some((id) => SERVICE_CATALOG.find((s) => s.id === id)?.mode === "subscription");
+
+    if (hasPayment && hasSubscription) {
+      // For mixed mode, create a payment session for one-time items
+      // and the subscription will be handled separately
+      const paymentIds = service_ids.filter((id) => SERVICE_CATALOG.find((s) => s.id === id)?.mode === "payment");
+      const paymentLineItems = paymentIds.map((id) => {
+        const service = SERVICE_CATALOG.find((s) => s.id === id)!;
+        return { price: service.stripePriceIds[stripeMode as "test" | "live"], quantity: 1 };
       });
 
-      const coupon = await couponRes.json();
-      if (coupon.id) {
-        sessionParams.discounts = [{ coupon: coupon.id }];
-      }
-    }
-
-    // If we have mixed payment + subscription, we need subscription_data for the subscription items
-    // Stripe checkout doesn't support mixed modes in a single session,
-    // so we handle it: if there are both, use payment mode and handle subscription separately
-    if (hasSubscription && hasPayment) {
-      // Filter to only payment items for this session; subscription handled via webhook or separate flow
-      const paymentIds = validatedIds.filter((id) => SERVICES[id]?.mode === "payment");
-      const subscriptionIds = validatedIds.filter((id) => SERVICES[id]?.mode === "subscription");
-
-      // For simplicity, create the session with payment items only
-      // The subscription will be created via a follow-up or can be added later
-      const paymentLineItems = paymentIds
-        .map((id) => {
-          const service = SERVICES[id];
-          const priceId = service.priceIds[stripeMode];
-          return priceId ? { price: priceId, quantity: 1 } : null;
-        })
-        .filter(Boolean);
-
-      sessionParams.line_items = paymentLineItems;
       sessionParams.mode = "payment";
-      sessionParams.metadata = {
-        service_ids: paymentIds.join(","),
-        pending_subscription_ids: subscriptionIds.join(","),
-      };
+      sessionParams.line_items = paymentLineItems;
+      sessionParams.metadata = { service_ids: service_ids.join(","), includes_subscription: "true" };
     }
 
-    // Create the Stripe checkout session
-    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${stripeKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams(
-        flattenObject(sessionParams),
-      ),
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
-    const session = await response.json();
-
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({ error: session.error?.message || "Failed to create checkout session" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ url: session.url, sessionId: session.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    console.error("Stripe checkout error:", err);
+    return new Response(JSON.stringify({ error: err.message || "Checkout failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
-
-// Flatten nested object to Stripe's form-encoded format
-function flattenObject(obj: Record<string, unknown>, prefix = ""): Array<[string, string]> {
-  const params: Array<[string, string]> = [];
-  for (const [key, value] of Object.entries(obj)) {
-    const paramKey = prefix ? `${prefix}[${key}]` : key;
-    if (value === null || value === undefined) continue;
-    if (Array.isArray(value)) {
-      value.forEach((item, index) => {
-        if (typeof item === "object" && item !== null) {
-          params.push(...flattenObject(item as Record<string, unknown>, `${paramKey}[${index}]`));
-        } else {
-          params.push([`${paramKey}[${index}]`, String(item)]);
-        }
-      });
-    } else if (typeof value === "object") {
-      params.push(...flattenObject(value as Record<string, unknown>, paramKey));
-    } else {
-      params.push([paramKey, String(value)]);
-    }
-  }
-  return params;
-}

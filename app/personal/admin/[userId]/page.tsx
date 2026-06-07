@@ -40,8 +40,10 @@ interface ClientData {
     form_version: string;
     last_saved_at: string;
     file_uploads: Record<string, any>;
-    additional_notes: Record<string, any>;
     purchased_service_ids: string[];
+    intake_complete_for_services: string[];
+    section_progress: Record<string, boolean>;
+    current_section_id: string;
   } | null;
   purchasedServices: {
     id: string;
@@ -122,8 +124,10 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           form_version: intakeResult.form_version,
           last_saved_at: intakeResult.last_saved_at,
           file_uploads: intakeResult.file_uploads || {},
-          additional_notes: intakeResult.additional_notes || {},
           purchased_service_ids: intakeResult.purchased_service_ids ?? [],
+          intake_complete_for_services: intakeResult.intake_complete_for_services ?? [],
+          section_progress: intakeResult.section_progress || {},
+          current_section_id: intakeResult.current_section_id ?? 'intro',
         } : null,
         purchasedServices: purchasedServices ?? [],
         email,

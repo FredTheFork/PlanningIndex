@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import Stripe from "npm:stripe@17.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,368 +7,86 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-const supabaseHeaders = {
-  apikey: SUPABASE_SERVICE_ROLE_KEY,
-  Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-  "Content-Type": "application/json",
-  Prefer: "return=representation",
-};
-
-// ── Service catalog (price ID → service ID mapping) ──
-
-const SERVICE_CATALOG: Record<string, { stripePriceIds: { test: string; live: string } }> = {
-  business_foundations_pack: {
-    stripePriceIds: {
-      test: "price_1TZc9UGfxcDbzGRtniOLIJLE",
-      live: "price_1TX34AGfxcDbzGRtxVtQN95g",
-    },
-  },
-  website_copy_pack: {
-    stripePriceIds: { test: "", live: "" },
-  },
-  social_media_pack: {
-    stripePriceIds: { test: "", live: "" },
-  },
-  quarterly_refresh: {
-    stripePriceIds: { test: "", live: "" },
-  },
-};
-
-function findServiceIdByPriceId(priceId: string): string | null {
-  if (!priceId) return null;
-  for (const [id, entry] of Object.entries(SERVICE_CATALOG)) {
-    if (entry.stripePriceIds.test === priceId || entry.stripePriceIds.live === priceId) {
-      return id;
-    }
-  }
-  return null;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
-    const body = await req.text();
-    const signature = req.headers.get("stripe-signature");
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 
-    if (!signature) {
-      return new Response(JSON.stringify({ error: "Missing stripe-signature header" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Determine Stripe mode from webhook secret
-    const webhookSecretTest = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
-    const webhookSecretLive = Deno.env.get("STRIPE_WEBHOOK_SECRET_LIVE") || "";
-
-    if (!webhookSecretTest && !webhookSecretLive) {
-      return new Response(JSON.stringify({ error: "Webhook secrets not configured" }), {
+    if (!stripeKey) {
+      return new Response(JSON.stringify({ error: "Stripe key not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Parse signature components
-    const timestampMatch = signature.match(/t=(\d+)/);
-    const signatureMatch = signature.match(/v1=([a-f0-9]+)/);
-    if (!timestampMatch || !signatureMatch) {
-      return new Response(JSON.stringify({ error: "Invalid signature format" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const timestamp = timestampMatch[1];
-    const expectedSig = signatureMatch[1];
-    const signedPayload = `${timestamp}.${body}`;
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const sb = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Try validating with test secret first, then live
-    let stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-    let stripeMode: "test" | "live" = "test";
-    let validated = false;
+    // Verify webhook signature if secret is available
+    const body = await req.text();
+    let event: Stripe.Event;
 
-    const testKey = await crypto.subtle.importKey(
-      "raw", new TextEncoder().encode(webhookSecretTest),
-      { name: "HMAC", hash: "SHA-256" }, false, ["verify"],
-    );
-    const testValid = await crypto.subtle.verify(
-      "HMAC", testKey, hexToBytes(expectedSig), new TextEncoder().encode(signedPayload),
-    );
-
-    if (testValid && webhookSecretTest) {
-      stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-      stripeMode = "test";
-      validated = true;
-    } else if (webhookSecretLive) {
-      const liveKey = await crypto.subtle.importKey(
-        "raw", new TextEncoder().encode(webhookSecretLive),
-        { name: "HMAC", hash: "SHA-256" }, false, ["verify"],
-      );
-      const liveValid = await crypto.subtle.verify(
-        "HMAC", liveKey, hexToBytes(expectedSig), new TextEncoder().encode(signedPayload),
-      );
-      if (liveValid) {
-        stripeKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE") || "";
-        stripeMode = "live";
-        validated = true;
-      }
-    }
-
-    if (!validated) {
-      return new Response(JSON.stringify({ error: "Invalid signature" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const event = JSON.parse(body);
-
-    // ─── Handle checkout.session.completed ───
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const customerEmail = session.customer_email || session.customer_details?.email;
-      const stripeCustomerId = session.customer;
-
-      // Find or create user via Admin API
-      let userId: string | null = null;
-
-      if (customerEmail) {
-        const listRes = await fetch(
-          `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(customerEmail)}`,
-          {
-            headers: {
-              apikey: SUPABASE_SERVICE_ROLE_KEY,
-              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-          },
-        );
-        const listData = await listRes.json();
-        if (listData?.users?.length > 0) {
-          userId = listData.users[0].id;
-        }
-
-        if (!userId) {
-          const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-            method: "POST",
-            headers: {
-              apikey: SUPABASE_SERVICE_ROLE_KEY,
-              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email: customerEmail, email_confirm: true }),
-          });
-          const createData = await createRes.json();
-          userId = createData?.id;
-        }
-      }
-
-      if (!userId) {
-        console.error("Could not resolve user ID for email:", customerEmail);
-        return new Response(JSON.stringify({ error: "User resolution failed" }), {
-          status: 500,
+    if (webhookSecret) {
+      const signature = req.headers.get("stripe-signature");
+      if (!signature) {
+        return new Response(JSON.stringify({ error: "Missing stripe-signature header" }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      } catch (err) {
+        console.error("Webhook signature verification failed:", err);
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      event = JSON.parse(body);
+    }
 
-      // Upsert stripe_customers
-      if (stripeCustomerId) {
-        const existingCustomerRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/stripe_customers?customer_id=eq.${stripeCustomerId}&select=id`,
-          { headers: supabaseHeaders },
-        );
-        const existingCustomers = await existingCustomerRes.json();
-        if (!existingCustomers || existingCustomers.length === 0) {
-          await fetch(`${SUPABASE_URL}/rest/v1/stripe_customers`, {
-            method: "POST",
-            headers: supabaseHeaders,
-            body: JSON.stringify({
-              user_id: userId,
-              customer_id: stripeCustomerId,
-            }),
-          });
+    // Handle event types
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleCheckoutCompleted(sb, session);
+        break;
+      }
+
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionChange(sb, subscription);
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionDeleted(sb, subscription);
+        break;
+      }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        // Renewal payment for subscription
+        if (invoice.subscription) {
+          console.log(`Subscription renewal: ${invoice.subscription}`);
         }
+        break;
       }
 
-      // Create stripe_orders record
-      await fetch(`${SUPABASE_URL}/rest/v1/stripe_orders`, {
-        method: "POST",
-        headers: supabaseHeaders,
-        body: JSON.stringify({
-          checkout_session_id: session.id,
-          payment_intent_id: session.payment_intent || "",
-          customer_id: stripeCustomerId || "",
-          amount_subtotal: session.amount_subtotal || 0,
-          amount_total: session.amount_total || 0,
-          currency: session.currency || "gbp",
-          payment_status: session.payment_status || "paid",
-          status: "completed",
-        }),
-      });
-
-      console.log(`checkout.session.completed: User ${userId}, order ${session.id}, customer ${stripeCustomerId}`);
-    }
-
-    // ─── Handle customer.subscription.created ───
-    if (event.type === "customer.subscription.created") {
-      const subscription = event.data.object;
-      const stripeCustomerId = typeof subscription.customer === "string"
-        ? subscription.customer
-        : subscription.customer?.id || "";
-
-      // Find user via stripe_customers
-      let userId: string | null = null;
-      if (stripeCustomerId) {
-        const customerRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/stripe_customers?customer_id=eq.${stripeCustomerId}&select=user_id`,
-          { headers: supabaseHeaders },
-        );
-        const customers = await customerRes.json();
-        if (customers?.length > 0) userId = customers[0].user_id;
-      }
-
-      // Insert subscription record
-      await fetch(`${SUPABASE_URL}/rest/v1/stripe_subscriptions`, {
-        method: "POST",
-        headers: supabaseHeaders,
-        body: JSON.stringify({
-          customer_id: stripeCustomerId,
-          subscription_id: subscription.id,
-          price_id: subscription.items?.data?.[0]?.price?.id || "",
-          current_period_start: subscription.current_period_start,
-          current_period_end: subscription.current_period_end,
-          cancel_at_period_end: subscription.cancel_at_period_end || false,
-          status: subscription.status || "active",
-        }),
-      });
-
-      console.log(`customer.subscription.created: Subscription ${subscription.id} for customer ${stripeCustomerId}, user ${userId}`);
-    }
-
-    // ─── Handle customer.subscription.updated ───
-    if (event.type === "customer.subscription.updated") {
-      const subscription = event.data.object;
-
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/stripe_subscriptions?subscription_id=eq.${subscription.id}`,
-        {
-          method: "PATCH",
-          headers: supabaseHeaders,
-          body: JSON.stringify({
-            current_period_start: subscription.current_period_start,
-            current_period_end: subscription.current_period_end,
-            cancel_at_period_end: subscription.cancel_at_period_end || false,
-            status: subscription.status || "active",
-            updated_at: new Date().toISOString(),
-          }),
-        },
-      );
-
-      console.log(`customer.subscription.updated: Subscription ${subscription.id} → ${subscription.status}`);
-    }
-
-    // ─── Handle customer.subscription.deleted ───
-    if (event.type === "customer.subscription.deleted") {
-      const subscription = event.data.object;
-
-      // Update stripe_subscriptions status
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/stripe_subscriptions?subscription_id=eq.${subscription.id}`,
-        {
-          method: "PATCH",
-          headers: supabaseHeaders,
-          body: JSON.stringify({
-            status: subscription.status || "canceled",
-            updated_at: new Date().toISOString(),
-          }),
-        },
-      );
-
-      // Mark the service as cancelled in services_purchased
-      const stripeCustomerId = typeof subscription.customer === "string"
-        ? subscription.customer
-        : subscription.customer?.id || "";
-
-      if (stripeCustomerId) {
-        // Resolve user_id from stripe_customers
-        const customerRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/stripe_customers?customer_id=eq.${stripeCustomerId}&select=user_id`,
-          { headers: supabaseHeaders },
-        );
-        const customers = await customerRes.json();
-        const userId = customers?.[0]?.user_id;
-
-        if (userId) {
-          // Map price_id to service catalog ID
-          const priceId = subscription.items?.data?.[0]?.price?.id || "";
-          const serviceId = findServiceIdByPriceId(priceId);
-
-          // Update services_purchased: set status to cancelled for this subscription
-          const spRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/services_purchased?user_id=eq.${userId}&stripe_subscription_id=eq.${subscription.id}`,
-            {
-              method: "PATCH",
-              headers: supabaseHeaders,
-              body: JSON.stringify({
-                status: "cancelled",
-                expires_at: new Date().toISOString(),
-              }),
-            },
-          );
-
-          if (spRes.ok) {
-            const updated = await spRes.json();
-            if (!updated || updated.length === 0) {
-              // No row found by subscription_id — try by service_id if we mapped it
-              if (serviceId) {
-                await fetch(
-                  `${SUPABASE_URL}/rest/v1/services_purchased?user_id=eq.${userId}&service_id=eq.${serviceId}&status=eq.active`,
-                  {
-                    method: "PATCH",
-                    headers: supabaseHeaders,
-                    body: JSON.stringify({
-                      status: "cancelled",
-                      expires_at: new Date().toISOString(),
-                    }),
-                  },
-                );
-              }
-            }
-          }
-
-          // Cancel any pending document_refresh_jobs for this user's subscription
-          await fetch(
-            `${SUPABASE_URL}/rest/v1/document_refresh_jobs?user_id=eq.${userId}&status=eq.pending`,
-            {
-              method: "PATCH",
-              headers: supabaseHeaders,
-              body: JSON.stringify({
-                status: "cancelled",
-                error_message: "Subscription cancelled — refresh not permitted",
-                updated_at: new Date().toISOString(),
-              }),
-            },
-          );
-
-          console.log(`customer.subscription.deleted: Subscription ${subscription.id}, user ${userId}, service ${serviceId || "unknown"}`);
-        } else {
-          console.log(`customer.subscription.deleted: Subscription ${subscription.id}, customer ${stripeCustomerId} — could not resolve user`);
-        }
-      } else {
-        console.log(`customer.subscription.deleted: Subscription ${subscription.id} — no customer ID`);
-      }
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -375,19 +94,181 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Webhook error:", message);
-    return new Response(JSON.stringify({ error: message }), {
+    console.error("Webhook error:", err);
+    return new Response(JSON.stringify({ error: err.message || "Webhook processing failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+async function handleCheckoutCompleted(
+  sb: any,
+  session: Stripe.Checkout.Session
+) {
+  const customerId = session.customer as string;
+  const sessionId = session.id;
+  const paymentIntentId = session.payment_intent as string;
+  const metadata = session.metadata || {};
+  const serviceIdsStr = metadata.service_ids || "";
+  const serviceIds = serviceIdsStr ? serviceIdsStr.split(",").filter(Boolean) : [];
+  const includesSubscription = metadata.includes_subscription === "true";
+
+  // Get user ID from stripe_customers
+  const { data: customer } = await sb
+    .from("stripe_customers")
+    .select("user_id")
+    .eq("customer_id", customerId)
+    .maybeSingle();
+
+  const userId = customer?.user_id;
+
+  // Update or create stripe_orders
+  const { error: orderErr } = await sb
+    .from("stripe_orders")
+    .upsert({
+      checkout_session_id: sessionId,
+      payment_intent_id: paymentIntentId || null,
+      customer_id: customerId,
+      amount_subtotal: session.amount_subtotal || 0,
+      amount_total: session.amount_total || 0,
+      currency: session.currency || "gbp",
+      payment_status: session.payment_status || "paid",
+      status: "completed",
+      service_ids: serviceIds,
+    }, { onConflict: "checkout_session_id" });
+
+  if (orderErr) console.error("Failed to upsert stripe_orders:", orderErr);
+
+  // Populate services_purchased for each service
+  if (userId && serviceIds.length > 0) {
+    for (const serviceId of serviceIds) {
+      // For payment-mode services
+      if (serviceId !== "quarterly_refresh") {
+        const { error: svcErr } = await sb
+          .from("services_purchased")
+          .upsert({
+            user_id: userId,
+            service_id: serviceId,
+            status: "active",
+            stripe_checkout_session_id: sessionId,
+          }, { onConflict: undefined });
+        if (svcErr) console.error(`Failed to insert service ${serviceId}:`, svcErr);
+      }
+    }
+
+    // Update client_profiles
+    const { data: profile } = await sb
+      .from("client_profiles")
+      .select("purchased_upsells")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const existingUpsells = profile?.purchased_upsells || [];
+    const newUpsells = serviceIds.filter(
+      (id: string) => id !== "business_foundations_pack" && !existingUpsells.includes(id)
+    );
+    const allUpsells = [...existingUpsells, ...newUpsells];
+
+    const { error: profileErr } = await sb
+      .from("client_profiles")
+      .upsert({
+        user_id: userId,
+        purchased_upsells: allUpsells,
+      }, { onConflict: "user_id" });
+
+    if (profileErr) console.error("Failed to update client_profiles:", profileErr);
+
+    // Update intake_responses with purchased_service_ids
+    const { data: intake } = await sb
+      .from("intake_responses")
+      .select("purchased_service_ids")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const existingPurchased = intake?.purchased_service_ids || [];
+    const allPurchased = [...new Set([...existingPurchased, ...serviceIds])];
+
+    const { error: intakeErr } = await sb
+      .from("intake_responses")
+      .upsert({
+        user_id: userId,
+        purchased_service_ids: allPurchased,
+      }, { onConflict: "user_id" });
+
+    if (intakeErr) console.error("Failed to update intake_responses:", intakeErr);
   }
-  return bytes;
+}
+
+async function handleSubscriptionChange(
+  sb: any,
+  subscription: Stripe.Subscription
+) {
+  const customerId = subscription.customer as string;
+
+  const { error: subErr } = await sb
+    .from("stripe_subscriptions")
+    .upsert({
+      customer_id: customerId,
+      subscription_id: subscription.id,
+      price_id: subscription.items.data[0]?.price.id || "",
+      current_period_start: subscription.current_period_start,
+      current_period_end: subscription.current_period_end,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      status: subscription.status,
+    }, { onConflict: "subscription_id" });
+
+  if (subErr) console.error("Failed to upsert stripe_subscriptions:", subErr);
+
+  // Get user_id and populate services_purchased for quarterly_refresh
+  const { data: customer } = await sb
+    .from("stripe_customers")
+    .select("user_id")
+    .eq("customer_id", customerId)
+    .maybeSingle();
+
+  const userId = customer?.user_id;
+  if (userId && (subscription.status === "active" || subscription.status === "trialing")) {
+    const { error: svcErr } = await sb
+      .from("services_purchased")
+      .upsert({
+        user_id: userId,
+        service_id: "quarterly_refresh",
+        status: "active",
+        stripe_price_id: subscription.items.data[0]?.price.id || "",
+      }, { onConflict: undefined });
+    if (svcErr) console.error("Failed to insert quarterly_refresh service:", svcErr);
+  }
+}
+
+async function handleSubscriptionDeleted(
+  sb: any,
+  subscription: Stripe.Subscription
+) {
+  const customerId = subscription.customer as string;
+
+  // Update subscription status
+  const { error: subErr } = await sb
+    .from("stripe_subscriptions")
+    .update({ status: "canceled" })
+    .eq("subscription_id", subscription.id);
+
+  if (subErr) console.error("Failed to update subscription status:", subErr);
+
+  // Mark quarterly_refresh as cancelled in services_purchased
+  const { data: customer } = await sb
+    .from("stripe_customers")
+    .select("user_id")
+    .eq("customer_id", customerId)
+    .maybeSingle();
+
+  const userId = customer?.user_id;
+  if (userId) {
+    const { error: svcErr } = await sb
+      .from("services_purchased")
+      .update({ status: "cancelled" })
+      .eq("user_id", userId)
+      .eq("service_id", "quarterly_refresh");
+    if (svcErr) console.error("Failed to cancel quarterly_refresh:", svcErr);
+  }
 }

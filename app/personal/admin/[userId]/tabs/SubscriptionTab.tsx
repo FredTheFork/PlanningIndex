@@ -19,14 +19,13 @@ interface SubscriptionTabProps {
 
 interface RefreshJob {
   id: string;
-  service_id: string;
+  user_id: string;
+  subscription_id: string | null;
   status: string;
   document_types: string[];
-  update_instructions: string;
-  documents_completed: string[];
-  documents_failed: string[];
-  error_message: string | null;
+  update_instructions: string | null;
   created_at: string;
+  updated_at: string;
   completed_at: string | null;
 }
 
@@ -98,7 +97,7 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
     const { data: jobs } = await supabase
       .from('document_refresh_jobs')
       .select('*')
-      .eq('client_id', userId)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     setRefreshJobs(jobs ?? []);
@@ -396,12 +395,6 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
                 <div className="flex items-start justify-between mb-2.5">
                   <div className="flex items-center gap-2.5">
                     <StatusBadge status={job.status} size="sm" />
-                    <span className="font-inter text-gray-500 text-xs">
-                      {job.service_id === 'business_foundations_pack' ? 'Business Foundations'
-                        : job.service_id === 'website_copy_pack' ? 'Website Copy'
-                        : job.service_id === 'social_media_pack' ? 'Social Media'
-                        : job.service_id}
-                    </span>
                     <span className="font-inter text-gray-400 text-xs">
                       {new Date(job.created_at).toLocaleDateString('en-GB', {
                         day: 'numeric', month: 'short', year: 'numeric',
@@ -425,8 +418,8 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {(job.document_types ?? []).map((docId) => {
                     const label = getDocumentLabel(docId) ?? docId;
-                    const isCompleted = (job.documents_completed ?? []).includes(docId);
-                    const isFailed = (job.documents_failed ?? []).includes(docId);
+                    const isCompleted = job.status === 'completed';
+                    const isFailed = job.status === 'failed';
                     return (
                       <span
                         key={docId}
@@ -443,11 +436,6 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
                   })}
                 </div>
 
-                {job.error_message && (
-                  <p className="font-inter text-red-600 text-xs mt-1">
-                    Error: {job.error_message}
-                  </p>
-                )}
               </div>
             ))}
           </div>

@@ -5,7 +5,7 @@ import { allFormSections, FormSection, FormField } from './intake-definition';
 import { getSectionSchema } from './validations';
 import type { z } from 'zod';
 
-export interface IntakeFormResult {
+interface IntakeFormResult {
   sections: FormSection[];
   /** Zod schemas keyed by section ID. Null for intro section. */
   schemas: Record<string, z.ZodObject<any> | null>;
@@ -62,7 +62,7 @@ export function buildIntakeForm(purchasedServiceIds: string[]): FormSection[] {
  * Build intake form with Zod schemas.
  * Returns both sections and per-section validation schemas.
  */
-export function buildIntakeFormWithSchemas(purchasedServiceIds: string[]): IntakeFormResult {
+function buildIntakeFormWithSchemas(purchasedServiceIds: string[]): IntakeFormResult {
   const sections = buildIntakeForm(purchasedServiceIds);
   const schemas: Record<string, z.ZodObject<any> | null> = {};
 
@@ -121,7 +121,7 @@ function getSectionIdsForService(serviceId: string): string[] {
  * This is the canonical way to compute intake_complete_for_services — it ensures
  * that buying a new service doesn't accidentally mark it as intake-complete.
  */
-export function getCompletedServiceIds(
+function getCompletedServiceIds(
   purchasedServiceIds: string[],
   sectionProgress: Record<string, boolean>,
 ): string[] {
