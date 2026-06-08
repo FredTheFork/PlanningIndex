@@ -44,24 +44,24 @@ export function useIntakeResponses() {
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingResponsesRef = useRef<Record<string, any> | null>(null);
-  // Track when we last saved to detect conflicts
   const localLastSavedRef = useRef<string | null>(null);
+  const lastVerifiedIdsRef = useRef<string>('');
 
   // Derive purchased service IDs — verify via server-side endpoint
-  // to prevent client-side manipulation of which sections appear.
   useEffect(() => {
     if (!user) return;
+
+    // Debounce: skip re-verification if profileServiceIds hasn't actually changed
+    const profileKey = JSON.stringify(profileServiceIds);
+    if (lastVerifiedIdsRef.current === profileKey && purchasedServiceIds.length > 0) return;
 
     const verifyServices = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
-          // Fallback to profile-derived IDs if no session
-          setPurchasedServiceIds(
-            profileServiceIds.length > 0
-              ? profileServiceIds
-              : ['business_foundations_pack']
-          );
+          const fallback = profileServiceIds.length > 0 ? profileServiceIds : ['business_foundations_pack'];
+          setPurchasedServiceIds(fallback);
+          lastVerifiedIdsRef.current = JSON.stringify(fallback);
           return;
         }
 
@@ -78,6 +78,7 @@ export function useIntakeResponses() {
           const serverIds: string[] = data.purchased_service_ids || [];
           if (serverIds.length > 0) {
             setPurchasedServiceIds(serverIds);
+            lastVerifiedIdsRef.current = JSON.stringify(serverIds);
             return;
           }
         }
@@ -85,22 +86,18 @@ export function useIntakeResponses() {
         console.error('Server-side service verification failed, falling back to profile:', err);
       }
 
-      // Fallback: use profileServiceIds from useClientProfile
-      setPurchasedServiceIds(
-        profileServiceIds.length > 0
-          ? profileServiceIds
-          : ['business_foundations_pack']
-      );
+      const fallback = profileServiceIds.length > 0 ? profileServiceIds : ['business_foundations_pack'];
+      setPurchasedServiceIds(fallback);
+      lastVerifiedIdsRef.current = JSON.stringify(fallback);
     };
 
     verifyServices();
   }, [user, profileServiceIds]);
 
-  // Build form sections when service IDs change
+  // Build form sections when service IDs change — always ensure non-empty
   useEffect(() => {
-    if (purchasedServiceIds.length > 0) {
-      setFormSections(buildIntakeForm(purchasedServiceIds));
-    }
+    const ids = purchasedServiceIds.length > 0 ? purchasedServiceIds : ['business_foundations_pack'];
+    setFormSections(buildIntakeForm(ids));
   }, [purchasedServiceIds]);
 
   // Fetch existing intake data

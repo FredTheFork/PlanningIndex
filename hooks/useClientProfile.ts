@@ -104,61 +104,76 @@ async function derivePurchasedServices(userId: string): Promise<string[]> {
 
   if (customer?.customer_id) {
     // 2. Completed orders = one-time purchases
-    const { data: orders } = await supabase
-      .from('stripe_orders')
-      .select('checkout_session_id, status, service_ids')
-      .eq('customer_id', customer.customer_id)
-      .eq('status', 'completed');
+    try {
+      const { data: orders, error: ordersError } = await supabase
+        .from('stripe_orders')
+        .select('checkout_session_id, status, service_ids')
+        .eq('customer_id', customer.customer_id)
+        .eq('status', 'completed');
 
-    if (orders && orders.length > 0) {
-      for (const order of orders) {
-        if (order.service_ids && Array.isArray(order.service_ids) && order.service_ids.length > 0) {
-          order.service_ids.forEach((id: string) => ids.add(id));
-        } else {
-          // Legacy orders without service_ids — assume business_foundations_pack
-          ids.add('business_foundations_pack');
+      if (!ordersError && orders && orders.length > 0) {
+        for (const order of orders) {
+          if (order.service_ids && Array.isArray(order.service_ids) && order.service_ids.length > 0) {
+            order.service_ids.forEach((id: string) => ids.add(id));
+          } else {
+            ids.add('business_foundations_pack');
+          }
         }
       }
+    } catch {
+      // service_ids column may not exist — silently ignore
     }
 
     // 3. Active subscriptions
-    const { data: subs } = await supabase
-      .from('stripe_subscriptions')
-      .select('price_id, status')
-      .eq('customer_id', customer.customer_id);
+    try {
+      const { data: subs, error: subsError } = await supabase
+        .from('stripe_subscriptions')
+        .select('price_id, status')
+        .eq('customer_id', customer.customer_id);
 
-    if (subs) {
-      for (const sub of subs) {
-        if (sub.status === 'active' || sub.status === 'trialing') {
-          const serviceId = findServiceIdByPriceId(sub.price_id);
-          if (serviceId) ids.add(serviceId);
+      if (!subsError && subs) {
+        for (const sub of subs) {
+          if (sub.status === 'active' || sub.status === 'trialing') {
+            const serviceId = findServiceIdByPriceId(sub.price_id);
+            if (serviceId) ids.add(serviceId);
+          }
         }
       }
+    } catch {
+      // stripe_subscriptions table may not exist — silently ignore
     }
   }
 
   // Also check services_purchased table (populated by webhook)
-  const { data: services } = await supabase
-    .from('services_purchased')
-    .select('service_id')
-    .eq('user_id', userId)
-    .eq('status', 'active');
+  try {
+    const { data: services, error: servicesError } = await supabase
+      .from('services_purchased')
+      .select('service_id')
+      .eq('user_id', userId)
+      .eq('status', 'active');
 
-  if (services && services.length > 0) {
-    services.forEach((s: any) => ids.add(s.service_id));
+    if (!servicesError && services && services.length > 0) {
+      services.forEach((s: any) => ids.add(s.service_id));
+    }
+  } catch {
+    // services_purchased may not exist — silently ignore
   }
 
   // Fallback: try client_profiles.purchased_upsells
   if (ids.size === 0) {
-    const { data: profile } = await supabase
-      .from('client_profiles')
-      .select('purchased_upsells')
-      .eq('user_id', userId)
-      .maybeSingle();
+    try {
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('purchased_upsells')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (profile?.purchased_upsells && Array.isArray(profile.purchased_upsells)) {
-      ids.add('business_foundations_pack');
-      profile.purchased_upsells.forEach((id: string) => ids.add(id));
+      if (profile?.purchased_upsells && Array.isArray(profile.purchased_upsells)) {
+        ids.add('business_foundations_pack');
+        profile.purchased_upsells.forEach((id: string) => ids.add(id));
+      }
+    } catch {
+      // Silently ignore
     }
   }
 

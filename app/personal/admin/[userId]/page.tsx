@@ -112,8 +112,8 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         .eq('user_id', userId)
         .order('purchased_at', { ascending: true });
 
-      const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId);
-
+      // auth.admin.getUserById requires service role key — not available client-side
+      // Read email from intake responses instead; authEmail left empty
       const email = intakeResult?.responses?.q7_document_email || userId.substring(0, 8) + '...';
 
       setData({
@@ -131,7 +131,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         } : null,
         purchasedServices: purchasedServices ?? [],
         email,
-        authEmail: authUser?.email,
+        authEmail: undefined,
       });
     } catch (error) {
       console.error('Error fetching client data:', error);
@@ -190,7 +190,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
             </div>
             <div>
               <p className="font-inter font-semibold text-gray-900 text-base">{data.email}</p>
-              <p className="font-inter text-gray-600 text-xs">{data.authEmail}</p>
+              {data.authEmail && <p className="font-inter text-gray-600 text-xs">{data.authEmail}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2">
