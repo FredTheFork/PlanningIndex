@@ -18,6 +18,7 @@ export default function PersonalStatus() {
   const { profile, loading, purchasedServiceIds, intakeCompleteForServices } = useClientProfile();
   const [documents, setDocuments] = useState<DocRow[]>([]);
   const [hasCancelledRefresh, setHasCancelledRefresh] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('business_foundations_pack');
 
   useEffect(() => {
     if (!profile?.user_id) return;
@@ -106,9 +107,6 @@ export default function PersonalStatus() {
 
   // Show tabbed view when multiple document-producing services
   const showTabs = docServiceStatuses.length > 1;
-  const [activeTab, setActiveTab] = useState<string>(
-    docServiceStatuses[0]?.serviceId ?? 'business_foundations_pack',
-  );
 
   // When there's only one doc service, show it directly (no tabs)
   const singleService = docServiceStatuses.length === 1 ? docServiceStatuses[0] : null;
