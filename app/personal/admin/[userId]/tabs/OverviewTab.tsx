@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { getDocumentTypesForService } from '@/lib/services/document-service-map';
 import {
   Briefcase, Zap, Send, CheckCircle2, Clock, AlertTriangle,
   RefreshCw, ArrowRight, Mail, Phone, MapPin, CreditCard, ExternalLink,
   MessageSquare, DollarSign, Package, Calendar, Plus, StickyNote, FileText
 } from 'lucide-react';
-import { getDocumentTypesForService } from '@/lib/services/document-service-map';
 
 interface OverviewTabProps {
   userId: string;
@@ -17,7 +17,6 @@ interface OverviewTabProps {
 
 export default function OverviewTab({ userId, data, refreshData }: OverviewTabProps) {
   const [generatingBrief, setGeneratingBrief] = useState(false);
-  const [generatingDocs, setGeneratingDocs] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [adminNotes, setAdminNotes] = useState(data.profile?.admin_notes || '');
@@ -98,65 +97,6 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
       setActionMessage(error.message || 'Error generating brief');
     } finally {
       setGeneratingBrief(false);
-      setTimeout(() => setActionMessage(''), 5000);
-    }
-  };
-
-  const handleGenerateAllDocuments = async () => {
-    setGeneratingDocs(true);
-    setActionMessage('');
-
-    try {
-      // Derive document types from all purchased services
-      const purchasedServiceIds = data.purchasedServices?.map((s: any) => s.service_id) || [];
-      const documentTypes: string[] = [];
-      const serviceMap: Record<string, string> = {};
-      for (const serviceId of purchasedServiceIds) {
-        for (const docType of getDocumentTypesForService(serviceId)) {
-          if (!documentTypes.includes(docType)) {
-            documentTypes.push(docType);
-            serviceMap[docType] = serviceId;
-          }
-        }
-      }
-
-      let successCount = 0;
-      let failCount = 0;
-
-      for (const docType of documentTypes) {
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-document`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-              },
-              body: JSON.stringify({
-                user_id: userId,
-                document_type: docType,
-                service_id: serviceMap[docType],
-              }),
-            }
-          );
-
-          if (response.ok) {
-            successCount++;
-          } else {
-            failCount++;
-          }
-        } catch {
-          failCount++;
-        }
-      }
-
-      setActionMessage(`Generated ${successCount} documents successfully${failCount > 0 ? `, ${failCount} failed` : ''}`);
-      refreshData();
-    } catch (error: any) {
-      setActionMessage(error.message || 'Error generating documents');
-    } finally {
-      setGeneratingDocs(false);
       setTimeout(() => setActionMessage(''), 5000);
     }
   };

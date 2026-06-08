@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   Package, FileText, Briefcase, Clock, CheckCircle2, AlertCircle,
-  RefreshCw, ChevronRight, ArrowRight, Calendar, CreditCard, Zap
+  RefreshCw, Calendar, Zap
 } from 'lucide-react';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { getDocumentTypesForService } from '@/lib/services/document-service-map';
@@ -24,7 +24,6 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
   const [briefs, setBriefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
-  const [generatingDocs, setGeneratingDocs] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
 
@@ -110,50 +109,6 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
     }
   };
 
-  const handleGenerateDocuments = async (serviceId: string) => {
-    setGeneratingDocs(serviceId);
-    const docTypes = getDocumentTypesForService(serviceId);
-    const configs = getDocumentConfigsForService(serviceId);
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const docType of docTypes) {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-document`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({
-              user_id: userId,
-              document_type: docType,
-              service_id: serviceId,
-            }),
-          }
-        );
-
-        if (response.ok) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      } catch {
-        failCount++;
-      }
-    }
-
-    showMessage(
-      `Generated ${successCount} document${successCount !== 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
-      failCount > 0 ? 'error' : 'success'
-    );
-    await fetchServiceData();
-    refreshData();
-    setGeneratingDocs(null);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -213,9 +168,7 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
             documents={serviceDocs}
             docConfigs={configs}
             generatingBrief={generatingBrief === ps.service_id}
-            generatingDocs={generatingDocs === ps.service_id}
             onGenerateBrief={() => handleGenerateBrief(ps.service_id)}
-            onGenerateDocuments={() => handleGenerateDocuments(ps.service_id)}
             intakeSubmitted={data.profile?.has_submitted_intake}
           />
         );
@@ -234,9 +187,7 @@ function ServiceCard({
   documents,
   docConfigs,
   generatingBrief,
-  generatingDocs,
   onGenerateBrief,
-  onGenerateDocuments,
   intakeSubmitted,
 }: {
   purchasedService: any;
@@ -246,9 +197,7 @@ function ServiceCard({
   documents: any[];
   docConfigs: any[];
   generatingBrief: boolean;
-  generatingDocs: boolean;
   onGenerateBrief: () => void;
-  onGenerateDocuments: () => void;
   intakeSubmitted: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -376,32 +325,6 @@ function ServiceCard({
                     </>
                   )}
                 </button>
-                {docsTotal > 0 && (
-                  <button
-                    onClick={onGenerateDocuments}
-                    disabled={generatingDocs || !intakeSubmitted}
-                    title={!intakeSubmitted ? 'Intake must be submitted first' : `Generate all ${docsTotal} documents for ${serviceName}`}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-inter font-medium transition-all ${
-                      generatingDocs
-                        ? 'bg-blue-100 text-blue-600 cursor-wait'
-                        : intakeSubmitted
-                          ? 'bg-[#1B3F7A] hover:bg-[#2C68C4] text-white'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {generatingDocs ? (
-                      <>
-                        <RefreshCw size={13} className="animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <FileText size={13} />
-                        Generate Docs ({docsTotal})
-                      </>
-                    )}
-                  </button>
-                )}
               </>
             )}
             <button
