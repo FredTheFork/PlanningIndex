@@ -8,6 +8,8 @@ import { buildIntakeForm, isIntakeFullyComplete } from '@/lib/forms/build-intake
 import { FormSection } from '@/lib/forms/intake-definition';
 import { isSectionComplete } from '@/lib/forms/conditional-logic';
 
+const DEFAULT_SERVICE_IDS = ['business_foundations_pack'];
+const DEFAULT_FORM_SECTIONS = buildIntakeForm(DEFAULT_SERVICE_IDS);
 
 interface IntakeData {
   id: string;
@@ -24,12 +26,6 @@ interface IntakeData {
   last_visited_at: string | null;
 }
 
-const SERVICE_NAMES: Record<string, string> = {
-  business_foundations_pack: 'Business Foundations Pack',
-  website_copy_pack: 'Website Copy Starter Pack',
-  social_media_pack: 'Social Media Starter Pack',
-};
-
 export function useIntakeResponses() {
   const { user, loading: authLoading } = useAuth();
   const { purchasedServiceIds: profileServiceIds } = useClientProfile();
@@ -37,8 +33,8 @@ export function useIntakeResponses() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>([]);
-  const [formSections, setFormSections] = useState<FormSection[]>([]);
+  const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>(DEFAULT_SERVICE_IDS);
+  const [formSections, setFormSections] = useState<FormSection[]>(DEFAULT_FORM_SECTIONS);
   const [submitting, setSubmitting] = useState(false);
   const [conflictDetected, setConflictDetected] = useState(false);
 
@@ -47,11 +43,18 @@ export function useIntakeResponses() {
   const localLastSavedRef = useRef<string | null>(null);
   const lastVerifiedIdsRef = useRef<string>('');
 
+  // Ensure arrays are always arrays (defensive against corrupted state)
+  const safeServiceIds = Array.isArray(purchasedServiceIds) && purchasedServiceIds.length > 0
+    ? purchasedServiceIds
+    : DEFAULT_SERVICE_IDS;
+  const safeFormSections = Array.isArray(formSections) && formSections.length > 0
+    ? formSections
+    : DEFAULT_FORM_SECTIONS;
+
   // Derive purchased service IDs — verify via server-side endpoint
   useEffect(() => {
     if (!user) return;
 
-    // Debounce: skip re-verification if profileServiceIds hasn't actually changed
     const profileKey = JSON.stringify(profileServiceIds);
     if (lastVerifiedIdsRef.current === profileKey && purchasedServiceIds.length > 0) return;
 
@@ -59,7 +62,9 @@ export function useIntakeResponses() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
-          const fallback = profileServiceIds.length > 0 ? profileServiceIds : ['business_foundations_pack'];
+          const fallback = Array.isArray(profileServiceIds) && profileServiceIds.length > 0
+            ? profileServiceIds
+            : DEFAULT_SERVICE_IDS;
           setPurchasedServiceIds(fallback);
           lastVerifiedIdsRef.current = JSON.stringify(fallback);
           return;
@@ -74,9 +79,9 @@ export function useIntakeResponses() {
         });
 
         if (res.ok) {
-          const data = await res.json();
-          const serverIds: string[] = data.purchased_service_ids || [];
-          if (serverIds.length > 0) {
+          const result = await res.json();
+          const serverIds: unknown = result.purchased_service_ids;
+          if (Array.isArray(serverIds) && serverIds.length > 0) {
             setPurchasedServiceIds(serverIds);
             lastVerifiedIdsRef.current = JSON.stringify(serverIds);
             return;
@@ -86,7 +91,9 @@ export function useIntakeResponses() {
         console.error('Server-side service verification failed, falling back to profile:', err);
       }
 
-      const fallback = profileServiceIds.length > 0 ? profileServiceIds : ['business_foundations_pack'];
+      const fallback = Array.isArray(profileServiceIds) && profileServiceIds.length > 0
+        ? profileServiceIds
+        : DEFAULT_SERVICE_IDS;
       setPurchasedServiceIds(fallback);
       lastVerifiedIdsRef.current = JSON.stringify(fallback);
     };
@@ -94,10 +101,13 @@ export function useIntakeResponses() {
     verifyServices();
   }, [user, profileServiceIds]);
 
-  // Build form sections when service IDs change — always ensure non-empty
+  // Build form sections when service IDs change
   useEffect(() => {
-    const ids = purchasedServiceIds.length > 0 ? purchasedServiceIds : ['business_foundations_pack'];
-    setFormSections(buildIntakeForm(ids));
+    const ids = Array.isArray(purchasedServiceIds) && purchasedServiceIds.length > 0
+      ? purchasedServiceIds
+      : DEFAULT_SERVICE_IDS;
+    const sections = buildIntakeForm(ids);
+    setFormSections(Array.isArray(sections) && sections.length > 0 ? sections : DEFAULT_FORM_SECTIONS);
   }, [purchasedServiceIds]);
 
   // Fetch existing intake data
@@ -121,26 +131,31 @@ export function useIntakeResponses() {
       }
 
       if (row) {
+        const rowPsi = Array.isArray(row.purchased_service_ids) ? row.purchased_service_ids : [];
+        const rowIcf = Array.isArray(row.intake_complete_for_services) ? row.intake_complete_for_services : [];
+        const rowSp = row.section_progress && typeof row.section_progress === 'object' ? row.section_progress : {};
+        const rowResp = row.responses && typeof row.responses === 'object' ? row.responses : {};
+
         setData({
           id: row.id,
           user_id: row.user_id,
           form_version: row.form_version || 'v4',
-          responses: row.responses || {},
+          responses: rowResp,
           current_section_id: row.current_section_id || 'intro',
-          section_progress: row.section_progress || {},
+          section_progress: rowSp,
           last_saved_at: row.last_saved_at,
           submitted_at: row.submitted_at,
           file_uploads: row.file_uploads || {},
-          purchased_service_ids: row.purchased_service_ids || [],
-          intake_complete_for_services: row.intake_complete_for_services || [],
+          purchased_service_ids: rowPsi,
+          intake_complete_for_services: rowIcf,
           last_visited_at: row.last_visited_at,
         });
         setLastSaved(row.last_saved_at ? new Date(row.last_saved_at) : null);
         localLastSavedRef.current = row.last_saved_at;
 
         // If row has purchased_service_ids, prefer those over derived ones
-        if (row.purchased_service_ids && row.purchased_service_ids.length > 0) {
-          setPurchasedServiceIds(row.purchased_service_ids);
+        if (rowPsi.length > 0) {
+          setPurchasedServiceIds(rowPsi);
         }
       }
 
@@ -162,7 +177,6 @@ export function useIntakeResponses() {
 
     if (!row?.last_saved_at) return false;
 
-    // If the DB's last_saved_at is newer than our local ref, another session wrote
     if (localLastSavedRef.current && row.last_saved_at > localLastSavedRef.current) {
       return true;
     }
@@ -176,7 +190,6 @@ export function useIntakeResponses() {
 
     setSaving(true);
     try {
-      // Check for conflicts before writing
       const hasConflict = await checkForConflicts();
       if (hasConflict) {
         setConflictDetected(true);
@@ -184,9 +197,8 @@ export function useIntakeResponses() {
 
       const now = new Date().toISOString();
 
-      // Compute section_progress from responses
       const sectionProgress: Record<string, boolean> = {};
-      for (const section of formSections) {
+      for (const section of safeFormSections) {
         sectionProgress[section.id] = isSectionComplete(section.fields, responses);
       }
 
@@ -196,7 +208,7 @@ export function useIntakeResponses() {
         form_version: 'v4',
         current_section_id: data?.current_section_id || 'intro',
         section_progress: sectionProgress,
-        purchased_service_ids: purchasedServiceIds,
+        purchased_service_ids: safeServiceIds,
         last_saved_at: now,
       };
 
@@ -215,7 +227,7 @@ export function useIntakeResponses() {
     } finally {
       setSaving(false);
     }
-  }, [user, formSections, data?.current_section_id, purchasedServiceIds, checkForConflicts]);
+  }, [user, safeFormSections, data?.current_section_id, safeServiceIds, checkForConflicts]);
 
   // Update a single field value and trigger debounced save
   const updateField = useCallback((fieldId: string, value: any) => {
@@ -224,7 +236,6 @@ export function useIntakeResponses() {
       const newResponses = { ...prev.responses, [fieldId]: value };
       pendingResponsesRef.current = newResponses;
 
-      // Debounce save
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         if (pendingResponsesRef.current) {
@@ -288,8 +299,10 @@ export function useIntakeResponses() {
 
       const result = await res.json();
 
-      // Update local state with server-confirmed data
       localLastSavedRef.current = result.submitted_at;
+
+      const resultPsi = Array.isArray(result.purchased_service_ids) ? result.purchased_service_ids : safeServiceIds;
+      const resultIcf = Array.isArray(result.intake_complete_for_services) ? result.intake_complete_for_services : [];
 
       setData((prev) => prev ? {
         ...prev,
@@ -297,13 +310,12 @@ export function useIntakeResponses() {
           ? Object.fromEntries(Object.entries(responses).filter(([k]) => !result.rejected_fields.includes(k)))
           : responses,
         submitted_at: result.submitted_at,
-        purchased_service_ids: result.purchased_service_ids,
-        intake_complete_for_services: result.intake_complete_for_services,
+        purchased_service_ids: resultPsi,
+        intake_complete_for_services: resultIcf,
       } : prev);
 
-      // Sync purchased service IDs from server
-      if (result.purchased_service_ids) {
-        setPurchasedServiceIds(result.purchased_service_ids);
+      if (resultPsi.length > 0) {
+        setPurchasedServiceIds(resultPsi);
       }
 
       return true;
@@ -313,7 +325,7 @@ export function useIntakeResponses() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, data?.current_section_id]);
+  }, [user, data?.current_section_id, safeServiceIds]);
 
   // Upload a file to intake-uploads bucket
   const uploadFile = useCallback(async (fieldId: string, file: File) => {
@@ -352,7 +364,6 @@ export function useIntakeResponses() {
     }
   }, [user]);
 
-  // Dismiss conflict warning
   const dismissConflict = useCallback(() => {
     setConflictDetected(false);
   }, []);
@@ -360,26 +371,27 @@ export function useIntakeResponses() {
   // Get new sections (for users who already submitted but purchased additional services)
   const newSectionIds = (() => {
     if (!data?.submitted_at) return [];
-    const completedFor = data.intake_complete_for_services || [];
-    if (isIntakeFullyComplete(purchasedServiceIds, completedFor)) return [];
+    const completedFor = Array.isArray(data.intake_complete_for_services) ? data.intake_complete_for_services : [];
+    if (isIntakeFullyComplete(safeServiceIds, completedFor)) return [];
 
     const existingSectionIds = new Set(
-      buildIntakeForm(completedFor.length > 0 ? completedFor : ['business_foundations_pack'])
+      buildIntakeForm(completedFor.length > 0 ? completedFor : DEFAULT_SERVICE_IDS)
         .map((s) => s.id)
     );
-    return formSections
+    return safeFormSections
       .filter((s) => !existingSectionIds.has(s.id))
       .map((s) => s.id);
   })();
 
   const intakeFullyComplete = (() => {
     if (!data?.submitted_at) return false;
-    return isIntakeFullyComplete(purchasedServiceIds, data.intake_complete_for_services || []);
+    const icf = Array.isArray(data.intake_complete_for_services) ? data.intake_complete_for_services : [];
+    return isIntakeFullyComplete(safeServiceIds, icf);
   })();
 
   const completedSectionIds = (() => {
     if (!data?.submitted_at) return [];
-    const progress = data.section_progress || {};
+    const progress = (data.section_progress && typeof data.section_progress === 'object') ? data.section_progress : {};
     return Object.entries(progress)
       .filter(([, complete]) => complete)
       .map(([id]) => id)
@@ -391,8 +403,8 @@ export function useIntakeResponses() {
     loading: authLoading || loading,
     saving,
     lastSaved,
-    purchasedServiceIds,
-    formSections,
+    purchasedServiceIds: safeServiceIds,
+    formSections: safeFormSections,
     submitting,
     newSectionIds,
     completedSectionIds,

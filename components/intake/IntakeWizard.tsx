@@ -46,11 +46,17 @@ export default function IntakeWizard() {
   const [showValidationSummary, setShowValidationSummary] = useState(false);
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Defensive: ensure arrays are always arrays
+  const safeServiceIds = Array.isArray(purchasedServiceIds) ? purchasedServiceIds : [];
+  const safeFormSections = Array.isArray(formSections) ? formSections : [];
+  const safeNewSectionIds = Array.isArray(newSectionIds) ? newSectionIds : [];
+  const safeCompletedSectionIds = Array.isArray(completedSectionIds) ? completedSectionIds : [];
+
   const currentSectionId = data?.current_section_id || 'intro';
-  const currentSection = formSections.find((s) => s.id === currentSectionId);
+  const currentSection = safeFormSections.find((s) => s.id === currentSectionId);
 
   const hasSubmitted = !!data?.submitted_at;
-  const isNewSectionsMode = hasSubmitted && !intakeFullyComplete && newSectionIds.length > 0;
+  const isNewSectionsMode = hasSubmitted && !intakeFullyComplete && safeNewSectionIds.length > 0;
   const isFullyComplete = hasSubmitted && intakeFullyComplete;
 
   // Compute prefill suggestions
@@ -71,8 +77,8 @@ export default function IntakeWizard() {
   }, [data?.responses]);
 
   const sectionTitles = useMemo(
-    () => Object.fromEntries(formSections.map((s) => [s.id, s.title])),
-    [formSections]
+    () => Object.fromEntries(safeFormSections.map((s) => [s.id, s.title])),
+    [safeFormSections]
   );
 
   const handleNavigate = useCallback(
@@ -131,7 +137,7 @@ export default function IntakeWizard() {
     if (currentSectionId === 'intro') return true;
 
     // In new-sections mode, only validate new sections
-    if (isNewSectionsMode && !newSectionIds.includes(currentSection.id)) return true;
+    if (isNewSectionsMode && !safeNewSectionIds.includes(currentSection.id)) return true;
 
     // Zod validation
     const zodErrors = validateSectionWithZod(currentSection.id, data.responses);
@@ -167,16 +173,16 @@ export default function IntakeWizard() {
     setErrors({});
     setShowValidationSummary(false);
     return true;
-  }, [data?.responses, currentSection, currentSectionId, isNewSectionsMode, newSectionIds]);
+  }, [data?.responses, currentSection, currentSectionId, isNewSectionsMode, safeNewSectionIds]);
 
   const handleSubmit = useCallback(async () => {
     if (!data?.responses) return;
 
     const allErrors: Record<string, string> = {};
 
-    for (const section of formSections) {
+    for (const section of safeFormSections) {
       if (section.id === 'intro') continue;
-      if (isNewSectionsMode && !newSectionIds.includes(section.id)) continue;
+      if (isNewSectionsMode && !safeNewSectionIds.includes(section.id)) continue;
 
       const zodErrors = validateSectionWithZod(section.id, data.responses);
       const conditionalErrors = validateSection(section.fields, data.responses);
@@ -193,7 +199,7 @@ export default function IntakeWizard() {
     if (success) {
       setShowValidationSummary(false);
     }
-  }, [data?.responses, formSections, isNewSectionsMode, newSectionIds, submitForm]);
+  }, [data?.responses, safeFormSections, isNewSectionsMode, safeNewSectionIds, submitForm]);
 
   const scrollToField = useCallback((fieldId: string) => {
     const el = fieldRefs.current[fieldId];
@@ -210,13 +216,13 @@ export default function IntakeWizard() {
     if (currentSectionId !== 'intro') return;
 
     // If user has new sections to complete, navigate to the first one
-    const firstNewSection = formSections.find((s) =>
-      newSectionIds.includes(s.id)
+    const firstNewSection = safeFormSections.find((s) =>
+      safeNewSectionIds.includes(s.id)
     );
     if (firstNewSection) {
       setCurrentSection(firstNewSection.id);
     }
-  }, [loading, data, isNewSectionsMode, newSectionIds, formSections, currentSectionId, setCurrentSection]);
+  }, [loading, data, isNewSectionsMode, safeNewSectionIds, safeFormSections, currentSectionId, setCurrentSection]);
 
   // Loading state
   if (loading) {
@@ -293,9 +299,9 @@ export default function IntakeWizard() {
       </div>
 
       {/* Service badges */}
-      {purchasedServiceIds.length > 0 && (
+      {safeServiceIds.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {purchasedServiceIds.map((serviceId) => (
+          {safeServiceIds.map((serviceId) => (
             <span
               key={serviceId}
               className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-inter font-medium bg-[#F0F4FF] text-[#1B3F7A]"
@@ -310,11 +316,11 @@ export default function IntakeWizard() {
       {/* New sections banner */}
       {isNewSectionsMode && (
         <NewSectionsBanner
-          newSectionIds={newSectionIds}
+          newSectionIds={safeNewSectionIds}
           sectionTitles={sectionTitles}
           onStartNewSections={() => {
-            const firstNewSection = formSections.find((s) =>
-              newSectionIds.includes(s.id)
+            const firstNewSection = safeFormSections.find((s) =>
+              safeNewSectionIds.includes(s.id)
             );
             if (firstNewSection) handleNavigate(firstNewSection.id);
           }}
@@ -345,12 +351,12 @@ export default function IntakeWizard() {
 
       {/* Progress bar */}
       <ProgressBar
-        sections={formSections}
+        sections={safeFormSections}
         responses={data?.responses || {}}
         currentSectionId={currentSectionId}
         onNavigate={handleNavigate}
-        completedSectionIds={completedSectionIds}
-        newSectionIds={newSectionIds}
+        completedSectionIds={safeCompletedSectionIds}
+        newSectionIds={safeNewSectionIds}
       />
 
       {/* Autosave indicator */}
@@ -381,12 +387,12 @@ export default function IntakeWizard() {
       {/* Read-only completed sections (new-sections mode) */}
       {isNewSectionsMode && (
         <div className="space-y-3 mb-6">
-          {formSections
+          {safeFormSections
             .filter(
               (s) =>
                 s.id !== 'intro' &&
-                completedSectionIds.includes(s.id) &&
-                !newSectionIds.includes(s.id)
+                safeCompletedSectionIds.includes(s.id) &&
+                !safeNewSectionIds.includes(s.id)
             )
             .map((section) => (
               <ReadOnlySection
@@ -410,22 +416,22 @@ export default function IntakeWizard() {
           prefillSuggestions={prefillSuggestions}
           readOnly={
             isNewSectionsMode &&
-            completedSectionIds.includes(currentSection.id) &&
-            !newSectionIds.includes(currentSection.id)
+            safeCompletedSectionIds.includes(currentSection.id) &&
+            !safeNewSectionIds.includes(currentSection.id)
           }
         />
       )}
 
       {/* Navigation */}
       <SectionNav
-        sections={formSections}
+        sections={safeFormSections}
         currentSectionId={currentSectionId}
         onNavigate={handleNavigate}
         onValidateAndNext={validateCurrentSection}
         onSubmit={handleSubmit}
         submitting={submitting}
-        completedSectionIds={completedSectionIds}
-        newSectionIds={newSectionIds}
+        completedSectionIds={safeCompletedSectionIds}
+        newSectionIds={safeNewSectionIds}
       />
     </div>
   );

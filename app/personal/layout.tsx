@@ -25,6 +25,7 @@ export default function PersonalLayout({
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, purchasedServiceIds } = useClientProfile();
+  const safePurchasedServiceIds = Array.isArray(purchasedServiceIds) ? purchasedServiceIds : [];
   const { isAdmin } = useIsAdmin();
   const { unreadCount } = useUnreadMessages();
 
@@ -42,7 +43,7 @@ export default function PersonalLayout({
     ];
 
     // Show Status and Documents only if the user has at least one document-producing service
-    const hasDocService = purchasedServiceIds.some(isServiceDocumentService);
+    const hasDocService = safePurchasedServiceIds.some(isServiceDocumentService);
     if (hasDocService) {
       items.push(
         { label: 'Status', href: '/personal/status', icon: BarChart3 },
@@ -51,7 +52,7 @@ export default function PersonalLayout({
     }
 
     return items;
-  }, [purchasedServiceIds]);
+  }, [safePurchasedServiceIds]);
 
   if (authLoading) {
     return (
@@ -138,9 +139,9 @@ export default function PersonalLayout({
                 <DeliveryStatusBadge status={profile.delivery_status} />
 
                 {/* Service badges */}
-                {purchasedServiceIds.length > 0 && (
+                {safePurchasedServiceIds.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
-                    {purchasedServiceIds.map((sid) => {
+                    {safePurchasedServiceIds.map((sid) => {
                       const service = getServiceById(sid);
                       const isRefresh = sid === 'quarterly_refresh';
                       return (
