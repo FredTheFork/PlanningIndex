@@ -18,6 +18,20 @@ const SOCIAL_MEDIA_PRICING_TIERS: Record<number, { test: string; live: string }>
   30: { test: 'price_1TgTCpGfxcDbzGRtmaTlfkcF', live: '' },
 };
 
+// Pricing tiers for website copy pack (per page)
+const WEBSITE_PAGE_PRICING_TIERS: Record<number, { test: string; live: string }> = {
+  1: { test: 'price_1TshkCGfxcDbzGRtDummy1', live: '' },
+  2: { test: 'price_1TshkCGfxcDbzGRtDummy2', live: '' },
+  3: { test: 'price_1TshkCGfxcDbzGRtDummy3', live: '' },
+  4: { test: 'price_1TshkCGfxcDbzGRtDummy4', live: '' },
+  5: { test: 'price_1TshkCGfxcDbzGRtDummy5', live: '' },
+  6: { test: 'price_1TshkCGfxcDbzGRtDummy6', live: '' },
+  7: { test: 'price_1TshkCGfxcDbzGRtDummy7', live: '' },
+  8: { test: 'price_1TshkCGfxcDbzGRtDummy8', live: '' },
+  9: { test: 'price_1TshkCGfxcDbzGRtDummy9', live: '' },
+  10: { test: 'price_1TshkCGfxcDbzGRtDummy10', live: '' },
+};
+
 // Service catalog - matching service-catalog.ts
 interface ServiceConfig {
   id: string;
@@ -71,6 +85,12 @@ function getServiceConfig(serviceId: string): ServiceConfig | undefined {
 
 function getSocialMediaPriceId(postCount: number, mode: 'test' | 'live'): string | undefined {
   const tier = SOCIAL_MEDIA_PRICING_TIERS[postCount];
+  if (!tier) return undefined;
+  return tier[mode];
+}
+
+function getWebsiteCopyPriceId(pageCount: number, mode: 'test' | 'live'): string | undefined {
+  const tier = WEBSITE_PAGE_PRICING_TIERS[pageCount];
   if (!tier) return undefined;
   return tier[mode];
 }
@@ -165,7 +185,9 @@ Deno.serve(async (req: Request) => {
       mode,
       success_url,
       cancel_url,
-      social_media_post_count
+      social_media_post_count,
+      website_page_count,
+      website_pages_selected
     } = body;
 
     if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
@@ -200,6 +222,15 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+      } else if (serviceId === 'website_copy_pack' && website_page_count) {
+        // Handle website copy page-based pricing
+        priceId = getWebsiteCopyPriceId(website_page_count, mode || 'test');
+        if (!priceId) {
+          return new Response(
+            JSON.stringify({ error: `Website copy pack with ${website_page_count} pages is not yet available. Please contact support.` }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       } else {
         priceId = mode === 'live' ? service.priceIds.live : service.priceIds.test;
       }
@@ -230,12 +261,18 @@ Deno.serve(async (req: Request) => {
     // Calculate bundle discount
     const discountPercentage = getBundleDiscountPercentage(service_ids.length);
 
-    // Build metadata with social media post count if applicable
+    // Build metadata with social media post count and website pages if applicable
     const metadata: Record<string, string> = {
       service_ids: validatedServiceIds.join(","),
     };
     if (social_media_post_count) {
       metadata.social_media_post_count = social_media_post_count.toString();
+    }
+    if (website_page_count) {
+      metadata.website_page_count = website_page_count.toString();
+    }
+    if (website_pages_selected && Array.isArray(website_pages_selected)) {
+      metadata.website_pages_selected = website_pages_selected.join(",");
     }
 
     // Create checkout session

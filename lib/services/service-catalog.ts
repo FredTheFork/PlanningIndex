@@ -124,12 +124,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     name: 'Website Copy Starter Pack',
     description:
       'Professional website copy written in your voice, aligned with your services, and ready to paste into any website builder.',
-    price: 139.0,
+    price: 35.0, // Base price per page
     currency: 'gbp',
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_1TgSEkGfxcDbzGRtDaBz70tR',
+      test: 'price_1TgSEkGfxcDbzGRtDaBz70tR', // Fallback (5 pages)
       live: '',
     },
     stripeProductIds: {
@@ -158,7 +158,21 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     isStandalone: true,
     sortOrder: 2,
     isCore: false,
-    priceLabel: '£49 — one-time',
+    priceLabel: 'From £35 — per page',
+    defaultQuantity: 1,
+    quantityUnit: 'pages',
+    pricingTiers: [
+      { quantity: 1, price: 35, label: '1 page — £35', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy1', live: '' } },
+      { quantity: 2, price: 65, label: '2 pages — £65', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy2', live: '' } },
+      { quantity: 3, price: 90, label: '3 pages — £90', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy3', live: '' } },
+      { quantity: 4, price: 115, label: '4 pages — £115', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy4', live: '' } },
+      { quantity: 5, price: 139, label: '5 pages — £139', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy5', live: '' } },
+      { quantity: 6, price: 160, label: '6 pages — £160', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy6', live: '' } },
+      { quantity: 7, price: 180, label: '7 pages — £180', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy7', live: '' } },
+      { quantity: 8, price: 200, label: '8 pages — £200', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy8', live: '' } },
+      { quantity: 9, price: 218, label: '9 pages — £218', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy9', live: '' } },
+      { quantity: 10, price: 235, label: '10 pages — £235', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy10', live: '' } },
+    ],
   },
   {
     id: 'social_media_pack',
@@ -324,6 +338,7 @@ export function getBundleSavingsMessage(subtotal: number, discountPercentage: nu
 /** Calculate options for price calculations. */
 export interface CalculateTotalOptions {
   socialMediaPostCount?: number;
+  websitePageCount?: number;
 }
 
 /** Calculate the total price for a set of selected service IDs, including percentage-based bundle discounts. */
@@ -347,6 +362,8 @@ export function calculateTotal(
     let price: number;
     if (serviceId === 'social_media_pack' && options?.socialMediaPostCount) {
       price = getServicePrice(serviceId, options.socialMediaPostCount);
+    } else if (serviceId === 'website_copy_pack' && options?.websitePageCount) {
+      price = getServicePrice(serviceId, options.websitePageCount);
     } else if (service.pricingTiers && service.defaultQuantity) {
       price = getServicePrice(serviceId, service.defaultQuantity);
     } else {

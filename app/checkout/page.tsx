@@ -27,6 +27,19 @@ import { buildIntakeForm } from '@/lib/forms/build-intake-form';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase/client';
 
+// Available website pages for selection
+const WEBSITE_PAGE_OPTIONS = [
+  'Homepage',
+  'About',
+  'Services',
+  'Contact',
+  'FAQ',
+  'Blog',
+  'Portfolio / Case Studies',
+  'Pricing',
+  'Testimonials',
+] as const;
+
 function CheckoutPageInner() {
   const searchParams = useSearchParams();
   const preselectedParam = searchParams.get('services');
@@ -40,6 +53,7 @@ function CheckoutPageInner() {
   const [purchasedServices, setPurchasedServices] = useState<string[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [socialMediaPostCount, setSocialMediaPostCount] = useState(5);
+  const [selectedWebsitePages, setSelectedWebsitePages] = useState<string[]>(['Homepage']);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
@@ -154,9 +168,13 @@ function CheckoutPageInner() {
     }
   }, [initialized]);
 
+  const websitePageCount = selectedWebsitePages.length;
   const { subtotal, discountPercentage, discountAmount, total, servicePrices } = calculateTotal(
     selectedServiceIds,
-    { socialMediaPostCount: selectedServiceIds.includes('social_media_pack') ? socialMediaPostCount : undefined }
+    {
+      socialMediaPostCount: selectedServiceIds.includes('social_media_pack') ? socialMediaPostCount : undefined,
+      websitePageCount: selectedServiceIds.includes('website_copy_pack') ? websitePageCount : undefined,
+    }
   );
   const savingsMessage = getBundleSavingsMessage(subtotal, discountPercentage);
   const hasSubscription = selectedServiceIds.some(
@@ -186,6 +204,17 @@ function CheckoutPageInner() {
         return prev.filter((id) => id !== serviceId);
       }
       return [...prev, serviceId];
+    });
+  };
+
+  const toggleWebsitePage = (page: string) => {
+    setSelectedWebsitePages((prev) => {
+      if (prev.includes(page)) {
+        // Don't allow deselecting all pages - minimum 1
+        if (prev.length === 1) return prev;
+        return prev.filter((p) => p !== page);
+      }
+      return [...prev, page];
     });
   };
 
@@ -219,6 +248,12 @@ function CheckoutPageInner() {
       // Include social media post count if social_media_pack is selected
       if (selectedServiceIds.includes('social_media_pack')) {
         requestBody.social_media_post_count = socialMediaPostCount;
+      }
+
+      // Include website page selection if website_copy_pack is selected
+      if (selectedServiceIds.includes('website_copy_pack')) {
+        requestBody.website_page_count = websitePageCount;
+        requestBody.website_pages_selected = selectedWebsitePages;
       }
 
       const response = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
@@ -382,9 +417,11 @@ function CheckoutPageInner() {
                                   </div>
                                 ) : (
                                   <span className="font-inter font-bold text-navy" style={{ fontSize: '1.19rem' }}>
-                                    {hasTiers && service.pricingTiers
-                                      ? `From £${service.pricingTiers[0].price}`
-                                      : `£${service.price.toFixed(2)}`}
+                                    {service.id === 'website_copy_pack' && service.pricingTiers
+                                      ? `From £${service.pricingTiers[0].price}/page`
+                                      : hasTiers && service.pricingTiers
+                                        ? `From £${service.pricingTiers[0].price}`
+                                        : `£${service.price.toFixed(2)}`}
                                   </span>
                                 )}
                                 {isSelected && discountPercentage > 0 && (
@@ -399,7 +436,7 @@ function CheckoutPageInner() {
                             </div>
 
                             {/* Social Media quantity selector */}
-                            {hasTiers && isSelected && service.pricingTiers && !isDisabled && (
+                            {service.id === 'social_media_pack' && isSelected && service.pricingTiers && !isDisabled && (
                               <div className="mt-4 pt-4 border-t border-slate-200">
                                 <label className="font-inter font-medium text-dark-text text-sm mb-3 block">
                                   How many posts?
@@ -435,6 +472,47 @@ function CheckoutPageInner() {
                                     </span>
                                     <span className="font-inter font-bold text-navy text-lg">
                                       £{getServicePrice(service.id, socialMediaPostCount).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Website page selector */}
+                            {service.id === 'website_copy_pack' && isSelected && service.pricingTiers && !isDisabled && (
+                              <div className="mt-4 pt-4 border-t border-slate-200">
+                                <label className="font-inter font-medium text-dark-text text-sm mb-3 block">
+                                  Which pages do you need?
+                                </label>
+                                <div className="space-y-3">
+                                  <div className="flex flex-wrap gap-2">
+                                    {WEBSITE_PAGE_OPTIONS.map((page) => {
+                                      const isSelectedPage = selectedWebsitePages.includes(page);
+                                      return (
+                                        <button
+                                          key={page}
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleWebsitePage(page);
+                                          }}
+                                          className={`py-2 px-3 rounded-lg text-sm font-inter font-medium transition-all ${
+                                            isSelectedPage
+                                              ? 'bg-navy text-white shadow-md'
+                                              : 'bg-slate-100 text-dark-text hover:bg-slate-200'
+                                          }`}
+                                        >
+                                          {page}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
+                                    <span className="font-inter text-secondary-text text-sm">
+                                      {websitePageCount} page{websitePageCount !== 1 ? 's' : ''} selected
+                                    </span>
+                                    <span className="font-inter font-bold text-navy text-lg">
+                                      £{getServicePrice(service.id, websitePageCount).toFixed(2)}
                                     </span>
                                   </div>
                                 </div>
@@ -533,6 +611,11 @@ function CheckoutPageInner() {
                               {sp.id === 'social_media_pack' && selectedServiceIds.includes('social_media_pack') && (
                                 <span className="font-inter text-secondary-text text-xs block">
                                   {socialMediaPostCount} posts
+                                </span>
+                              )}
+                              {sp.id === 'website_copy_pack' && selectedServiceIds.includes('website_copy_pack') && (
+                                <span className="font-inter text-secondary-text text-xs block">
+                                  {websitePageCount} page{websitePageCount !== 1 ? 's' : ''}
                                 </span>
                               )}
                             </div>

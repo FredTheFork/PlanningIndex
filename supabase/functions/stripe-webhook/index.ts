@@ -116,6 +116,12 @@ async function handleCheckoutCompleted(
   const socialMediaPostCount = session.metadata?.social_media_post_count
     ? parseInt(session.metadata.social_media_post_count, 10)
     : undefined;
+  const websitePageCount = session.metadata?.website_page_count
+    ? parseInt(session.metadata.website_page_count, 10)
+    : undefined;
+  const websitePagesSelected = session.metadata?.website_pages_selected
+    ? session.metadata.website_pages_selected.split(",").filter(Boolean)
+    : undefined;
 
   console.log(`Checkout completed: customer=${customerId}, services=${serviceIds.join(",")}, mode=${session.mode}`);
 
@@ -212,6 +218,9 @@ async function handleCheckoutCompleted(
             stripe_subscription_id: subscriptionId || null,
             status: "active",
             purchased_at: new Date().toISOString(),
+            website_pages_selected: serviceId === 'website_copy_pack' && websitePagesSelected ? websitePagesSelected : null,
+            website_page_count: serviceId === 'website_copy_pack' && websitePageCount ? websitePageCount : null,
+            social_media_post_count: serviceId === 'social_media_pack' && socialMediaPostCount ? socialMediaPostCount : null,
           });
       }
     }

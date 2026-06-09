@@ -342,7 +342,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q83_consent_accuracy', questionNumber: 'Q83', label: 'I confirm that all information I have provided in this form is accurate and complete to the best of my knowledge.', type: 'checkbox', required: true },
     ],
     serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
-    sortOrder: 100,
+    sortOrder: 200,
   },
 
   // ── SECTION 11 — WEBSITE COPY ──
@@ -353,9 +353,8 @@ export const allFormSections: FormSection[] = [
     usedIn: 'Website Copy Starter Pack',
     fields: [
       // ── Website Structure and Pages ──
-      { id: 'wc1_pages_needed', questionNumber: 'WC1', label: 'Which website pages do you need copy written for?', type: 'multi_select', required: true, options: ['Homepage', 'About', 'Services', 'Contact', 'FAQ', 'Blog', 'Portfolio / Case Studies', 'Pricing', 'Testimonials', 'Other'], hasOtherOption: true, helpText: 'Select every page you want us to write. We\'ll tailor the copy for each one.' },
-      { id: 'wc_pages_other', questionNumber: 'WC4', label: 'Describe the custom page(s) you need.', type: 'long_text', required: false, placeholder: 'e.g. "A Process page explaining how I work step by step" or "A Resources page linking to free downloads."', conditionalOn: { field: 'wc1_pages_needed', value: 'Other' } },
-      { id: 'wc_service_page_count', questionNumber: 'WC5', label: 'How many individual service pages do you need?', type: 'single_choice', required: true, options: ['1', '2-3', '4-5', '6+', 'Depends — align with my service descriptions'], helpText: 'If you selected the Services page above, this tells us whether it\'s a single overview or separate pages per service.' },
+      // Note: wc1_pages_needed is now selected at checkout and pre-filled from payment data
+      { id: 'wc_service_page_count', questionNumber: 'WC5', label: 'How many individual service pages do you need?', type: 'single_choice', required: true, options: ['1', '2-3', '4-5', '6+', 'Depends — align with my service descriptions'], helpText: 'If you selected the Services page, this tells us whether it\'s a single overview or separate pages per service.' },
       { id: 'wc_nav_structure', questionNumber: 'WC6', label: 'What navigation structure do you prefer?', type: 'single_choice', required: true, options: ['Single page / scroll', 'Multi-page', 'One-page with sections'], helpText: 'This affects how we structure and link the copy together.' },
 
       // ── Website Copy Tone and Messaging ──
@@ -390,6 +389,45 @@ export const allFormSections: FormSection[] = [
       { id: 'wc_existing_copy_upload', questionNumber: 'WC25', label: 'Upload any existing website copy you\'d like us to reference.', type: 'file_upload', required: false, helpText: 'If you have draft copy, an old website, or notes — upload them here so we can build on what you have.' },
       { id: 'wc_existing_images_upload', questionNumber: 'WC26', label: 'Upload any existing images or photos you want to use on the website.', type: 'file_upload', required: false, helpText: 'Professional headshots, product photos, workspace shots. If you don\'t have any, we\'ll write copy that works with stock imagery.' },
       { id: 'wc_existing_testimonials', questionNumber: 'WC27', label: 'Do you have existing testimonials or reviews that are already written?', type: 'long_text', required: false, placeholder: 'Paste them here if you haven\'t already uploaded them as a file. Separate from the question above — this is content you already have ready to go.' },
+
+      // ── Page-Specific Questions (Optional) ──
+      // Homepage
+      { id: 'wc_homepage_sections', questionNumber: 'WC28', label: 'What sections do you want on your Homepage?', type: 'multi_select', required: false, options: ['Hero banner', 'About preview', 'Services overview', 'Testimonials', 'FAQ preview', 'Latest blog posts', 'Newsletter signup', 'Contact CTA'], conditionalOn: { field: 'wc1_pages_needed', value: 'Homepage' }, helpText: 'Optional — tell us if you have specific preferences, otherwise we\'ll use a standard structure.' },
+      { id: 'wc_homepage_cta_style', questionNumber: 'WC29', label: 'What style of call-to-action do you prefer on your Homepage?', type: 'single_choice', required: false, options: ['Single prominent button', 'Multiple CTA buttons', 'Soft CTA with contact link', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Homepage' } },
+
+      // About page
+      { id: 'wc_about_focus', questionNumber: 'WC30', label: 'What should your About page focus on?', type: 'multi_select', required: false, options: ['Your story and journey', 'Your qualifications and experience', 'Your approach and methodology', 'Your values and mission', 'Personal side / hobbies', 'Team members (if any)'], conditionalOn: { field: 'wc1_pages_needed', value: 'About' }, helpText: 'Select what matters most for connecting with your audience.' },
+      { id: 'wc_about_tone', questionNumber: 'WC31', label: 'What tone should your About page have?', type: 'single_choice', required: false, options: ['Professional and formal', 'Warm and personal', 'Story-driven and engaging', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'About' } },
+
+      // Services page
+      { id: 'wc_services_format', questionNumber: 'WC32', label: 'How should your services be presented?', type: 'single_choice', required: false, options: ['Card/tile format with icons', 'List format with descriptions', 'Table format with pricing', 'Mixed format', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Services' } },
+      { id: 'wc_services_show_pricing', questionNumber: 'WC33', label: 'Do you want to display pricing on your Services page?', type: 'single_choice', required: false, options: ['Yes — show starting prices', 'Yes — show full pricing', 'No — use "Get a quote" or contact CTA', 'Not sure yet'], conditionalOn: { field: 'wc1_pages_needed', value: 'Services' } },
+      { id: 'wc_services_cta', questionNumber: 'WC34', label: 'What should each service card link to?', type: 'single_choice', required: false, options: ['Contact page', 'Booking/scheduling tool', 'Individual service detail page', 'Enquiry form', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Services' } },
+
+      // Contact page
+      { id: 'wc_contact_method', questionNumber: 'WC35', label: 'How should visitors contact you?', type: 'multi_select', required: false, options: ['Contact form', 'Direct email link', 'Phone number', 'Calendar/booking link', 'Social media links'], conditionalOn: { field: 'wc1_pages_needed', value: 'Contact' }, helpText: 'Select all that apply. We recommend at least 2 contact options.' },
+      { id: 'wc_contact_form_fields', questionNumber: 'WC36', label: 'What fields should your contact form have?', type: 'multi_select', required: false, options: ['Name', 'Email', 'Phone (optional)', 'Service interested in', 'Message', 'How did you hear about us?', 'Preferred contact method'], conditionalOn: { field: 'wc1_pages_needed', value: 'Contact' }, helpText: 'Only needed if you selected "Contact form" above.' },
+      { id: 'wc_contact_show_hours', questionNumber: 'WC37', label: 'Do you want to show your business hours on the Contact page?', type: 'single_choice', required: false, options: ['Yes — show working hours', 'No — just show contact options', 'Not sure'], conditionalOn: { field: 'wc1_pages_needed', value: 'Contact' } },
+
+      // FAQ page
+      { id: 'wc_faq_topics', questionNumber: 'WC38', label: 'What topics should your FAQ cover?', type: 'long_text', required: false, placeholder: 'e.g. Common questions about pricing, process, delivery times, what\'s included, how it works...', conditionalOn: { field: 'wc1_pages_needed', value: 'FAQ' }, helpText: 'We\'ll craft questions and answers that address common concerns and objections.' },
+      { id: 'wc_faq_count', questionNumber: 'WC39', label: 'How many FAQs do you want?', type: 'single_choice', required: false, options: ['5-6 questions', '8-10 questions', '12+ questions', 'No preference — we\'ll decide'], conditionalOn: { field: 'wc1_pages_needed', value: 'FAQ' } },
+
+      // Blog page
+      { id: 'wc_blog_style', questionNumber: 'WC40', label: 'What style should your Blog page have?', type: 'single_choice', required: false, options: ['Card grid with images', 'List format', 'Magazine style', 'Minimal text-only', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Blog' } },
+      { id: 'wc_blog_categories', questionNumber: 'WC41', label: 'What blog categories or topics do you plan to write about?', type: 'long_text', required: false, placeholder: 'e.g. Industry tips, Case studies, How-to guides, Client stories, Business advice...', conditionalOn: { field: 'wc1_pages_needed', value: 'Blog' }, helpText: 'Helps us structure the blog layout and navigation.' },
+
+      // Portfolio/Case Studies page
+      { id: 'wc_portfolio_format', questionNumber: 'WC42', label: 'How should your Portfolio/Case Studies be displayed?', type: 'single_choice', required: false, options: ['Grid of images with titles', 'Cards with project summaries', 'Before/after format', 'Detailed case study pages', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Portfolio / Case Studies' } },
+      { id: 'wc_portfolio_projects', questionNumber: 'WC43', label: 'Briefly describe 2-3 projects or case studies you want to feature.', type: 'long_text', required: false, placeholder: 'Client name (or anonymous), what they needed, what you delivered, the outcome...', conditionalOn: { field: 'wc1_pages_needed', value: 'Portfolio / Case Studies' }, helpText: 'We\'ll write them up professionally based on these notes.' },
+
+      // Pricing page
+      { id: 'wc_pricing_display', questionNumber: 'WC44', label: 'How should your pricing be displayed?', type: 'single_choice', required: false, options: ['Tiered packages (e.g. Basic/Pro/Premium)', 'Per-service list', 'Starting from prices with "Get quote" CTA', 'Custom quote only', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Pricing' } },
+      { id: 'wc_pricing_highlights', questionNumber: 'WC45', label: 'What should stand out about your pricing?', type: 'long_text', required: false, placeholder: 'e.g. "Transparent, no hidden fees", "Flexible payment plans available", "Most popular package is..."', conditionalOn: { field: 'wc1_pages_needed', value: 'Pricing' } },
+
+      // Testimonials page
+      { id: 'wc_testimonials_format', questionNumber: 'WC46', label: 'How should testimonials be displayed?', type: 'single_choice', required: false, options: ['Quote cards with photos', 'Carousel/slider', 'Simple list', 'Video testimonials', 'Mixed formats', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Testimonials' } },
+      { id: 'wc_testimonials_featured', questionNumber: 'WC47', label: 'Do you have any testimonials you want featured prominently?', type: 'long_text', required: false, placeholder: 'Paste the full testimonial text and tell us why it stands out.', conditionalOn: { field: 'wc1_pages_needed', value: 'Testimonials' } },
     ],
     serviceTags: ['website_copy_pack'],
     sortOrder: 110,
