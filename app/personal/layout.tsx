@@ -9,7 +9,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { isServiceDocumentService } from '@/lib/services/document-service-map';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw, Settings } from 'lucide-react';
 import ChatBubble from '@/components/ui/ChatBubble';
 
 const adminNavItems = [
@@ -50,6 +50,9 @@ export default function PersonalLayout({
         { label: 'Documents', href: '/personal/documents', icon: FolderOpen },
       );
     }
+
+    // Add Settings at the end
+    items.push({ label: 'Settings', href: '/personal/settings', icon: Settings });
 
     return items;
   }, [safePurchasedServiceIds]);
