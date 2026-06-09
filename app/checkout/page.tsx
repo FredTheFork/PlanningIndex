@@ -26,7 +26,6 @@ import {
 import { buildIntakeForm } from '@/lib/forms/build-intake-form';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase/client';
-import GuaranteeBadge from '@/components/ui/GuaranteeBadge';
 
 function CheckoutPageInner() {
   const searchParams = useSearchParams();
@@ -320,7 +319,7 @@ function CheckoutPageInner() {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-                <h2 className="font-inter font-bold text-navy text-xl">
+                <h2 className="font-inter font-bold text-navy" style={{ fontSize: '1.19rem' }}>
                   {user && purchasedServices.length > 0 ? 'Available Services' : 'Select Your Services'}
                 </h2>
               </div>
@@ -364,7 +363,7 @@ function CheckoutPageInner() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4 flex-wrap">
                               <div>
-                                <h3 className="font-inter font-bold text-dark-text text-lg">
+                                <h3 className="font-inter font-bold text-dark-text" style={{ fontSize: '1.07rem' }}>
                                   {service.name}
                                 </h3>
                                 <p className="font-inter text-secondary-text text-sm mt-1 max-w-md">
@@ -377,12 +376,12 @@ function CheckoutPageInner() {
                                     <span className="font-inter text-secondary-text line-through text-sm">
                                       £{servicePrice.originalPrice.toFixed(2)}
                                     </span>
-                                    <span className="font-inter font-bold text-navy text-xl ml-2">
+                                    <span className="font-inter font-bold text-navy ml-2" style={{ fontSize: '1.19rem' }}>
                                       £{servicePrice.discountedPrice.toFixed(2)}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="font-inter font-bold text-navy text-xl">
+                                  <span className="font-inter font-bold text-navy" style={{ fontSize: '1.19rem' }}>
                                     {hasTiers && service.pricingTiers
                                       ? `From £${service.pricingTiers[0].price}`
                                       : `£${service.price.toFixed(2)}`}
@@ -484,8 +483,6 @@ function CheckoutPageInner() {
               </div>
 
               <div className="p-6 space-y-6">
-                {/* Guarantee Badge */}
-                <GuaranteeBadge size="small" />
 
                 {/* Bundle discount banner */}
                 {selectedServiceIds.length >= 2 && discountPercentage > 0 && (
@@ -584,7 +581,7 @@ function CheckoutPageInner() {
                     )}
                     <div className="flex items-center justify-between pt-3 border-t border-slate-200">
                       <span className="font-inter font-bold text-navy text-lg">Total</span>
-                      <span className="font-inter font-bold text-navy text-2xl">
+                      <span className="font-inter font-bold text-navy" style={{ fontSize: '1.43rem' }}>
                         £{total.toFixed(2)}
                       </span>
                     </div>
