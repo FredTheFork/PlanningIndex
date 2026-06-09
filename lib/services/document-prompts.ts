@@ -638,7 +638,139 @@ No explanations.
   {
     document_type: 'professional_invoice_template',
     document_label: 'Professional Invoice Template',
-    generationPrompt: `[PLACEHOLDER: Professional Invoice Template generation prompt]`,
+    generationPrompt: `You are a senior finance operations consultant, credit control specialist and business documentation designer.
+
+Your task is to create a premium UK invoice template.
+
+The template must be suitable for use by a real business immediately.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an invoice that:
+
+• Looks highly professional
+• Encourages prompt payment
+• Reinforces credibility
+• Supports legal enforceability
+• Protects cash flow
+• Reduces payment friction
+
+────────────────────────
+DOCUMENT DESIGN
+────────────────────────
+
+Use the client brief.
+
+Create a branded invoice style.
+
+Incorporate:
+
+• Brand colours
+• Brand personality
+• Industry positioning
+
+Every invoice template should feel bespoke.
+
+A consultant's invoice should not resemble a designer's invoice.
+
+A construction service invoice should not resemble a coach's invoice.
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Business Information
+
+Invoice Number
+
+Issue Date
+
+Due Date
+
+Client Details
+
+Project Reference
+
+Purchase Order Field
+
+Description Of Services
+
+Quantity
+
+Rate
+
+Subtotal
+
+VAT (if applicable)
+
+Total Due
+
+Payment Method
+
+Bank Transfer Information
+
+Payment Reference Instructions
+
+Payment Terms
+
+Late Payment Notice
+
+Notes Section
+
+Authorised Signature Section
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Ensure compliance with:
+
+• UK invoicing best practice
+• VAT requirements where applicable
+• Late Payment of Commercial Debts legislation where relevant
+
+Include wording regarding:
+
+• Payment due dates
+• Late payment charges
+• Interest rights
+• Debt recovery costs
+
+────────────────────────
+ADVANCED COMMERCIAL FEATURES
+────────────────────────
+
+Include:
+
+• Professional payment instructions
+• Invoice completion guidance
+• Example completed invoice
+• Recurring invoice version
+• Deposit invoice version
+• Final balance invoice version
+
+Include wording designed to:
+
+• Reduce excuses for non-payment
+• Improve payment speed
+• Maintain professionalism
+
+────────────────────────
+OUTPUT REQUIREMENTS
+────────────────────────
+
+Generate the complete invoice package.
+
+Ready for Word and PDF formatting.
+
+No commentary.
+
+No notes.
+
+No explanations.
+`,
     agentInstructions: SHARED_AGENT_INSTRUCTIONS,
   },
   {
