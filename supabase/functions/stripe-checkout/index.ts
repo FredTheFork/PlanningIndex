@@ -102,8 +102,8 @@ Deno.serve(async (req: Request) => {
 
     // Validate services and get their price IDs
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-    const subscriptionItems: Stripe.Checkout.SessionCreateParams.SubscriptionData.Item[] = [];
     const validatedServiceIds: string[] = [];
+    let hasSubscription = false;
 
     for (const serviceId of service_ids) {
       const service = getServiceConfig(serviceId);
@@ -124,27 +124,19 @@ Deno.serve(async (req: Request) => {
 
       validatedServiceIds.push(serviceId);
 
-      if (service.mode === 'payment') {
-        lineItems.push({
-          price: priceId,
-          quantity: 1,
-        });
-      } else if (service.mode === 'subscription') {
-        subscriptionItems.push({
-          price: priceId,
-          quantity: 1,
-        });
+      // All items go into line_items, regardless of payment or subscription mode
+      lineItems.push({
+        price: priceId,
+        quantity: 1,
+      });
+
+      if (service.mode === 'subscription') {
+        hasSubscription = true;
       }
     }
 
-    // Determine checkout mode
-    const hasPayment = lineItems.length > 0;
-    const hasSubscription = subscriptionItems.length > 0;
-
-    let checkoutMode: 'payment' | 'subscription' = 'payment';
-    if (hasSubscription && !hasPayment) {
-      checkoutMode = 'subscription';
-    }
+    // Determine checkout mode - subscription mode if any subscription item is present
+    const checkoutMode: 'payment' | 'subscription' = hasSubscription ? 'subscription' : 'payment';
 
     // Create checkout session
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -159,34 +151,8 @@ Deno.serve(async (req: Request) => {
           message: "Your documents will be prepared after checkout. Complete the intake form to get started.",
         },
       },
+      line_items: lineItems,
     };
-
-    // Add line items for one-time payments
-    if (hasPayment) {
-      sessionParams.line_items = lineItems;
-    }
-
-    // Add subscription data if we have subscriptions
-    if (hasSubscription) {
-      if (hasPayment) {
-        // Mix of payment and subscription - Stripe handles this via invoice items
-        // We'll create the subscription and add one-time items separately
-        sessionParams.mode = 'subscription';
-        sessionParams.subscription_data = {
-          items: subscriptionItems,
-        };
-        // Add invoice items for one-time payments that will be charged with first invoice
-        sessionParams.invoice_creation = {
-          enabled: true,
-        };
-        sessionParams.line_items = lineItems;
-      } else {
-        // Only subscription
-        sessionParams.subscription_data = {
-          items: subscriptionItems,
-        };
-      }
-    }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
