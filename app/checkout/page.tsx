@@ -257,25 +257,25 @@ function CheckoutPageInner() {
 
   if (isLoadingProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20 pb-12 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-navy" />
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-24 pb-16 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-16 pb-12">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20 pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-1.5 bg-navy/10 rounded-full px-3 py-1 mb-3">
-            <Package size={14} className="text-navy" />
-            <span className="font-inter font-medium text-navy text-xs">Secure Checkout</span>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-navy/10 rounded-full px-4 py-1.5 mb-4">
+            <Package size={16} className="text-navy" />
+            <span className="font-inter font-medium text-navy text-sm">Secure Checkout</span>
           </div>
-          <h1 className="font-inter font-bold text-navy text-2xl sm:text-3xl mb-2">
+          <h1 className="font-inter font-bold text-navy text-3xl sm:text-4xl mb-3">
             {user && purchasedServices.length > 0 ? 'Add More Services' : 'Complete Your Purchase'}
           </h1>
-          <p className="font-inter text-secondary-text text-base max-w-2xl mx-auto">
+          <p className="font-inter text-secondary-text text-lg max-w-2xl mx-auto">
             {user && purchasedServices.length > 0
               ? 'Enhance your package with additional services.'
               : 'Select the services you need. Bundle and save up to 15%.'}
@@ -284,28 +284,28 @@ function CheckoutPageInner() {
 
         {/* Current services section for logged-in returning customers */}
         {user && purchasedServices.length > 0 && (
-          <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-            <div className="flex items-start gap-2 mb-3">
-              <div className="rounded-full bg-success/20 p-1.5">
-                <Check size={14} className="text-success" />
+          <div className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="rounded-full bg-success/20 p-2">
+                <Check size={18} className="text-success" />
               </div>
               <div>
-                <h2 className="font-inter font-semibold text-navy text-base">Your Current Services</h2>
-                <p className="font-inter text-secondary-text text-xs mt-0.5">
+                <h2 className="font-inter font-semibold text-navy text-lg">Your Current Services</h2>
+                <p className="font-inter text-secondary-text text-sm mt-0.5">
                   You already own the following:
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {purchasedServices.map((serviceId) => {
                 const service = getServiceById(serviceId);
                 return (
                   <div
                     key={serviceId}
-                    className="bg-white border border-green-200 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5 shadow-sm"
+                    className="bg-white border border-green-200 rounded-xl px-4 py-2.5 inline-flex items-center gap-2 shadow-sm"
                   >
-                    <Check size={12} className="text-success" />
-                    <span className="font-inter font-medium text-dark-text text-sm">
+                    <Check size={16} className="text-success" />
+                    <span className="font-inter font-medium text-dark-text">
                       {service?.name}
                     </span>
                   </div>
@@ -315,17 +315,17 @@ function CheckoutPageInner() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-5 gap-6">
+        <div className="grid lg:grid-cols-5 gap-8">
           {/* Service selection grid */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="border-b border-slate-100 bg-slate-50/50 px-4 py-3">
-                <h2 className="font-inter font-bold text-navy text-base">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+                <h2 className="font-inter font-bold text-navy text-xl">
                   {user && purchasedServices.length > 0 ? 'Available Services' : 'Select Your Services'}
                 </h2>
               </div>
 
-              <div className="p-4 space-y-3">
+              <div className="p-6 space-y-4">
                 {availableServices.map((service) => {
                   const isSelected = selectedServiceIds.includes(service.id);
                   const isDisabled = purchasedServices.includes(service.id);
@@ -335,7 +335,7 @@ function CheckoutPageInner() {
                   return (
                     <div
                       key={service.id}
-                      className={`relative border-2 rounded-lg transition-all duration-200 ${
+                      className={`relative border-2 rounded-xl transition-all duration-200 ${
                         isDisabled
                           ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
                           : isSelected
@@ -345,11 +345,11 @@ function CheckoutPageInner() {
                     >
                       <div
                         onClick={() => !isDisabled && toggleService(service.id)}
-                        className="p-3"
+                        className="p-5"
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-4">
                           <div
-                            className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-all ${
+                            className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-all ${
                               isDisabled
                                 ? 'bg-slate-300'
                                 : isSelected
@@ -358,40 +358,40 @@ function CheckoutPageInner() {
                             }`}
                           >
                             {(isSelected || isDisabled) && (
-                              <Check size={12} className="text-white" />
+                              <Check size={14} className="text-white" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-3 flex-wrap">
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
                               <div>
-                                <h3 className="font-inter font-bold text-dark-text text-base">
+                                <h3 className="font-inter font-bold text-dark-text text-lg">
                                   {service.name}
                                 </h3>
-                                <p className="font-inter text-secondary-text text-xs mt-0.5 max-w-md">
+                                <p className="font-inter text-secondary-text text-sm mt-1 max-w-md">
                                   {service.description}
                                 </p>
                               </div>
                               <div className="text-right shrink-0">
                                 {isSelected && servicePrice && discountPercentage > 0 ? (
                                   <div>
-                                    <span className="font-inter text-secondary-text line-through text-xs">
+                                    <span className="font-inter text-secondary-text line-through text-sm">
                                       £{servicePrice.originalPrice.toFixed(2)}
                                     </span>
-                                    <span className="font-inter font-bold text-navy text-base ml-1">
+                                    <span className="font-inter font-bold text-navy text-xl ml-2">
                                       £{servicePrice.discountedPrice.toFixed(2)}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="font-inter font-bold text-navy text-base">
+                                  <span className="font-inter font-bold text-navy text-xl">
                                     {hasTiers && service.pricingTiers
                                       ? `From £${service.pricingTiers[0].price}`
                                       : `£${service.price.toFixed(2)}`}
                                   </span>
                                 )}
                                 {isSelected && discountPercentage > 0 && (
-                                  <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 rounded-full px-1.5 py-0.5 mt-0.5">
-                                    <Tag size={10} />
-                                    <span className="font-inter font-medium text-[10px]">
+                                  <div className="inline-flex items-center gap-1 bg-green-100 text-green-700 rounded-full px-2 py-0.5 mt-1">
+                                    <Tag size={12} />
+                                    <span className="font-inter font-medium text-xs">
                                       {discountPercentage}% off
                                     </span>
                                   </div>
@@ -401,12 +401,12 @@ function CheckoutPageInner() {
 
                             {/* Social Media quantity selector */}
                             {hasTiers && isSelected && service.pricingTiers && !isDisabled && (
-                              <div className="mt-3 pt-3 border-t border-slate-200">
-                                <label className="font-inter font-medium text-dark-text text-xs mb-2 block">
+                              <div className="mt-4 pt-4 border-t border-slate-200">
+                                <label className="font-inter font-medium text-dark-text text-sm mb-3 block">
                                   How many posts?
                                 </label>
-                                <div className="space-y-2">
-                                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                                     {service.pricingTiers.map((tier) => (
                                       <button
                                         key={tier.quantity}
@@ -415,26 +415,26 @@ function CheckoutPageInner() {
                                           e.stopPropagation();
                                           setSocialMediaPostCount(tier.quantity);
                                         }}
-                                        className={`py-2 px-1.5 rounded text-center transition-all ${
+                                        className={`py-3 px-2 rounded-lg text-center transition-all ${
                                           socialMediaPostCount === tier.quantity
                                             ? 'bg-navy text-white shadow-md'
                                             : 'bg-slate-100 text-dark-text hover:bg-slate-200'
                                         }`}
                                       >
-                                        <div className="font-inter font-bold text-sm">
+                                        <div className="font-inter font-bold text-lg">
                                           {tier.quantity}
                                         </div>
-                                        <div className="font-inter text-[10px] opacity-80">
+                                        <div className="font-inter text-xs opacity-80">
                                           posts
                                         </div>
                                       </button>
                                     ))}
                                   </div>
-                                  <div className="flex items-center justify-between bg-slate-50 rounded px-3 py-2">
-                                    <span className="font-inter text-secondary-text text-xs">
+                                  <div className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
+                                    <span className="font-inter text-secondary-text text-sm">
                                       {socialMediaPostCount} social media posts
                                     </span>
-                                    <span className="font-inter font-bold text-navy text-sm">
+                                    <span className="font-inter font-bold text-navy text-lg">
                                       £{getServicePrice(service.id, socialMediaPostCount).toFixed(2)}
                                     </span>
                                   </div>
@@ -444,20 +444,20 @@ function CheckoutPageInner() {
 
                             {/* Service includes */}
                             {isSelected && service.includes.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-slate-200">
-                                <div className="flex flex-wrap gap-1.5">
+                              <div className="mt-4 pt-4 border-t border-slate-200">
+                                <div className="flex flex-wrap gap-2">
                                   {service.includes.slice(0, 4).map((item) => (
                                     <span
                                       key={item}
-                                      className="inline-flex items-center gap-1 bg-slate-100 rounded-full px-2 py-1"
+                                      className="inline-flex items-center gap-1.5 bg-slate-100 rounded-full px-3 py-1.5"
                                     >
-                                      <Sparkles size={10} className="text-navy" />
-                                      <span className="font-inter text-[10px] text-dark-text">{item}</span>
+                                      <Sparkles size={12} className="text-navy" />
+                                      <span className="font-inter text-xs text-dark-text">{item}</span>
                                     </span>
                                   ))}
                                   {service.includes.length > 4 && (
-                                    <span className="inline-flex items-center bg-navy/10 rounded-full px-2 py-1">
-                                      <span className="font-inter text-[10px] text-navy font-medium">
+                                    <span className="inline-flex items-center bg-navy/10 rounded-full px-3 py-1.5">
+                                      <span className="font-inter text-xs text-navy font-medium">
                                         +{service.includes.length - 4} more
                                       </span>
                                     </span>
@@ -477,28 +477,28 @@ function CheckoutPageInner() {
 
           {/* Checkout sidebar */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm sticky top-20">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-24">
               {/* Order summary header */}
-              <div className="border-b border-slate-100 bg-slate-50/50 px-4 py-2.5 rounded-t-xl">
-                <h3 className="font-inter font-bold text-navy text-sm">Order Summary</h3>
+              <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 rounded-t-2xl">
+                <h3 className="font-inter font-bold text-navy text-lg">Order Summary</h3>
               </div>
 
-              <div className="p-4 space-y-4">
+              <div className="p-6 space-y-6">
                 {/* Guarantee Badge */}
                 <GuaranteeBadge size="small" />
 
                 {/* Bundle discount banner */}
                 {selectedServiceIds.length >= 2 && discountPercentage > 0 && (
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-full bg-success/20 p-1.5">
-                        <Tag size={12} className="text-success" />
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-full bg-success/20 p-2">
+                        <Tag size={16} className="text-success" />
                       </div>
                       <div>
-                        <p className="font-inter font-semibold text-green-800 text-xs">
+                        <p className="font-inter font-semibold text-green-800">
                           {getBundleDiscountLabel(selectedServiceIds.length)}
                         </p>
-                        <p className="font-inter text-green-700 text-[10px]">
+                        <p className="font-inter text-green-700 text-sm">
                           All selected services reduced by {discountPercentage}%
                         </p>
                       </div>
@@ -508,33 +508,33 @@ function CheckoutPageInner() {
 
                 {/* Bundle savings hint */}
                 {selectedServiceIds.length === 1 && (
-                  <div className="bg-navy/5 border border-navy/20 rounded-lg p-3">
-                    <p className="font-inter text-xs text-navy">
-                      <strong>Add another service</strong> to unlock 10% off. Add 3+ for 15% off.
+                  <div className="bg-navy/5 border border-navy/20 rounded-xl p-4">
+                    <p className="font-inter text-sm text-navy">
+                      <strong>Add another service</strong> to unlock a 10% bundle discount. Add 3+ for 15% off.
                     </p>
                   </div>
                 )}
 
                 {/* Selected services list */}
                 {selectedServiceIds.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {servicePrices.map((sp) => {
                       const service = getServiceById(sp.id);
                       if (!service) return null;
                       const hasDiscount = discountPercentage > 0 && sp.originalPrice !== sp.discountedPrice;
 
                       return (
-                        <div key={sp.id} className="flex items-center justify-between py-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-navy/10 flex items-center justify-center">
-                              <Package size={12} className="text-navy" />
+                        <div key={sp.id} className="flex items-center justify-between py-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-navy/10 flex items-center justify-center">
+                              <Package size={16} className="text-navy" />
                             </div>
                             <div>
-                              <span className="font-inter font-medium text-dark-text text-sm">
+                              <span className="font-inter font-medium text-dark-text">
                                 {service.name}
                               </span>
                               {sp.id === 'social_media_pack' && selectedServiceIds.includes('social_media_pack') && (
-                                <span className="font-inter text-secondary-text text-[10px] block">
+                                <span className="font-inter text-secondary-text text-xs block">
                                   {socialMediaPostCount} posts
                                 </span>
                               )}
@@ -543,15 +543,15 @@ function CheckoutPageInner() {
                           <div className="text-right">
                             {hasDiscount ? (
                               <div>
-                                <span className="font-inter text-secondary-text line-through text-xs">
+                                <span className="font-inter text-secondary-text line-through text-sm">
                                   £{sp.originalPrice.toFixed(2)}
                                 </span>
-                                <span className="font-inter font-semibold text-navy text-sm ml-1">
+                                <span className="font-inter font-semibold text-navy ml-2">
                                   £{sp.discountedPrice.toFixed(2)}
                                 </span>
                               </div>
                             ) : (
-                              <span className="font-inter font-semibold text-navy text-sm">
+                              <span className="font-inter font-semibold text-navy">
                                 £{sp.originalPrice.toFixed(2)}
                               </span>
                             )}
@@ -564,31 +564,31 @@ function CheckoutPageInner() {
 
                 {/* Price breakdown */}
                 {selectedServiceIds.length > 0 && (
-                  <div className="border-t border-slate-200 pt-3 space-y-1.5">
+                  <div className="border-t border-slate-200 pt-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-inter text-secondary-text text-xs">Subtotal</span>
-                      <span className="font-inter font-medium text-dark-text text-sm">
+                      <span className="font-inter text-secondary-text">Subtotal</span>
+                      <span className="font-inter font-medium text-dark-text">
                         £{subtotal.toFixed(2)}
                       </span>
                     </div>
                     {discountAmount > 0 && (
                       <div className="flex items-center justify-between">
-                        <span className="font-inter font-medium text-green-700 flex items-center gap-1 text-xs">
-                          <Tag size={12} />
+                        <span className="font-inter font-medium text-green-700 flex items-center gap-1">
+                          <Tag size={14} />
                           Bundle discount ({discountPercentage}%)
                         </span>
-                        <span className="font-inter font-semibold text-green-700 text-sm">
+                        <span className="font-inter font-semibold text-green-700">
                           -£{discountAmount.toFixed(2)}
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                      <span className="font-inter font-bold text-navy text-sm">Total</span>
-                      <span className="font-inter font-bold text-navy text-lg">
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                      <span className="font-inter font-bold text-navy text-lg">Total</span>
+                      <span className="font-inter font-bold text-navy text-2xl">
                         £{total.toFixed(2)}
                       </span>
                     </div>
-                    <p className="font-inter text-secondary-text text-[10px]">
+                    <p className="font-inter text-secondary-text text-xs">
                       {hasSubscription
                         ? 'One-time charge for services + recurring subscription for Quarterly Refresh.'
                         : 'One-time payment. No recurring charges.'}
@@ -598,16 +598,16 @@ function CheckoutPageInner() {
 
                 {/* Intake preview */}
                 {selectedServiceIds.length > 0 && sectionCount > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="rounded-full bg-medium-blue/20 p-1.5 shrink-0">
-                        <Zap size={12} className="text-medium-blue" />
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-full bg-medium-blue/20 p-2 shrink-0">
+                        <Zap size={16} className="text-medium-blue" />
                       </div>
                       <div>
-                        <p className="font-inter font-semibold text-navy text-xs">
+                        <p className="font-inter font-semibold text-navy">
                           {sectionCount} section intake form
                         </p>
-                        <p className="font-inter text-secondary-text text-[10px] mt-0.5">
+                        <p className="font-inter text-secondary-text text-sm mt-0.5">
                           Approx {estimatedMinutes} min • Save and resume anytime
                         </p>
                       </div>
@@ -616,22 +616,22 @@ function CheckoutPageInner() {
                 )}
 
                 {/* Trust signals */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={14} className="text-success shrink-0" />
-                    <span className="font-inter text-xs text-dark-text">Secure checkout via Stripe</span>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck size={18} className="text-success shrink-0" />
+                    <span className="font-inter text-sm text-dark-text">Secure checkout via Stripe</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock size={14} className="text-medium-blue shrink-0" />
-                    <span className="font-inter text-xs text-dark-text">24-hour delivery after intake</span>
+                  <div className="flex items-center gap-3">
+                    <Clock size={18} className="text-medium-blue shrink-0" />
+                    <span className="font-inter text-sm text-dark-text">24-hour delivery after intake</span>
                   </div>
                 </div>
 
                 {/* Error message */}
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                    <AlertCircle size={14} className="text-danger shrink-0 mt-0.5" />
-                    <p className="font-inter text-xs text-danger">{error}</p>
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <AlertCircle size={18} className="text-danger shrink-0 mt-0.5" />
+                    <p className="font-inter text-sm text-danger">{error}</p>
                   </div>
                 )}
 
@@ -639,33 +639,33 @@ function CheckoutPageInner() {
                 <button
                   onClick={handleCheckout}
                   disabled={loading || selectedServiceIds.length === 0}
-                  className={`w-full font-inter font-semibold text-white rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                  className={`w-full font-inter font-semibold text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
                     selectedServiceIds.length === 0
                       ? 'bg-slate-300 cursor-not-allowed'
                       : 'bg-navy hover:bg-medium-blue hover:shadow-lg hover:-translate-y-0.5'
                   }`}
-                  style={{ padding: '12px 16px', fontSize: '0.875rem' }}
+                  style={{ padding: '16px 24px', fontSize: '1rem' }}
                 >
                   {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                   ) : selectedServiceIds.length === 0 ? (
                     'Select a Service'
                   ) : (
                     <>
                       Pay £{total.toFixed(2)}
-                      <ArrowRight size={14} />
+                      <ArrowRight size={18} />
                     </>
                   )}
                 </button>
 
-                <p className="font-inter text-secondary-text text-[10px] text-center">
+                <p className="font-inter text-secondary-text text-xs text-center">
                   {user ? 'Ready to proceed' : "No account needed — you'll get a login link after payment."}
                 </p>
 
-                <div className="pt-3 border-t border-slate-200">
+                <div className="pt-4 border-t border-slate-200">
                   <Link
                     href="/pricing"
-                    className="font-inter text-medium-blue text-xs hover:underline block text-center"
+                    className="font-inter text-medium-blue text-sm hover:underline block text-center"
                   >
                     View full pricing details
                   </Link>
@@ -683,8 +683,8 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20 pb-12 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-navy" />
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-24 pb-16 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy" />
         </div>
       }
     >

@@ -124,12 +124,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     name: 'Website Copy Starter Pack',
     description:
       'Professional website copy written in your voice, aligned with your services, and ready to paste into any website builder.',
-    price: 139.0,
+    price: 49.0,
     currency: 'gbp',
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_1TgSEkGfxcDbzGRtDaBz70tR',
+      test: 'price_1TfnutGfxcDbzGRtr7kC2XcM',
       live: '',
     },
     stripeProductIds: {
@@ -170,7 +170,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_1TgSGIGfxcDbzGRt04ydxuqR', // 30 posts price (fallback)
+      test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', // 30 posts price (fallback)
       live: '',
     },
     stripeProductIds: {
@@ -199,12 +199,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     defaultQuantity: 5,
     quantityUnit: 'posts',
     pricingTiers: [
-      { quantity: 5, price: 20, label: '5 posts — £20', stripePriceId: { test: 'price_1TgTD4GfxcDbzGRtwfjjKSc9', live: '' } },
-      { quantity: 10, price: 40, label: '10 posts — £40', stripePriceId: { test: 'price_1TgT9eGfxcDbzGRtZFH9msuO', live: '' } },
-      { quantity: 15, price: 57, label: '15 posts — £57', stripePriceId: { test: 'price_1TgTAGGfxcDbzGRtYvH7lEYi', live: '' } },
-      { quantity: 20, price: 73, label: '20 posts — £73', stripePriceId: { test: 'price_1TgTAZGfxcDbzGRt6ehHzu2X', live: '' } },
-      { quantity: 25, price: 80, label: '25 posts — £80', stripePriceId: { test: 'price_1TgTAwGfxcDbzGRtBoXaKI19', live: '' } },
-      { quantity: 30, price: 110, label: '30 posts — £110', stripePriceId: { test: 'price_1TgTCpGfxcDbzGRtmaTlfkcF', live: '' } },
+      { quantity: 5, price: 20, label: '5 posts — £20', stripePriceId: { test: 'price_1Tr5gQGfxcDbzGRt3QyAqpX3', live: '' } },
+      { quantity: 10, price: 40, label: '10 posts — £40', stripePriceId: { test: 'price_1Tr5hIGfxcDbzGRt0wVZ5LgS', live: '' } },
+      { quantity: 15, price: 60, label: '15 posts — £60', stripePriceId: { test: 'price_1Tr5hxGfxcDbzGRtnYzVnQmC', live: '' } },
+      { quantity: 20, price: 80, label: '20 posts — £80', stripePriceId: { test: 'price_1Tr5icGfxcDbzGRtPj0VfTQf', live: '' } },
+      { quantity: 25, price: 100, label: '25 posts — £100', stripePriceId: { test: 'price_1Tr5j6GfxcDbzGRt4Wk9cS8R', live: '' } },
+      { quantity: 30, price: 120, label: '30 posts — £120', stripePriceId: { test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', live: '' } },
     ],
   },
   {
@@ -217,7 +217,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'subscription',
     stripePriceIds: {
-      test: 'price_1TgSI7GfxcDbzGRtm9vf0YRM',
+      test: 'price_1Tfo1IGfxcDbzGRtpuP5Yg0n',
       live: '',
     },
     stripeProductIds: {
