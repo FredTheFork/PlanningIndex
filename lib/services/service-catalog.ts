@@ -217,7 +217,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'subscription',
     stripePriceIds: {
-      test: 'price_1Tfo1IGfxcDbzGRtpuP5Yg0n',
+      test: 'price_1TgSI7GfxcDbzGRtm9vf0YRM',
       live: '',
     },
     stripeProductIds: {
