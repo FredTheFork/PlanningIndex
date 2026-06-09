@@ -6,6 +6,15 @@ import { CheckCircle, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { CommunicationPreferencesModal } from '@/components/ui/CommunicationPreferencesModal';
 
+interface SessionInfo {
+  email: string | null;
+  service_ids: string[];
+  mode: string;
+  payment_status: string;
+  customer_id: string | null;
+  subscription_id: string | null;
+}
+
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -19,8 +28,62 @@ function SuccessContent() {
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [userId, setUserId] = useState('');
   const [emailLoading, setEmailLoading] = useState(true);
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
 
-  // Auto-fetch email from Stripe checkout session
+  // Record purchased services to database
+  const recordPurchasedServices = async (userId: string, userEmail: string) => {
+    if (!sessionInfo || sessionInfo.service_ids.length === 0) return;
+
+    try {
+      // Link stripe customer to user
+      if (sessionInfo.customer_id) {
+        await supabase
+          .from('stripe_customers')
+          .upsert({
+            customer_id: sessionInfo.customer_id,
+            user_id: userId,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'customer_id' });
+      }
+
+      // Record each service in services_purchased
+      for (const serviceId of sessionInfo.service_ids) {
+        const { data: existing } = await supabase
+          .from('services_purchased')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('service_id', serviceId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (!existing) {
+          await supabase
+            .from('services_purchased')
+            .insert({
+              user_id: userId,
+              service_id: serviceId,
+              stripe_checkout_session_id: searchParams.get('session_id'),
+              stripe_subscription_id: sessionInfo.subscription_id || null,
+              status: 'active',
+              purchased_at: new Date().toISOString(),
+            });
+        }
+      }
+
+      // Update stripe_orders with service_ids
+      if (searchParams.get('session_id')) {
+        await supabase
+          .from('stripe_orders')
+          .update({ service_ids: sessionInfo.service_ids })
+          .eq('checkout_session_id', searchParams.get('session_id'));
+      }
+    } catch (err) {
+      console.error('Error recording purchased services:', err);
+      // Don't block the user flow if this fails - webhook will handle it
+    }
+  };
+
+  // Auto-fetch email and service info from Stripe checkout session
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
     if (!sessionId) {
@@ -29,7 +92,7 @@ function SuccessContent() {
       return;
     }
 
-    const fetchSessionEmail = async () => {
+    const fetchSessionInfo = async () => {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -45,12 +108,13 @@ function SuccessContent() {
 
         if (res.ok) {
           const data = await res.json();
+          setSessionInfo(data);
           if (data.email) {
             setEmail(data.email.toLowerCase());
           }
         }
       } catch (err) {
-        console.error('Failed to fetch session email:', err);
+        console.error('Failed to fetch session info:', err);
       } finally {
         setEmailLoading(false);
       }
@@ -62,7 +126,7 @@ function SuccessContent() {
         router.replace('/personal');
         return;
       }
-      fetchSessionEmail();
+      fetchSessionInfo();
       setStatus('set_password');
     });
   }, [searchParams, router]);
@@ -133,7 +197,12 @@ function SuccessContent() {
       // Get the user ID from session
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) {
-        setUserId(session.user.id);
+        const userId = session.user.id;
+        setUserId(userId);
+
+        // Record purchased services and link stripe customer
+        await recordPurchasedServices(userId, email.trim().toLowerCase());
+
         setShowPreferencesModal(true);
       } else {
         router.replace('/personal');

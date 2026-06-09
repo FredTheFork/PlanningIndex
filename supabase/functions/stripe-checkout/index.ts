@@ -132,6 +132,11 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // GET: Retrieve session details (for success page)
+  if (req.method === "GET") {
+    return handleGetSession(req);
+  }
+
   if (req.method !== "POST") {
     return new Response(
       JSON.stringify({ error: "Method not allowed" }),
@@ -281,3 +286,51 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+async function handleGetSession(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  const sessionId = url.searchParams.get("session_id");
+
+  if (!sessionId) {
+    return new Response(
+      JSON.stringify({ error: "Missing session_id" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  try {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY not configured");
+    }
+
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: "2023-10-16",
+    });
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    const serviceIdsStr = session.metadata?.service_ids || "";
+    const serviceIds = serviceIdsStr ? serviceIdsStr.split(",").filter(Boolean) : [];
+    const email = session.customer_details?.email || session.customer_email || null;
+
+    return new Response(
+      JSON.stringify({
+        email,
+        service_ids: serviceIds,
+        mode: session.mode,
+        payment_status: session.payment_status,
+        customer_id: session.customer,
+        subscription_id: session.subscription,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error retrieving session:", error);
+    const message = error instanceof Error ? error.message : "Failed to retrieve session";
+    return new Response(
+      JSON.stringify({ error: message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+}
