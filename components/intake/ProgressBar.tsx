@@ -45,7 +45,7 @@ export default function ProgressBar({
       </div>
 
       {/* Section dots */}
-      <div className="flex items-center gap-1 mt-3 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1 mt-3 overflow-x-auto pt-1 pl-1 pb-1">
         {sections
           .filter((s) => s.id !== 'intro')
           .map((section, index) => {
