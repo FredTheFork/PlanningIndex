@@ -171,7 +171,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       { quantity: 7, price: 180, label: '7 pages — £180', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy7', live: '' } },
       { quantity: 8, price: 200, label: '8 pages — £200', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy8', live: '' } },
       { quantity: 9, price: 218, label: '9 pages — £218', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy9', live: '' } },
-      { quantity: 10, price: 235, label: '10 pages — £235', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy10', live: '' } },
+      { quantity: 10, price: 235, label: '10 pages — £235', stripePriceId: { test: 'price_1TgXZQGfxcDbzGRtkovnGBSm', live: '' } },
     ],
   },
   {
