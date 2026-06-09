@@ -372,6 +372,8 @@ export function useIntakeResponses() {
   const newSectionIds = (() => {
     if (!data?.submitted_at) return [];
     const completedFor = Array.isArray(data.intake_complete_for_services) ? data.intake_complete_for_services : [];
+    // Legacy: submitted but no tracking data → assume all current services were completed already
+    if (completedFor.length === 0) return [];
     if (isIntakeFullyComplete(safeServiceIds, completedFor)) return [];
 
     const existingSectionIds = new Set(
@@ -386,6 +388,8 @@ export function useIntakeResponses() {
   const intakeFullyComplete = (() => {
     if (!data?.submitted_at) return false;
     const icf = Array.isArray(data.intake_complete_for_services) ? data.intake_complete_for_services : [];
+    // Legacy: submitted but intake_complete_for_services empty → treat as fully complete
+    if (icf.length === 0) return true;
     return isIntakeFullyComplete(safeServiceIds, icf);
   })();
 

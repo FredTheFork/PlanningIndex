@@ -65,10 +65,18 @@ export function useClientProfile() {
   const intakeFullyComplete = useMemo(() => {
     if (!profile) return false;
     if (!profile.has_submitted_intake) return false;
-    return isIntakeFullyComplete(purchasedServiceIds, profile.intake_complete_for_services || []);
+    const icf = profile.intake_complete_for_services || [];
+    // Legacy: submitted but intake_complete_for_services empty → treat as complete
+    if (icf.length === 0) return true;
+    return isIntakeFullyComplete(purchasedServiceIds, icf);
   }, [profile, purchasedServiceIds]);
 
-  const intakeCompleteForServices = profile?.intake_complete_for_services || [];
+  const intakeCompleteForServices = (() => {
+    const icf = profile?.intake_complete_for_services || [];
+    // Legacy: submitted but tracking column empty → assume all purchased services were completed
+    if (icf.length === 0 && profile?.has_submitted_intake) return purchasedServiceIds;
+    return icf;
+  })();
 
   return { profile, loading: authLoading || loading, purchasedServiceIds, intakeFullyComplete, intakeCompleteForServices };
 }

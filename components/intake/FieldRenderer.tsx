@@ -34,7 +34,14 @@ export default function FieldRenderer({
 }: FieldRendererProps) {
   if (!isFieldConditionallyVisible(field, responses)) return null;
 
-  const value = responses[field.id];
+  let value = responses[field.id];
+
+  // Normalize legacy data: ensure array-typed fields always have arrays
+  if (field.type === 'multi_select' || field.type === 'file_upload' || field.type === 'repeating_section') {
+    if (typeof value === 'string') value = value ? [value] : [];
+    if (!Array.isArray(value)) value = [];
+  }
+
   const error = errors[field.id];
   const prefill = prefillSuggestions[field.id] || null;
 

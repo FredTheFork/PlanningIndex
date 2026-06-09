@@ -56,6 +56,8 @@ export default function IntakeWizard() {
   const currentSection = safeFormSections.find((s) => s.id === currentSectionId);
 
   const hasSubmitted = !!data?.submitted_at;
+  // Legacy accounts: submitted_at set but intake_complete_for_services empty → treat as fully complete
+  const isLegacyComplete = hasSubmitted && !intakeFullyComplete && safeNewSectionIds.length === 0;
   const isNewSectionsMode = hasSubmitted && !intakeFullyComplete && safeNewSectionIds.length > 0;
   const isFullyComplete = hasSubmitted && intakeFullyComplete;
 
@@ -233,8 +235,8 @@ export default function IntakeWizard() {
     );
   }
 
-  // Already fully submitted, no new sections
-  if (isFullyComplete) {
+  // Already fully submitted, no new sections (includes legacy accounts where tracking columns were empty)
+  if (isFullyComplete || isLegacyComplete) {
     return (
       <div>
         <div className="mb-8">
