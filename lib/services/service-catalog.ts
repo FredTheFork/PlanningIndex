@@ -101,12 +101,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: '',
+      test: 'price_1TfnutGfxcDbzGRtr7kC2XcM',
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_UdvhNsQZM3C2RL',
-      live: 'prod_UdvhNsQZM3C2RL',
+      test: 'prod_UfnqtTGEWkoXYK',
+      live: 'prod_UfnqtTGEWkoXYK',
     },
     includes: [
       'Homepage (hero, benefits, CTA)',
@@ -145,12 +145,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: '',
+      test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv',
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_UdvoYyIfAtIHjh',
-      live: 'prod_UdvoYyIfAtIHjh',
+      test: 'prod_Ufnsr70N1uRKfN',
+      live: 'prod_Ufnsr70N1uRKfN',
     },
     includes: [
       'Educational posts',
@@ -185,12 +185,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'subscription',
     stripePriceIds: {
-      test: '',
+      test: 'price_1Tfo1IGfxcDbzGRtpuP5Yg0n',
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_UdvqABMskIHzzZ',
-      live: 'prod_UdvqABMskIHzzZ',
+      test: 'prod_UfntRYA1SkzyAD',
+      live: 'prod_UfntRYA1SkzyAD',
     },
     includes: [
       'One document update per quarter',
