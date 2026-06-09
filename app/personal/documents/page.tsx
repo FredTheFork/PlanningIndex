@@ -6,7 +6,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { getDocumentTypesForService, isServiceDocumentService } from '@/lib/services/document-service-map';
-import { Lock, Clock, FileText, Eye, EyeOff, Download } from 'lucide-react';
+import { Lock, Clock, FileText, Eye, EyeOff, Download, Globe, Share2, Instagram, Linkedin, Facebook, Twitter, Maximize2, X, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import {
+  HomepageTemplate, AboutTemplate, ServicesTemplate, ContactTemplate, PreviewFrame
+} from '@/components/website-preview';
+import type { HomepageContent } from '@/components/website-preview/templates/HomepageTemplate';
+import type { AboutContent } from '@/components/website-preview/templates/AboutTemplate';
+import type { ServicesContent } from '@/components/website-preview/templates/ServicesTemplate';
+import type { ContactContent } from '@/components/website-preview/templates/ContactTemplate';
 
 interface DeliveredDoc {
   id: string;
@@ -20,18 +27,47 @@ interface DeliveredDoc {
   docx_path: string | null;
 }
 
+interface SocialPost {
+  id: string;
+  post_number: number;
+  category: 'educational' | 'promotional' | 'personal';
+  caption: string;
+  hashtags: string | null;
+  platform: 'LinkedIn' | 'Instagram' | 'Facebook' | 'X';
+  image_path: string | null;
+  week: number;
+  day: string;
+}
+
+interface WebsitePage {
+  id: string;
+  page_type: 'homepage' | 'about' | 'services' | 'contact';
+  content_json: any;
+  delivered_at: string;
+}
+
 export default function PersonalDocuments() {
   const { profile, loading: profileLoading, purchasedServiceIds } = useClientProfile();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<DeliveredDoc[]>([]);
+  const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
+  const [websitePages, setWebsitePages] = useState<WebsitePage[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string>('all');
+  const [websitePreviewOpen, setWebsitePreviewOpen] = useState(false);
+  const [activePage, setActivePage] = useState<'homepage' | 'about' | 'services' | 'contact'>('homepage');
+
+  // Check which additional services user has
+  const hasSocialMediaPack = purchasedServiceIds.includes('social_media_pack');
+  const hasWebsiteCopyPack = purchasedServiceIds.includes('website_copy_pack');
 
   useEffect(() => {
     if (!user) return;
     fetchDeliveredDocs();
-  }, [user]);
+    if (hasSocialMediaPack) fetchSocialPosts();
+    if (hasWebsiteCopyPack) fetchWebsitePages();
+  }, [user, hasSocialMediaPack, hasWebsiteCopyPack]);
 
   const fetchDeliveredDocs = async () => {
     if (!user) return;
@@ -56,6 +92,41 @@ export default function PersonalDocuments() {
     }
   };
 
+  const fetchSocialPosts = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('social_media_posts')
+        .select('id, post_number, category, caption, hashtags, platform, image_path, week, day')
+        .eq('user_id', user.id)
+        .eq('delivered_to_client', true)
+        .order('post_number', { ascending: true });
+
+      if (!error && data) {
+        setSocialPosts(data);
+      }
+    } catch (err) {
+      console.error('Error fetching social posts:', err);
+    }
+  };
+
+  const fetchWebsitePages = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('website_page_contents')
+        .select('id, page_type, content_json, delivered_at')
+        .eq('user_id', user.id)
+        .eq('delivered_to_client', true);
+
+      if (!error && data) {
+        setWebsitePages(data);
+      }
+    } catch (err) {
+      console.error('Error fetching website pages:', err);
+    }
+  };
+
   const handleDownloadHtml = (doc: DeliveredDoc) => {
     if (!doc.content_html) return;
     const blob = new Blob([doc.content_html], { type: 'text/html' });
@@ -69,10 +140,10 @@ export default function PersonalDocuments() {
     URL.revokeObjectURL(url);
   };
 
-  const handleStorageDownload = async (filePath: string, fileName: string) => {
+  const handleStorageDownload = async (filePath: string, fileName: string, bucket: string = 'generated-documents') => {
     try {
       const { data, error } = await supabase.storage
-        .from('generated-documents')
+        .from(bucket)
         .createSignedUrl(filePath, 3600);
 
       if (error || !data) {
@@ -124,6 +195,8 @@ export default function PersonalDocuments() {
   if (!profile) return null;
 
   const hasDocuments = filteredDocuments.length > 0;
+  const hasSocialPosts = socialPosts.length > 0;
+  const hasWebsitePages = websitePages.length > 0;
 
   // Earliest auto-delete among filtered docs
   const earliestAutoDelete = filteredDocuments
@@ -135,16 +208,14 @@ export default function PersonalDocuments() {
     <div>
       <div className="mb-8">
         <h1 className="font-inter font-bold text-[#1B3F7A] text-2xl mb-1">
-          Documents
+          Your Content
         </h1>
         <p className="font-inter text-gray-600 text-sm">
-          {selectedServiceId === 'all'
-            ? 'Access your documents.'
-            : `Access your ${getServiceById(selectedServiceId)?.name ?? 'service'} documents.`}
+          Access your documents, social media posts, and website copy.
         </p>
       </div>
 
-      {/* Service filter tabs — only show when user has multiple document-producing services */}
+      {/* Service filter tabs */}
       {docServiceIds.length > 1 && (
         <div className="mb-6">
           <div className="flex gap-1 bg-white rounded-lg border border-gray-200 p-1 overflow-x-auto">
@@ -178,9 +249,9 @@ export default function PersonalDocuments() {
         </div>
       )}
 
-      {hasDocuments ? (
-        <div className="space-y-6">
-          {/* Expiry notice */}
+      {/* Documents Section */}
+      {hasDocuments && (
+        <div className="space-y-6 mb-8">
           {earliestAutoDelete && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
               <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
@@ -190,13 +261,11 @@ export default function PersonalDocuments() {
                 </p>
                 <p className="font-inter text-amber-700 text-xs mt-1">
                   {getTimeRemaining(earliestAutoDelete)} — Please download and save copies to your own device.
-                  We recommend keeping backups in at least two separate locations.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Document list */}
           <div className="flex flex-col gap-3">
             {filteredDocuments.map(doc => (
               <DocumentCard
@@ -210,7 +279,30 @@ export default function PersonalDocuments() {
             ))}
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Website Copy Section */}
+      {hasWebsiteCopyPack && hasWebsitePages && (
+        <div className="mb-8">
+          <WebsiteCopySection
+            pages={websitePages}
+            onViewFullPreview={() => setWebsitePreviewOpen(true)}
+          />
+        </div>
+      )}
+
+      {/* Social Media Posts Section */}
+      {hasSocialMediaPack && hasSocialPosts && (
+        <div className="mb-8">
+          <SocialPostsSection
+            posts={socialPosts}
+            onImageDownload={(path, name) => handleStorageDownload(path, name, 'social-media-images')}
+          />
+        </div>
+      )}
+
+      {/* No content state */}
+      {!hasDocuments && !hasWebsitePages && !hasSocialPosts && (
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <div className="flex items-start gap-4">
             <div className="bg-gray-100 rounded-lg p-3 shrink-0">
@@ -218,12 +310,12 @@ export default function PersonalDocuments() {
             </div>
             <div>
               <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-2">
-                Documents not yet available
+                Content not yet available
               </h2>
               <p className="font-inter text-gray-600 text-sm mb-4">
                 {profile.delivery_status === 'not_started'
-                  ? 'Your documents will be prepared once you submit your intake form. The 24-hour delivery window starts from submission.'
-                  : 'Your documents are currently being prepared. They will be available within 24 hours of submitting your intake form.'}
+                  ? 'Your content will be prepared once you submit your intake form. The 24-hour delivery window starts from submission.'
+                  : 'Your content is currently being prepared. It will be available within 24 hours of submitting your intake form.'}
               </p>
 
               {!profile.has_submitted_intake && (
@@ -238,6 +330,14 @@ export default function PersonalDocuments() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Full Website Preview Modal */}
+      {websitePreviewOpen && (
+        <WebsitePreviewModal
+          pages={websitePages}
+          onClose={() => setWebsitePreviewOpen(false)}
+        />
       )}
     </div>
   );
@@ -349,7 +449,6 @@ function DocumentCard({ doc, isViewing, onToggleView, onDownloadHtml, onStorageD
         </div>
       </div>
 
-      {/* Preview */}
       {isViewing && htmlBlobUrl && (
         <div className="mt-4 border-t border-gray-200 pt-4">
           <iframe
@@ -360,6 +459,223 @@ function DocumentCard({ doc, isViewing, onToggleView, onDownloadHtml, onStorageD
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Website Copy Section ──
+
+function WebsiteCopySection({ pages, onViewFullPreview }: { pages: WebsitePage[]; onViewFullPreview: () => void }) {
+  const [viewingPage, setViewingPage] = useState<string | null>(null);
+
+  const pageLabels: Record<string, string> = {
+    homepage: 'Homepage',
+    about: 'About Page',
+    services: 'Services Page',
+    contact: 'Contact Page',
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-inter font-bold text-[#1B3F7A] text-lg flex items-center gap-2">
+          <Globe size={20} />
+          Website Copy
+        </h2>
+        <button
+          onClick={onViewFullPreview}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded-md text-sm font-inter font-medium transition-colors"
+        >
+          <Maximize2 size={14} />
+          Preview Full Website
+        </button>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        {pages.map((page) => (
+          <div key={page.id} className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-inter font-semibold text-gray-900">{pageLabels[page.page_type]}</h3>
+              <button
+                onClick={() => setViewingPage(viewingPage === page.id ? null : page.id)}
+                className="text-gray-500 hover:text-[#1B3F7A] transition-colors"
+              >
+                {viewingPage === page.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button>
+            </div>
+            <p className="font-inter text-gray-500 text-xs mb-3">
+              Delivered {new Date(page.delivered_at).toLocaleDateString('en-GB')}
+            </p>
+            {viewingPage === page.id && (
+              <div className="pt-3 border-t border-gray-100">
+                <WebsitePagePreview page={page} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WebsitePagePreview({ page }: { page: WebsitePage }) {
+  const brandColors = { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#FF8C42' };
+
+  return (
+    <div className="h-[400px] border border-gray-200 rounded-lg overflow-hidden">
+      {page.page_type === 'homepage' && (
+        <HomepageTemplate content={page.content_json} brandColors={brandColors} />
+      )}
+      {page.page_type === 'about' && (
+        <AboutTemplate content={page.content_json} brandColors={brandColors} />
+      )}
+      {page.page_type === 'services' && (
+        <ServicesTemplate content={page.content_json} brandColors={brandColors} />
+      )}
+      {page.page_type === 'contact' && (
+        <ContactTemplate content={page.content_json} brandColors={brandColors} />
+      )}
+    </div>
+  );
+}
+
+// ── Website Preview Modal ──
+
+function WebsitePreviewModal({ pages, onClose }: { pages: WebsitePage[]; onClose: () => void }) {
+  const [activePageIdx, setActivePageIdx] = useState(0);
+  const brandColors = { primary: '#1B3F7A', secondary: '#2C68C4', accent: '#FF8C42' };
+
+  const PAGE_LABELS = ['homepage', 'about', 'services', 'contact'] as const;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            {PAGE_LABELS.map((pageType, idx) => {
+              const hasDelivered = pages.some(p => p.page_type === pageType);
+              return (
+                <button
+                  key={pageType}
+                  onClick={() => hasDelivered && setActivePageIdx(idx)}
+                  disabled={!hasDelivered}
+                  className={`px-3 py-1.5 rounded-md text-sm font-inter font-medium transition-colors ${
+                    activePageIdx === idx
+                      ? 'bg-[#1B3F7A] text-white'
+                      : hasDelivered
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {pageType.charAt(0).toUpperCase() + pageType.slice(1)}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X size={20} className="text-gray-600" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto bg-gray-100">
+          <div className="max-w-4xl mx-auto">
+            {(() => {
+              const pageType = PAGE_LABELS[activePageIdx];
+              const page = pages.find(p => p.page_type === pageType);
+              if (!page) return null;
+
+              switch (pageType) {
+                case 'homepage':
+                  return <HomepageTemplate content={page.content_json} brandColors={brandColors} />;
+                case 'about':
+                  return <AboutTemplate content={page.content_json} brandColors={brandColors} />;
+                case 'services':
+                  return <ServicesTemplate content={page.content_json} brandColors={brandColors} />;
+                case 'contact':
+                  return <ContactTemplate content={page.content_json} brandColors={brandColors} />;
+              }
+            })()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Social Posts Section ──
+
+function SocialPostsSection({ posts, onImageDownload }: { posts: SocialPost[]; onImageDownload: (path: string, name: string) => void }) {
+  const [expandedWeek, setExpandedWeek] = useState<number | null>(1);
+
+  const postsByWeek = posts.reduce((acc, post) => {
+    if (!acc[post.week]) acc[post.week] = [];
+    acc[post.week].push(post);
+    return acc;
+  }, {} as Record<number, SocialPost[]>);
+
+  const PLATFORM_CONFIG = {
+    LinkedIn: { icon: Linkedin, color: 'text-blue-600', bg: 'bg-blue-50' },
+    Instagram: { icon: Instagram, color: 'text-pink-600', bg: 'bg-pink-50' },
+    Facebook: { icon: Facebook, color: 'text-blue-700', bg: 'bg-blue-50' },
+    X: { icon: Twitter, color: 'text-gray-800', bg: 'bg-gray-100' },
+  };
+
+  return (
+    <div>
+      <h2 className="font-inter font-bold text-[#1B3F7A] text-lg flex items-center gap-2 mb-4">
+        <Share2 size={20} />
+        Social Media Posts ({posts.length})
+      </h2>
+
+      <div className="space-y-3">
+        {Object.entries(postsByWeek).map(([week, weekPosts]) => (
+          <div key={week} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setExpandedWeek(expandedWeek === parseInt(week) ? null : parseInt(week))}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
+              <span className="font-inter font-semibold text-gray-900">Week {week} ({weekPosts.length} posts)</span>
+              {expandedWeek === parseInt(week) ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+
+            {expandedWeek === parseInt(week) && (
+              <div className="border-t border-gray-200 p-4 space-y-4">
+                {weekPosts.map((post) => {
+                  const PlatformIcon = PLATFORM_CONFIG[post.platform].icon;
+                  return (
+                    <div key={post.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-inter font-semibold text-[#1B3F7A]">#{post.post_number}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${PLATFORM_CONFIG[post.platform].bg}`}>
+                          <PlatformIcon size={12} className="inline mr-1" />
+                          {post.platform}
+                        </span>
+                        <span className="text-xs text-gray-500">{post.day}</span>
+                      </div>
+                      <p className="font-inter text-sm text-gray-700 mb-2">{post.caption}</p>
+                      {post.hashtags && (
+                        <p className="font-inter text-xs text-blue-600">{post.hashtags}</p>
+                      )}
+                      {post.image_path && (
+                        <button
+                          onClick={() => onImageDownload(post.image_path!, `post-${post.post_number}.png`)}
+                          className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-600 rounded text-xs font-inter font-medium hover:bg-purple-100 transition-colors"
+                        >
+                          <Download size={12} />
+                          Download Image
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

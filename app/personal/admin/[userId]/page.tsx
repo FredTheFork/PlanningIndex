@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,7 +8,7 @@ import {
   ArrowLeft, User, FileText, Clock, Save, AlertCircle, Briefcase, FileCheck,
   MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
   Download, Eye, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-  ChevronRight, FileDown, Send, Loader, Package
+  ChevronRight, FileDown, Send, Loader, Package, Share2, Globe
 } from 'lucide-react';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
@@ -21,6 +21,8 @@ import ServicesTab from './tabs/ServicesTab';
 import IntakeTab from './tabs/IntakeTab';
 import MessagingTab from './tabs/MessagingTab';
 import SubscriptionTab from './tabs/SubscriptionTab';
+import SocialMediaTab from './tabs/SocialMediaTab';
+import WebsiteCopyTab from './tabs/WebsiteCopyTab';
 
 interface ClientData {
   profile: {
@@ -60,10 +62,20 @@ interface ClientData {
   authEmail?: string;
 }
 
-const TABS = [
+// All possible tabs
+interface TabConfig {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  requiredService?: string;
+}
+
+const ALL_TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: User },
   { id: 'brief', label: 'Master Brief', icon: Briefcase },
   { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'social_media', label: 'Social Posts', icon: Share2, requiredService: 'social_media_pack' },
+  { id: 'website_copy', label: 'Website Copy', icon: Globe, requiredService: 'website_copy_pack' },
   { id: 'services', label: 'Services', icon: Package },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
   { id: 'messaging', label: 'Messaging', icon: Send },
@@ -112,8 +124,6 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         .eq('user_id', userId)
         .order('purchased_at', { ascending: true });
 
-      // auth.admin.getUserById requires service role key — not available client-side
-      // Read email from intake responses instead; authEmail left empty
       const email = intakeResult?.responses?.q7_document_email || userId.substring(0, 8) + '...';
 
       setData({
@@ -143,6 +153,22 @@ export default function AdminClientDetail({ params }: { params: { userId: string
   const refreshData = () => {
     setRefreshKey(prev => prev + 1);
   };
+
+  // Derive visible tabs based on purchased services
+  const visibleTabs = useMemo(() => {
+    const purchasedServiceIds = new Set(data.purchasedServices.map((s: any) => s.service_id));
+    return ALL_TABS.filter(tab => {
+      if (!tab.requiredService) return true;
+      return purchasedServiceIds.has(tab.requiredService);
+    });
+  }, [data.purchasedServices]);
+
+  // Reset to overview if current tab is no longer visible
+  useEffect(() => {
+    if (!visibleTabs.find(t => t.id === activeTab)) {
+      setActiveTab('overview');
+    }
+  }, [visibleTabs, activeTab]);
 
   if (loading) {
     return (
@@ -244,7 +270,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px overflow-x-auto scrollbar-hide">
-            {TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
@@ -275,6 +301,12 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           )}
           {activeTab === 'documents' && (
             <DocumentsTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'social_media' && (
+            <SocialMediaTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'website_copy' && (
+            <WebsiteCopyTab userId={userId} data={data} refreshData={refreshData} />
           )}
           {activeTab === 'services' && (
             <ServicesTab userId={userId} data={data} refreshData={refreshData} />
