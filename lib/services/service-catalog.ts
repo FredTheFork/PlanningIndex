@@ -200,7 +200,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     quantityUnit: 'posts',
     pricingTiers: [
       { quantity: 5, price: 20, label: '5 posts — £20', stripePriceId: { test: 'price_1TgTD4GfxcDbzGRtwfjjKSc9', live: '' } },
-      { quantity: 10, price: 40, label: '10 posts — £40', stripePriceId: { test: 'price_1Tr5hIGfxcDbzGRt0wVZ5LgS', live: '' } },
+      { quantity: 10, price: 40, label: '10 posts — £40', stripePriceId: { test: 'price_1TgT9eGfxcDbzGRtZFH9msuO', live: '' } },
       { quantity: 15, price: 57, label: '15 posts — £57', stripePriceId: { test: 'price_1Tr5hxGfxcDbzGRtnYzVnQmC', live: '' } },
       { quantity: 20, price: 73, label: '20 posts — £73', stripePriceId: { test: 'price_1Tr5icGfxcDbzGRtPj0VfTQf', live: '' } },
       { quantity: 25, price: 80, label: '25 posts — £80', stripePriceId: { test: 'price_1Tr5j6GfxcDbzGRt4Wk9cS8R', live: '' } },
