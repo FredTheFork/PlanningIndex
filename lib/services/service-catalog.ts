@@ -124,7 +124,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     name: 'Website Copy Starter Pack',
     description:
       'Professional website copy written in your voice, aligned with your services, and ready to paste into any website builder.',
-    price: 49.0,
+    price: 139.0,
     currency: 'gbp',
     currencySymbol: '£',
     mode: 'payment',
