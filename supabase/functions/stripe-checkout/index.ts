@@ -20,16 +20,16 @@ const SOCIAL_MEDIA_PRICING_TIERS: Record<number, { test: string; live: string }>
 
 // Pricing tiers for website copy pack (per page)
 const WEBSITE_PAGE_PRICING_TIERS: Record<number, { test: string; live: string }> = {
-  1: { test: 'price_1TshkCGfxcDbzGRtDummy1', live: '' },
-  2: { test: 'price_1TshkCGfxcDbzGRtDummy2', live: '' },
-  3: { test: 'price_1TshkCGfxcDbzGRtDummy3', live: '' },
-  4: { test: 'price_1TshkCGfxcDbzGRtDummy4', live: '' },
-  5: { test: 'price_1TshkCGfxcDbzGRtDummy5', live: '' },
-  6: { test: 'price_1TshkCGfxcDbzGRtDummy6', live: '' },
-  7: { test: 'price_1TshkCGfxcDbzGRtDummy7', live: '' },
-  8: { test: 'price_1TshkCGfxcDbzGRtDummy8', live: '' },
-  9: { test: 'price_1TshkCGfxcDbzGRtDummy9', live: '' },
-  10: { test: 'price_1TshkCGfxcDbzGRtDummy10', live: '' },
+  1: { test: 'price_1TgXZQGfxcDbzGRtkovnGBSm', live: '' },
+  2: { test: 'price_1TgXZYGfxcDbzGRtnokfBuT3', live: '' },
+  3: { test: 'price_1TgXa9GfxcDbzGRtcQYtwDeI', live: '' },
+  4: { test: 'price_1TgXbFGfxcDbzGRtuRAV2SGv', live: '' },
+  5: { test: 'price_1TgSEkGfxcDbzGRtDaBz70tR', live: '' },
+  6: { test: 'price_1TgXbQGfxcDbzGRteGhQeYwJ', live: '' },
+  7: { test: 'price_1TgXbZGfxcDbzGRtjlm9GL6Z', live: '' },
+  8: { test: 'price_1TgXbhGfxcDbzGRtlqg1FHhk', live: '' },
+  9: { test: 'price_1TgXbxGfxcDbzGRtnTF07CE2', live: '' },
+  10: { test: 'price_1TgXc3GfxcDbzGRtHs7m8tou', live: '' },
 };
 
 // Service catalog - matching service-catalog.ts
