@@ -656,7 +656,101 @@ No explanations.
   {
     document_type: 'professional_bio',
     document_label: 'Professional Bio',
-    generationPrompt: `[PLACEHOLDER: Professional Bio generation prompt]`,
+    generationPrompt: `You are an elite brand strategist, positioning consultant and professional copywriter.
+
+Create a premium personal and business biography.
+
+Your objective is not to describe the person.
+
+Your objective is to position them as a credible professional within their market.
+
+────────────────────────
+DELIVERABLES
+────────────────────────
+
+Generate:
+
+1. 50-word version
+2. 150-word version
+3. 300-word version
+4. Website About section version
+5. Proposal introduction version
+6. Social profile version
+
+────────────────────────
+POSITIONING REQUIREMENTS
+────────────────────────
+
+Use the client brief to identify:
+
+• Expertise
+• Industry knowledge
+• Unique strengths
+• Differentiators
+• Client outcomes
+• Personal story
+• Professional credibility
+
+Where experience is limited:
+
+Position intelligently.
+
+Focus on:
+
+• Systems
+• Process
+• Innovation
+• Commitment
+• Results orientation
+
+Never fabricate qualifications.
+
+Never invent achievements.
+
+────────────────────────
+WRITING STYLE
+────────────────────────
+
+Match the client's brand voice.
+
+Create language that sounds authentic.
+
+Avoid clichés.
+
+Avoid corporate buzzwords.
+
+Avoid LinkedIn influencer language.
+
+Avoid Steven Bartlett style writing.
+
+The biography should sound like a real professional.
+
+────────────────────────
+BRANDING
+────────────────────────
+
+The tone, formatting and presentation should feel unique to the business.
+
+Not every biography should follow the same structure.
+
+Adapt to industry.
+
+Adapt to audience.
+
+Adapt to personality.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return all versions fully written.
+
+Ready for immediate use.
+
+No notes.
+
+No explanations.
+`,
     agentInstructions: SHARED_AGENT_INSTRUCTIONS,
   },
   {
