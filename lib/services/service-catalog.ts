@@ -163,7 +163,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     quantityUnit: 'pages',
     pricingTiers: [
       { quantity: 1, price: 35, label: '1 page — £35', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy1', live: '' } },
-      { quantity: 2, price: 65, label: '2 pages — £65', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy2', live: '' } },
+      { quantity: 2, price: 65, label: '2 pages — £65', stripePriceId: { test: 'price_1TgXZYGfxcDbzGRtnokfBuT3', live: '' } },
       { quantity: 3, price: 90, label: '3 pages — £90', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy3', live: '' } },
       { quantity: 4, price: 115, label: '4 pages — £115', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy4', live: '' } },
       { quantity: 5, price: 139, label: '5 pages — £139', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy5', live: '' } },
@@ -171,7 +171,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       { quantity: 7, price: 180, label: '7 pages — £180', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy7', live: '' } },
       { quantity: 8, price: 200, label: '8 pages — £200', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy8', live: '' } },
       { quantity: 9, price: 218, label: '9 pages — £218', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy9', live: '' } },
-      { quantity: 10, price: 235, label: '10 pages — £235', stripePriceId: { test: 'price_1TgXZQGfxcDbzGRtkovnGBSm', live: '' } },
+      { quantity: 10, price: 235, label: '10 pages — £235', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy10', live: '' } },
     ],
   },
   {
