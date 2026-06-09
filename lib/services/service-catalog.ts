@@ -129,7 +129,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_1TfnutGfxcDbzGRtr7kC2XcM',
+      test: 'price_1TgSEkGfxcDbzGRtDaBz70tR',
       live: '',
     },
     stripeProductIds: {
