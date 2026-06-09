@@ -10,8 +10,8 @@ const corsHeaders = {
 
 // Pricing tiers for social media pack
 const SOCIAL_MEDIA_PRICING_TIERS: Record<number, { test: string; live: string }> = {
-  5: { test: 'price_1Tr5gQGfxcDbzGRt3QyAqpX3', live: '' },
-  10: { test: 'price_1Tr5hIGfxcDbzGRt0wVZ5LgS', live: '' },
+  5: { test: 'price_1TgTD4GfxcDbzGRtwfjjKSc9', live: '' },
+  10: { test: 'price_1TgT9eGfxcDbzGRtZFH9msuO', live: '' },
   15: { test: 'price_1Tr5hxGfxcDbzGRtnYzVnQmC', live: '' },
   20: { test: 'price_1Tr5icGfxcDbzGRtPj0VfTQf', live: '' },
   25: { test: 'price_1Tr5j6GfxcDbzGRt4Wk9cS8R', live: '' },
