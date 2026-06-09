@@ -776,7 +776,284 @@ No explanations.
   {
     document_type: 'late_payment_letters',
     document_label: 'Late Payment Letters',
-    generationPrompt: `[PLACEHOLDER: Late Payment Letters generation prompt]`,
+    generationPrompt: `You are a senior UK commercial debt recovery solicitor, credit control specialist, finance director and business risk consultant.
+
+Your task is to create a complete Late Payment Recovery Package.
+
+This is not simply a collection of payment reminder letters.
+
+This is a professionally structured debt recovery sequence designed to maximise payment recovery while protecting the business's legal position.
+
+The sequence must be suitable for sole traders, consultants, agencies, freelancers, service providers and small businesses operating within England & Wales.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a payment recovery system that:
+
+• Maximises collection rates
+• Preserves professionalism
+• Protects cash flow
+• Demonstrates seriousness
+• Creates legal evidence
+• Encourages voluntary payment
+• Escalates appropriately
+• Maintains compliance with UK law
+
+The sequence should progressively increase pressure while remaining professional, reasonable and legally sound.
+
+────────────────────────
+CLIENT-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Analyse:
+
+• Industry
+• Services
+• Pricing structure
+• Typical client profile
+• Previous payment issues
+• Existing terms
+• Business tone of voice
+• Professional positioning
+
+Ensure the letters sound like they originate directly from the business owner.
+
+The letters must never feel generic.
+
+A construction consultant should not send the same payment letters as a designer.
+
+A business coach should not sound like a solicitor.
+
+A premium consultancy should sound different from a trades business.
+
+Tailor language accordingly.
+
+────────────────────────
+DOCUMENT DESIGN REQUIREMENTS
+────────────────────────
+
+Create a branded document suite.
+
+Incorporate:
+
+• Business name
+• Brand colours
+• Industry style
+• Professional identity
+
+Include:
+
+• Letterhead recommendations
+• Reference number field
+• Invoice number field
+• Outstanding balance field
+• Date fields
+• Contact details
+• Signature block
+
+The sequence should feel like a genuine credit-control system.
+
+────────────────────────
+REQUIRED DELIVERABLES
+────────────────────────
+
+LETTER 1
+FRIENDLY PAYMENT REMINDER
+
+Purpose:
+
+• Assume oversight
+• Maintain goodwill
+• Encourage immediate payment
+
+Include:
+
+• Subject line
+• Letter version
+• Email version
+
+Psychology:
+
+• Helpful
+• Professional
+• Non-accusatory
+
+Reference:
+
+• Original invoice
+• Due date
+• Amount outstanding
+
+Include:
+
+• Clear payment instructions
+• New response deadline
+
+────────────────────────
+
+LETTER 2
+FORMAL PAYMENT DEMAND
+
+Purpose:
+
+• Escalate seriousness
+• Establish consequences
+• Reinforce contractual obligations
+
+Include:
+
+• Subject line
+• Letter version
+• Email version
+
+Reference:
+
+• Previous communication
+• Outstanding amount
+• Original due date
+
+Include:
+
+• Reference to agreed payment terms
+• Reference to contractual obligations
+• Potential late payment interest
+• Debt recovery rights
+
+Tone:
+
+Firm
+
+Professional
+
+Direct
+
+────────────────────────
+
+LETTER 3
+LETTER BEFORE ACTION
+
+Purpose:
+
+• Final opportunity before escalation
+• Establish legal record
+• Protect enforcement rights
+
+Include:
+
+• Formal legal-style letter
+• Email version
+• Letter version
+
+Reference:
+
+• Previous correspondence
+• Outstanding debt
+• Payment history
+
+Include:
+
+• Final payment deadline
+• Potential legal proceedings
+• County Court action warning
+• Debt recovery cost warning
+• Interest warning
+• Credit implications where appropriate
+
+The letter must be robust but reasonable.
+
+────────────────────────
+
+OPTIONAL BONUS LETTER
+
+CLIENT DISAPPEARED / GHOSTING LETTER
+
+Create a specialist version for situations where:
+
+• Client stops responding
+• Client disappears
+• Work has already been completed
+
+────────────────────────
+
+OPTIONAL BONUS LETTER
+
+CHARGEBACK DISPUTE RESPONSE
+
+Create a professional response template for:
+
+• Card disputes
+• Stripe disputes
+• PayPal disputes
+
+Include:
+
+• Evidence summary section
+• Contract reference section
+• Timeline section
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Ensure all content aligns with:
+
+• England & Wales law
+• Contract law principles
+• Debt recovery best practice
+
+Where appropriate reference:
+
+• Late Payment of Commercial Debts (Interest) Act 1998
+• Contractual payment obligations
+• Debt recovery rights
+
+Do NOT make threats.
+
+Do NOT make misleading legal claims.
+
+Do NOT overstate legal rights.
+
+Remain accurate and professional.
+
+────────────────────────
+PSYCHOLOGY REQUIREMENTS
+────────────────────────
+
+Structure the sequence to gradually move through:
+
+1. Cooperation
+2. Accountability
+3. Consequences
+4. Enforcement
+
+The objective is payment.
+
+Not confrontation.
+
+Maintain professionalism throughout.
+
+────────────────────────
+OUTPUT REQUIREMENTS
+────────────────────────
+
+Return the complete payment recovery package.
+
+Ready for immediate use.
+
+No explanations.
+
+No notes.
+
+No commentary.
+
+No placeholders.
+
+Produce solicitor-quality business documents suitable for real commercial use.
+`,
     agentInstructions: SHARED_AGENT_INSTRUCTIONS,
   },
   {
