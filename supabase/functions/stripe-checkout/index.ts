@@ -8,6 +8,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+// Pricing tiers for social media pack
+const SOCIAL_MEDIA_PRICING_TIERS: Record<number, { test: string; live: string }> = {
+  5: { test: 'price_1Tr5gQGfxcDbzGRt3QyAqpX3', live: '' },
+  10: { test: 'price_1Tr5hIGfxcDbzGRt0wVZ5LgS', live: '' },
+  15: { test: 'price_1Tr5hxGfxcDbzGRtnYzVnQmC', live: '' },
+  20: { test: 'price_1Tr5icGfxcDbzGRtPj0VfTQf', live: '' },
+  25: { test: 'price_1Tr5j6GfxcDbzGRt4Wk9cS8R', live: '' },
+  30: { test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', live: '' },
+};
+
 // Service catalog - matching service-catalog.ts
 interface ServiceConfig {
   id: string;
@@ -39,7 +49,7 @@ const SERVICES: ServiceConfig[] = [
     id: 'social_media_pack',
     name: 'Social Media Starter Pack',
     priceIds: {
-      test: 'price_1TgSGIGfxcDbzGRt04ydxuqR',
+      test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', // 30 posts default
       live: '',
     },
     mode: 'payment',
@@ -48,7 +58,7 @@ const SERVICES: ServiceConfig[] = [
     id: 'quarterly_refresh',
     name: 'Quarterly Document Refresh',
     priceIds: {
-      test: 'price_1TgSI7GfxcDbzGRtm9vf0YRM',
+      test: 'price_1Tfo1IGfxcDbzGRtpuP5Yg0n',
       live: '',
     },
     mode: 'subscription',
@@ -57,6 +67,60 @@ const SERVICES: ServiceConfig[] = [
 
 function getServiceConfig(serviceId: string): ServiceConfig | undefined {
   return SERVICES.find(s => s.id === serviceId);
+}
+
+function getSocialMediaPriceId(postCount: number, mode: 'test' | 'live'): string | undefined {
+  const tier = SOCIAL_MEDIA_PRICING_TIERS[postCount];
+  if (!tier) return undefined;
+  return tier[mode];
+}
+
+function getBundleDiscountPercentage(serviceCount: number): number {
+  if (serviceCount >= 3) return 15;
+  if (serviceCount >= 2) return 10;
+  return 0;
+}
+
+// Cache for coupon IDs to avoid recreating
+const couponCache: Record<string, string> = {};
+
+async function getOrCreateCoupon(
+  stripe: Stripe,
+  percentage: number
+): Promise<string> {
+  const cacheKey = `bundle_${percentage}`;
+
+  if (couponCache[cacheKey]) {
+    return couponCache[cacheKey];
+  }
+
+  // Try to find existing coupon first
+  const existingCoupons = await stripe.coupons.list({
+    limit: 100,
+  });
+
+  const existing = existingCoupons.data.find(
+    (c) => c.name === `Bundle ${percentage}% Discount` && c.valid
+  );
+
+  if (existing) {
+    couponCache[cacheKey] = existing.id;
+    return existing.id;
+  }
+
+  // Create new coupon
+  const coupon = await stripe.coupons.create({
+    percent_off: percentage,
+    duration: 'once',
+    name: `Bundle ${percentage}% Discount`,
+    metadata: {
+      type: 'bundle_discount',
+      percentage: percentage.toString(),
+    },
+  });
+
+  couponCache[cacheKey] = coupon.id;
+  return coupon.id;
 }
 
 Deno.serve(async (req: Request) => {
@@ -91,7 +155,13 @@ Deno.serve(async (req: Request) => {
 
     // Parse request body
     const body = await req.json();
-    const { service_ids, mode, success_url, cancel_url } = body;
+    const {
+      service_ids,
+      mode,
+      success_url,
+      cancel_url,
+      social_media_post_count
+    } = body;
 
     if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
       return new Response(
@@ -114,7 +184,21 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const priceId = mode === 'live' ? service.priceIds.live : service.priceIds.test;
+      let priceId: string | undefined;
+
+      // Handle social media quantity-based pricing
+      if (serviceId === 'social_media_pack' && social_media_post_count) {
+        priceId = getSocialMediaPriceId(social_media_post_count, mode || 'test');
+        if (!priceId) {
+          return new Response(
+            JSON.stringify({ error: `Social media pack with ${social_media_post_count} posts is not yet available. Please contact support.` }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        priceId = mode === 'live' ? service.priceIds.live : service.priceIds.test;
+      }
+
       if (!priceId) {
         return new Response(
           JSON.stringify({ error: `Service ${serviceId} is not yet available for purchase. Please contact support.` }),
@@ -138,14 +222,23 @@ Deno.serve(async (req: Request) => {
     // Determine checkout mode - subscription mode if any subscription item is present
     const checkoutMode: 'payment' | 'subscription' = hasSubscription ? 'subscription' : 'payment';
 
+    // Calculate bundle discount
+    const discountPercentage = getBundleDiscountPercentage(service_ids.length);
+
+    // Build metadata with social media post count if applicable
+    const metadata: Record<string, string> = {
+      service_ids: validatedServiceIds.join(","),
+    };
+    if (social_media_post_count) {
+      metadata.social_media_post_count = social_media_post_count.toString();
+    }
+
     // Create checkout session
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: checkoutMode,
       success_url: success_url || `${req.headers.get("origin")}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancel_url || `${req.headers.get("origin")}/checkout`,
-      metadata: {
-        service_ids: validatedServiceIds.join(","),
-      },
+      metadata,
       custom_text: {
         submit: {
           message: "Your documents will be prepared after checkout. Complete the intake form to get started.",
@@ -154,10 +247,29 @@ Deno.serve(async (req: Request) => {
       line_items: lineItems,
     };
 
+    // Apply bundle discount coupon if applicable
+    if (discountPercentage > 0) {
+      try {
+        const couponId = await getOrCreateCoupon(stripe, discountPercentage);
+        sessionParams.discounts = [
+          {
+            coupon: couponId,
+          },
+        ];
+      } catch (couponError) {
+        console.error("Failed to create coupon, proceeding without discount:", couponError);
+        // Continue without discount if coupon creation fails
+      }
+    }
+
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(
-      JSON.stringify({ url: session.url, session_id: session.id }),
+      JSON.stringify({
+        url: session.url,
+        session_id: session.id,
+        discount_applied: discountPercentage > 0 ? `${discountPercentage}% bundle discount` : null,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

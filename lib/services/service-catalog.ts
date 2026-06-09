@@ -4,6 +4,13 @@
 
 type ServiceMode = 'payment' | 'subscription';
 
+export interface PricingTier {
+  quantity: number;
+  price: number;
+  label: string;
+  stripePriceId: { test: string; live: string };
+}
+
 export interface ServiceCatalogEntry {
   id: string;
   name: string;
@@ -12,7 +19,7 @@ export interface ServiceCatalogEntry {
   currency: string;
   currencySymbol: string;
   mode: ServiceMode;
-  /** Stripe price IDs per environment. Set after creating products in Stripe Dashboard. */
+  /** Stripe price IDs per environment (for simple pricing). Set after creating products in Stripe Dashboard. */
   stripePriceIds: { test: string; live: string };
   /** Stripe product IDs per environment. */
   stripeProductIds: { test: string; live: string };
@@ -24,8 +31,6 @@ export interface ServiceCatalogEntry {
   intakeSections: string[];
   /** Whether this service can be purchased on its own (without the core pack). */
   isStandalone: boolean;
-  /** Bundle discount config: when bought with the specified service, apply this amount off. */
-  discountWhenBundledWith?: { serviceId: string; amountOff: number }[];
   /** Display order on pricing/checkout pages. Lower = shown first. */
   sortOrder: number;
   /** Whether this is the core/primary product. */
@@ -34,9 +39,36 @@ export interface ServiceCatalogEntry {
   subscriptionInterval?: 'month' | 'year';
   /** Human-readable price label (e.g. "£79 — one-time", "£29 per quarter"). */
   priceLabel: string;
+  /** For services with quantity-based pricing (e.g., social media posts). */
+  pricingTiers?: PricingTier[];
+  /** Default quantity for tiered pricing services. */
+  defaultQuantity?: number;
+  /** Unit name for quantity-based services (e.g., "posts"). */
+  quantityUnit?: string;
 }
 
 const stripeMode = (process.env.NEXT_PUBLIC_STRIPE_MODE ?? 'test') as 'test' | 'live';
+
+/** Bundle discount tiers based on number of services purchased. */
+export const BUNDLE_DISCOUNT_TIERS = {
+  1: { percentage: 0, label: '' },
+  2: { percentage: 10, label: '10% bundle discount' },
+  3: { percentage: 15, label: '15% bundle discount — best value' },
+} as const;
+
+/** Get the discount percentage for a given number of services. */
+export function getBundleDiscountPercentage(serviceCount: number): number {
+  if (serviceCount >= 3) return 15;
+  if (serviceCount >= 2) return 10;
+  return 0;
+}
+
+/** Get the discount label for a given number of services. */
+export function getBundleDiscountLabel(serviceCount: number): string {
+  if (serviceCount >= 3) return BUNDLE_DISCOUNT_TIERS[3].label;
+  if (serviceCount >= 2) return BUNDLE_DISCOUNT_TIERS[2].label;
+  return '';
+}
 
 export const serviceCatalog: ServiceCatalogEntry[] = [
   {
@@ -83,10 +115,6 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       'final',
     ],
     isStandalone: true,
-    discountWhenBundledWith: [
-      { serviceId: 'website_copy_pack', amountOff: 9 },
-      { serviceId: 'social_media_pack', amountOff: 9 },
-    ],
     sortOrder: 1,
     isCore: true,
     priceLabel: '£79 — one-time',
@@ -128,9 +156,6 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       'final',
     ],
     isStandalone: true,
-    discountWhenBundledWith: [
-      { serviceId: 'business_foundations_pack', amountOff: 9 },
-    ],
     sortOrder: 2,
     isCore: false,
     priceLabel: '£49 — one-time',
@@ -139,13 +164,13 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     id: 'social_media_pack',
     name: 'Social Media Starter Pack',
     description:
-      '30 done-for-you posts tailored to your industry, audience, and offer. Billed at £20 per 5 posts.',
-    price: 120.0,
+      'Done-for-you posts tailored to your industry, audience, and offer. Choose from 5 to 30 posts.',
+    price: 20.0, // Base price per 5 posts
     currency: 'gbp',
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv',
+      test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', // 30 posts price (fallback)
       live: '',
     },
     stripeProductIds: {
@@ -168,12 +193,19 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       'final',
     ],
     isStandalone: true,
-    discountWhenBundledWith: [
-      { serviceId: 'business_foundations_pack', amountOff: 9 },
-    ],
     sortOrder: 3,
     isCore: false,
-    priceLabel: '£120 — 30 posts',
+    priceLabel: 'From £20 — 5 posts',
+    defaultQuantity: 5,
+    quantityUnit: 'posts',
+    pricingTiers: [
+      { quantity: 5, price: 20, label: '5 posts — £20', stripePriceId: { test: 'price_1Tr5gQGfxcDbzGRt3QyAqpX3', live: '' } },
+      { quantity: 10, price: 40, label: '10 posts — £40', stripePriceId: { test: 'price_1Tr5hIGfxcDbzGRt0wVZ5LgS', live: '' } },
+      { quantity: 15, price: 60, label: '15 posts — £60', stripePriceId: { test: 'price_1Tr5hxGfxcDbzGRtnYzVnQmC', live: '' } },
+      { quantity: 20, price: 80, label: '20 posts — £80', stripePriceId: { test: 'price_1Tr5icGfxcDbzGRtPj0VfTQf', live: '' } },
+      { quantity: 25, price: 100, label: '25 posts — £100', stripePriceId: { test: 'price_1Tr5j6GfxcDbzGRt4Wk9cS8R', live: '' } },
+      { quantity: 30, price: 120, label: '30 posts — £120', stripePriceId: { test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', live: '' } },
+    ],
   },
   {
     id: 'quarterly_refresh',
@@ -227,9 +259,48 @@ function getOptionalServices(): ServiceCatalogEntry[] {
 }
 
 /** Get the active Stripe price ID for a service, based on current mode. */
-function getStripePriceId(serviceId: string): string | undefined {
+export function getStripePriceId(serviceId: string): string | undefined {
   const service = getServiceById(serviceId);
   return service?.stripePriceIds[stripeMode];
+}
+
+/** Get the Stripe price ID for a specific quantity tier. */
+export function getStripePriceIdForQuantity(serviceId: string, quantity: number): string | undefined {
+  const service = getServiceById(serviceId);
+  if (!service) return undefined;
+
+  if (service.pricingTiers) {
+    const tier = service.pricingTiers.find(t => t.quantity === quantity);
+    return tier?.stripePriceId[stripeMode];
+  }
+
+  return service.stripePriceIds[stripeMode];
+}
+
+/** Get price for a service at a specific quantity. */
+export function getServicePrice(serviceId: string, quantity?: number): number {
+  const service = getServiceById(serviceId);
+  if (!service) return 0;
+
+  if (service.pricingTiers && quantity) {
+    const tier = service.pricingTiers.find(t => t.quantity === quantity);
+    return tier?.price ?? service.price;
+  }
+
+  return service.price;
+}
+
+/** Get price label for a service at a specific quantity. */
+export function getServicePriceLabel(serviceId: string, quantity?: number): string {
+  const service = getServiceById(serviceId);
+  if (!service) return '';
+
+  if (service.pricingTiers && quantity) {
+    const tier = service.pricingTiers.find(t => t.quantity === quantity);
+    if (tier) return `£${tier.price} — ${tier.quantity} ${service.quantityUnit || 'items'}`;
+  }
+
+  return service.priceLabel;
 }
 
 /** Get the active Stripe product ID for a service, based on current mode. */
@@ -239,58 +310,71 @@ function getStripeProductId(serviceId: string): string | undefined {
 }
 
 /**
- * Calculate the total discount for a given set of selected service IDs.
- * A discount only applies when BOTH services in a bundle are selected.
- * Uses canonical pair keys to avoid double-counting since bundles are defined from both sides.
- */
-function calculateBundleDiscount(selectedServiceIds: string[]): number {
-  const processedPairs = new Set<string>();
-  let totalDiscount = 0;
-
-  for (const serviceId of selectedServiceIds) {
-    const service = getServiceById(serviceId);
-    if (!service?.discountWhenBundledWith) continue;
-
-    for (const bundle of service.discountWhenBundledWith) {
-      if (selectedServiceIds.includes(bundle.serviceId)) {
-        const pairKey = [serviceId, bundle.serviceId].sort().join(':');
-        if (!processedPairs.has(pairKey)) {
-          processedPairs.add(pairKey);
-          totalDiscount += bundle.amountOff;
-        }
-      }
-    }
-  }
-
-  return totalDiscount;
-}
-
-/**
  * Returns a user-facing savings message for the current selection, or null if no discount applies.
  */
-export function getBundleSavingsMessage(selectedServiceIds: string[]): string | null {
-  const discount = calculateBundleDiscount(selectedServiceIds);
-  if (discount <= 0) return null;
-  if (selectedServiceIds.length >= 3) {
-    return `Best value — you're saving £${discount}`;
+export function getBundleSavingsMessage(subtotal: number, discountPercentage: number): string | null {
+  if (discountPercentage <= 0) return null;
+  const savings = subtotal * (discountPercentage / 100);
+  if (discountPercentage >= 15) {
+    return `Best value — ${discountPercentage}% off saves you £${savings.toFixed(0)}`;
   }
-  return `You're saving £${discount} — bundle discount applied`;
+  return `${discountPercentage}% bundle discount applied — save £${savings.toFixed(0)}`;
 }
 
-/** Calculate the total price for a set of selected service IDs, including bundle discounts. */
-export function calculateTotal(selectedServiceIds: string[]): {
+/** Calculate options for price calculations. */
+export interface CalculateTotalOptions {
+  socialMediaPostCount?: number;
+}
+
+/** Calculate the total price for a set of selected service IDs, including percentage-based bundle discounts. */
+export function calculateTotal(
+  selectedServiceIds: string[],
+  options?: CalculateTotalOptions
+): {
   subtotal: number;
-  discount: number;
+  discountPercentage: number;
+  discountAmount: number;
   total: number;
+  servicePrices: Array<{ id: string; name: string; originalPrice: number; discountedPrice: number }>;
 } {
+  const servicePrices: Array<{ id: string; name: string; originalPrice: number; discountedPrice: number }> = [];
   let subtotal = 0;
+
   for (const serviceId of selectedServiceIds) {
     const service = getServiceById(serviceId);
-    if (service) subtotal += service.price;
+    if (!service) continue;
+
+    let price: number;
+    if (serviceId === 'social_media_pack' && options?.socialMediaPostCount) {
+      price = getServicePrice(serviceId, options.socialMediaPostCount);
+    } else if (service.pricingTiers && service.defaultQuantity) {
+      price = getServicePrice(serviceId, service.defaultQuantity);
+    } else {
+      price = service.price;
+    }
+
+    subtotal += price;
+    servicePrices.push({
+      id: serviceId,
+      name: service.name,
+      originalPrice: price,
+      discountedPrice: price, // Will be updated below
+    });
   }
 
-  const discount = calculateBundleDiscount(selectedServiceIds);
-  return { subtotal, discount, total: subtotal - discount };
+  // Calculate discount percentage based on number of services
+  const discountPercentage = getBundleDiscountPercentage(selectedServiceIds.length);
+  const discountAmount = subtotal * (discountPercentage / 100);
+  const total = subtotal - discountAmount;
+
+  // Update discounted prices for display
+  if (discountPercentage > 0) {
+    servicePrices.forEach(sp => {
+      sp.discountedPrice = sp.originalPrice * (1 - discountPercentage / 100);
+    });
+  }
+
+  return { subtotal, discountPercentage, discountAmount, total, servicePrices };
 }
 
 export { stripeMode };

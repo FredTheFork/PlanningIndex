@@ -8,6 +8,8 @@ import {
   getServiceById,
   calculateTotal,
   getBundleSavingsMessage,
+  getBundleDiscountPercentage,
+  getBundleDiscountLabel,
 } from '@/lib/services/service-catalog';
 import { buildIntakeForm } from '@/lib/forms/build-intake-form';
 import { useAuth } from '@/hooks/useAuth';
@@ -101,7 +103,7 @@ const faqs = [
   },
   {
     q: 'How does the bundle discount work?',
-    a: 'When you buy the Business Foundations Pack together with either the Website Copy Pack or the Social Media Pack, you save £9 automatically. Buy all three together and you save £18. The discount is applied at checkout — no code needed. If you already own the core pack and add a service later, the discount still applies.',
+    a: 'When you buy 2 services together, you get 10% off automatically. Buy 3 or more and you get 15% off. The discount is applied at checkout — no code needed. If you already own one service and add more later, the discount still applies.',
   },
 ];
 
@@ -550,9 +552,7 @@ function StandaloneServiceCard({
   const service = getServiceById(serviceId);
   if (!service) return null;
 
-  const bundleDiscount = service.discountWhenBundledWith?.find(
-    (d) => d.serviceId === 'business_foundations_pack'
-  );
+  const bundleDiscountPercentage = ownsCore ? 10 : 0;
 
   if (alreadyOwned) {
     return (
@@ -647,14 +647,14 @@ function StandaloneServiceCard({
           Buy Now — {service.priceLabel}
         </Link>
 
-        {!ownsCore && bundleDiscount && (
+        {!ownsCore && (
           <Link
             href={`/checkout?services=business_foundations_pack,${serviceId}`}
             className="w-full text-center font-inter font-semibold text-navy bg-off-white border border-medium-blue rounded-lg hover:bg-white hover:shadow-[0_4px_16px_rgba(27,63,122,0.1)] transition-all duration-200 flex items-center justify-center gap-2"
             style={{ padding: '12px 20px', fontSize: '0.9rem', minHeight: 44 }}
           >
             <Package size={16} />
-            Bundle with Foundations Pack — save £{bundleDiscount.amountOff}
+            Bundle with Foundations Pack — save 10%
           </Link>
         )}
       </div>
@@ -679,7 +679,7 @@ function StandaloneServicesSection({ purchasedServiceIds }: { purchasedServiceId
           className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
           style={{ fontSize: '1rem', maxWidth: 560 }}
         >
-          These work independently. Buy them with or without the core pack — bundle with the Business Foundations Pack and save £9 each.
+          These work independently. Buy them with or without the core pack — bundle with the Business Foundations Pack and save 10%.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
@@ -720,9 +720,9 @@ function BuildYourBundleSection({ purchasedServiceIds }: { purchasedServiceIds: 
   const effectiveIds = ownsCore
     ? [...new Set([...selectedIds, 'business_foundations_pack'])]
     : selectedIds;
-  const { subtotal, discount, total } = calculateTotal(effectiveIds);
-  const savingsMessage = getBundleSavingsMessage(effectiveIds);
-  const isBestValue = effectiveIds.length >= 3 && discount > 0;
+  const { subtotal, discountPercentage, discountAmount, total } = calculateTotal(effectiveIds);
+  const savingsMessage = getBundleSavingsMessage(subtotal, discountPercentage);
+  const isBestValue = effectiveIds.length >= 3 && discountPercentage > 0;
 
   const intakeSections = selectedIds.length > 0 ? buildIntakeForm(effectiveIds) : [];
   const sectionCount = intakeSections.length;
@@ -762,9 +762,7 @@ function BuildYourBundleSection({ purchasedServiceIds }: { purchasedServiceIds: 
               {availableServices.map((service) => {
                 const isSelected = selectedIds.includes(service.id);
                 const isCore = service.isCore;
-                const bundleDiscount = service.discountWhenBundledWith?.find(
-                  (d) => d.serviceId === 'business_foundations_pack'
-                );
+                const serviceDiscountPercent = getBundleDiscountPercentage(effectiveIds.length);
 
                 return (
                   <button
@@ -801,9 +799,9 @@ function BuildYourBundleSection({ purchasedServiceIds }: { purchasedServiceIds: 
                         <p className="font-inter font-semibold text-navy mt-1">
                           {service.priceLabel}
                         </p>
-                        {bundleDiscount && (
+                        {!isCore && effectiveIds.length >= 2 && serviceDiscountPercent > 0 && (
                           <p className="font-inter font-medium text-green-700 mt-1" style={{ fontSize: '0.8rem' }}>
-                            Save £{bundleDiscount.amountOff} when bundled
+                            Save {serviceDiscountPercent}% when bundled
                           </p>
                         )}
                       </div>
@@ -883,13 +881,13 @@ function BuildYourBundleSection({ purchasedServiceIds }: { purchasedServiceIds: 
                       })}
                   </div>
 
-                  {discount > 0 && (
+                  {discountAmount > 0 && (
                     <div className="flex items-center justify-between mb-3 pt-2 border-t border-gray-200">
                       <span className="font-inter font-medium text-green-700" style={{ fontSize: '0.9rem' }}>
-                        Bundle discount
+                        Bundle discount ({discountPercentage}%)
                       </span>
                       <span className="font-inter font-semibold text-green-700">
-                        -£{discount.toFixed(2)}
+                        -£{discountAmount.toFixed(2)}
                       </span>
                     </div>
                   )}

@@ -8,6 +8,7 @@ import {
   getServiceById,
   calculateTotal,
   getBundleSavingsMessage,
+  getBundleDiscountPercentage,
 } from '@/lib/services/service-catalog';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
@@ -157,12 +158,12 @@ function ServiceCard({
   const service = getServiceById(serviceId);
   if (!service) return null;
 
-  const bundleDiscount = service.discountWhenBundledWith?.find(
-    (d) => d.serviceId === 'business_foundations_pack'
-  );
-  const bundledTotal = bundleDiscount
-    ? calculateTotal(['business_foundations_pack', serviceId])
-    : null;
+  const bundleServiceIds = ownsCore
+    ? [serviceId]
+    : ['business_foundations_pack', serviceId];
+  const bundledTotal = calculateTotal(bundleServiceIds);
+  const bundleDiscountPercent = getBundleDiscountPercentage(ownsCore ? 2 : bundleServiceIds.length);
+  const bundleSavings = bundledTotal.subtotal * (bundleDiscountPercent / 100);
 
   if (alreadyOwned) {
     return (
@@ -251,25 +252,25 @@ function ServiceCard({
           Buy separately
         </Link>
 
-        {!ownsCore && service.isStandalone && bundleDiscount && (
+        {!ownsCore && service.isStandalone && bundleDiscountPercent > 0 && (
           <Link
             href={`/checkout?services=business_foundations_pack,${serviceId}`}
             className="w-full text-center font-inter font-semibold text-navy bg-off-white border border-medium-blue rounded-lg hover:bg-white hover:shadow-[0_4px_16px_rgba(27,63,122,0.1)] transition-all duration-200 flex items-center justify-center gap-2"
             style={{ padding: '12px 20px', fontSize: '0.9rem', minHeight: 44 }}
           >
             <Package size={16} />
-            Add to my order — save £{bundleDiscount.amountOff}
+            Add to my order — save {bundleDiscountPercent}%
           </Link>
         )}
 
-        {ownsCore && bundleDiscount && (
+        {ownsCore && bundleDiscountPercent > 0 && (
           <Link
             href={`/checkout?services=${serviceId}`}
             className="w-full text-center font-inter font-semibold text-navy bg-off-white border border-medium-blue rounded-lg hover:bg-white hover:shadow-[0_4px_16px_rgba(27,63,122,0.1)] transition-all duration-200 flex items-center justify-center gap-2"
             style={{ padding: '12px 20px', fontSize: '0.9rem', minHeight: 44 }}
           >
             <ArrowRight size={16} />
-            Add to my pack — save £{bundleDiscount.amountOff}
+            Add to my pack — save {bundleDiscountPercent}%
           </Link>
         )}
       </div>
@@ -319,7 +320,7 @@ function BundlePricing({ purchasedServiceIds }: { purchasedServiceIds: string[] 
   const ownsCore = purchasedServiceIds.includes('business_foundations_pack');
 
   // Build bundle combinations from the catalog
-  const bundles: { label: string; serviceIds: string[]; subtotal: number; discount: number; total: number }[] = [];
+  const bundles: { label: string; serviceIds: string[]; subtotal: number; discountPercentage: number; discountAmount: number; total: number }[] = [];
 
   const coreService = getServiceById('business_foundations_pack');
   const websiteService = getServiceById('website_copy_pack');
@@ -331,7 +332,8 @@ function BundlePricing({ purchasedServiceIds }: { purchasedServiceIds: string[] 
       label: 'Documents + Website Copy',
       serviceIds: ['business_foundations_pack', 'website_copy_pack'],
       subtotal: calc.subtotal,
-      discount: calc.discount,
+      discountPercentage: calc.discountPercentage,
+      discountAmount: calc.discountAmount,
       total: calc.total,
     });
   }
@@ -342,7 +344,8 @@ function BundlePricing({ purchasedServiceIds }: { purchasedServiceIds: string[] 
       label: 'Documents + Social Media',
       serviceIds: ['business_foundations_pack', 'social_media_pack'],
       subtotal: calc.subtotal,
-      discount: calc.discount,
+      discountPercentage: calc.discountPercentage,
+      discountAmount: calc.discountAmount,
       total: calc.total,
     });
   }
@@ -353,7 +356,8 @@ function BundlePricing({ purchasedServiceIds }: { purchasedServiceIds: string[] 
       label: 'All Three Services',
       serviceIds: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
       subtotal: calc.subtotal,
-      discount: calc.discount,
+      discountPercentage: calc.discountPercentage,
+      discountAmount: calc.discountAmount,
       total: calc.total,
     });
   }
@@ -416,12 +420,12 @@ function BundlePricing({ purchasedServiceIds }: { purchasedServiceIds: string[] 
                 key={bundle.label}
                 className="bg-white border border-border rounded-2xl p-8 text-center hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200"
               >
-                {bundle.discount > 0 && (
+                {bundle.discountAmount > 0 && (
                   <span
                     className="inline-block bg-green-50 border border-green-200 text-green-800 font-inter font-bold rounded-full mb-4"
                     style={{ padding: '3px 12px', fontSize: '0.8rem' }}
                   >
-                    Save £{bundle.discount}
+                    Save £{bundle.discountAmount.toFixed(0)} ({bundle.discountPercentage}%)
                   </span>
                 )}
                 <h3 className="font-inter font-bold text-dark-text" style={{ fontSize: '1.05rem' }}>
@@ -435,7 +439,7 @@ function BundlePricing({ purchasedServiceIds }: { purchasedServiceIds: string[] 
                   >
                     £{calcForUser.total.toFixed(0)}
                   </span>
-                  {bundle.discount > 0 && (
+                  {bundle.discountAmount > 0 && (
                     <span className="font-inter font-normal text-secondary-text block mt-1" style={{ fontSize: '0.85rem' }}>
                       <span className="line-through">£{bundle.subtotal.toFixed(0)}</span>
                       {userOwnsCore && !allOwned ? ' (core pack already owned)' : ''}
