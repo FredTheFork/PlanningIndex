@@ -162,7 +162,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     defaultQuantity: 1,
     quantityUnit: 'pages',
     pricingTiers: [
-      { quantity: 1, price: 35, label: '1 page — £35', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy1', live: '' } },
+      { quantity: 1, price: 35, label: '1 page — £35', stripePriceId: { test: 'price_1TgXZQGfxcDbzGRtkovnGBSm', live: '' } },
       { quantity: 2, price: 65, label: '2 pages — £65', stripePriceId: { test: 'price_1TgXZYGfxcDbzGRtnokfBuT3', live: '' } },
       { quantity: 3, price: 90, label: '3 pages — £90', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy3', live: '' } },
       { quantity: 4, price: 115, label: '4 pages — £115', stripePriceId: { test: 'price_1TshkCGfxcDbzGRtDummy4', live: '' } },
