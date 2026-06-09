@@ -15,7 +15,7 @@ const SOCIAL_MEDIA_PRICING_TIERS: Record<number, { test: string; live: string }>
   15: { test: 'price_1TgTAGGfxcDbzGRtYvH7lEYi', live: '' },
   20: { test: 'price_1TgTAZGfxcDbzGRt6ehHzu2X', live: '' },
   25: { test: 'price_1TgTAwGfxcDbzGRtBoXaKI19', live: '' },
-  30: { test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', live: '' },
+  30: { test: 'price_1TgTCpGfxcDbzGRtmaTlfkcF', live: '' },
 };
 
 // Service catalog - matching service-catalog.ts
