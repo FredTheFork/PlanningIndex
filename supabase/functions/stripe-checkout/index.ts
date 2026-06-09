@@ -14,7 +14,7 @@ const SOCIAL_MEDIA_PRICING_TIERS: Record<number, { test: string; live: string }>
   10: { test: 'price_1TgT9eGfxcDbzGRtZFH9msuO', live: '' },
   15: { test: 'price_1TgTAGGfxcDbzGRtYvH7lEYi', live: '' },
   20: { test: 'price_1TgTAZGfxcDbzGRt6ehHzu2X', live: '' },
-  25: { test: 'price_1Tr5j6GfxcDbzGRt4Wk9cS8R', live: '' },
+  25: { test: 'price_1TgTAwGfxcDbzGRtBoXaKI19', live: '' },
   30: { test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv', live: '' },
 };
 
