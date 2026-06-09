@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   FileText, Download, AlertCircle, CheckCircle2, Clock,
-  ChevronDown, ChevronUp, Send, Upload, X,
-  FileUp, Info, RefreshCw
+  ChevronDown, ChevronUp, Send, X,
+  FileUp, Info, RefreshCw, Copy
 } from 'lucide-react';
 import {
   getAllDocumentTypesList, getDocumentLabel
 } from '@/lib/services/document-configs';
 import { getDocumentTypesForService } from '@/lib/services/document-service-map';
+import { buildFullPrompt } from '@/lib/services/document-prompts';
 
 interface DocumentsTabProps {
   userId: string;
@@ -22,11 +23,13 @@ interface DocumentsTabProps {
 
 export default function DocumentsTab({ userId, data, refreshData }: DocumentsTabProps) {
   const [documents, setDocuments] = useState<Record<string, any>>({});
+  const [briefContent, setBriefContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
 
   // Build document types list based on purchased services
   const purchasedServiceIds: string[] = data.purchasedServices?.map((ps: any) => ps.service_id) || [];
@@ -41,6 +44,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
 
   useEffect(() => {
     fetchDocuments();
+    fetchBrief();
   }, [userId]);
 
   const fetchDocuments = async () => {
@@ -58,11 +62,36 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     setLoading(false);
   };
 
+  const fetchBrief = async () => {
+    const { data: briefs } = await supabase
+      .from('client_briefs')
+      .select('brief_content, status')
+      .eq('client_id', userId)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (briefs && briefs.length > 0 && briefs[0].brief_content) {
+      setBriefContent(briefs[0].brief_content);
+    }
+  };
+
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
     setMessage(msg);
     setMessageType(type);
     setTimeout(() => setMessage(''), 5000);
   };
+
+  const handleCopyPrompt = useCallback(async (docTypeId: string) => {
+    const fullPrompt = buildFullPrompt(docTypeId, briefContent);
+    try {
+      await navigator.clipboard.writeText(fullPrompt);
+      setCopiedDocId(docTypeId);
+      setTimeout(() => setCopiedDocId(null), 2000);
+    } catch {
+      showMessage('Failed to copy prompt to clipboard', 'error');
+    }
+  }, [briefContent]);
 
   const handleFileUpload = async (
     docTypeId: string,
@@ -215,8 +244,13 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
               Document Management
             </h3>
             <p className="font-inter text-gray-500 text-sm">
-              Upload and manage client document files. Track delivery status for each document.
+              Copy generation prompts, upload completed files, and track delivery.
             </p>
+            {!briefContent && (
+              <p className="font-inter text-amber-600 text-xs mt-1">
+                No client brief found — prompts will include a placeholder section instead of brief context.
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-6 text-sm shrink-0">
             <div className="text-center">
@@ -247,7 +281,9 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
               isExpanded={isExpanded}
               isUploadingPdf={isUploadingPdf}
               isUploadingDocx={isUploadingDocx}
+              copiedDocId={copiedDocId}
               onToggleExpand={() => setExpandedDoc(isExpanded ? null : docType.id)}
+              onCopyPrompt={() => handleCopyPrompt(docType.id)}
               onUploadFile={(file, kind) => handleFileUpload(docType.id, file, kind)}
               onDownload={handleDownloadFile}
               onMarkDelivered={() => handleMarkDelivered(doc?.id)}
@@ -268,7 +304,9 @@ function DocumentCard({
   isExpanded,
   isUploadingPdf,
   isUploadingDocx,
+  copiedDocId,
   onToggleExpand,
+  onCopyPrompt,
   onUploadFile,
   onDownload,
   onMarkDelivered,
@@ -279,7 +317,9 @@ function DocumentCard({
   isExpanded: boolean;
   isUploadingPdf: boolean;
   isUploadingDocx: boolean;
+  copiedDocId: string | null;
   onToggleExpand: () => void;
+  onCopyPrompt: () => void;
   onUploadFile: (file: File, kind: 'pdf' | 'docx') => void;
   onDownload: (path: string, name: string) => void;
   onMarkDelivered: () => void;
@@ -292,6 +332,7 @@ function DocumentCard({
   const hasPdf = !!doc?.pdf_path;
   const hasDocx = !!doc?.docx_path;
   const isCompleted = status === 'completed';
+  const isCopied = copiedDocId === docType.id;
 
   const statusConfig: Record<string, { colour: string; bg: string; label: string; icon: React.ReactNode }> = {
     pending:    { colour: 'text-gray-500',  bg: 'bg-gray-100',  label: 'Pending',     icon: <Clock size={11} /> },
@@ -305,14 +346,15 @@ function DocumentCard({
   return (
     <div className={`bg-white rounded-lg border overflow-hidden transition-shadow ${isExpanded ? 'border-[#1B3F7A] border-opacity-40 shadow-sm' : 'border-gray-200'}`}>
       {/* Card header row */}
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className="bg-[#FAFBFC] rounded-lg p-2.5 shrink-0 mt-0.5">
-              <FileText size={18} className="text-[#1B3F7A]" />
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: icon + name + badges */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="bg-[#FAFBFC] rounded-lg p-2 shrink-0">
+              <FileText size={16} className="text-[#1B3F7A]" />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <h4 className="font-inter font-semibold text-gray-900 text-sm">{docType.label}</h4>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${s.bg} ${s.colour}`}>
                   {s.icon}
@@ -323,97 +365,81 @@ function DocumentCard({
                     <Send size={10} /> Delivered
                   </span>
                 )}
-                {hasPdf && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-600">
-                    PDF ✓
-                  </span>
-                )}
-                {hasDocx && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-600">
-                    DOCX ✓
-                  </span>
-                )}
               </div>
-              <p className="font-inter text-gray-500 text-xs">{docType.description}</p>
-              {doc?.generated_at && (
-                <p className="font-inter text-gray-400 text-xs mt-0.5">
-                  Updated: {new Date(doc.generated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
-              )}
             </div>
           </div>
 
-          {/* Action buttons */}
+          {/* Right: action buttons */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Expand/collapse if doc exists */}
-            {doc && (
-              <button
-                onClick={onToggleExpand}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-inter font-medium transition-colors"
-              >
-                {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                {isExpanded ? 'Close' : 'Manage'}
-              </button>
-            )}
+            {/* Copy Prompt */}
+            <button
+              onClick={onCopyPrompt}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors"
+            >
+              {isCopied ? (
+                <>
+                  <CheckCircle2 size={13} />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy size={13} />
+                  Copy Prompt
+                </>
+              )}
+            </button>
 
-            {/* Upload trigger if no doc exists yet */}
-            {!doc && (
-              <span className="text-xs text-gray-400 font-inter italic hidden sm:block">
-                Upload files to get started
-              </span>
-            )}
+            {/* Manage (expand/collapse) */}
+            <button
+              onClick={onToggleExpand}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-inter font-medium transition-colors"
+            >
+              {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              Manage
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Expanded panel */}
+      {/* Expanded Manage panel */}
       {isExpanded && (
-        <div className="border-t border-gray-200 p-4 bg-[#FAFBFC] space-y-4">
-
-          {/* Upload section */}
-          <div>
-            <p className="font-inter font-semibold text-gray-700 text-xs mb-2 uppercase tracking-wide">
-              Upload Generated Files
-            </p>
-            <p className="font-inter text-gray-500 text-xs mb-3">
-              Upload the completed document files for this client.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FileUploadZone
-                label="PDF"
-                existingPath={doc?.pdf_path}
-                existingName={`${docType.label}.pdf`}
-                isUploading={isUploadingPdf}
-                accept=".pdf,application/pdf"
-                inputRef={pdfInputRef}
-                onFileSelect={(file) => onUploadFile(file, 'pdf')}
-                onDownload={doc?.pdf_path ? () => onDownload(doc.pdf_path, `${docType.label}.pdf`) : undefined}
-                onRemove={doc?.pdf_path ? () => onRemoveFile('pdf') : undefined}
-              />
-              <FileUploadZone
-                label="Word (DOCX)"
-                existingPath={doc?.docx_path}
-                existingName={`${docType.label}.docx`}
-                isUploading={isUploadingDocx}
-                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                inputRef={docxInputRef}
-                onFileSelect={(file) => onUploadFile(file, 'docx')}
-                onDownload={doc?.docx_path ? () => onDownload(doc.docx_path, `${docType.label}.docx`) : undefined}
-                onRemove={doc?.docx_path ? () => onRemoveFile('docx') : undefined}
-              />
-            </div>
+        <div className="border-t border-gray-200 px-4 py-4 bg-[#FAFBFC] space-y-4">
+          {/* Upload zones */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FileUploadZone
+              label="PDF"
+              existingPath={doc?.pdf_path}
+              existingName={`${docType.label}.pdf`}
+              isUploading={isUploadingPdf}
+              accept=".pdf,application/pdf"
+              inputRef={pdfInputRef}
+              onFileSelect={(file) => onUploadFile(file, 'pdf')}
+              onDownload={doc?.pdf_path ? () => onDownload(doc.pdf_path, `${docType.label}.pdf`) : undefined}
+              onRemove={doc?.pdf_path ? () => onRemoveFile('pdf') : undefined}
+            />
+            <FileUploadZone
+              label="Word (DOCX)"
+              existingPath={doc?.docx_path}
+              existingName={`${docType.label}.docx`}
+              isUploading={isUploadingDocx}
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              inputRef={docxInputRef}
+              onFileSelect={(file) => onUploadFile(file, 'docx')}
+              onDownload={doc?.docx_path ? () => onDownload(doc.docx_path, `${docType.label}.docx`) : undefined}
+              onRemove={doc?.docx_path ? () => onRemoveFile('docx') : undefined}
+            />
           </div>
 
-          {/* Delivery section */}
+          {/* Deliver to client */}
           {isCompleted && (
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200">
+            <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
               {!doc.delivered_to_client ? (
                 <button
                   onClick={onMarkDelivered}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-inter font-medium transition-colors"
                 >
                   <Send size={13} />
-                  Mark as Delivered to Client
+                  Deliver to Client
                 </button>
               ) : (
                 <div className="flex items-center gap-1.5 text-xs text-green-600 font-inter font-medium">
@@ -422,16 +448,6 @@ function DocumentCard({
                   {doc.delivered_at && ` on ${new Date(doc.delivered_at).toLocaleDateString('en-GB')}`}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Meta info */}
-          {doc && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-200">
-              <MetaItem label="Status" value={s.label} />
-              <MetaItem label="Updated" value={doc.generated_at ? new Date(doc.generated_at).toLocaleDateString('en-GB') : '—'} />
-              <MetaItem label="Files" value={hasPdf && hasDocx ? 'PDF & DOCX' : hasPdf ? 'PDF only' : hasDocx ? 'DOCX only' : 'No files yet'} />
-              <MetaItem label="Delivered" value={doc.delivered_to_client ? 'Yes' : 'No'} />
             </div>
           )}
         </div>
@@ -535,17 +551,6 @@ function FileUploadZone({
         </>
       )}
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleChange} />
-    </div>
-  );
-}
-
-// ─── Meta item ────────────────────────────────────────────────────────────────
-
-function MetaItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="font-inter text-gray-400 text-xs">{label}</p>
-      <p className="font-inter font-medium text-gray-700 text-xs">{value}</p>
     </div>
   );
 }
