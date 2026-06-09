@@ -48,7 +48,7 @@ export default function ProgressBar({
       <div className="flex items-center gap-1 mt-3 overflow-x-auto pb-1">
         {sections
           .filter((s) => s.id !== 'intro')
-          .map((section) => {
+          .map((section, index) => {
             const isComplete = isSectionComplete(section.fields, responses);
             const isCurrent = currentSectionId === section.id;
             const isLocked = completedSectionIds.includes(section.id) && !newSectionIds.includes(section.id);
@@ -72,7 +72,7 @@ export default function ProgressBar({
                     : 'bg-gray-100 text-[#4A5568] hover:bg-[#F0F4FF]'
                 }`}
               >
-                {isComplete ? '✓' : sections.indexOf(section) + 1}
+                {isComplete ? '✓' : index + 1}
               </button>
             );
           })}

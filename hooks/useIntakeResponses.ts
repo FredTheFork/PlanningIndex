@@ -157,6 +157,22 @@ export function useIntakeResponses() {
         if (rowPsi.length > 0) {
           setPurchasedServiceIds(rowPsi);
         }
+      } else {
+        // Initialize with defaults for new users so navigation works
+        setData({
+          id: '',
+          user_id: user.id,
+          form_version: 'v4',
+          responses: {},
+          current_section_id: 'intro',
+          section_progress: {},
+          last_saved_at: null,
+          submitted_at: null,
+          file_uploads: {},
+          purchased_service_ids: [],
+          intake_complete_for_services: [],
+          last_visited_at: null,
+        });
       }
 
       setLoading(false);
