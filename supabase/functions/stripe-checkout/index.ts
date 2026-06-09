@@ -30,7 +30,7 @@ const SERVICES: ServiceConfig[] = [
     id: 'website_copy_pack',
     name: 'Website Copy Starter Pack',
     priceIds: {
-      test: 'price_1TfnutGfxcDbzGRtr7kC2XcM',
+      test: 'price_1TgSEkGfxcDbzGRtDaBz70tR',
       live: '',
     },
     mode: 'payment',
