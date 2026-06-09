@@ -39,7 +39,7 @@ const SERVICES: ServiceConfig[] = [
     id: 'social_media_pack',
     name: 'Social Media Starter Pack',
     priceIds: {
-      test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv',
+      test: 'price_1TgSGIGfxcDbzGRt04ydxuqR',
       live: '',
     },
     mode: 'payment',
