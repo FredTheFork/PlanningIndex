@@ -215,10 +215,7 @@ function SuccessContent() {
                 placeholder={emailLoading ? 'Loading...' : 'The email you used at checkout'}
                 required
                 autoFocus
-                readOnly={!!email && !emailLoading}
-                className={`block w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-medium-blue focus:border-medium-blue font-inter text-sm ${
-                  email && !emailLoading ? 'bg-gray-50 text-gray-700' : ''
-                }`}
+                className="block w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-medium-blue focus:border-medium-blue font-inter text-sm"
               />
             </div>
 
