@@ -1059,7 +1059,151 @@ Produce solicitor-quality business documents suitable for real commercial use.
   {
     document_type: 'welcome_email_sequence',
     document_label: 'Welcome Email Sequence',
-    generationPrompt: `[PLACEHOLDER: Welcome Email Sequence generation prompt]`,
+    generationPrompt: `You are a customer onboarding consultant, client experience strategist, email copywriter and service operations expert.
+
+Create a premium New Client Welcome Sequence.
+
+The objective is to create confidence, clarity and professionalism from day one.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+The sequence should:
+
+• Build trust
+• Reduce anxiety
+• Set expectations
+• Explain processes
+• Increase responsiveness
+• Reduce misunderstandings
+• Reduce disputes
+• Improve retention
+• Create a premium experience
+
+────────────────────────
+REQUIRED DELIVERABLES
+────────────────────────
+
+EMAIL 1
+Immediate Welcome
+
+Purpose:
+
+• Thank the client
+• Confirm engagement
+• Reinforce buying decision
+• Explain next steps
+• Set expectations
+
+Include:
+
+• Subject line options
+• Preview text
+• Full email
+
+────────────────────────
+
+EMAIL 2
+Onboarding & Action Required
+
+Purpose:
+
+• Gather information
+• Secure required documents
+• Confirm timelines
+• Explain responsibilities
+
+Include:
+
+• Subject line options
+• Preview text
+• Full email
+
+────────────────────────
+
+EMAIL 3
+Preparation & Success Guide
+
+Purpose:
+
+• Educate the client
+• Improve cooperation
+• Improve outcomes
+• Increase professionalism
+
+Include:
+
+• Subject line options
+• Preview text
+• Full email
+
+────────────────────────
+ADVANCED CLIENT MANAGEMENT
+────────────────────────
+
+Review the client brief.
+
+Identify risks.
+
+Build messaging that proactively addresses:
+
+• Slow client responses
+• Missing information
+• Delayed approvals
+• Unrealistic expectations
+• Scope creep
+• Payment issues
+• Revision misunderstandings
+
+Without sounding aggressive.
+
+────────────────────────
+BRAND PERSONALITY
+────────────────────────
+
+Match the client's tone.
+
+Match the client's audience.
+
+Match the client's industry.
+
+Every sequence must feel custom written.
+
+Not templated.
+
+Not generic.
+
+────────────────────────
+PSYCHOLOGY REQUIREMENTS
+────────────────────────
+
+Use:
+
+• Reassurance
+• Professional authority
+• Clarity
+• Trust
+• Momentum
+
+The client should finish the sequence feeling:
+
+"I've made the right decision."
+
+────────────────────────
+OUTPUT REQUIREMENTS
+────────────────────────
+
+Return all three emails fully written.
+
+Ready to use.
+
+No notes.
+
+No explanations.
+
+No commentary.
+`,
     agentInstructions: SHARED_AGENT_INSTRUCTIONS,
   },
   {
