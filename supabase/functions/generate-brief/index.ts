@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = "AQ.Ab8RN6IVVXFLJVRdRwkEZ5DBhLv0fttoBL0ulPKPjqOl-NVSBQ";
+const GEMINI_API_KEY = "AIzaSyCRsSMAhd0EWT4NpMaUzn8eHhDV1SF1YTA";
 
 function errorResponse(status: number, error: string, details?: Record<string, unknown>) {
   return new Response(JSON.stringify({ error, ...details }), {
