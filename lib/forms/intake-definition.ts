@@ -362,8 +362,15 @@ export const allFormSections: FormSection[] = [
     description: 'Tell us about your website so we can build a complete, professional site that reflects your brand, communicates your value, and converts visitors into clients.',
     usedIn: 'Website Copy Starter Pack',
     fields: [
-      // ── Website Structure and Pages ──
-      // Note: wc1_pages_needed is now selected at checkout and pre-filled from payment data
+      // ── Website Pages Selection ──
+      { id: 'wc1_pages_needed', questionNumber: 'WC1', label: 'Which pages do you need for your website?', type: 'multi_select', required: true, options: ['Homepage', 'About', 'Services', 'Contact', 'FAQ', 'Blog', 'Portfolio / Case Studies', 'Pricing', 'Testimonials', 'Other'], hasOtherOption: true, helpText: 'Select all the pages you want included in your website.' },
+      { id: 'wc_pages_other', questionNumber: 'WC1b', label: 'If you selected "Other", please specify which additional pages you need.', type: 'long_text', required: false, placeholder: 'e.g. "Resources page", "Case studies", "Team page"', conditionalOn: { field: 'wc1_pages_needed', value: 'Other' } },
+
+      // ── Primary Website Goal ──
+      { id: 'wc2_primary_action', questionNumber: 'WC2', label: 'What is the single most important action you want a website visitor to take?', type: 'long_text', required: true, placeholder: 'e.g. Book a free discovery call / Fill out my enquiry form / Buy my online course / Sign up for my newsletter / Download my free guide.' },
+      { id: 'wc3_inspiration_urls', questionNumber: 'WC3', label: 'Are there any websites — your own industry or otherwise — whose copy or overall feel you admire? Paste the URLs.', type: 'long_text', required: false, placeholder: 'We\'re not copying them. We\'re calibrating tone and style.' },
+
+      // ── Website Structure ──
       { id: 'wc_service_page_count', questionNumber: 'WC5', label: 'How many individual service pages do you need?', type: 'single_choice', required: true, options: ['1', '2-3', '4-5', '6+', 'Depends — align with my service descriptions'], helpText: 'If you selected the Services page, this tells us whether it\'s a single overview or separate pages per service.' },
       { id: 'wc_nav_structure', questionNumber: 'WC6', label: 'What navigation structure do you prefer?', type: 'single_choice', required: true, options: ['Single page / scroll', 'Multi-page', 'One-page with sections'], helpText: 'This affects how we structure and link the copy together.' },
 
@@ -386,11 +393,7 @@ export const allFormSections: FormSection[] = [
 
       // ── Competitor and Inspiration ──
       { id: 'wc_competitor_urls', questionNumber: 'WC19', label: 'Are there competitor or fellow business websites you\'d like us to reference?', type: 'long_text', required: false, placeholder: 'Paste URLs of similar businesses. We\'ll study how they position themselves — not to copy, but to differentiate you.' },
-      { id: 'wc3_inspiration_urls', questionNumber: 'WC3', label: 'Are there any websites — your own industry or otherwise — whose copy or overall feel you admire? Paste the URLs.', type: 'long_text', required: false, placeholder: 'We\'re not copying them. We\'re calibrating tone and style.' },
       { id: 'wc_disliked_urls', questionNumber: 'WC20', label: 'Are there websites you actively do NOT like? Paste the URLs and tell us why.', type: 'long_text', required: false, placeholder: 'e.g. "example.com — too cluttered and aggressive" or "example.co.uk — feels cold and corporate." Helps us avoid what you hate.' },
-
-      // ── Functional Website Details ──
-      { id: 'wc2_primary_action', questionNumber: 'WC2', label: 'What is the single most important action you want a website visitor to take?', type: 'long_text', required: true, placeholder: 'e.g. Book a free discovery call / Fill out my enquiry form / Buy my online course / Sign up for my newsletter / Download my free guide.' },
       { id: 'wc_forms_needed', questionNumber: 'WC21', label: 'Do you need any forms on your website?', type: 'multi_select', required: false, options: ['Contact form', 'Newsletter signup', 'Booking / scheduling', 'Quote request', 'File upload', 'No forms needed'] },
       { id: 'wc_legal_pages', questionNumber: 'WC23', label: 'Do you need any specific legal pages on your website?', type: 'multi_select', required: true, options: ['Privacy Policy', 'Terms and Conditions', 'Cookie Policy', 'Disclaimer', 'Accessibility Statement', 'None needed'] },
 
