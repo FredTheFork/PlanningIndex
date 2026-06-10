@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase/client';
 import {
   Download, AlertCircle, CheckCircle2, Clock, Send, Save, Globe,
   FileArchive, Upload, Link2, Settings, ExternalLink, Code,
-  Monitor, Tablet, Smartphone, Maximize2, RefreshCw, AlertTriangle, Copy
+  Monitor, Tablet, Smartphone, Maximize2, RefreshCw, AlertTriangle, Copy,
+  Image, FileText, Sparkles, FolderOpen
 } from 'lucide-react';
 
 interface WebsiteCopyTabProps {
@@ -27,6 +28,14 @@ interface WebsiteDelivery {
   delivered_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface ClientAsset {
+  question_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
 }
 
 type DeliveryType = 'zip_only' | 'hosted_preview' | 'both';
@@ -64,13 +73,27 @@ If your site needs a database, user authentication, or file storage:
 2. Copy your project URL and anon key
 3. Add them as environment variables in your hosting platform`;
 
+// Asset field labels for display
+const ASSET_LABELS: Record<string, string> = {
+  q66_logo_upload: 'Logo',
+  wc_logo_upload: 'Logo (Website)',
+  wc_brand_guidelines_upload: 'Brand Guidelines',
+  wc_existing_copy_upload: 'Existing Website Copy',
+  wc_existing_images_upload: 'Existing Images',
+  q76_existing_docs_upload: 'Existing Documents',
+  q77_writing_samples_upload: 'Writing Samples',
+};
+
 export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCopyTabProps) {
   const [delivery, setDelivery] = useState<WebsiteDelivery | null>(null);
+  const [clientAssets, setClientAssets] = useState<ClientAsset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAssets, setLoadingAssets] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [editing, setEditing] = useState(false);
   const [uploadingZip, setUploadingZip] = useState(false);
+  const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [previewViewport, setPreviewViewport] = useState<ViewportSize>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(true);
@@ -86,6 +109,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
 
   useEffect(() => {
     fetchDelivery();
+    fetchClientAssets();
   }, [userId]);
 
   const fetchDelivery = async () => {
@@ -107,6 +131,20 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       });
     }
     setLoading(false);
+  };
+
+  const fetchClientAssets = async () => {
+    setLoadingAssets(true);
+    const { data: uploads, error } = await supabase
+      .from('intake_uploads')
+      .select('question_id, file_name, file_path, file_size, file_type')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (!error && uploads) {
+      setClientAssets(uploads);
+    }
+    setLoadingAssets(false);
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -232,12 +270,69 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     }
   };
 
+  const handleGeneratePrompt = async () => {
+    if (!data?.profile?.has_submitted_intake) {
+      showMessage('Client must submit intake form first', 'error');
+      return;
+    }
+
+    setGeneratingPrompt(true);
+    showMessage('Generating Bolt prompt with AI...', 'info');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showMessage('Not authenticated', 'error');
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-bolt-prompt`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ user_id: userId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setForm(prev => ({ ...prev, bolt_prompt: result.prompt }));
+        showMessage(`Prompt generated successfully using ${result.model}`, 'success');
+        await fetchDelivery();
+      } else {
+        showMessage(result.error || 'Failed to generate prompt', 'error');
+      }
+    } catch (err: any) {
+      showMessage(err.message || 'Error generating prompt', 'error');
+    } finally {
+      setGeneratingPrompt(false);
+    }
+  };
+
+  const getAssetDownloadUrl = (filePath: string): string => {
+    const { data } = supabase.storage
+      .from('user-uploads')
+      .getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
   const getZipDownloadUrl = (): string | null => {
     if (!delivery?.website_zip_path) return null;
     const { data } = supabase.storage
       .from('website-deliveries')
       .getPublicUrl(delivery.website_zip_path);
     return data.publicUrl;
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const isValidUrl = (url: string): boolean => {
@@ -247,6 +342,10 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     } catch {
       return false;
     }
+  };
+
+  const isImageFile = (fileType: string): boolean => {
+    return fileType.startsWith('image/');
   };
 
   const viewportIcons = {
@@ -329,6 +428,129 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Left: Configuration */}
         <div className="space-y-6">
+          {/* Client Assets Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <FolderOpen size={20} className="text-emerald-600" />
+              </div>
+              <div>
+                <h4 className="font-inter font-semibold text-gray-900">Client Assets</h4>
+                <p className="text-xs text-gray-500">Download logo, brand files, and images from intake form</p>
+              </div>
+            </div>
+
+            {loadingAssets ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600" />
+              </div>
+            ) : clientAssets.length > 0 ? (
+              <div className="space-y-2">
+                {clientAssets.map((asset, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-3">
+                      {isImageFile(asset.file_type) ? (
+                        <Image size={20} className="text-blue-500" />
+                      ) : (
+                        <FileText size={20} className="text-gray-500" />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {ASSET_LABELS[asset.question_id] || asset.question_id}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {asset.file_name} ({formatFileSize(asset.file_size)})
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={getAssetDownloadUrl(asset.file_path)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter transition-colors"
+                    >
+                      <Download size={12} />
+                      Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FolderOpen size={32} className="mx-auto mb-2 text-gray-300" />
+                <p className="text-sm text-gray-500">No files uploaded by client</p>
+              </div>
+            )}
+          </div>
+
+          {/* Bolt Prompt with Generate Button */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <Code size={20} className="text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-inter font-semibold text-gray-900">Bolt Prompt</h4>
+                  <p className="text-xs text-gray-500">AI-generated prompt for Bolt.new</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {delivery?.bolt_prompt && (
+                  <button
+                    onClick={handleCopyPrompt}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter transition-colors"
+                  >
+                    <Copy size={12} />
+                    Copy
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Generate Button */}
+            <div className="mb-4">
+              <button
+                onClick={handleGeneratePrompt}
+                disabled={generatingPrompt || !data?.profile?.has_submitted_intake}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg text-sm font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generatingPrompt ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    Generate Bolt Prompt with AI
+                  </>
+                )}
+              </button>
+              {!data?.profile?.has_submitted_intake && (
+                <p className="text-xs text-amber-600 mt-2 text-center">
+                  Client must submit intake form before generating prompt
+                </p>
+              )}
+            </div>
+
+            {editing ? (
+              <textarea
+                value={form.bolt_prompt}
+                onChange={(e) => setForm({ ...form, bolt_prompt: e.target.value })}
+                rows={6}
+                className="w-full px-3 py-2 bg-gray-900 border-0 rounded-lg text-sm text-green-400 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                placeholder="// Bolt.new prompt will appear here after generation..."
+              />
+            ) : (
+              <div className="p-3 bg-gray-900 rounded-lg overflow-x-auto max-h-48 overflow-y-auto">
+                <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
+                  {delivery?.bolt_prompt || '// No prompt recorded. Click "Generate Bolt Prompt with AI" above'}
+                </pre>
+              </div>
+            )}
+          </div>
+
           {/* Deployment URL Section */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -533,46 +755,6 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Bolt Prompt */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <Code size={20} className="text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-inter font-semibold text-gray-900">Bolt Prompt</h4>
-                  <p className="text-xs text-gray-500">Save the prompt for re-generation reference</p>
-                </div>
-              </div>
-              {delivery?.bolt_prompt && (
-                <button
-                  onClick={handleCopyPrompt}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter transition-colors"
-                >
-                  <Copy size={12} />
-                  Copy
-                </button>
-              )}
-            </div>
-
-            {editing ? (
-              <textarea
-                value={form.bolt_prompt}
-                onChange={(e) => setForm({ ...form, bolt_prompt: e.target.value })}
-                rows={6}
-                className="w-full px-3 py-2 bg-gray-900 border-0 rounded-lg text-sm text-green-400 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                placeholder="// Paste the Bolt.new prompt used to generate this website..."
-              />
-            ) : (
-              <div className="p-3 bg-gray-900 rounded-lg overflow-x-auto max-h-48 overflow-y-auto">
-                <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
-                  {delivery?.bolt_prompt || '// No prompt recorded'}
-                </pre>
-              </div>
-            )}
           </div>
 
           {/* Deliver Action */}

@@ -45,7 +45,6 @@ const OTHER_TEXT_FIELDS = new Set([
   'q48_tracking_tools_other',
   'q79_how_heard_other',
   'wc1_pages_needed_other',
-  'wc_website_builder_other',
   'sm1_platforms_other',
 ]);
 
@@ -63,10 +62,25 @@ const ALWAYS_SHOW_OPTIONAL = new Set([
   // Website copy optional fields that are meaningful context even when empty
   'wc_headline_idea', 'wc_colour_preferences', 'wc_colour_palette_style',
   'wc_competitor_urls', 'wc3_inspiration_urls', 'wc_disliked_urls',
-  'wc_logo_placement', 'wc_brand_guidelines_upload',
-  'wc_existing_copy_upload', 'wc_existing_images_upload', 'wc_existing_testimonials',
-  'wc_pages_other', 'wc_forms_needed', 'wc_legal_pages',
-  'wc_testimonials',
+  'wc_logo_placement', 'wc_brand_guidelines_upload', 'wc_logo_upload',
+  'wc_existing_copy_upload', 'wc_existing_images_upload',
+  'wc_forms_needed', 'wc_testimonials',
+  'wc_pricing_text', 'wc_payment_methods_display', 'wc_bank_details_for_website',
+  'wc_data_collected_website', 'wc_analytics_tools',
+  'wc_business_hours', 'wc_email_display',
+  'wc_social_links_to_show', 'wc_linkedin_url', 'wc_instagram_url', 'wc_facebook_url',
+  'wc_credentials_to_show', 'wc_awards_or_press',
+  'wc_booking_url', 'wc_newsletter_platform',
+  // Page-specific optional fields
+  'wc_homepage_sections', 'wc_homepage_cta_style',
+  'wc_about_focus', 'wc_about_tone',
+  'wc_services_format', 'wc_services_show_pricing', 'wc_services_cta',
+  'wc_contact_method', 'wc_contact_form_fields',
+  'wc_faq_topics', 'wc_faq_count',
+  'wc_blog_style', 'wc_blog_categories',
+  'wc_portfolio_format', 'wc_portfolio_projects',
+  'wc_pricing_display', 'wc_pricing_highlights',
+  'wc_testimonials_format', 'wc_testimonials_featured',
   // Social media optional fields that are meaningful context even when empty
   'sm3_avoid_topics', 'sm8_competitor_accounts', 'sm10_call_to_action',
   'sm11_existing_accounts', 'sm13_upcoming_launches',

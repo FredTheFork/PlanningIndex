@@ -348,8 +348,8 @@ export const allFormSections: FormSection[] = [
   // ── SECTION 11 — WEBSITE COPY ──
   {
     id: 'website_copy',
-    title: 'Website Copy',
-    description: 'Tell us about your website so we can write copy that reflects your brand, communicates your value, and converts visitors into clients.',
+    title: 'Website Content',
+    description: 'Tell us about your website so we can build a complete, professional site that reflects your brand, communicates your value, and converts visitors into clients.',
     usedIn: 'Website Copy Starter Pack',
     fields: [
       // ── Website Structure and Pages ──
@@ -372,6 +372,7 @@ export const allFormSections: FormSection[] = [
       { id: 'wc_logo_placement', questionNumber: 'WC16', label: 'Where should your logo sit?', type: 'single_choice', required: false, options: ['Top left', 'Top centre', 'No preference'] },
       { id: 'wc_has_brand_guidelines', questionNumber: 'WC17', label: 'Do you have brand guidelines?', type: 'single_choice', required: true, options: ['Yes', 'No', 'Partially'] },
       { id: 'wc_brand_guidelines_upload', questionNumber: 'WC18', label: 'Upload your brand guidelines.', type: 'file_upload', required: false, conditionalOn: { field: 'wc_has_brand_guidelines', value: ['Yes', 'Partially'] }, helpText: 'PDF or PNG preferred. This helps us match your existing visual identity.' },
+      { id: 'wc_logo_upload', questionNumber: 'WC18a', label: 'Upload your logo file for the website.', type: 'file_upload', required: false, conditionalOn: { field: 'q65_has_logo', value: 'Yes' }, helpText: 'Upload your logo file here (PNG or SVG preferred). This will be used on your website.' },
 
       // ── Competitor and Inspiration ──
       { id: 'wc_competitor_urls', questionNumber: 'WC19', label: 'Are there competitor or fellow business websites you\'d like us to reference?', type: 'long_text', required: false, placeholder: 'Paste URLs of similar businesses. We\'ll study how they position themselves — not to copy, but to differentiate you.' },
@@ -381,16 +382,51 @@ export const allFormSections: FormSection[] = [
       // ── Functional Website Details ──
       { id: 'wc2_primary_action', questionNumber: 'WC2', label: 'What is the single most important action you want a website visitor to take?', type: 'long_text', required: true, placeholder: 'e.g. Book a free discovery call / Fill out my enquiry form / Buy my online course / Sign up for my newsletter / Download my free guide.' },
       { id: 'wc_forms_needed', questionNumber: 'WC21', label: 'Do you need any forms on your website?', type: 'multi_select', required: false, options: ['Contact form', 'Newsletter signup', 'Booking / scheduling', 'Quote request', 'File upload', 'No forms needed'] },
-      { id: 'wc_testimonials', questionNumber: 'WC22', label: 'What testimonials or reviews do you want to include on your website?', type: 'long_text', required: false, placeholder: 'Paste any testimonials you\'d like us to incorporate. Include the client name and context if possible.' },
-      { id: 'wc_legal_pages', questionNumber: 'WC23', label: 'Do you need any specific legal pages on your website?', type: 'multi_select', required: false, options: ['Privacy Policy', 'Terms and Conditions', 'Cookie Policy', 'Disclaimer', 'Accessibility Statement', 'None'] },
-      { id: 'wc_website_builder', questionNumber: 'WC24', label: 'What website builder are you using (or planning to use)?', type: 'single_choice', required: true, options: ['WordPress', 'Wix', 'Squarespace', 'Shopify', 'Custom / HTML', 'Not decided yet', 'Other'], hasOtherOption: true },
+      { id: 'wc_legal_pages', questionNumber: 'WC23', label: 'Do you need any specific legal pages on your website?', type: 'multi_select', required: true, options: ['Privacy Policy', 'Terms and Conditions', 'Cookie Policy', 'Disclaimer', 'Accessibility Statement', 'None needed'] },
 
       // ── Content You Already Have ──
       { id: 'wc_existing_copy_upload', questionNumber: 'WC25', label: 'Upload any existing website copy you\'d like us to reference.', type: 'file_upload', required: false, helpText: 'If you have draft copy, an old website, or notes — upload them here so we can build on what you have.' },
       { id: 'wc_existing_images_upload', questionNumber: 'WC26', label: 'Upload any existing images or photos you want to use on the website.', type: 'file_upload', required: false, helpText: 'Professional headshots, product photos, workspace shots. If you don\'t have any, we\'ll write copy that works with stock imagery.' },
-      { id: 'wc_existing_testimonials', questionNumber: 'WC27', label: 'Do you have existing testimonials or reviews that are already written?', type: 'long_text', required: false, placeholder: 'Paste them here if you haven\'t already uploaded them as a file. Separate from the question above — this is content you already have ready to go.' },
 
-      // ── Page-Specific Questions (Optional) ──
+      // ── WEBSITE-SPECIFIC PRICING & PAYMENT FIELDS ──
+      { id: 'wc_show_pricing_on_website', questionNumber: 'WC48', label: 'Do you want to display pricing information on your website?', type: 'single_choice', required: true, options: ['Yes — show starting prices', 'Yes — show full pricing details', 'No — use "Get a quote" approach', 'Not sure yet'], helpText: 'This determines how your Services or Pricing page will be structured.' },
+      { id: 'wc_pricing_text', questionNumber: 'WC49', label: 'What pricing text should appear on your website?', type: 'long_text', required: false, placeholder: 'e.g. "Services starting from £X" or "Monthly packages from £X" or "Hourly rate: £X"', conditionalOn: { field: 'wc_show_pricing_on_website', value: ['Yes — show starting prices', 'Yes — show full pricing details'] }, helpText: 'Enter the specific prices or price ranges you want displayed.' },
+      { id: 'wc_payment_methods_display', questionNumber: 'WC50', label: 'Which payment methods should be shown on your website?', type: 'multi_select', required: false, options: ['Bank transfer (BACS)', 'Credit/Debit card', 'PayPal', 'Direct Debit', 'Cash', 'Payment plans available', 'Not applicable'], helpText: 'Select all payment methods you accept and want to advertise.' },
+      { id: 'wc_bank_details_for_website', questionNumber: 'WC51', label: 'If showing bank transfer, what details should appear?', type: 'long_text', required: false, placeholder: 'Account name, Sort code, Account number. ONLY fill this if you want these details publicly visible on your website.', conditionalOn: { field: 'wc_payment_methods_display', value: 'Bank transfer (BACS)' } },
+
+      // ── WEBSITE-SPECIFIC GDPR & DATA FIELDS ──
+      { id: 'wc_website_collects_data', questionNumber: 'WC52', label: 'Will your website collect any personal data from visitors?', type: 'single_choice', required: true, options: ['Yes — via contact forms', 'Yes — via newsletter signup', 'Yes — via both forms and newsletter', 'No — just a brochure website'], helpText: 'This determines what legal pages and cookie notices you need.' },
+      { id: 'wc_data_collected_website', questionNumber: 'WC53', label: 'What data will you collect through your website forms?', type: 'multi_select', required: false, options: ['Names', 'Email addresses', 'Phone numbers', 'Business name', 'Service enquiry details', 'Newsletter subscription'], conditionalOn: { field: 'wc_website_collects_data', value: ['Yes — via contact forms', 'Yes — via newsletter signup', 'Yes — via both forms and newsletter'] } },
+      { id: 'wc_needs_cookie_consent', questionNumber: 'WC54', label: 'Do you want a cookie consent banner on your website?', type: 'single_choice', required: true, options: ['Yes — required for GDPR compliance', 'No — not needed for my website', 'Not sure'], helpText: 'If you use any analytics or tracking, you need cookie consent.' },
+      { id: 'wc_analytics_tools', questionNumber: 'WC55', label: 'Which analytics or tracking tools do you want installed?', type: 'multi_select', required: false, options: ['Google Analytics', 'Meta (Facebook) Pixel', 'Google Tag Manager', 'Hotjar / Heatmaps', 'None needed'], helpText: 'These tools help you understand visitor behaviour.' },
+
+      // ── WEBSITE-SPECIFIC CONTACT & BUSINESS DETAILS ──
+      { id: 'wc_show_business_hours', questionNumber: 'WC56', label: 'Do you want to display your business hours on your website?', type: 'single_choice', required: true, options: ['Yes — show my working hours', 'No — just contact options', 'I work flexible hours'], helpText: 'Displayed on the Contact page or footer.' },
+      { id: 'wc_business_hours', questionNumber: 'WC57', label: 'What are your business hours?', type: 'long_text', required: false, placeholder: 'e.g. Monday to Friday, 9am to 5pm. Available for calls Tuesday and Thursday afternoons.', conditionalOn: { field: 'wc_show_business_hours', value: 'Yes — show my working hours' } },
+      { id: 'wc_phone_on_website', questionNumber: 'WC58', label: 'Do you want your phone number displayed on the website?', type: 'single_choice', required: true, options: ['Yes — show phone number', 'No — email and forms only', 'Contact via Calendly/booking only'] },
+      { id: 'wc_email_display', questionNumber: 'WC59', label: 'What email address should be shown on your website?', type: 'email', required: false, placeholder: 'e.g. hello@yourbusiness.co.uk', prefillFrom: 'q7_document_email', helpText: 'This will be publicly visible. Leave blank if you prefer a contact form only.' },
+      { id: 'wc_address_on_website', questionNumber: 'WC60', label: 'Do you want your business address displayed on the website?', type: 'single_choice', required: true, options: ['Yes — show full address', 'Show city/region only', 'No address shown'], helpText: 'Some businesses prefer not to show their home address.' },
+
+      // ── WEBSITE-SPECIFIC SOCIAL MEDIA & LINKS ──
+      { id: 'wc_show_social_links', questionNumber: 'WC61', label: 'Do you want social media links displayed on your website?', type: 'single_choice', required: true, options: ['Yes — in header and footer', 'Yes — in footer only', 'Yes — on Contact page only', 'No — not needed'] },
+      { id: 'wc_social_links_to_show', questionNumber: 'WC62', label: 'Which social media profiles do you want linked?', type: 'multi_select', required: false, options: ['LinkedIn', 'Instagram', 'Facebook', 'X (Twitter)', 'TikTok', 'Pinterest', 'YouTube'], conditionalOn: { field: 'wc_show_social_links', value: ['Yes — in header and footer', 'Yes — in footer only', 'Yes — on Contact page only'] } },
+      { id: 'wc_linkedin_url', questionNumber: 'WC63', label: 'What is your LinkedIn profile URL?', type: 'url', required: false, placeholder: 'e.g. linkedin.com/in/yourname', conditionalOn: { field: 'wc_social_links_to_show', value: 'LinkedIn' } },
+      { id: 'wc_instagram_url', questionNumber: 'WC64', label: 'What is your Instagram profile URL?', type: 'url', required: false, placeholder: 'e.g. instagram.com/yourbusiness', conditionalOn: { field: 'wc_social_links_to_show', value: 'Instagram' } },
+      { id: 'wc_facebook_url', questionNumber: 'WC65', label: 'What is your Facebook page URL?', type: 'url', required: false, placeholder: 'e.g. facebook.com/yourbusiness', conditionalOn: { field: 'wc_social_links_to_show', value: 'Facebook' } },
+
+      // ── TESTIMONIALS & CREDENTIALS FOR WEBSITE ──
+      { id: 'wc_testimonials', questionNumber: 'WC22', label: 'What testimonials or reviews do you want to include on your website?', type: 'long_text', required: false, placeholder: 'Paste any testimonials you\'d like us to incorporate. Include the client name and context if possible.' },
+      { id: 'wc_testimonials_count', questionNumber: 'WC66', label: 'How many testimonials do you want displayed?', type: 'single_choice', required: true, options: ['3-5 testimonials', '6-8 testimonials', 'More than 8', 'Just feature one or two prominently'], helpText: 'We can always add more later.' },
+      { id: 'wc_credentials_to_show', questionNumber: 'WC67', label: 'What credentials, certifications, or memberships should be displayed?', type: 'long_text', required: false, placeholder: 'e.g. "ICB Certified Bookkeeper", "Member of VA Association", "Xero Certified Advisor"', helpText: 'These build trust and credibility on your website.' },
+      { id: 'wc_awards_or_press', questionNumber: 'WC68', label: 'Any awards, press mentions, or notable achievements to feature?', type: 'long_text', required: false, placeholder: 'e.g. "Featured in XYZ Magazine", "Winner of ABC Award 2024"' },
+
+      // ── ADDITIONAL WEBSITE FEATURES ──
+      { id: 'wc_booking_tool', questionNumber: 'WC69', label: 'Do you use an online booking/scheduling tool?', type: 'single_choice', required: true, options: ['Yes — Calendly', 'Yes — Cal.com', 'Yes — another tool', 'No — I don\'t use one', 'I want one set up'], helpText: 'If you use Calendly or similar, we can integrate it into your website.' },
+      { id: 'wc_booking_url', questionNumber: 'WC70', label: 'What is your booking/scheduling link?', type: 'url', required: false, placeholder: 'e.g. calendly.com/yourname', conditionalOn: { field: 'wc_booking_tool', value: ['Yes — Calendly', 'Yes — Cal.com', 'Yes — another tool'] } },
+      { id: 'wc_newsletter_signup', questionNumber: 'WC71', label: 'Do you want a newsletter signup form on your website?', type: 'single_choice', required: true, options: ['Yes — I have a mailing list', 'No — not needed', 'I want to set one up'], helpText: 'Good for building your audience.' },
+      { id: 'wc_newsletter_platform', questionNumber: 'WC72', label: 'What newsletter/email marketing platform do you use?', type: 'short_text', required: false, placeholder: 'e.g. Mailchimp, ConvertKit, Flodesk, Substack', conditionalOn: { field: 'wc_newsletter_signup', value: 'Yes — I have a mailing list' } },
+
+      // ── PAGE-SPECIFIC QUESTIONS (Optional) ──
       // Homepage
       { id: 'wc_homepage_sections', questionNumber: 'WC28', label: 'What sections do you want on your Homepage?', type: 'multi_select', required: false, options: ['Hero banner', 'About preview', 'Services overview', 'Testimonials', 'FAQ preview', 'Latest blog posts', 'Newsletter signup', 'Contact CTA'], conditionalOn: { field: 'wc1_pages_needed', value: 'Homepage' }, helpText: 'Optional — tell us if you have specific preferences, otherwise we\'ll use a standard structure.' },
       { id: 'wc_homepage_cta_style', questionNumber: 'WC29', label: 'What style of call-to-action do you prefer on your Homepage?', type: 'single_choice', required: false, options: ['Single prominent button', 'Multiple CTA buttons', 'Soft CTA with contact link', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Homepage' } },
@@ -407,7 +443,6 @@ export const allFormSections: FormSection[] = [
       // Contact page
       { id: 'wc_contact_method', questionNumber: 'WC35', label: 'How should visitors contact you?', type: 'multi_select', required: false, options: ['Contact form', 'Direct email link', 'Phone number', 'Calendar/booking link', 'Social media links'], conditionalOn: { field: 'wc1_pages_needed', value: 'Contact' }, helpText: 'Select all that apply. We recommend at least 2 contact options.' },
       { id: 'wc_contact_form_fields', questionNumber: 'WC36', label: 'What fields should your contact form have?', type: 'multi_select', required: false, options: ['Name', 'Email', 'Phone (optional)', 'Service interested in', 'Message', 'How did you hear about us?', 'Preferred contact method'], conditionalOn: { field: 'wc1_pages_needed', value: 'Contact' }, helpText: 'Only needed if you selected "Contact form" above.' },
-      { id: 'wc_contact_show_hours', questionNumber: 'WC37', label: 'Do you want to show your business hours on the Contact page?', type: 'single_choice', required: false, options: ['Yes — show working hours', 'No — just show contact options', 'Not sure'], conditionalOn: { field: 'wc1_pages_needed', value: 'Contact' } },
 
       // FAQ page
       { id: 'wc_faq_topics', questionNumber: 'WC38', label: 'What topics should your FAQ cover?', type: 'long_text', required: false, placeholder: 'e.g. Common questions about pricing, process, delivery times, what\'s included, how it works...', conditionalOn: { field: 'wc1_pages_needed', value: 'FAQ' }, helpText: 'We\'ll craft questions and answers that address common concerns and objections.' },
