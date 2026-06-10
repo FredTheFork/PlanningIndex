@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Download, AlertCircle, CheckCircle2, Clock, ChevronDown, ChevronUp, Send, X, Copy, CreditCard as Edit3, Save, Globe, FileText, Eye, EyeOff, Monitor, Tablet, Smartphone, Maximize2, Code } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle2, Clock, ChevronDown, ChevronUp, Send, X, Copy, CreditCard as Edit3, Save, Globe, FileText, Eye, EyeOff, Monitor, Tablet, Smartphone, Maximize2, Code, FileArchive, Upload, Link2, Settings, ExternalLink, Info } from 'lucide-react';
 import {
   HomepageTemplate, AboutTemplate, ServicesTemplate, ContactTemplate,
   PreviewFrame
@@ -29,9 +29,31 @@ interface WebsitePage {
   delivered_at: string | null;
   created_at: string;
   updated_at: string;
+  website_zip_path: string | null;
+  deployment_url: string | null;
+  bolt_prompt: string | null;
+  contact_form_access_key: string | null;
+  delivery_type: 'zip_only' | 'hosted_preview' | 'both';
+  hosting_instructions: string | null;
+}
+
+interface WebsiteDelivery {
+  id: string;
+  user_id: string;
+  website_zip_path: string | null;
+  deployment_url: string | null;
+  bolt_prompt: string | null;
+  contact_form_access_key: string | null;
+  delivery_type: 'zip_only' | 'hosted_preview' | 'both';
+  hosting_instructions: string | null;
+  delivered_by: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 type PageType = 'homepage' | 'about' | 'services' | 'contact';
+type DeliveryType = 'zip_only' | 'hosted_preview' | 'both';
 
 const PAGE_CONFIG: Record<PageType, { label: string; description: string; icon: React.ElementType }> = {
   homepage: { label: 'Homepage', description: 'Hero, benefits, social proof, and CTA', icon: Globe },
@@ -82,6 +104,7 @@ const DEFAULT_CONTACT: ContactContent = {
 
 export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCopyTabProps) {
   const [pages, setPages] = useState<WebsitePage[]>([]);
+  const [delivery, setDelivery] = useState<WebsiteDelivery | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
@@ -90,6 +113,22 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   const [editContent, setEditContent] = useState<any>({});
   const [showPreview, setShowPreview] = useState(true);
   const [copiedPageId, setCopiedPageId] = useState<string | null>(null);
+  const [uploadingZip, setUploadingZip] = useState(false);
+  const [showDeliveryPanel, setShowDeliveryPanel] = useState(false);
+  const [editingDelivery, setEditingDelivery] = useState(false);
+  const [deliveryForm, setDeliveryForm] = useState<{
+    delivery_type: DeliveryType;
+    deployment_url: string;
+    contact_form_access_key: string;
+    hosting_instructions: string;
+    bolt_prompt: string;
+  }>({
+    delivery_type: 'zip_only',
+    deployment_url: '',
+    contact_form_access_key: '',
+    hosting_instructions: '',
+    bolt_prompt: '',
+  });
 
   const brandColors = {
     primary: '#1B3F7A',
@@ -99,6 +138,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
 
   useEffect(() => {
     fetchPages();
+    fetchDelivery();
   }, [userId]);
 
   const fetchPages = async () => {
@@ -112,6 +152,25 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       setPages(pagesData);
     }
     setLoading(false);
+  };
+
+  const fetchDelivery = async () => {
+    const { data: deliveryData, error } = await supabase
+      .from('website_deliveries')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!error && deliveryData) {
+      setDelivery(deliveryData);
+      setDeliveryForm({
+        delivery_type: deliveryData.delivery_type || 'zip_only',
+        deployment_url: deliveryData.deployment_url || '',
+        contact_form_access_key: deliveryData.contact_form_access_key || '',
+        hosting_instructions: deliveryData.hosting_instructions || '',
+        bolt_prompt: deliveryData.bolt_prompt || '',
+      });
+    }
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -260,6 +319,121 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleZipUpload = async (file: File) => {
+    setUploadingZip(true);
+    try {
+      const ext = file.name.split('.').pop() || 'zip';
+      const timestamp = Date.now();
+      const storagePath = `${userId}/website-${timestamp}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('website-deliveries')
+        .upload(storagePath, file, { contentType: 'application/zip', upsert: true });
+
+      if (uploadError) {
+        showMessage(`Upload failed: ${uploadError.message}`, 'error');
+        return;
+      }
+
+      // Update or create delivery record
+      if (delivery) {
+        await supabase
+          .from('website_deliveries')
+          .update({
+            website_zip_path: storagePath,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', delivery.id);
+      } else {
+        await supabase
+          .from('website_deliveries')
+          .insert({
+            user_id: userId,
+            website_zip_path: storagePath,
+            delivery_type: 'zip_only',
+          });
+      }
+
+      showMessage('Website zip uploaded successfully', 'success');
+      await fetchDelivery();
+    } catch (err: any) {
+      showMessage(err.message || 'Upload failed', 'error');
+    } finally {
+      setUploadingZip(false);
+    }
+  };
+
+  const handleSaveDelivery = async () => {
+    const deliveryData = {
+      user_id: userId,
+      delivery_type: deliveryForm.delivery_type,
+      deployment_url: deliveryForm.deployment_url || null,
+      contact_form_access_key: deliveryForm.contact_form_access_key || null,
+      hosting_instructions: deliveryForm.hosting_instructions || null,
+      bolt_prompt: deliveryForm.bolt_prompt || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (delivery) {
+      const { error } = await supabase
+        .from('website_deliveries')
+        .update(deliveryData)
+        .eq('id', delivery.id);
+
+      if (!error) {
+        showMessage('Delivery settings saved', 'success');
+        setEditingDelivery(false);
+        await fetchDelivery();
+      } else {
+        showMessage('Failed to save delivery settings', 'error');
+      }
+    } else {
+      const { error } = await supabase
+        .from('website_deliveries')
+        .insert(deliveryData);
+
+      if (!error) {
+        showMessage('Delivery created', 'success');
+        setEditingDelivery(false);
+        await fetchDelivery();
+      } else {
+        showMessage('Failed to create delivery', 'error');
+      }
+    }
+  };
+
+  const handleMarkWebsiteDelivered = async () => {
+    const now = new Date().toISOString();
+    const { data: { user: adminUser } } = await supabase.auth.getUser();
+
+    if (delivery) {
+      const { error } = await supabase
+        .from('website_deliveries')
+        .update({
+          delivered_by: adminUser?.id,
+          delivered_at: now,
+          updated_at: now,
+        })
+        .eq('id', delivery.id);
+
+      if (!error) {
+        showMessage('Website marked as delivered to client', 'success');
+        await fetchDelivery();
+        refreshData();
+      }
+    } else {
+      showMessage('Please upload website files first', 'error');
+    }
+  };
+
+  const getZipDownloadUrl = (): string | null => {
+    if (!delivery?.website_zip_path) return null;
+    const { data } = supabase.storage
+      .from('website-deliveries')
+      .getPublicUrl(delivery.website_zip_path);
+    return data.publicUrl;
   };
 
   // Stats
@@ -471,6 +645,252 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
             </div>
           )}
         </div>
+      </div>
+
+      {/* Website Delivery Panel */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        <button
+          onClick={() => setShowDeliveryPanel(!showDeliveryPanel)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <FileArchive size={18} className="text-[#1B3F7A]" />
+            <h4 className="font-inter font-semibold text-gray-900">Website Delivery</h4>
+            {delivery?.delivered_at && (
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-inter">
+                <CheckCircle2 size={12} />
+                Delivered
+              </span>
+            )}
+          </div>
+          {showDeliveryPanel ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {showDeliveryPanel && (
+          <div className="px-4 pb-4 border-t border-gray-200 pt-4">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Left: Upload & Files */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Website ZIP File
+                  </label>
+                  {delivery?.website_zip_path ? (
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 truncate">{delivery.website_zip_path.split('/').pop()}</span>
+                        <a
+                          href={getZipDownloadUrl() || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs transition-colors"
+                        >
+                          <Download size={12} />
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        accept=".zip,application/zip,application/x-zip-compressed"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleZipUpload(file);
+                        }}
+                        className="hidden"
+                        id="zip-upload"
+                        disabled={uploadingZip}
+                      />
+                      <label
+                        htmlFor="zip-upload"
+                        className={`cursor-pointer ${uploadingZip ? 'opacity-50' : ''}`}
+                      >
+                        <Upload size={24} className="mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">
+                          {uploadingZip ? 'Uploading...' : 'Click to upload ZIP file'}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">Max 100MB</p>
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Delivery Type
+                  </label>
+                  <select
+                    value={deliveryForm.delivery_type}
+                    onChange={(e) => setDeliveryForm({ ...deliveryForm, delivery_type: e.target.value as DeliveryType })}
+                    disabled={!editingDelivery}
+                    className="w-full px-3 py-2 border border-gray-200 rounded text-sm font-inter focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:ring-opacity-50 disabled:bg-gray-50"
+                  >
+                    <option value="zip_only">ZIP file only</option>
+                    <option value="hosted_preview">Hosted preview only</option>
+                    <option value="both">Both ZIP and hosted preview</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Right: Settings */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Link2 size={14} />
+                      Deployment URL
+                    </div>
+                  </label>
+                  {editingDelivery ? (
+                    <input
+                      type="url"
+                      value={deliveryForm.deployment_url}
+                      onChange={(e) => setDeliveryForm({ ...deliveryForm, deployment_url: e.target.value })}
+                      placeholder="https://your-site.bolt.new"
+                      className="w-full px-3 py-2 border border-gray-200 rounded text-sm font-inter focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:ring-opacity-50"
+                    />
+                  ) : (
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      {delivery?.deployment_url ? (
+                        <a
+                          href={delivery.deployment_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-[#1B3F7A] hover:underline flex items-center gap-1"
+                        >
+                          {delivery.deployment_url}
+                          <ExternalLink size={12} />
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-400">Not set</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Settings size={14} />
+                      Contact Form Access Key
+                    </div>
+                  </label>
+                  {editingDelivery ? (
+                    <input
+                      type="text"
+                      value={deliveryForm.contact_form_access_key}
+                      onChange={(e) => setDeliveryForm({ ...deliveryForm, contact_form_access_key: e.target.value })}
+                      placeholder="web3forms access key"
+                      className="w-full px-3 py-2 border border-gray-200 rounded text-sm font-inter focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:ring-opacity-50"
+                    />
+                  ) : (
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <span className="text-sm text-gray-600 font-mono">
+                        {delivery?.contact_form_access_key || 'Not set'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Info size={14} />
+                      Hosting Instructions
+                    </div>
+                  </label>
+                  {editingDelivery ? (
+                    <textarea
+                      value={deliveryForm.hosting_instructions}
+                      onChange={(e) => setDeliveryForm({ ...deliveryForm, hosting_instructions: e.target.value })}
+                      placeholder="Instructions for the client on how to deploy..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-200 rounded text-sm font-inter focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:ring-opacity-50 resize-none"
+                    />
+                  ) : (
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                        {delivery?.hosting_instructions || 'No instructions provided'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bolt Prompt Section */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Code size={14} />
+                  Bolt Prompt (for re-generation)
+                </div>
+              </label>
+              {editingDelivery ? (
+                <textarea
+                  value={deliveryForm.bolt_prompt}
+                  onChange={(e) => setDeliveryForm({ ...deliveryForm, bolt_prompt: e.target.value })}
+                  placeholder="Original prompt used to generate the website in Bolt..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-200 rounded text-sm font-inter focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:ring-opacity-50 font-mono resize-none"
+                />
+              ) : (
+                <div className="p-3 bg-gray-900 rounded-lg overflow-x-auto">
+                  <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
+                    {delivery?.bolt_prompt || 'No prompt recorded'}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="text-xs text-gray-500">
+                {delivery?.delivered_at && (
+                  <span>Delivered on {new Date(delivery.delivered_at).toLocaleDateString()}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {editingDelivery ? (
+                  <>
+                    <button
+                      onClick={() => setEditingDelivery(false)}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-inter transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveDelivery}
+                      className="px-3 py-2 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-sm font-inter transition-colors"
+                    >
+                      Save Changes
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setEditingDelivery(true)}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-inter transition-colors"
+                    >
+                      Edit Settings
+                    </button>
+                    {delivery && !delivery.delivered_at && (
+                      <button
+                        onClick={handleMarkWebsiteDelivered}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-inter transition-colors"
+                      >
+                        <Send size={14} />
+                        Mark Delivered
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
