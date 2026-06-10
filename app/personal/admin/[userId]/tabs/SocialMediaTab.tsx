@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Instagram, Linkedin, Facebook, Twitter, Download, AlertCircle, CheckCircle2, Clock, ChevronDown, ChevronUp, Send, X, Copy, FileUp, Info, RefreshCw, Image as ImageIcon, Filter, Grid2x2 as Grid, List, Eye, EyeOff, CreditCard as Edit3, Save } from 'lucide-react';
+import {
+  Instagram, Linkedin, Facebook, Twitter, Download, AlertCircle, CheckCircle2, Clock,
+  ChevronDown, ChevronUp, Send, X, Copy, FileUp, Info, RefreshCw, Image as ImageIcon,
+  Filter, Grid2x2 as Grid, List, Video, FileText, Sparkles, ClipboardCopy
+} from 'lucide-react';
 
 interface SocialMediaTabProps {
   userId: string;
@@ -22,11 +26,21 @@ interface SocialPost {
   week: number;
   day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
   image_path: string | null;
+  video_path: string | null;
+  post_type: 'text' | 'image' | 'video';
   status: 'pending' | 'generated' | 'edited' | 'delivered';
   delivered_to_client: boolean;
   delivered_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface ClientBrief {
+  id: string;
+  client_id: string;
+  brief_content: string;
+  status: string;
+  generated_at: string;
 }
 
 const PLATFORM_CONFIG = {
@@ -42,15 +56,68 @@ const CATEGORY_STYLES = {
   personal: { label: 'Personal', bg: 'bg-green-50', text: 'text-green-700' },
 };
 
+const POST_TYPE_ICONS = {
+  text: FileText,
+  image: ImageIcon,
+  video: Video,
+};
+
+// Social media generation prompt for copying
+const SOCIAL_MEDIA_PROMPT = `You are a social media content strategist creating engaging posts for UK small businesses.
+
+OBJECTIVE
+Create posts that:
+• Build brand awareness
+• Demonstrate expertise
+• Drive engagement
+• Attract ideal clients
+• Save time with ready-to-post content
+
+OUTPUT FORMAT
+Return a JSON object with this exact structure:
+{
+  "posts": [
+    {
+      "postNumber": 1,
+      "category": "educational",
+      "platform": "LinkedIn",
+      "week": 1,
+      "day": "Mon",
+      "caption": "Full post text ready to copy-paste",
+      "hashtags": "#tag1 #tag2 #tag3 #tag4 #tag5",
+      "imagePrompt": "1-2 sentence description of the accompanying image"
+    }
+  ]
+}
+
+CONTENT MIX
+• 30% Educational posts (tips, insights, how-tos)
+• 30% Personal posts (behind-scenes, philosophy, story)
+• 40% Promotional posts (services, results, offers)
+
+CAPTION GUIDELINES
+• LinkedIn: 200-300 words, professional tone
+• Instagram: 100-150 words, visual focus
+• Facebook: 150-200 words, community-building
+• X: 50-80 words, punchy, conversation-starting
+
+WRITING REQUIREMENTS
+• Match the client's brand voice
+• Be authentic and specific to their industry
+• Avoid generic inspirational quotes
+• No hashtags in captions (add separately)`;
+
 export default function SocialMediaTab({ userId, data, refreshData }: SocialMediaTabProps) {
   const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [clientBrief, setClientBrief] = useState<ClientBrief | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingBrief, setLoadingBrief] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [expandedPost, setExpandedPost] = useState<number | null>(null);
   const [editingPost, setEditingPost] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<SocialPost>>({});
-  const [uploadingImage, setUploadingImage] = useState<number | null>(null);
+  const [uploadingAsset, setUploadingAsset] = useState<{ postNumber: number; type: 'image' | 'video' } | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
   // Filters
@@ -58,8 +125,14 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
   const [weekFilter, setWeekFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  // Get quantity from purchased services
+  const purchasedServices = data?.purchasedServices || [];
+  const socialMediaService = purchasedServices.find((ps: any) => ps.service_id === 'social_media_pack');
+  const postCount = socialMediaService?.social_media_post_count || 30;
+
   useEffect(() => {
     fetchPosts();
+    fetchClientBrief();
   }, [userId]);
 
   const fetchPosts = async () => {
@@ -74,6 +147,22 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
       setPosts(postsData);
     }
     setLoading(false);
+  };
+
+  const fetchClientBrief = async () => {
+    setLoadingBrief(true);
+    const { data: briefData, error } = await supabase
+      .from('client_briefs')
+      .select('*')
+      .eq('client_id', userId)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && briefData) {
+      setClientBrief(briefData);
+    }
+    setLoadingBrief(false);
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -92,16 +181,92 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
     }
   }, []);
 
-  const handleImageUpload = async (postNumber: number, file: File) => {
-    setUploadingImage(postNumber);
+  const handleCopyPrompt = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(SOCIAL_MEDIA_PROMPT);
+      showMessage('Prompt copied to clipboard', 'success');
+    } catch {
+      showMessage('Failed to copy prompt', 'error');
+    }
+  }, []);
+
+  const handleCopyBrief = useCallback(async () => {
+    if (!clientBrief?.brief_content) {
+      showMessage('No client brief available', 'error');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(clientBrief.brief_content);
+      showMessage('Client brief copied to clipboard', 'success');
+    } catch {
+      showMessage('Failed to copy brief', 'error');
+    }
+  }, [clientBrief]);
+
+  const handleCopyEverything = useCallback(async () => {
+    const sections: string[] = [];
+
+    sections.push('# Social Media Content Generation Package');
+    sections.push(`Generated: ${new Date().toLocaleString()}`);
+    sections.push('');
+
+    sections.push('---');
+    sections.push('## GENERATION PROMPT');
+    sections.push('');
+    sections.push(SOCIAL_MEDIA_PROMPT);
+    sections.push('');
+
+    if (clientBrief?.brief_content) {
+      sections.push('---');
+      sections.push('## CLIENT BRIEF');
+      sections.push('');
+      sections.push(clientBrief.brief_content);
+      sections.push('');
+    }
+
+    if (posts.length > 0) {
+      sections.push('---');
+      sections.push('## EXISTING POSTS');
+      sections.push('');
+      posts.forEach((post, index) => {
+        sections.push(`### Post ${post.post_number}`);
+        sections.push(`Platform: ${post.platform}`);
+        sections.push(`Category: ${post.category}`);
+        sections.push(`Week: ${post.week}, Day: ${post.day}`);
+        sections.push('');
+        sections.push('Caption:');
+        sections.push(post.caption);
+        if (post.hashtags) {
+          sections.push('');
+          sections.push(`Hashtags: ${post.hashtags}`);
+        }
+        if (post.image_prompt) {
+          sections.push('');
+          sections.push(`Image Prompt: ${post.image_prompt}`);
+        }
+        sections.push('');
+      });
+    }
+
+    try {
+      await navigator.clipboard.writeText(sections.join('\n'));
+      showMessage('Full package copied to clipboard', 'success');
+    } catch {
+      showMessage('Failed to copy to clipboard', 'error');
+    }
+  }, [clientBrief, posts]);
+
+  const handleAssetUpload = async (postNumber: number, file: File, assetType: 'image' | 'video') => {
+    setUploadingAsset({ postNumber, type: assetType });
     const post = posts.find(p => p.post_number === postNumber);
 
     try {
-      const ext = file.name.split('.').pop() || 'png';
+      const ext = file.name.split('.').pop() || (assetType === 'image' ? 'png' : 'mp4');
+      const bucket = assetType === 'image' ? 'social-media-images' : 'social-media-videos';
       const storagePath = `${userId}/${postNumber}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('social-media-images')
+        .from(bucket)
         .upload(storagePath, file, { contentType: file.type, upsert: true });
 
       if (uploadError) {
@@ -110,36 +275,58 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
       }
 
       if (post?.id) {
+        const updateData: any = {
+          status: post.status === 'pending' ? 'generated' : post.status,
+          updated_at: new Date().toISOString()
+        };
+
+        if (assetType === 'image') {
+          updateData.image_path = storagePath;
+          updateData.post_type = 'image';
+        } else {
+          updateData.video_path = storagePath;
+          updateData.post_type = 'video';
+        }
+
         await supabase
           .from('social_media_posts')
-          .update({
-            image_path: storagePath,
-            status: post.status === 'pending' ? 'generated' : post.status,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', post.id);
       }
 
-      showMessage(`Image uploaded for Post ${postNumber}`, 'success');
+      showMessage(`${assetType === 'image' ? 'Image' : 'Video'} uploaded for Post ${postNumber}`, 'success');
       await fetchPosts();
     } catch (err: any) {
       showMessage(err.message || 'Upload failed', 'error');
     } finally {
-      setUploadingImage(null);
+      setUploadingAsset(null);
     }
   };
 
-  const handleRemoveImage = async (postNumber: number) => {
+  const handleRemoveAsset = async (postNumber: number, assetType: 'image' | 'video') => {
     const post = posts.find(p => p.post_number === postNumber);
-    if (!post?.image_path || !post.id) return;
+    const pathField = assetType === 'image' ? 'image_path' : 'video_path';
+    const bucket = assetType === 'image' ? 'social-media-images' : 'social-media-videos';
 
-    await supabase.storage.from('social-media-images').remove([post.image_path]);
+    if (!post?.[pathField] || !post.id) return;
+
+    await supabase.storage.from(bucket).remove([post[pathField]]);
+
+    const otherAsset = assetType === 'image' ? post.video_path : post.image_path;
+    const newPostType = otherAsset
+      ? (assetType === 'image' ? 'video' : 'image')
+      : 'text';
+
     await supabase
       .from('social_media_posts')
-      .update({ image_path: null, updated_at: new Date().toISOString() })
+      .update({
+        [pathField]: null,
+        post_type: newPostType,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', post.id);
 
-    showMessage('Image removed', 'info');
+    showMessage(`${assetType === 'image' ? 'Image' : 'Video'} removed`, 'info');
     await fetchPosts();
   };
 
@@ -219,10 +406,11 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
     }
   };
 
-  const handleDownloadImage = async (imagePath: string, postNumber: number) => {
+  const handleDownloadAsset = async (path: string, postNumber: number, assetType: 'image' | 'video') => {
+    const bucket = assetType === 'image' ? 'social-media-images' : 'social-media-videos';
     const { data, error } = await supabase.storage
-      .from('social-media-images')
-      .createSignedUrl(imagePath, 3600);
+      .from(bucket)
+      .createSignedUrl(path, 3600);
 
     if (error || !data) {
       showMessage('Could not generate download link', 'error');
@@ -231,7 +419,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
 
     const a = document.createElement('a');
     a.href = data.signedUrl;
-    a.download = `post-${postNumber}-image.png`;
+    a.download = `post-${postNumber}-${assetType}.${path.split('.').pop()}`;
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
@@ -249,6 +437,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
   const deliveredCount = posts.filter(p => p.delivered_to_client).length;
   const generatedCount = posts.filter(p => p.status === 'generated' || p.status === 'edited').length;
   const withImageCount = posts.filter(p => p.image_path).length;
+  const withVideoCount = posts.filter(p => p.video_path).length;
 
   if (loading) {
     return (
@@ -279,16 +468,16 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
           <div>
             <h3 className="font-inter font-bold text-[#1B3F7A] text-xl mb-1">
-              Social Media Posts (30)
+              Social Media Posts ({postCount})
             </h3>
             <p className="font-inter text-gray-500 text-sm">
-              Manage individual posts with captions, hashtags, and images.
+              Manage posts with text, images, and videos. Copy prompts for content generation.
             </p>
           </div>
           <div className="flex items-center gap-6 text-sm shrink-0">
             <div className="text-center">
               <div className="font-inter font-bold text-2xl text-[#1B3F7A]">{posts.length}</div>
-              <div className="font-inter text-gray-500 text-xs">Total</div>
+              <div className="font-inter text-gray-500 text-xs">Created</div>
             </div>
             <div className="text-center">
               <div className="font-inter font-bold text-2xl text-amber-600">{generatedCount}</div>
@@ -298,15 +487,66 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
               <div className="font-inter font-bold text-2xl text-green-600">{deliveredCount}</div>
               <div className="font-inter text-gray-500 text-xs">Delivered</div>
             </div>
-            <div className="text-center">
-              <div className="font-inter font-bold text-2xl text-purple-600">{withImageCount}</div>
-              <div className="font-inter text-gray-500 text-xs">With Image</div>
-            </div>
           </div>
         </div>
 
-        {/* Filters and Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+        {/* Status badges */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+            clientBrief ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+          }`}>
+            {clientBrief ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+            Brief {clientBrief ? 'Ready' : 'Pending'}
+          </div>
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+            posts.length >= postCount ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'
+          }`}>
+            {posts.length}/{postCount} Posts
+          </div>
+          {withImageCount > 0 && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded text-xs bg-purple-50 text-purple-700">
+              <ImageIcon size={12} />
+              {withImageCount} Images
+            </div>
+          )}
+          {withVideoCount > 0 && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded text-xs bg-blue-50 text-blue-700">
+              <Video size={12} />
+              {withVideoCount} Videos
+            </div>
+          )}
+        </div>
+
+        {/* Clipboard Workflow */}
+        <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+          <button
+            onClick={handleCopyPrompt}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter font-medium transition-colors"
+          >
+            <Sparkles size={13} />
+            Copy Prompt
+          </button>
+          <button
+            onClick={handleCopyBrief}
+            disabled={!clientBrief}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Copy size={13} />
+            Copy Brief
+          </button>
+          <button
+            onClick={handleCopyEverything}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors"
+          >
+            <ClipboardCopy size={13} />
+            Copy Everything
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Filter size={16} className="text-gray-500" />
             <select
@@ -346,7 +586,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
                 <List size={16} />
               </button>
             </div>
-            {deliveredCount < posts.length && (
+            {deliveredCount < posts.length && posts.length > 0 && (
               <button
                 onClick={handleMarkAllDelivered}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-inter font-medium transition-colors"
@@ -363,9 +603,9 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
       {posts.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
           <ImageIcon size={40} className="text-gray-400 mx-auto mb-4" />
-          <p className="font-inter text-gray-600 mb-2">No posts generated yet</p>
-          <p className="font-inter text-gray-500 text-sm">
-            Posts will appear here once generated from the master brief.
+          <p className="font-inter text-gray-600 mb-2">No posts created yet</p>
+          <p className="font-inter text-gray-500 text-sm mb-4">
+            Use the "Copy Prompt" and "Copy Brief" buttons above, then paste into Claude or ChatGPT to generate posts.
           </p>
         </div>
       ) : viewMode === 'grid' ? (
@@ -377,7 +617,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
               isExpanded={expandedPost === post.post_number}
               isEditing={editingPost === post.post_number}
               editForm={editForm}
-              uploadingImage={uploadingImage}
+              uploadingAsset={uploadingAsset}
               copiedPostId={copiedPostId}
               onToggleExpand={() => setExpandedPost(expandedPost === post.post_number ? null : post.post_number)}
               onEdit={() => {
@@ -397,9 +637,12 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
               onSaveEdit={() => handleEditPost(post.post_number)}
               onEditFormChange={setEditForm}
               onCopyText={handleCopyText}
-              onImageUpload={(file) => handleImageUpload(post.post_number, file)}
-              onRemoveImage={() => handleRemoveImage(post.post_number)}
-              onDownloadImage={() => post.image_path && handleDownloadImage(post.image_path, post.post_number)}
+              onAssetUpload={(file, type) => handleAssetUpload(post.post_number, file, type)}
+              onRemoveAsset={(type) => handleRemoveAsset(post.post_number, type)}
+              onDownloadAsset={(type) => {
+                const path = type === 'image' ? post.image_path : post.video_path;
+                if (path) handleDownloadAsset(path, post.post_number, type);
+              }}
               onMarkDelivered={() => handleMarkDelivered(post.id)}
             />
           ))}
@@ -413,7 +656,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
               isExpanded={expandedPost === post.post_number}
               isEditing={editingPost === post.post_number}
               editForm={editForm}
-              uploadingImage={uploadingImage}
+              uploadingAsset={uploadingAsset}
               copiedPostId={copiedPostId}
               onToggleExpand={() => setExpandedPost(expandedPost === post.post_number ? null : post.post_number)}
               onEdit={() => {
@@ -433,9 +676,12 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
               onSaveEdit={() => handleEditPost(post.post_number)}
               onEditFormChange={setEditForm}
               onCopyText={handleCopyText}
-              onImageUpload={(file) => handleImageUpload(post.post_number, file)}
-              onRemoveImage={() => handleRemoveImage(post.post_number)}
-              onDownloadImage={() => post.image_path && handleDownloadImage(post.image_path, post.post_number)}
+              onAssetUpload={(file, type) => handleAssetUpload(post.post_number, file, type)}
+              onRemoveAsset={(type) => handleRemoveAsset(post.post_number, type)}
+              onDownloadAsset={(type) => {
+                const path = type === 'image' ? post.image_path : post.video_path;
+                if (path) handleDownloadAsset(path, post.post_number, type);
+              }}
               onMarkDelivered={() => handleMarkDelivered(post.id)}
             />
           ))}
@@ -452,7 +698,7 @@ function PostCard({
   isExpanded,
   isEditing,
   editForm,
-  uploadingImage,
+  uploadingAsset,
   copiedPostId,
   onToggleExpand,
   onEdit,
@@ -460,16 +706,16 @@ function PostCard({
   onSaveEdit,
   onEditFormChange,
   onCopyText,
-  onImageUpload,
-  onRemoveImage,
-  onDownloadImage,
+  onAssetUpload,
+  onRemoveAsset,
+  onDownloadAsset,
   onMarkDelivered,
 }: {
   post: SocialPost;
   isExpanded: boolean;
   isEditing: boolean;
   editForm: Partial<SocialPost>;
-  uploadingImage: number | null;
+  uploadingAsset: { postNumber: number; type: 'image' | 'video' } | null;
   copiedPostId: string | null;
   onToggleExpand: () => void;
   onEdit: () => void;
@@ -477,15 +723,18 @@ function PostCard({
   onSaveEdit: () => void;
   onEditFormChange: (form: Partial<SocialPost>) => void;
   onCopyText: (text: string, postId: string, type: 'caption' | 'hashtags') => void;
-  onImageUpload: (file: File) => void;
-  onRemoveImage: () => void;
-  onDownloadImage: () => void;
+  onAssetUpload: (file: File, type: 'image' | 'video') => void;
+  onRemoveAsset: (type: 'image' | 'video') => void;
+  onDownloadAsset: (type: 'image' | 'video') => void;
   onMarkDelivered: () => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const PlatformIcon = PLATFORM_CONFIG[post.platform].icon;
   const categoryStyle = CATEGORY_STYLES[post.category];
-  const isUploading = uploadingImage === post.post_number;
+  const PostTypeIcon = POST_TYPE_ICONS[post.post_type];
+  const isUploadingImage = uploadingAsset?.postNumber === post.post_number && uploadingAsset?.type === 'image';
+  const isUploadingVideo = uploadingAsset?.postNumber === post.post_number && uploadingAsset?.type === 'video';
 
   return (
     <div className={`bg-white rounded-lg border overflow-hidden transition-shadow ${isExpanded ? 'border-[#1B3F7A] border-opacity-40 shadow-sm' : 'border-gray-200'}`}>
@@ -498,9 +747,14 @@ function PostCard({
               {categoryStyle.label}
             </span>
           </div>
-          <div className={`flex items-center gap-1 px-2 py-0.5 rounded ${PLATFORM_CONFIG[post.platform].bg}`}>
-            <PlatformIcon size={12} className={PLATFORM_CONFIG[post.platform].color} />
-            <span className="text-xs font-medium text-gray-700">{post.platform}</span>
+          <div className="flex items-center gap-1">
+            <div className={`p-1 rounded ${post.post_type === 'video' ? 'bg-blue-50' : post.post_type === 'image' ? 'bg-purple-50' : 'bg-gray-50'}`}>
+              <PostTypeIcon size={12} className={post.post_type === 'video' ? 'text-blue-600' : post.post_type === 'image' ? 'text-purple-600' : 'text-gray-500'} />
+            </div>
+            <div className={`flex items-center gap-1 px-2 py-0.5 rounded ${PLATFORM_CONFIG[post.platform].bg}`}>
+              <PlatformIcon size={12} className={PLATFORM_CONFIG[post.platform].color} />
+              <span className="text-xs font-medium text-gray-700">{post.platform}</span>
+            </div>
           </div>
         </div>
 
@@ -518,14 +772,9 @@ function PostCard({
               <Send size={10} /> Delivered
             </span>
           )}
-          {post.image_path && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs font-medium">
-              <ImageIcon size={10} /> Image
-            </span>
-          )}
           {post.status === 'edited' && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-xs font-medium">
-              <Edit3 size={10} /> Edited
+              Edited
             </span>
           )}
         </div>
@@ -559,7 +808,6 @@ function PostCard({
                 onClick={onEdit}
                 className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter transition-colors"
               >
-                <Edit3 size={12} />
                 Edit
               </button>
               <button
@@ -576,7 +824,6 @@ function PostCard({
                 onClick={onSaveEdit}
                 className="inline-flex items-center gap-1 px-2 py-1 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter transition-colors"
               >
-                <Save size={12} />
                 Save
               </button>
               <button
@@ -630,99 +877,107 @@ function PostCard({
             {post.image_path ? (
               <div className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded bg-purple-50 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded bg-purple-50 flex items-center justify-center">
                     <ImageIcon size={14} className="text-purple-600" />
                   </div>
                   <span className="font-inter text-xs text-gray-700">Image uploaded</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={onDownloadImage}
-                    className="p-1.5 text-gray-500 hover:text-[#1B3F7A] hover:bg-gray-100 rounded"
-                    title="Download"
-                  >
-                    <Download size={14} />
+                  <button onClick={() => onDownloadAsset('image')} className="p-1.5 text-gray-500 hover:text-[#1B3F7A] hover:bg-gray-100 rounded" title="Download">
+                    <Download size={13} />
                   </button>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
-                    title="Replace"
-                  >
-                    <RefreshCw size={14} />
+                  <button onClick={() => imageInputRef.current?.click()} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded" title="Replace">
+                    <RefreshCw size={13} />
                   </button>
-                  <button
-                    onClick={onRemoveImage}
-                    className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                    title="Remove"
-                  >
-                    <X size={14} />
+                  <button onClick={() => onRemoveAsset('image')} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded" title="Remove">
+                    <X size={13} />
                   </button>
                 </div>
               </div>
             ) : (
               <div
-                onClick={() => !isUploading && fileInputRef.current?.click()}
-                className={`flex flex-col items-center justify-center gap-1.5 border-2 border-dashed rounded-lg px-3 py-4 cursor-pointer transition-colors
-                  ${isUploading
-                    ? 'border-purple-300 bg-purple-50 cursor-wait'
-                    : 'border-gray-300 bg-white hover:border-purple-400 hover:bg-purple-50'
-                  }`}
+                onClick={() => !isUploadingImage && imageInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center gap-1.5 border-2 border-dashed rounded-lg px-3 py-3 cursor-pointer transition-colors
+                  ${isUploadingImage ? 'border-purple-300 bg-purple-50 cursor-wait' : 'border-gray-300 bg-white hover:border-purple-400 hover:bg-purple-50'}`}
               >
-                {isUploading ? (
+                {isUploadingImage ? (
                   <>
-                    <RefreshCw size={16} className="text-purple-500 animate-spin" />
+                    <RefreshCw size={14} className="text-purple-500 animate-spin" />
                     <p className="font-inter text-xs text-purple-600 font-medium">Uploading...</p>
                   </>
                 ) : (
                   <>
-                    <FileUp size={16} className="text-gray-400" />
+                    <ImageIcon size={14} className="text-gray-400" />
                     <p className="font-inter text-xs text-gray-600 font-medium">Upload Image</p>
                   </>
                 )}
               </div>
             )}
             <input
-              ref={fileInputRef}
+              ref={imageInputRef}
               type="file"
               accept="image/*"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) onImageUpload(file);
+                if (file) onAssetUpload(file, 'image');
               }}
             />
           </div>
 
-          {/* Platform/Category (when editing) */}
-          {isEditing && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="font-inter text-xs font-medium text-gray-500 mb-1 block">Platform</label>
-                <select
-                  value={editForm.platform || post.platform}
-                  onChange={(e) => onEditFormChange({ ...editForm, platform: e.target.value as any })}
-                  className="w-full p-2 border border-gray-200 rounded text-sm font-inter"
-                >
-                  <option value="LinkedIn">LinkedIn</option>
-                  <option value="Instagram">Instagram</option>
-                  <option value="Facebook">Facebook</option>
-                  <option value="X">X</option>
-                </select>
+          {/* Video Upload */}
+          <div>
+            <label className="font-inter text-xs font-medium text-gray-500 mb-2 block">Video</label>
+            {post.video_path ? (
+              <div className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded bg-blue-50 flex items-center justify-center">
+                    <Video size={14} className="text-blue-600" />
+                  </div>
+                  <span className="font-inter text-xs text-gray-700">Video uploaded</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => onDownloadAsset('video')} className="p-1.5 text-gray-500 hover:text-[#1B3F7A] hover:bg-gray-100 rounded" title="Download">
+                    <Download size={13} />
+                  </button>
+                  <button onClick={() => videoInputRef.current?.click()} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded" title="Replace">
+                    <RefreshCw size={13} />
+                  </button>
+                  <button onClick={() => onRemoveAsset('video')} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded" title="Remove">
+                    <X size={13} />
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="font-inter text-xs font-medium text-gray-500 mb-1 block">Category</label>
-                <select
-                  value={editForm.category || post.category}
-                  onChange={(e) => onEditFormChange({ ...editForm, category: e.target.value as any })}
-                  className="w-full p-2 border border-gray-200 rounded text-sm font-inter"
-                >
-                  <option value="educational">Educational</option>
-                  <option value="promotional">Promotional</option>
-                  <option value="personal">Personal</option>
-                </select>
+            ) : (
+              <div
+                onClick={() => !isUploadingVideo && videoInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center gap-1.5 border-2 border-dashed rounded-lg px-3 py-3 cursor-pointer transition-colors
+                  ${isUploadingVideo ? 'border-blue-300 bg-blue-50 cursor-wait' : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50'}`}
+              >
+                {isUploadingVideo ? (
+                  <>
+                    <RefreshCw size={14} className="text-blue-500 animate-spin" />
+                    <p className="font-inter text-xs text-blue-600 font-medium">Uploading...</p>
+                  </>
+                ) : (
+                  <>
+                    <Video size={14} className="text-gray-400" />
+                    <p className="font-inter text-xs text-gray-600 font-medium">Upload Video</p>
+                  </>
+                )}
               </div>
-            </div>
-          )}
+            )}
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onAssetUpload(file, 'video');
+              }}
+            />
+          </div>
 
           {/* Deliver button */}
           {!post.delivered_to_client && (
@@ -747,7 +1002,7 @@ function PostListItem({
   isExpanded,
   isEditing,
   editForm,
-  uploadingImage,
+  uploadingAsset,
   copiedPostId,
   onToggleExpand,
   onEdit,
@@ -755,16 +1010,16 @@ function PostListItem({
   onSaveEdit,
   onEditFormChange,
   onCopyText,
-  onImageUpload,
-  onRemoveImage,
-  onDownloadImage,
+  onAssetUpload,
+  onRemoveAsset,
+  onDownloadAsset,
   onMarkDelivered,
 }: {
   post: SocialPost;
   isExpanded: boolean;
   isEditing: boolean;
   editForm: Partial<SocialPost>;
-  uploadingImage: number | null;
+  uploadingAsset: { postNumber: number; type: 'image' | 'video' } | null;
   copiedPostId: string | null;
   onToggleExpand: () => void;
   onEdit: () => void;
@@ -772,15 +1027,18 @@ function PostListItem({
   onSaveEdit: () => void;
   onEditFormChange: (form: Partial<SocialPost>) => void;
   onCopyText: (text: string, postId: string, type: 'caption' | 'hashtags') => void;
-  onImageUpload: (file: File) => void;
-  onRemoveImage: () => void;
-  onDownloadImage: () => void;
+  onAssetUpload: (file: File, type: 'image' | 'video') => void;
+  onRemoveAsset: (type: 'image' | 'video') => void;
+  onDownloadAsset: (type: 'image' | 'video') => void;
   onMarkDelivered: () => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const PlatformIcon = PLATFORM_CONFIG[post.platform].icon;
   const categoryStyle = CATEGORY_STYLES[post.category];
-  const isUploading = uploadingImage === post.post_number;
+  const PostTypeIcon = POST_TYPE_ICONS[post.post_type];
+  const isUploadingImage = uploadingAsset?.postNumber === post.post_number && uploadingAsset?.type === 'image';
+  const isUploadingVideo = uploadingAsset?.postNumber === post.post_number && uploadingAsset?.type === 'video';
 
   return (
     <div className={`bg-white rounded-lg border overflow-hidden ${isExpanded ? 'border-[#1B3F7A] border-opacity-40' : 'border-gray-200'}`}>
@@ -791,14 +1049,19 @@ function PostListItem({
             #{post.post_number}
           </div>
 
-          {/* Category & Platform */}
+          {/* Category, Platform & Type */}
           <div className="flex flex-col gap-1 shrink-0">
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${categoryStyle.bg} ${categoryStyle.text}`}>
               {categoryStyle.label}
             </span>
-            <div className={`flex items-center gap-1 px-2 py-0.5 rounded ${PLATFORM_CONFIG[post.platform].bg}`}>
-              <PlatformIcon size={12} className={PLATFORM_CONFIG[post.platform].color} />
-              <span className="text-xs font-medium text-gray-700">{post.platform}</span>
+            <div className="flex items-center gap-1">
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded ${PLATFORM_CONFIG[post.platform].bg}`}>
+                <PlatformIcon size={12} className={PLATFORM_CONFIG[post.platform].color} />
+                <span className="text-xs font-medium text-gray-700">{post.platform}</span>
+              </div>
+              <div className={`p-1 rounded ${post.post_type === 'video' ? 'bg-blue-50' : post.post_type === 'image' ? 'bg-purple-50' : 'bg-gray-50'}`}>
+                <PostTypeIcon size={12} className={post.post_type === 'video' ? 'text-blue-600' : post.post_type === 'image' ? 'text-purple-600' : 'text-gray-500'} />
+              </div>
             </div>
           </div>
 
@@ -809,7 +1072,8 @@ function PostListItem({
             </p>
             <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
               <span>Week {post.week}, {post.day}</span>
-              {post.image_path && <span className="text-purple-600">+ Image</span>}
+              {post.image_path && <span className="text-purple-600">+Image</span>}
+              {post.video_path && <span className="text-blue-600">+Video</span>}
               {post.delivered_to_client && <span className="text-blue-600">Delivered</span>}
             </div>
           </div>
@@ -865,46 +1129,17 @@ function PostListItem({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-inter text-xs font-medium text-gray-500 mb-1 block">Platform</label>
-                  <select
-                    value={editForm.platform || post.platform}
-                    onChange={(e) => onEditFormChange({ ...editForm, platform: e.target.value as any })}
-                    className="w-full p-2 border border-gray-200 rounded text-sm font-inter"
-                  >
-                    <option value="LinkedIn">LinkedIn</option>
-                    <option value="Instagram">Instagram</option>
-                    <option value="Facebook">Facebook</option>
-                    <option value="X">X</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-inter text-xs font-medium text-gray-500 mb-1 block">Category</label>
-                  <select
-                    value={editForm.category || post.category}
-                    onChange={(e) => onEditFormChange({ ...editForm, category: e.target.value as any })}
-                    className="w-full p-2 border border-gray-200 rounded text-sm font-inter"
-                  >
-                    <option value="educational">Educational</option>
-                    <option value="promotional">Promotional</option>
-                    <option value="personal">Personal</option>
-                  </select>
-                </div>
-              </div>
               <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
                 <button
                   onClick={onSaveEdit}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors"
                 >
-                  <Save size={13} />
                   Save Changes
                 </button>
                 <button
                   onClick={onCancelEdit}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-inter font-medium transition-colors"
                 >
-                  <X size={13} />
                   Cancel
                 </button>
               </div>
@@ -940,62 +1175,104 @@ function PostListItem({
             {post.image_path ? (
               <div className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded bg-purple-50 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded bg-purple-50 flex items-center justify-center">
                     <ImageIcon size={14} className="text-purple-600" />
                   </div>
                   <span className="font-inter text-xs text-gray-700">Image uploaded</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={onDownloadImage}
-                    className="p-1.5 text-gray-500 hover:text-[#1B3F7A] hover:bg-gray-100 rounded"
-                  >
+                  <button onClick={() => onDownloadAsset('image')} className="p-1.5 text-gray-500 hover:text-[#1B3F7A] hover:bg-gray-100 rounded">
                     <Download size={14} />
                   </button>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
-                  >
+                  <button onClick={() => imageInputRef.current?.click()} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded">
                     <RefreshCw size={14} />
                   </button>
-                  <button
-                    onClick={onRemoveImage}
-                    className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                  >
+                  <button onClick={() => onRemoveAsset('image')} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded">
                     <X size={14} />
                   </button>
                 </div>
               </div>
             ) : (
               <div
-                onClick={() => !isUploading && fileInputRef.current?.click()}
+                onClick={() => !isUploadingImage && imageInputRef.current?.click()}
                 className={`flex items-center justify-center gap-2 border-2 border-dashed rounded-lg px-3 py-3 cursor-pointer transition-colors
-                  ${isUploading
-                    ? 'border-purple-300 bg-purple-50 cursor-wait'
-                    : 'border-gray-300 bg-white hover:border-purple-400 hover:bg-purple-50'
-                  }`}
+                  ${isUploadingImage ? 'border-purple-300 bg-purple-50 cursor-wait' : 'border-gray-300 bg-white hover:border-purple-400 hover:bg-purple-50'}`}
               >
-                {isUploading ? (
+                {isUploadingImage ? (
                   <>
                     <RefreshCw size={14} className="text-purple-500 animate-spin" />
                     <p className="font-inter text-xs text-purple-600 font-medium">Uploading...</p>
                   </>
                 ) : (
                   <>
-                    <FileUp size={14} className="text-gray-400" />
+                    <ImageIcon size={14} className="text-gray-400" />
                     <p className="font-inter text-xs text-gray-600 font-medium">Upload Image</p>
                   </>
                 )}
               </div>
             )}
             <input
-              ref={fileInputRef}
+              ref={imageInputRef}
               type="file"
               accept="image/*"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) onImageUpload(file);
+                if (file) onAssetUpload(file, 'image');
+              }}
+            />
+          </div>
+
+          {/* Video Upload */}
+          <div>
+            <label className="font-inter text-xs font-medium text-gray-500 mb-2 block">Video</label>
+            {post.video_path ? (
+              <div className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded bg-blue-50 flex items-center justify-center">
+                    <Video size={14} className="text-blue-600" />
+                  </div>
+                  <span className="font-inter text-xs text-gray-700">Video uploaded</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => onDownloadAsset('video')} className="p-1.5 text-gray-500 hover:text-[#1B3F7A] hover:bg-gray-100 rounded">
+                    <Download size={14} />
+                  </button>
+                  <button onClick={() => videoInputRef.current?.click()} className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded">
+                    <RefreshCw size={14} />
+                  </button>
+                  <button onClick={() => onRemoveAsset('video')} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded">
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => !isUploadingVideo && videoInputRef.current?.click()}
+                className={`flex items-center justify-center gap-2 border-2 border-dashed rounded-lg px-3 py-3 cursor-pointer transition-colors
+                  ${isUploadingVideo ? 'border-blue-300 bg-blue-50 cursor-wait' : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50'}`}
+              >
+                {isUploadingVideo ? (
+                  <>
+                    <RefreshCw size={14} className="text-blue-500 animate-spin" />
+                    <p className="font-inter text-xs text-blue-600 font-medium">Uploading...</p>
+                  </>
+                ) : (
+                  <>
+                    <Video size={14} className="text-gray-400" />
+                    <p className="font-inter text-xs text-gray-600 font-medium">Upload Video</p>
+                  </>
+                )}
+              </div>
+            )}
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onAssetUpload(file, 'video');
               }}
             />
           </div>
@@ -1007,7 +1284,6 @@ function PostListItem({
                 onClick={onEdit}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-inter font-medium transition-colors"
               >
-                <Edit3 size={13} />
                 Edit Post
               </button>
               {!post.delivered_to_client && (

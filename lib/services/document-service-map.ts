@@ -15,9 +15,6 @@ const DOCUMENT_TYPE_TO_SERVICE_ID: Record<string, string> = {
   elevator_pitch: 'business_foundations_pack',
   linkedin_profile_script: 'business_foundations_pack',
   service_description_sheets: 'business_foundations_pack',
-
-  // Social Media Pack (1 composite document)
-  social_media_posts: 'social_media_pack',
 };
 
 /** Look up which service owns a given document type. */

@@ -77,36 +77,10 @@ const BUSINESS_FOUNDATIONS: DocumentConfig[] = [
   },
 ];
 
-// ─── Social Media Pack (1 composite document) ─────────────────────────────────
-
-const SOCIAL_MEDIA: DocumentConfig[] = [
-  {
-    document_type: 'social_media_posts',
-    service_id: 'social_media_pack',
-    document_label: 'Social Media Posts (30)',
-    description: '30 posts: educational, promotional, personal',
-    supportsRefresh: true,
-    output_format: `PLAIN TEXT — no markdown, no HTML.
-
-Number each post 1–30. Use this exact structure for every post:
-
-POST N [CATEGORY]
-Caption: [full post text — ready to copy-paste]
-Hashtags: #[tag1] #[tag2] #[tag3] #[tag4] #[tag5]
-Image: [1–2 sentence image prompt describing what the accompanying image should show]
-Platform: [LinkedIn | Instagram | Facebook | X]
-Week: [1–6]
-Day: [Mon | Tue | Wed | Thu | Fri]
-
-Separate posts with a blank line. Do not include any introductory or concluding commentary — only the posts.`,
-  },
-];
-
 // ─── Combined exports ────────────────────────────────────────────────────────
 
 const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
   ...BUSINESS_FOUNDATIONS,
-  ...SOCIAL_MEDIA,
 ];
 
 const CONFIG_MAP = new Map(ALL_DOCUMENT_CONFIGS.map(c => [c.document_type, c]));
