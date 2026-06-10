@@ -156,6 +156,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q10_website_url', questionNumber: 'Q10', label: 'If yes — what is your website URL?', type: 'url', required: false, placeholder: 'e.g. www.smithconsulting.co.uk', conditionalOn: { field: 'q9_has_website', value: 'Yes — I have a live website' } },
       { id: 'q11_social_platforms', questionNumber: 'Q11', label: 'Which social media platforms do you actively use for your business?', type: 'multi_select', required: false, options: ['LinkedIn', 'Instagram', 'TikTok', 'Facebook Page', 'X (Twitter)', 'WhatsApp Business', 'Pinterest', 'None yet'] },
       { id: 'q12_social_links', questionNumber: 'Q12', label: 'Please paste the links to any active social media profiles', type: 'long_text', required: false, placeholder: 'One per line', conditionalOn: { field: 'q11_social_platforms', value: 'None yet', notEqual: true } },
+      { id: 'business_identity_notes', questionNumber: 'Q12b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details or clarifications you want to share about your business identity...', helpText: 'Optional — add any extra context that didn\'t fit in the questions above.' },
     ],
     serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
     sortOrder: 10,
@@ -174,6 +175,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q16_uses_subcontractors', questionNumber: 'Q16', label: 'Do you use subcontractors or other freelancers to help deliver any part of your services?', type: 'single_choice', required: true, options: ['Yes', 'No'] },
       { id: 'q17_inform_subcontractors', questionNumber: 'Q17', label: 'Should your clients be informed in their contract that subcontractors may be involved in delivering their work?', type: 'single_choice', required: false, options: ['Yes', 'No'], conditionalOn: { field: 'q16_uses_subcontractors', value: 'Yes' }, helpText: 'Most clients will select yes. Being transparent about this protects you legally.' },
       { id: 'q18_sends_proposal', questionNumber: 'Q18', label: 'Do you typically send a proposal or quote before a client formally engages you?', type: 'single_choice', required: true, options: ['Yes — I always send a proposal first', 'Sometimes — depends on the project', 'No — we agree verbally and get started'] },
+      { id: 'services_notes', questionNumber: 'Q18b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your services that didn\'t fit above...', helpText: 'Optional — add any extra context about what you offer.' },
     ],
     serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
     sortOrder: 20,
@@ -192,6 +194,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q22_client_issues', questionNumber: 'Q22', label: 'Have you ever experienced any of the following with clients?', type: 'multi_select', required: true, options: ['Client refused to pay', 'Client disappeared / went silent after work was delivered', 'Scope creep — client asked for far more than agreed', 'Refund dispute', 'Chargeback through PayPal or card', 'Client claimed ownership of work before paying in full', 'Missed deadlines caused by the client, not me', 'GDPR or data complaint', 'Harassment or abusive behaviour', 'Threats of legal action', 'None of the above'] },
       { id: 'q23_dispute_details', questionNumber: 'Q23', label: 'Please describe what happened in any of the above situations.', type: 'long_text', required: false, placeholder: 'You don\'t need to name anyone. The more detail you give here, the more precisely we can tailor your contract clauses.', conditionalOn: { field: 'q22_client_issues', value: 'None of the above', notEqual: true }, helpText: 'Strongly encouraged — this directly shapes your protective clauses.' },
       { id: 'q24_client_concerns', questionNumber: 'Q24', label: 'What are your biggest concerns or worries when working with clients?', type: 'long_text', required: false, placeholder: 'e.g. Clients not taking the work seriously, projects dragging on past the agreed timeline, being asked to do things outside the original brief.' },
+      { id: 'clients_notes', questionNumber: 'Q24b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your clients that didn\'t fit above...', helpText: 'Optional — add any extra context about your client relationships.' },
     ],
     serviceTags: ['business_foundations_pack', 'website_copy_pack'],
     sortOrder: 30,
@@ -215,6 +218,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q33_late_payment_interest', questionNumber: 'Q33', label: 'Do you want statutory late payment interest wording included in your documents?', type: 'single_choice', required: true, options: ['Yes', 'No'], default: 'Yes', helpText: 'Under the Late Payment of Commercial Debts Act 1998, you have the legal right to charge 8% above the Bank of England base rate on overdue invoices. We recommend including this.' },
       { id: 'q34_vat_registered', questionNumber: 'Q34', label: 'Are you VAT registered?', type: 'single_choice', required: true, options: ['Yes', 'No'] },
       { id: 'q35_vat_number', questionNumber: 'Q35', label: 'What is your VAT number?', type: 'short_text', required: false, placeholder: 'e.g. GB123456789', conditionalOn: { field: 'q34_vat_registered', value: 'Yes' } },
+      { id: 'pricing_notes', questionNumber: 'Q35b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your pricing and payment terms...', helpText: 'Optional — add any extra context about how you handle payments.' },
     ],
     serviceTags: ['business_foundations_pack'],
     sortOrder: 40,
@@ -240,6 +244,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q46_marketing_platform', questionNumber: 'Q46', label: 'Which platform do you use for email marketing, and how do people sign up?', type: 'short_text', required: false, placeholder: 'e.g. Mailchimp — people opt in via a sign-up form on my website', conditionalOn: { field: 'q45_sends_marketing', value: 'Yes' } },
       { id: 'q47_uses_cookies', questionNumber: 'Q47', label: 'Do you use cookies or tracking tools on your website?', type: 'single_choice', required: false, options: ['Yes', 'No', 'I\'m not sure'], conditionalOn: { field: 'q9_has_website', value: 'Yes — I have a live website' } },
       { id: 'q48_tracking_tools', questionNumber: 'Q48', label: 'Which tracking tools do you use?', type: 'multi_select', required: false, options: ['Google Analytics', 'Meta (Facebook) Pixel', 'TikTok Pixel', 'Hotjar or Microsoft Clarity', 'Cookie consent banner tool', 'Other'], conditionalOn: { field: 'q47_uses_cookies', value: 'Yes' }, hasOtherOption: true },
+      { id: 'gdpr_notes', questionNumber: 'Q48b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your data protection practices...', helpText: 'Optional — add any extra context about how you handle client data.' },
     ],
     serviceTags: ['business_foundations_pack'],
     sortOrder: 50,
@@ -258,6 +263,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q52_certifications', questionNumber: 'Q52', label: 'Do you hold any professional certifications, accreditations, or memberships relevant to your work?', type: 'long_text', required: false, placeholder: 'e.g. ICB-certified bookkeeper. Member of the VA Membership Association since 2022.', helpText: 'These are used in your Professional Bio and LinkedIn Profile.' },
       { id: 'q53_specific_clauses', questionNumber: 'Q53', label: 'Are there any specific protections, clauses, or wording you know you want included in your documents?', type: 'long_text', required: false, placeholder: 'e.g. "I want a very clear clause about what happens if a client disappears mid-project. I also want it clearly stated that my working hours are Monday to Thursday only."' },
       { id: 'q54_exclusions', questionNumber: 'Q54', label: 'Is there anything you know you do NOT want included?', type: 'long_text', required: false, placeholder: 'Any clauses, wording, or approaches you want excluded from your documents.' },
+      { id: 'legal_notes', questionNumber: 'Q54b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional legal or risk considerations...', helpText: 'Optional — add any extra context about your legal needs.' },
     ],
     serviceTags: ['business_foundations_pack'],
     sortOrder: 60,
@@ -284,6 +290,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q66_logo_upload', questionNumber: 'Q66', label: 'Upload your logo.', type: 'file_upload', required: false, conditionalOn: { field: 'q65_has_logo', value: 'Yes' }, helpText: 'PNG or SVG preferred. This will be used on your invoice template and document headers.' },
       { id: 'q67_brand_colours', questionNumber: 'Q67', label: 'What are your brand colours?', type: 'short_text', required: false, placeholder: 'Hex codes if you have them. If not, describe: "deep navy blue and warm gold" or "sage green and off-white."' },
       { id: 'q68_visual_style', questionNumber: 'Q68', label: 'How do you want your documents to feel visually?', type: 'single_choice', required: true, options: ['Clean and modern / minimal', 'Corporate and formal', 'Warm and friendly', 'Premium and luxury', 'Simple — I just want it to work'] },
+      { id: 'brand_notes', questionNumber: 'Q68b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your brand and voice...', helpText: 'Optional — add any extra context about how you want to come across.' },
     ],
     serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
     sortOrder: 70,
@@ -291,6 +298,7 @@ export const allFormSections: FormSection[] = [
     // For documents-only purchases, it's not essential for document generation.
     fieldServiceTags: {
       'q67_brand_colours': ['website_copy_pack', 'social_media_pack'],
+      'brand_notes': ['business_foundations_pack'],
     },
   },
 
@@ -304,6 +312,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q69_bank_details', questionNumber: 'Q69', label: 'What bank or payment details should appear on your invoices?', type: 'long_text', required: true, placeholder: 'For bank transfers: Account name, sort code, account number. For PayPal/Stripe/other: include the relevant details or email. If you use multiple methods, list all of them.' },
       { id: 'q70_invoice_due_date', questionNumber: 'Q70', label: 'What should invoices default to as a payment due date?', type: 'short_text', required: true, placeholder: 'e.g. 7 days from invoice date / 14 days from invoice date / Due on receipt', helpText: 'This should match your payment terms in Section 4.' },
       { id: 'q71_invoice_fields', questionNumber: 'Q71', label: 'What optional fields do you want included on your invoice template?', type: 'multi_select', required: false, options: ['Purchase order (PO) number field', 'VAT breakdown section', 'Notes / message to client section', 'Payment terms summary at the bottom', 'Signature field'] },
+      { id: 'invoice_notes', questionNumber: 'Q71b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your invoice preferences...', helpText: 'Optional — add any extra context about how you want invoices to look.' },
     ],
     serviceTags: ['business_foundations_pack'],
     sortOrder: 80,
@@ -320,6 +329,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q73_linkedin_url', questionNumber: 'Q73', label: 'What is your LinkedIn profile URL?', type: 'url', required: false, placeholder: 'e.g. linkedin.com/in/yourname', conditionalOn: { field: 'q72_linkedin_usage', value: ['Yes — I use it actively', 'I have a profile but rarely use it'], notEqual: false } },
       { id: 'q74_linkedin_target', questionNumber: 'Q74', label: 'What kind of clients or opportunities do you want to attract through LinkedIn?', type: 'long_text', required: true, placeholder: 'Be specific. "New clients" is not enough. "Small e-commerce business owners who need monthly bookkeeping support on a retainer basis" gives us what we need.' },
       { id: 'q75_linkedin_keywords', questionNumber: 'Q75', label: 'What keywords or services do you want people to find you for on LinkedIn?', type: 'long_text', required: false, placeholder: 'e.g. VA services, email management, social media scheduling, virtual assistant for coaches, online business support.' },
+      { id: 'linkedin_notes', questionNumber: 'Q75b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your LinkedIn profile...', helpText: 'Optional — add any extra context about your LinkedIn goals.' },
     ],
     serviceTags: ['business_foundations_pack'],
     sortOrder: 90,
@@ -429,7 +439,7 @@ export const allFormSections: FormSection[] = [
       // ── PAGE-SPECIFIC QUESTIONS (Optional) ──
       // Homepage
       { id: 'wc_homepage_sections', questionNumber: 'WC28', label: 'What sections do you want on your Homepage?', type: 'multi_select', required: false, options: ['Hero banner', 'About preview', 'Services overview', 'Testimonials', 'FAQ preview', 'Latest blog posts', 'Newsletter signup', 'Contact CTA'], conditionalOn: { field: 'wc1_pages_needed', value: 'Homepage' }, helpText: 'Optional — tell us if you have specific preferences, otherwise we\'ll use a standard structure.' },
-      { id: 'wc_homepage_cta_style', questionNumber: 'WC29', label: 'What style of call-to-action do you prefer on your Homepage?', type: 'single_choice', required: false, options: ['Single prominent button', 'Multiple CTA buttons', 'Soft CTA with contact link', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Homepage' } },
+      { id: 'wc_homepage_cta_style', questionNumber: 'WC29', label: 'What style of call-to-action do you prefer on your Homepage?', type: 'multi_select', required: false, options: ['Single prominent button', 'Multiple CTA buttons', 'Soft CTA with contact link', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Homepage' } },
 
       // About page
       { id: 'wc_about_focus', questionNumber: 'WC30', label: 'What should your About page focus on?', type: 'multi_select', required: false, options: ['Your story and journey', 'Your qualifications and experience', 'Your approach and methodology', 'Your values and mission', 'Personal side / hobbies', 'Team members (if any)'], conditionalOn: { field: 'wc1_pages_needed', value: 'About' }, helpText: 'Select what matters most for connecting with your audience.' },
@@ -463,6 +473,7 @@ export const allFormSections: FormSection[] = [
       // Testimonials page
       { id: 'wc_testimonials_format', questionNumber: 'WC46', label: 'How should testimonials be displayed?', type: 'single_choice', required: false, options: ['Quote cards with photos', 'Carousel/slider', 'Simple list', 'Video testimonials', 'Mixed formats', 'No preference'], conditionalOn: { field: 'wc1_pages_needed', value: 'Testimonials' } },
       { id: 'wc_testimonials_featured', questionNumber: 'WC47', label: 'Do you have any testimonials you want featured prominently?', type: 'long_text', required: false, placeholder: 'Paste the full testimonial text and tell us why it stands out.', conditionalOn: { field: 'wc1_pages_needed', value: 'Testimonials' } },
+      { id: 'website_copy_notes', questionNumber: 'WC47b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your website that didn\'t fit above...', helpText: 'Optional — add any extra context about your website vision.' },
     ],
     serviceTags: ['website_copy_pack'],
     sortOrder: 110,
@@ -488,6 +499,7 @@ export const allFormSections: FormSection[] = [
       { id: 'sm11_existing_accounts', questionNumber: 'SM11', label: 'List your existing social media accounts and approximate follower counts.', type: 'long_text', required: false, placeholder: 'e.g. Instagram @janesmith 2.3K followers, LinkedIn /in/janesmith 500+ connections, TikTok @janesmith 150 followers' },
       { id: 'sm12_content_calendar', questionNumber: 'SM12', label: 'How should your content calendar be structured?', type: 'single_choice', required: true, options: ['Weekly themed — each week has a focus topic', 'Rotating pillars — cycle through your content pillars evenly', 'Mix of types — vary educational, personal, and promotional posts', 'No preference — let us decide'], helpText: 'This affects how we plan and organise your 30 posts.' },
       { id: 'sm13_upcoming_launches', questionNumber: 'SM13', label: 'Do you have any upcoming launches, events, or seasonal moments you want featured in your posts?', type: 'long_text', required: false, placeholder: 'e.g. Launching a new service in July, Speaking at an event in September, Running a Black Friday promotion, Celebrating my business anniversary in October' },
+      { id: 'social_media_notes', questionNumber: 'SM13b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your social media content that didn\'t fit above...', helpText: 'Optional — add any extra context about your social media goals.' },
     ],
     serviceTags: ['social_media_pack'],
     sortOrder: 120,

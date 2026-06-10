@@ -74,6 +74,7 @@ function getBusinessIdentitySchema(): z.ZodObject<any> {
     q10_website_url: optionalUrl,
     q11_social_platforms: multiSelect(['LinkedIn', 'Instagram', 'TikTok', 'Facebook Page', 'X (Twitter)', 'WhatsApp Business', 'Pinterest', 'None yet'], false),
     q12_social_links: optionalString,
+    business_identity_notes: optionalString,
   });
 }
 
@@ -85,6 +86,7 @@ function getServicesSchema(): z.ZodObject<any> {
     q16_uses_subcontractors: singleChoice(['Yes', 'No'], true),
     q17_inform_subcontractors: singleChoice(['Yes', 'No'], false),
     q18_sends_proposal: singleChoice(['Yes — I always send a proposal first', 'Sometimes — depends on the project', 'No — we agree verbally and get started'], true),
+    services_notes: optionalString,
   });
 }
 
@@ -96,6 +98,7 @@ function getClientsSchema(): z.ZodObject<any> {
     q22_client_issues: multiSelect(['Client refused to pay', 'Client disappeared / went silent after work was delivered', 'Scope creep — client asked for far more than agreed', 'Refund dispute', 'Chargeback through PayPal or card', 'Client claimed ownership of work before paying in full', 'Missed deadlines caused by the client, not me', 'GDPR or data complaint', 'Harassment or abusive behaviour', 'Threats of legal action', 'None of the above'], true),
     q23_dispute_details: optionalString,
     q24_client_concerns: optionalString,
+    clients_notes: optionalString,
   });
 }
 
@@ -112,6 +115,7 @@ function getPricingSchema(): z.ZodObject<any> {
     q33_late_payment_interest: singleChoice(['Yes', 'No'], true),
     q34_vat_registered: singleChoice(['Yes', 'No'], true),
     q35_vat_number: optionalString,
+    pricing_notes: optionalString,
   });
 }
 
@@ -130,6 +134,7 @@ function getGdprSchema(): z.ZodObject<any> {
     q46_marketing_platform: optionalString,
     q47_uses_cookies: singleChoice(['Yes', 'No', 'I\'m not sure'], false),
     q48_tracking_tools: multiSelect(['Google Analytics', 'Meta (Facebook) Pixel', 'TikTok Pixel', 'Hotjar or Microsoft Clarity', 'Cookie consent banner tool', 'Other'], false),
+    gdpr_notes: optionalString,
   });
 }
 
@@ -141,6 +146,7 @@ function getLegalSchema(): z.ZodObject<any> {
     q52_certifications: optionalString,
     q53_specific_clauses: optionalString,
     q54_exclusions: optionalString,
+    legal_notes: optionalString,
   });
 }
 
@@ -160,6 +166,7 @@ function getBrandSchema(): z.ZodObject<any> {
     q66_logo_upload: fileUpload,
     q67_brand_colours: optionalString,
     q68_visual_style: singleChoice(['Clean and modern / minimal', 'Corporate and formal', 'Warm and friendly', 'Premium and luxury', 'Simple — I just want it to work'], true),
+    brand_notes: optionalString,
   });
 }
 
@@ -168,6 +175,7 @@ function getInvoiceSchema(): z.ZodObject<any> {
     q69_bank_details: nonEmptyString,
     q70_invoice_due_date: nonEmptyString,
     q71_invoice_fields: multiSelect(['Purchase order (PO) number field', 'VAT breakdown section', 'Notes / message to client section', 'Payment terms summary at the bottom', 'Signature field'], false),
+    invoice_notes: optionalString,
   });
 }
 
@@ -177,6 +185,7 @@ function getLinkedinSchema(): z.ZodObject<any> {
     q73_linkedin_url: optionalUrl,
     q74_linkedin_target: nonEmptyString,
     q75_linkedin_keywords: optionalString,
+    linkedin_notes: optionalString,
   });
 }
 
@@ -274,7 +283,7 @@ function getWebsiteCopySchema(): z.ZodObject<any> {
 
     // Page-specific optional fields
     wc_homepage_sections: multiSelect(['Hero banner', 'About preview', 'Services overview', 'Testimonials', 'FAQ preview', 'Latest blog posts', 'Newsletter signup', 'Contact CTA'], false),
-    wc_homepage_cta_style: singleChoice(['Single prominent button', 'Multiple CTA buttons', 'Soft CTA with contact link', 'No preference'], false),
+    wc_homepage_cta_style: multiSelect(['Single prominent button', 'Multiple CTA buttons', 'Soft CTA with contact link', 'No preference'], false),
     wc_about_focus: multiSelect(['Your story and journey', 'Your qualifications and experience', 'Your approach and methodology', 'Your values and mission', 'Personal side / hobbies', 'Team members (if any)'], false),
     wc_about_tone: singleChoice(['Professional and formal', 'Warm and personal', 'Story-driven and engaging', 'No preference'], false),
     wc_services_format: singleChoice(['Card/tile format with icons', 'List format with descriptions', 'Table format with pricing', 'Mixed format', 'No preference'], false),
@@ -292,6 +301,7 @@ function getWebsiteCopySchema(): z.ZodObject<any> {
     wc_pricing_highlights: optionalString,
     wc_testimonials_format: singleChoice(['Quote cards with photos', 'Carousel/slider', 'Simple list', 'Video testimonials', 'Mixed formats', 'No preference'], false),
     wc_testimonials_featured: optionalString,
+    website_copy_notes: optionalString,
   });
 }
 
@@ -310,6 +320,7 @@ function getSocialMediaSchema(): z.ZodObject<any> {
     sm11_existing_accounts: optionalString,
     sm12_content_calendar: singleChoice(['Weekly themed — each week has a focus topic', 'Rotating pillars — cycle through your content pillars evenly', 'Mix of types — vary educational, personal, and promotional posts', 'No preference — let us decide'], true),
     sm13_upcoming_launches: optionalString,
+    social_media_notes: optionalString,
   });
 }
 

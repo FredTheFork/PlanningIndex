@@ -78,6 +78,29 @@ export default function IntakeWizard() {
     return suggestions;
   }, [data?.responses]);
 
+  const fieldMeta = useMemo(() => {
+    const meta: Record<string, { label: string; questionNumber: string; sectionTitle: string }> = {};
+    for (const section of allFormSections) {
+      for (const field of section.fields) {
+        meta[field.id] = {
+          label: field.label,
+          questionNumber: field.questionNumber,
+          sectionTitle: section.title,
+        };
+        if (field.subFields) {
+          for (const subField of field.subFields) {
+            meta[subField.id] = {
+              label: subField.label,
+              questionNumber: subField.questionNumber,
+              sectionTitle: section.title,
+            };
+          }
+        }
+      }
+    }
+    return meta;
+  }, []);
+
   const sectionTitles = useMemo(
     () => Object.fromEntries(safeFormSections.map((s) => [s.id, s.title])),
     [safeFormSections]
@@ -383,7 +406,7 @@ export default function IntakeWizard() {
 
       {/* Validation summary */}
       {showValidationSummary && Object.keys(errors).length > 0 && (
-        <ValidationSummary errors={errors} onScrollToField={scrollToField} />
+        <ValidationSummary errors={errors} fieldMeta={fieldMeta} onScrollToField={scrollToField} />
       )}
 
       {/* Read-only completed sections (new-sections mode) */}
