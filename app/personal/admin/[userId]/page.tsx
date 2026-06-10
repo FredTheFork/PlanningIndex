@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  ArrowLeft, User, FileText, Clock, Save, AlertCircle, Briefcase, FileCheck,
+  ArrowLeft, User, FileText, Clock, Save, AlertCircle, FileCheck,
   MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
   Download, Eye, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
   ChevronRight, FileDown, Send, Loader, Package, Share2, Globe
@@ -15,7 +15,6 @@ import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 
 // Tab components
 import OverviewTab from './tabs/OverviewTab';
-import BriefTab from './tabs/BriefTab';
 import DocumentsTab from './tabs/DocumentsTab';
 import ServicesTab from './tabs/ServicesTab';
 import IntakeTab from './tabs/IntakeTab';
@@ -72,11 +71,10 @@ interface TabConfig {
 
 const ALL_TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: User },
-  { id: 'brief', label: 'Master Brief', icon: Briefcase },
+  { id: 'services', label: 'Services', icon: Package },
   { id: 'documents', label: 'Documents', icon: FileText },
   { id: 'social_media', label: 'Social Posts', icon: Share2, requiredService: 'social_media_pack' },
   { id: 'website_copy', label: 'Website Copy', icon: Globe, requiredService: 'website_copy_pack' },
-  { id: 'services', label: 'Services', icon: Package },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
   { id: 'messaging', label: 'Messaging', icon: Send },
   { id: 'subscription', label: 'Subscription', icon: RefreshCw },
@@ -295,9 +293,6 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         <div className="p-4">
           {activeTab === 'overview' && (
             <OverviewTab userId={userId} data={data} refreshData={refreshData} />
-          )}
-          {activeTab === 'brief' && (
-            <BriefTab userId={userId} data={data} refreshData={refreshData} />
           )}
           {activeTab === 'documents' && (
             <DocumentsTab userId={userId} data={data} refreshData={refreshData} />

@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AIzaSyAb8RN6KLdSjw1BciesDhWk-nwBaBGBLdS2YUYwf7HLefymwtkA";
 
 // Admin query helper
 async function adminQuery(table: string, select: string, filter: Record<string, string>) {
