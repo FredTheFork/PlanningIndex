@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6KLdSjw1BciesDhWk-nwBaBGBLdS2YUYwf7HLefymwtkA";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 
 // Admin query helper
 async function adminQuery(table: string, select: string, filter: Record<string, string>) {
@@ -325,6 +325,13 @@ Deno.serve(async (req: Request) => {
     if (!adminCheck || !Array.isArray(adminCheck) || adminCheck.length === 0) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

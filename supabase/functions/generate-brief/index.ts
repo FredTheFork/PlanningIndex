@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6KLdSjw1BciesDhWk-nwBaBGBLdS2YUYwf7HLefymwtkA";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 
 async function adminQuery(table: string, select: string, filter: Record<string, string>) {
   const params = new URLSearchParams();
@@ -389,6 +389,13 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch client's intake responses
     const intakeData = await adminQuery("intake_responses", "responses,purchased_service_ids", { user_id });
     if (!intakeData || !Array.isArray(intakeData) || intakeData.length === 0) {
@@ -412,15 +419,55 @@ Deno.serve(async (req: Request) => {
     // Call Gemini to generate the brief
     const { text: briefContent, model: usedModel } = await callGemini(briefPrompt);
 
-    // Save to client_briefs
-    await adminUpsert("client_briefs", {
+    // Save to client_briefs — check-then-update because unique index on (client_id, service_id)
+    // doesn't match NULL service_id rows for upsert conflict resolution (NULL != NULL in PG).
+    const briefFilter = service_id
+      ? `client_id=eq.${user_id}&service_id=eq.${service_id}`
+      : `client_id=eq.${user_id}&service_id=is.null`;
+    const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/client_briefs?select=id&${briefFilter}`, {
+      headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+    });
+    const existingBrief = existingRes.ok ? await existingRes.json() : [];
+    const briefRecord = {
       client_id: user_id,
       service_id: service_id || null,
       brief_content: briefContent,
       status: "completed",
       model_used: usedModel,
       generated_at: new Date().toISOString(),
-    }, "client_id,service_id");
+    };
+
+    if (Array.isArray(existingBrief) && existingBrief.length > 0) {
+      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/client_briefs?id=eq.${existingBrief[0].id}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(briefRecord),
+      });
+      if (!patchRes.ok) {
+        const text = await patchRes.text();
+        console.error(`Patch client_briefs failed: ${patchRes.status} ${text}`);
+      }
+    } else {
+      const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/client_briefs`, {
+        method: "POST",
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(briefRecord),
+      });
+      if (!insertRes.ok) {
+        const text = await insertRes.text();
+        console.error(`Insert client_briefs failed: ${insertRes.status} ${text}`);
+      }
+    }
 
     return new Response(JSON.stringify({
       success: true,
