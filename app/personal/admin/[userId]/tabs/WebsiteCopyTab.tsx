@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase/client';
 import {
   Download, AlertCircle, CheckCircle2, Clock, Send, Save, Globe,
   FileArchive, Upload, Link2, Settings, ExternalLink, Code,
-  Monitor, Tablet, Smartphone, Maximize2, RefreshCw, AlertTriangle, Copy,
-  Image, FileText, Sparkles, FolderOpen
+  Monitor, Tablet, Smartphone, Maximize2, RefreshCw, AlertTriangle,
+  Copy, Image, FileText, Sparkles, FolderOpen, Palette, Type, File, ClipboardCopy
 } from 'lucide-react';
 
 interface WebsiteCopyTabProps {
@@ -30,12 +30,25 @@ interface WebsiteDelivery {
   updated_at: string;
 }
 
+interface ClientBrief {
+  id: string;
+  client_id: string;
+  brief_content: string;
+  status: string;
+  generated_at: string;
+}
+
 interface ClientAsset {
   question_id: string;
   file_name: string;
   file_path: string;
   file_size: number;
   file_type: string;
+}
+
+interface BrandData {
+  colours: string | null;
+  font_style: string | null;
 }
 
 type DeliveryType = 'zip_only' | 'hosted_preview' | 'both';
@@ -73,21 +86,38 @@ If your site needs a database, user authentication, or file storage:
 2. Copy your project URL and anon key
 3. Add them as environment variables in your hosting platform`;
 
-// Asset field labels for display
-const ASSET_LABELS: Record<string, string> = {
-  q66_logo_upload: 'Logo',
-  wc_logo_upload: 'Logo (Website)',
-  wc_brand_guidelines_upload: 'Brand Guidelines',
-  wc_existing_copy_upload: 'Existing Website Copy',
-  wc_existing_images_upload: 'Existing Images',
-  q76_existing_docs_upload: 'Existing Documents',
-  q77_writing_samples_upload: 'Writing Samples',
+// Asset categories for organization
+const ASSET_CATEGORIES = {
+  logos: {
+    label: 'Logos',
+    icon: Image,
+    questionIds: ['q66_logo_upload', 'wc_logo_upload'],
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+  },
+  brand_guidelines: {
+    label: 'Brand Guidelines',
+    icon: FileText,
+    questionIds: ['wc_brand_guidelines_upload'],
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+  },
+  existing_content: {
+    label: 'Existing Content',
+    icon: File,
+    questionIds: ['wc_existing_copy_upload', 'wc_existing_images_upload', 'q76_existing_docs_upload', 'q77_writing_samples_upload'],
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-50',
+  },
 };
 
 export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCopyTabProps) {
   const [delivery, setDelivery] = useState<WebsiteDelivery | null>(null);
+  const [clientBrief, setClientBrief] = useState<ClientBrief | null>(null);
   const [clientAssets, setClientAssets] = useState<ClientAsset[]>([]);
+  const [brandData, setBrandData] = useState<BrandData>({ colours: null, font_style: null });
   const [loading, setLoading] = useState(true);
+  const [loadingBrief, setLoadingBrief] = useState(true);
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
@@ -109,7 +139,9 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
 
   useEffect(() => {
     fetchDelivery();
+    fetchClientBrief();
     fetchClientAssets();
+    fetchBrandData();
   }, [userId]);
 
   const fetchDelivery = async () => {
@@ -133,6 +165,22 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     setLoading(false);
   };
 
+  const fetchClientBrief = async () => {
+    setLoadingBrief(true);
+    const { data: briefData, error } = await supabase
+      .from('client_briefs')
+      .select('*')
+      .eq('client_id', userId)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && briefData) {
+      setClientBrief(briefData);
+    }
+    setLoadingBrief(false);
+  };
+
   const fetchClientAssets = async () => {
     setLoadingAssets(true);
     const { data: uploads, error } = await supabase
@@ -145,6 +193,22 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       setClientAssets(uploads);
     }
     setLoadingAssets(false);
+  };
+
+  const fetchBrandData = async () => {
+    const { data: intakeData, error } = await supabase
+      .from('intake_responses')
+      .select('responses')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!error && intakeData?.responses) {
+      const responses = intakeData.responses;
+      setBrandData({
+        colours: responses.q67_brand_colours || responses.wc_colour_preferences || null,
+        font_style: responses.wc_font_style || null,
+      });
+    }
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -263,10 +327,58 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     }
   };
 
-  const handleCopyPrompt = async () => {
-    if (form.bolt_prompt) {
-      await navigator.clipboard.writeText(form.bolt_prompt);
-      showMessage('Bolt prompt copied to clipboard', 'success');
+  const handleCopyFullPrompt = async () => {
+    if (!delivery?.bolt_prompt && !clientBrief?.brief_content) {
+      showMessage('No prompt or brief available to copy', 'error');
+      return;
+    }
+
+    const sections: string[] = [];
+
+    // Header context
+    sections.push(`# Website Generation Package for ${data?.profile?.business_name || 'Client'}`);
+    sections.push(`Generated: ${new Date().toLocaleString()}`);
+    sections.push('');
+
+    // Bolt Prompt section
+    if (delivery?.bolt_prompt) {
+      sections.push('---');
+      sections.push('## BOLT PROMPT (Paste into Bolt.new)');
+      sections.push('');
+      sections.push(delivery.bolt_prompt);
+      sections.push('');
+    }
+
+    // Client Brief section
+    if (clientBrief?.brief_content) {
+      sections.push('---');
+      sections.push('## CLIENT BRIEF (Reference Context)');
+      sections.push('');
+      sections.push(clientBrief.brief_content);
+      sections.push('');
+    }
+
+    // Brand context
+    if (brandData.colours || brandData.font_style) {
+      sections.push('---');
+      sections.push('## BRAND SPECIFICATIONS');
+      sections.push('');
+      if (brandData.colours) {
+        sections.push(`Colours: ${brandData.colours}`);
+      }
+      if (brandData.font_style) {
+        sections.push(`Font Style: ${brandData.font_style}`);
+      }
+      sections.push('');
+    }
+
+    const fullContent = sections.join('\n');
+
+    try {
+      await navigator.clipboard.writeText(fullContent);
+      showMessage('Full prompt package copied to clipboard', 'success');
+    } catch (err) {
+      showMessage('Failed to copy to clipboard', 'error');
     }
   };
 
@@ -348,11 +460,20 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     return fileType.startsWith('image/');
   };
 
+  const getAssetsByCategory = (categoryKey: string): ClientAsset[] => {
+    const category = ASSET_CATEGORIES[categoryKey as keyof typeof ASSET_CATEGORIES];
+    if (!category) return [];
+    return clientAssets.filter(asset => category.questionIds.includes(asset.question_id));
+  };
+
   const viewportIcons = {
     desktop: Monitor,
     tablet: Tablet,
     mobile: Smartphone,
   };
+
+  const promptAvailable = delivery?.bolt_prompt || form.bolt_prompt;
+  const briefAvailable = clientBrief?.brief_content;
 
   if (loading) {
     return (
@@ -383,10 +504,10 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h3 className="font-inter font-bold text-[#1B3F7A] text-xl mb-1">
-              Website Delivery
+              Website Production
             </h3>
             <p className="font-inter text-gray-500 text-sm">
-              Deploy via Bolt.new, then enter the URL and upload the source files.
+              Single source of truth for website creation. Generate Bolt prompts, manage brand assets, and deliver completed sites.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -426,64 +547,9 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left: Configuration */}
+        {/* Left: Bolt Prompt & Assets */}
         <div className="space-y-6">
-          {/* Client Assets Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <FolderOpen size={20} className="text-emerald-600" />
-              </div>
-              <div>
-                <h4 className="font-inter font-semibold text-gray-900">Client Assets</h4>
-                <p className="text-xs text-gray-500">Download logo, brand files, and images from intake form</p>
-              </div>
-            </div>
-
-            {loadingAssets ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600" />
-              </div>
-            ) : clientAssets.length > 0 ? (
-              <div className="space-y-2">
-                {clientAssets.map((asset, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3">
-                      {isImageFile(asset.file_type) ? (
-                        <Image size={20} className="text-blue-500" />
-                      ) : (
-                        <FileText size={20} className="text-gray-500" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {ASSET_LABELS[asset.question_id] || asset.question_id}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {asset.file_name} ({formatFileSize(asset.file_size)})
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href={getAssetDownloadUrl(asset.file_path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter transition-colors"
-                    >
-                      <Download size={12} />
-                      Download
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <FolderOpen size={32} className="mx-auto mb-2 text-gray-300" />
-                <p className="text-sm text-gray-500">No files uploaded by client</p>
-              </div>
-            )}
-          </div>
-
-          {/* Bolt Prompt with Generate Button */}
+          {/* Bolt Prompt Section */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -496,15 +562,32 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {delivery?.bolt_prompt && (
+                {promptAvailable && (
                   <button
-                    onClick={handleCopyPrompt}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter transition-colors"
+                    onClick={handleCopyFullPrompt}
+                    disabled={!briefAvailable && !promptAvailable}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter transition-colors disabled:opacity-50"
                   >
-                    <Copy size={12} />
-                    Copy
+                    <ClipboardCopy size={12} />
+                    Copy Full Prompt
                   </button>
                 )}
+              </div>
+            </div>
+
+            {/* Status Indicators */}
+            <div className="flex gap-2 mb-4">
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                briefAvailable ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+              }`}>
+                {briefAvailable ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                Brief {briefAvailable ? 'Ready' : 'Pending'}
+              </div>
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                promptAvailable ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'
+              }`}>
+                {promptAvailable ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                Prompt {promptAvailable ? 'Ready' : 'Not Generated'}
               </div>
             </div>
 
@@ -523,7 +606,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
                 ) : (
                   <>
                     <Sparkles size={16} />
-                    Generate Bolt Prompt with AI
+                    {promptAvailable ? 'Regenerate Prompt' : 'Generate Bolt Prompt'}
                   </>
                 )}
               </button>
@@ -545,8 +628,101 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
             ) : (
               <div className="p-3 bg-gray-900 rounded-lg overflow-x-auto max-h-48 overflow-y-auto">
                 <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
-                  {delivery?.bolt_prompt || '// No prompt recorded. Click "Generate Bolt Prompt with AI" above'}
+                  {promptAvailable || '// No prompt recorded. Click "Generate Bolt Prompt" above'}
                 </pre>
+              </div>
+            )}
+          </div>
+
+          {/* Brand Assets Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <FolderOpen size={20} className="text-emerald-600" />
+              </div>
+              <div>
+                <h4 className="font-inter font-semibold text-gray-900">Brand Assets</h4>
+                <p className="text-xs text-gray-500">All design resources for website production</p>
+              </div>
+            </div>
+
+            {loadingAssets ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600" />
+              </div>
+            ) : clientAssets.length > 0 || brandData.colours || brandData.font_style ? (
+              <div className="space-y-4">
+                {/* Brand Colours */}
+                {brandData.colours && (
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Palette size={16} className="text-pink-600" />
+                      <span className="text-sm font-medium text-gray-900">Brand Colours</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{brandData.colours}</p>
+                  </div>
+                )}
+
+                {/* Font Style */}
+                {brandData.font_style && (
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Type size={16} className="text-indigo-600" />
+                      <span className="text-sm font-medium text-gray-900">Font Style Preference</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{brandData.font_style}</p>
+                  </div>
+                )}
+
+                {/* File Assets by Category */}
+                {Object.entries(ASSET_CATEGORIES).map(([key, category]) => {
+                  const assets = getAssetsByCategory(key);
+                  if (assets.length === 0) return null;
+
+                  const Icon = category.icon;
+
+                  return (
+                    <div key={key} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 ${category.bgColor} rounded`}>
+                          <Icon size={14} className={category.color} />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{category.label}</span>
+                      </div>
+                      <div className="space-y-1 pl-7">
+                        {assets.map((asset, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
+                            <div className="flex items-center gap-2">
+                              {isImageFile(asset.file_type) ? (
+                                <Image size={14} className="text-blue-500" />
+                              ) : (
+                                <FileText size={14} className="text-gray-500" />
+                              )}
+                              <div>
+                                <p className="text-xs font-medium text-gray-900">{asset.file_name}</p>
+                                <p className="text-xs text-gray-500">{formatFileSize(asset.file_size)}</p>
+                              </div>
+                            </div>
+                            <a
+                              href={getAssetDownloadUrl(asset.file_path)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-colors"
+                            >
+                              <Download size={10} />
+                              Download
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FolderOpen size={32} className="mx-auto mb-2 text-gray-300" />
+                <p className="text-sm text-gray-500">No brand assets uploaded</p>
               </div>
             )}
           </div>

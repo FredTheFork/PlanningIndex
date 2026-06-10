@@ -77,94 +77,6 @@ const BUSINESS_FOUNDATIONS: DocumentConfig[] = [
   },
 ];
 
-// ─── Website Copy Pack (4 documents) ──────────────────────────────────────────
-
-const WEBSITE_COPY: DocumentConfig[] = [
-  {
-    document_type: 'website_homepage',
-    service_id: 'website_copy_pack',
-    document_label: 'Homepage Copy',
-    description: 'Hero section, benefits, social proof, and CTA',
-    supportsRefresh: true,
-    output_format: `=== HERO ===
-Headline (10 words max, result-focused)
-Subheadline (1–2 sentences)
-Primary CTA button text (5 words max)
-
-=== BENEFITS ===
-3–5 benefit blocks, each: headline (6 words) + description (2–3 sentences)
-
-=== SOCIAL PROOF ===
-Credibility section with testimonial placeholder or trust signal
-
-=== FINAL CTA ===
-Urgency/outcome headline + body (1–2 sentences) + button text`,
-  },
-  {
-    document_type: 'website_about',
-    service_id: 'website_copy_pack',
-    document_label: 'About Page Copy',
-    description: 'Bio, founder story, values, and team section',
-    supportsRefresh: true,
-    output_format: `=== OPENING ===
-Belief/observation hook (2–3 sentences)
-
-=== THE STORY ===
-Founder/business origin narrative (150–250 words)
-
-=== VALUES AND APPROACH ===
-3–4 values with practical meaning
-
-=== WHY WORK WITH [BUSINESS] ===
-2–3 specific reasons with outcomes
-
-=== TEAM SECTION (if applicable) ===
-Team member profiles or solo-professional positioning
-
-=== CTA ===
-Specific next step invitation`,
-  },
-  {
-    document_type: 'website_services',
-    service_id: 'website_copy_pack',
-    document_label: 'Services Page Copy',
-    description: 'Per-service descriptions aligned with intake data',
-    supportsRefresh: true,
-    output_format: `=== PAGE INTRO ===
-2–3 outcome-focused sentences
-
-=== SERVICE BLOCKS (one per service) ===
-Each: Description, What's included (bullets), What's not included (bullets), Expected outcome, Investment
-
-=== CTA ===
-Specific action + next step`,
-  },
-  {
-    document_type: 'website_contact',
-    service_id: 'website_copy_pack',
-    document_label: 'Contact Page Copy',
-    description: 'Contact details, form guidance, map placeholder, social links',
-    supportsRefresh: true,
-    output_format: `=== HEADING ===
-Friendly, tone-matched heading
-
-=== WELCOME TEXT ===
-2–3 warm sentences about what happens on contact
-
-=== HOW TO REACH ===
-Preferred method, email, phone, business hours
-
-=== WHAT HAPPENS NEXT ===
-2–3 sentences setting expectations
-
-=== MAP / ADDRESS ===
-Physical location note (if applicable)
-
-=== SOCIAL LINKS ===
-Social media links (if available)`,
-  },
-];
-
 // ─── Social Media Pack (1 composite document) ─────────────────────────────────
 
 const SOCIAL_MEDIA: DocumentConfig[] = [
@@ -194,7 +106,6 @@ Separate posts with a blank line. Do not include any introductory or concluding 
 
 const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
   ...BUSINESS_FOUNDATIONS,
-  ...WEBSITE_COPY,
   ...SOCIAL_MEDIA,
 ];
 
