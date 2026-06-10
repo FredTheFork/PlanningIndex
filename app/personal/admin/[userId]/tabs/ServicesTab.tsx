@@ -89,18 +89,27 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ user_id: userId, service_id: serviceId }),
+          body: JSON.stringify({ user_id: userId, service_id: serviceId, debug: true }),
         }
       );
 
-      const result = await response.json();
+      let result: any;
+      try {
+        result = await response.json();
+      } catch {
+        result = { error: `Server returned ${response.status} with non-JSON body` };
+      }
 
       if (response.ok && result.success) {
         showMessage(`Brief generated for ${getServiceById(serviceId)?.name ?? serviceId}`, 'success');
         await fetchServiceData();
         refreshData();
       } else {
-        showMessage(result.error || 'Failed to generate brief', 'error');
+        const errMsg = result.error || result.message || 'Failed to generate brief';
+        const debugInfo = result.debug ? ` (debug: ${JSON.stringify(result.debug).substring(0, 200)})` : '';
+        const hintInfo = result.hint ? ` — ${result.hint}` : '';
+        console.error('generate-brief full error:', result);
+        showMessage(`${errMsg}${hintInfo}${debugInfo}`, 'error');
       }
     } catch (error: any) {
       showMessage(error.message || 'Error generating brief', 'error');

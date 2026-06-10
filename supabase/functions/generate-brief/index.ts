@@ -10,6 +10,20 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AIzaSyAAjWuVWqnaRA7bDsbR_Hx_zuCxvMMaFIY";
 
+function errorResponse(status: number, error: string, details?: Record<string, unknown>) {
+  return new Response(JSON.stringify({ error, ...details }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function successResponse(data: Record<string, unknown>) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 async function adminQuery(table: string, select: string, filter: Record<string, string>) {
   const params = new URLSearchParams();
   params.set("select", select);
@@ -26,34 +40,16 @@ async function adminQuery(table: string, select: string, filter: Record<string, 
   if (!res.ok) {
     const text = await res.text();
     console.error(`Admin query ${table} failed: ${res.status} ${text}`);
-    return null;
+    return { data: null, error: `${res.status}: ${text}` };
   }
-  return await res.json();
-}
-
-async function adminUpsert(table: string, data: Record<string, unknown>, onConflict: string) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: "POST",
-    headers: {
-      apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: `return=representation,resolution=merge-duplicates`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    console.error(`Admin upsert ${table} failed: ${res.status} ${text}`);
-    return null;
-  }
-  return await res.json();
+  const data = await res.json();
+  return { data, error: null };
 }
 
 async function trackGeminiUsage(model: string) {
   const today = new Date().toISOString().split('T')[0];
   try {
-    const existing = await adminQuery("gemini_api_usage", "id,request_count", { request_date: today, model });
+    const { data: existing } = await adminQuery("gemini_api_usage", "id,request_count", { request_date: today, model });
     if (existing && Array.isArray(existing) && existing.length > 0) {
       const id = existing[0].id;
       const count = (existing[0].request_count || 0) + 1;
@@ -67,15 +63,40 @@ async function trackGeminiUsage(model: string) {
         body: JSON.stringify({ request_count: count, last_used_at: new Date().toISOString() }),
       });
     } else {
-      await adminUpsert("gemini_api_usage", {
-        model,
-        request_date: today,
-        request_count: 1,
-        last_used_at: new Date().toISOString(),
-      }, "model,request_date");
+      await fetch(`${SUPABASE_URL}/rest/v1/gemini_api_usage`, {
+        method: "POST",
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation,resolution=merge-duplicates",
+        },
+        body: JSON.stringify({
+          model,
+          request_date: today,
+          request_count: 1,
+          last_used_at: new Date().toISOString(),
+        }),
+      });
     }
   } catch (err) {
     console.error("Failed to track Gemini usage:", err);
+  }
+}
+
+async function testGeminiKey(): Promise<{ valid: boolean; error?: string; keyPrefix?: string }> {
+  if (!GEMINI_API_KEY) return { valid: false, error: "GEMINI_API_KEY is empty", keyPrefix: "(empty)" };
+  const keyPrefix = GEMINI_API_KEY.substring(0, 6) + "...";
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`,
+      { method: "GET" }
+    );
+    if (res.ok) return { valid: true, keyPrefix };
+    const text = await res.text();
+    return { valid: false, error: `${res.status}: ${text.substring(0, 200)}`, keyPrefix };
+  } catch (err) {
+    return { valid: false, error: err instanceof Error ? err.message : "Network error", keyPrefix };
   }
 }
 
@@ -276,7 +297,6 @@ ${r.q78_anything_else ? `Anything Else: ${r.q78_anything_else}` : ''}
 Confidence Level: ${r.q80_confidence_level || 'Not provided'}
 `;
 
-  // Build the prompt based on service context
   let serviceContext = "";
   if (serviceId === 'website_copy_pack') {
     serviceContext = `This brief is specifically for the WEBSITE COPY PACK. Focus on website content, structure, design preferences, and all website-related details. Include the website copy section data as primary context. The client has ordered these pages at checkout: ${websitePages.length > 0 ? websitePages.join(', ') : 'not specified — use standard pages'}.`;
@@ -325,26 +345,19 @@ ${additional}
 Generate the brief now. Be thorough, specific, and use the client's actual information. Where information is missing, note it clearly rather than making assumptions.`;
 }
 
-async function callGemini(prompt: string): Promise<{ text: string; model: string }> {
+async function callGemini(prompt: string): Promise<{ text: string; model: string; finishReason?: string }> {
   const model = "gemini-2.0-flash";
+
+  console.log(`Calling Gemini API with model=${model}, prompt length=${prompt.length}`);
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -358,19 +371,29 @@ async function callGemini(prompt: string): Promise<{ text: string; model: string
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`Gemini API error: ${response.status} ${errorText}`);
-    throw new Error(`Gemini API error: ${response.status}`);
+    throw new Error(`Gemini API error ${response.status}: ${errorText.substring(0, 500)}`);
   }
 
   const data = await response.json();
-  const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  // Check for safety blocks / empty responses with detailed info
+  const candidate = data.candidates?.[0];
+  const finishReason = candidate?.finishReason;
+  const generatedText = candidate?.content?.parts?.[0]?.text;
 
   if (!generatedText) {
-    throw new Error("No text generated from Gemini");
+    const blockInfo = candidate?.safetyRatings
+      ? `finishReason=${finishReason}, safetyRatings=${JSON.stringify(candidate.safetyRatings)}`
+      : `finishReason=${finishReason}, no content returned`;
+    const promptFeedback = data.promptFeedback
+      ? `, promptFeedback=${JSON.stringify(data.promptFeedback)}`
+      : '';
+    throw new Error(`No text generated from Gemini. ${blockInfo}${promptFeedback}`);
   }
 
   await trackGeminiUsage(model);
 
-  return { text: generatedText, model };
+  return { text: generatedText, model, finishReason };
 }
 
 Deno.serve(async (req: Request) => {
@@ -378,56 +401,127 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
+  // ─── Health / debug endpoint ────────────────────────────────────────────
+  if (req.method === "GET") {
+    const keyTest = await testGeminiKey();
+    return successResponse({
+      status: "generate-brief endpoint active",
+      env: {
+        hasSupabaseUrl: !!SUPABASE_URL,
+        hasServiceRoleKey: !!SERVICE_ROLE_KEY,
+        hasGeminiKey: !!GEMINI_API_KEY,
+        geminiKeyPrefix: GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 6) + "..." : "(empty)",
+      },
+      geminiKeyTest: keyTest,
+    });
+  }
+
+  // ─── Brief generation ───────────────────────────────────────────────────
   try {
     const body = await req.json();
-    const { user_id, service_id } = body;
+    const { user_id, service_id, debug } = body as { user_id?: string; service_id?: string; debug?: boolean };
 
     if (!user_id) {
-      return new Response(JSON.stringify({ error: "Missing user_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(400, "Missing user_id");
     }
 
     if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return errorResponse(500, "GEMINI_API_KEY not configured", {
+        hint: "Set the GEMINI_API_KEY secret in Supabase edge function settings",
       });
     }
 
-    // Fetch client's intake responses
-    const intakeData = await adminQuery("intake_responses", "responses,purchased_service_ids", { user_id });
+    const debugInfo: Record<string, unknown> = {};
+    const shouldDebug = debug === true;
+
+    // Step 1: Verify Gemini key works
+    if (shouldDebug) {
+      const keyTest = await testGeminiKey();
+      debugInfo.geminiKeyTest = keyTest;
+      if (!keyTest.valid) {
+        return errorResponse(500, "Gemini API key is invalid", debugInfo);
+      }
+    }
+
+    // Step 2: Fetch intake data
+    const { data: intakeData, error: intakeError } = await adminQuery(
+      "intake_responses", "responses,purchased_service_ids", { user_id }
+    );
+    if (intakeError) {
+      return errorResponse(500, "Failed to fetch intake data", { intakeError });
+    }
     if (!intakeData || !Array.isArray(intakeData) || intakeData.length === 0) {
-      return new Response(JSON.stringify({ error: "No intake data found for this client" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(404, "No intake data found for this client");
     }
 
     const responses = intakeData[0].responses || {};
+    if (shouldDebug) {
+      debugInfo.intakeResponseKeys = Object.keys(responses);
+      debugInfo.purchasedServiceIds = intakeData[0].purchased_service_ids;
+    }
 
-    // Fetch website pages selected at checkout (for website copy briefs)
-    const servicesData = await adminQuery("services_purchased", "website_pages_selected", { user_id, service_id: "website_copy_pack", status: "active" });
+    // Step 3: Fetch website pages
+    const { data: servicesData } = await adminQuery(
+      "services_purchased", "website_pages_selected", { user_id, service_id: "website_copy_pack", status: "active" }
+    );
     const websitePages = servicesData && Array.isArray(servicesData) && servicesData.length > 0
       ? (servicesData[0].website_pages_selected || [])
       : [];
 
-    // Build the brief prompt
+    // Step 4: Build prompt
     const briefPrompt = buildBriefPrompt(responses, service_id || null, websitePages);
+    if (shouldDebug) {
+      debugInfo.promptLength = briefPrompt.length;
+      debugInfo.serviceId = service_id || null;
+      debugInfo.websitePages = websitePages;
+    }
 
-    // Call Gemini to generate the brief
-    const { text: briefContent, model: usedModel } = await callGemini(briefPrompt);
+    // Step 5: Call Gemini
+    let briefContent: string;
+    let usedModel: string;
+    try {
+      const result = await callGemini(briefPrompt);
+      briefContent = result.text;
+      usedModel = result.model;
+      if (shouldDebug) {
+        debugInfo.finishReason = result.finishReason;
+      }
+    } catch (geminiErr) {
+      const errMsg = geminiErr instanceof Error ? geminiErr.message : "Unknown Gemini error";
+      console.error("Gemini call failed:", errMsg);
 
-    // Save to client_briefs — check-then-update because unique index on (client_id, service_id)
-    // doesn't match NULL service_id rows for upsert conflict resolution (NULL != NULL in PG).
+      // Save failed status to client_briefs
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/client_briefs`, {
+          method: "POST",
+          headers: {
+            apikey: SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            client_id: user_id,
+            service_id: service_id || null,
+            status: "failed",
+            error_message: errMsg,
+            generated_at: new Date().toISOString(),
+          }),
+        });
+      } catch { /* best effort */ }
+
+      return errorResponse(502, `Gemini API failed: ${errMsg}`, shouldDebug ? debugInfo : undefined);
+    }
+
+    // Step 6: Save to client_briefs
     const briefFilter = service_id
       ? `client_id=eq.${user_id}&service_id=eq.${service_id}`
       : `client_id=eq.${user_id}&service_id=is.null`;
+
     const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/client_briefs?select=id&${briefFilter}`, {
       headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
     });
     const existingBrief = existingRes.ok ? await existingRes.json() : [];
+
     const briefRecord = {
       client_id: user_id,
       service_id: service_id || null,
@@ -451,6 +545,7 @@ Deno.serve(async (req: Request) => {
       if (!patchRes.ok) {
         const text = await patchRes.text();
         console.error(`Patch client_briefs failed: ${patchRes.status} ${text}`);
+        if (shouldDebug) debugInfo.briefSaveError = `Patch failed: ${patchRes.status} ${text}`;
       }
     } else {
       const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/client_briefs`, {
@@ -466,27 +561,22 @@ Deno.serve(async (req: Request) => {
       if (!insertRes.ok) {
         const text = await insertRes.text();
         console.error(`Insert client_briefs failed: ${insertRes.status} ${text}`);
+        if (shouldDebug) debugInfo.briefSaveError = `Insert failed: ${insertRes.status} ${text}`;
       }
     }
 
-    return new Response(JSON.stringify({
+    return successResponse({
       success: true,
       brief_content: briefContent,
       model: usedModel,
       generated_at: new Date().toISOString(),
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      ...(shouldDebug ? { debug: debugInfo } : {}),
     });
 
   } catch (err) {
     console.error("generate-brief error:", err);
-    return new Response(JSON.stringify({
-      error: "Internal server error",
-      message: err instanceof Error ? err.message : "Unknown error"
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const stack = err instanceof Error ? err.stack : undefined;
+    return errorResponse(500, "Internal server error", { message, stack });
   }
 });
