@@ -346,7 +346,7 @@ Generate the brief now. Be thorough, specific, and use the client's actual infor
 }
 
 async function callGemini(prompt: string): Promise<{ text: string; model: string; finishReason?: string }> {
-  const model = "gemini-3.5-flash";
+  const model = "gemini-2.5-flash";
 
   console.log(`Calling Gemini API with model=${model}, prompt length=${prompt.length}`);
 
