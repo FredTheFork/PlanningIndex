@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   Package, FileText, Briefcase, Clock, CheckCircle2, AlertCircle,
-  RefreshCw, Calendar, Zap
+  RefreshCw, Calendar, Zap, Copy, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { getDocumentTypesForService } from '@/lib/services/document-service-map';
@@ -71,6 +71,19 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
     setMessage(msg);
     setMessageType(type);
     setTimeout(() => setMessage(''), 5000);
+  };
+
+  const handleSaveBrief = async (briefId: string, content: string) => {
+    const { error } = await supabase
+      .from('client_briefs')
+      .update({ brief_content: content })
+      .eq('id', briefId);
+    if (error) {
+      showMessage('Failed to save brief: ' + error.message, 'error');
+    } else {
+      showMessage('Brief saved successfully', 'success');
+      await fetchServiceData();
+    }
   };
 
   const handleGenerateBrief = async (serviceId: string) => {
@@ -178,6 +191,7 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
             docConfigs={configs}
             generatingBrief={generatingBrief === ps.service_id}
             onGenerateBrief={() => handleGenerateBrief(ps.service_id)}
+            onSaveBrief={handleSaveBrief}
             intakeSubmitted={data.profile?.has_submitted_intake}
           />
         );
@@ -197,6 +211,7 @@ function ServiceCard({
   docConfigs,
   generatingBrief,
   onGenerateBrief,
+  onSaveBrief,
   intakeSubmitted,
 }: {
   purchasedService: any;
@@ -207,9 +222,14 @@ function ServiceCard({
   docConfigs: any[];
   generatingBrief: boolean;
   onGenerateBrief: () => void;
+  onSaveBrief: (briefId: string, content: string) => Promise<void>;
   intakeSubmitted: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [briefExpanded, setBriefExpanded] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const serviceId = purchasedService.service_id;
   const serviceName = service?.name ?? serviceId;
@@ -405,37 +425,113 @@ function ServiceCard({
                   failed: { color: 'text-red-600', bg: 'bg-red-50', label: 'Failed' },
                 };
                 const bs = briefStatusConfig[brief.status] || briefStatusConfig.pending;
+                const isCompleted = brief.status === 'completed';
 
                 return (
-                  <div key={brief.id} className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5 mb-2">
-                    <div className="flex items-center gap-3">
-                      <Briefcase size={14} className="text-gray-400 shrink-0" />
-                      <div>
-                        <p className="font-inter text-sm text-gray-900">
-                          {brief.service_id ? getServiceById(brief.service_id)?.name ?? brief.service_id : 'Comprehensive Brief'}
-                        </p>
-                        {brief.generated_at && (
-                          <p className="font-inter text-xs text-gray-500">
-                            Generated: {new Date(brief.generated_at).toLocaleDateString('en-GB')}
-                            {brief.model_used && ` — ${brief.model_used}`}
+                  <div key={brief.id} className="bg-white rounded-lg border border-gray-200 mb-2 overflow-hidden">
+                    <div
+                      className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => {
+                        if (isCompleted && !briefExpanded) {
+                          setEditedContent(brief.brief_content || '');
+                        }
+                        setBriefExpanded(!briefExpanded);
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        {isCompleted && (
+                          briefExpanded ? <ChevronUp size={14} className="text-gray-400 shrink-0" /> : <ChevronDown size={14} className="text-gray-400 shrink-0" />
+                        )}
+                        {!isCompleted && <Briefcase size={14} className="text-gray-400 shrink-0" />}
+                        <div>
+                          <p className="font-inter text-sm text-gray-900">
+                            {brief.service_id ? getServiceById(brief.service_id)?.name ?? brief.service_id : 'Comprehensive Brief'}
                           </p>
+                          {brief.generated_at && (
+                            <p className="font-inter text-xs text-gray-500">
+                              Generated: {new Date(brief.generated_at).toLocaleDateString('en-GB')}
+                              {brief.model_used && ` — ${brief.model_used}`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${bs.bg} ${bs.color}`}>
+                          {bs.label}
+                        </span>
+                        {brief.risk_level && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${
+                            brief.risk_level === 'High' ? 'bg-red-50 text-red-600'
+                            : brief.risk_level === 'Medium' ? 'bg-amber-50 text-amber-600'
+                            : 'bg-green-50 text-green-600'
+                          }`}>
+                            {brief.risk_level}
+                          </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${bs.bg} ${bs.color}`}>
-                        {bs.label}
-                      </span>
-                      {brief.risk_level && (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${
-                          brief.risk_level === 'High' ? 'bg-red-50 text-red-600'
-                          : brief.risk_level === 'Medium' ? 'bg-amber-50 text-amber-600'
-                          : 'bg-green-50 text-green-600'
-                        }`}>
-                          {brief.risk_level}
-                        </span>
-                      )}
-                    </div>
+
+                    {/* Editable brief content */}
+                    {isCompleted && briefExpanded && (
+                      <div className="border-t border-gray-200 px-4 py-3 bg-gray-50">
+                        <textarea
+                          value={editedContent}
+                          onChange={(e) => setEditedContent(e.target.value)}
+                          className="w-full min-h-[200px] p-3 bg-white border border-gray-300 rounded-lg font-inter text-sm text-gray-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:border-transparent resize-y"
+                        />
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                          <button
+                            onClick={async () => {
+                              setIsSaving(true);
+                              await onSaveBrief(brief.id, editedContent);
+                              setIsSaving(false);
+                            }}
+                            disabled={isSaving}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSaving ? (
+                              <>
+                                <RefreshCw size={13} className="animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Save size={13} />
+                                Save
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(brief.brief_content || '');
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded text-xs font-inter font-medium transition-colors"
+                          >
+                            <Copy size={13} />
+                            {copied ? 'Copied!' : 'Copy to Clipboard'}
+                          </button>
+                          <button
+                            onClick={onGenerateBrief}
+                            disabled={generatingBrief}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded text-xs font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {generatingBrief ? (
+                              <>
+                                <RefreshCw size={13} className="animate-spin" />
+                                Regenerating...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw size={13} />
+                                Regenerate
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
