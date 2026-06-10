@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   Package, FileText, Briefcase, Clock, CheckCircle2, AlertCircle,
-  RefreshCw, Calendar, Zap, Copy, Save, ChevronDown, ChevronUp
+  RefreshCw, Calendar, Zap, Copy, Save, ChevronDown, ChevronUp,
+  Globe, Link2, Upload, Send, Instagram, Linkedin, Facebook, Twitter,
+  Video, Image as ImageIcon
 } from 'lucide-react';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { getDocumentTypesForService } from '@/lib/services/document-service-map';
@@ -22,6 +24,8 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
   const [serviceStatuses, setServiceStatuses] = useState<ServiceDeliveryStatus[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [briefs, setBriefs] = useState<any[]>([]);
+  const [websiteDelivery, setWebsiteDelivery] = useState<any>(null);
+  const [socialPosts, setSocialPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
   const [message, setMessage] = useState('');
@@ -34,18 +38,20 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
   const fetchServiceData = async () => {
     setLoading(true);
 
-    const { data: docs } = await supabase
-      .from('generated_documents')
-      .select('*')
-      .eq('client_id', userId);
+    const [docsRes, briefsRes, webRes, postsRes] = await Promise.all([
+      supabase.from('generated_documents').select('*').eq('client_id', userId),
+      supabase.from('client_briefs').select('*').eq('client_id', userId),
+      supabase.from('website_deliveries').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('social_media_posts').select('*').eq('user_id', userId).order('post_number', { ascending: true }),
+    ]);
 
-    const { data: briefsData } = await supabase
-      .from('client_briefs')
-      .select('*')
-      .eq('client_id', userId);
+    const docs = docsRes.data || [];
+    const briefsData = briefsRes.data || [];
 
-    setDocuments(docs || []);
-    setBriefs(briefsData || []);
+    setDocuments(docs);
+    setBriefs(briefsData);
+    setWebsiteDelivery(webRes.data || null);
+    setSocialPosts(postsRes.data || []);
 
     const purchasedServiceIds = data.purchasedServices?.map((ps: any) => ps.service_id) || [];
     const intakeCompleteForServices = data.profile?.intake_complete_for_services || [];
@@ -54,7 +60,7 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
       const statuses = getServiceDeliveryStatuses({
         purchasedServiceIds,
         intakeCompleteForServices,
-        documents: (docs || []).map((d: any) => ({
+        documents: docs.map((d: any) => ({
           document_type: d.document_type,
           delivered_to_client: d.delivered_to_client,
           status: d.status,
@@ -193,6 +199,8 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
             onGenerateBrief={() => handleGenerateBrief(ps.service_id)}
             onSaveBrief={handleSaveBrief}
             intakeSubmitted={data.profile?.has_submitted_intake}
+            websiteDelivery={websiteDelivery}
+            socialPosts={socialPosts}
           />
         );
       })}
@@ -213,6 +221,8 @@ function ServiceCard({
   onGenerateBrief,
   onSaveBrief,
   intakeSubmitted,
+  websiteDelivery,
+  socialPosts,
 }: {
   purchasedService: any;
   service: any;
@@ -224,6 +234,8 @@ function ServiceCard({
   onGenerateBrief: () => void;
   onSaveBrief: (briefId: string, content: string) => Promise<void>;
   intakeSubmitted: boolean;
+  websiteDelivery: any;
+  socialPosts: any[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const [briefExpanded, setBriefExpanded] = useState(false);
@@ -235,6 +247,8 @@ function ServiceCard({
   const serviceName = service?.name ?? serviceId;
   const serviceDesc = service?.description ?? '';
   const isSubscription = service?.mode === 'subscription';
+  const isWebsiteService = serviceId === 'website_copy_pack';
+  const isSocialService = serviceId === 'social_media_pack';
 
   // Delivery status
   const deliveryStatus = status?.deliveryStatus ?? 'not_started';
@@ -253,6 +267,19 @@ function ServiceCard({
   // Brief status
   const latestBrief = briefs[briefs.length - 1];
   const briefStatus = latestBrief?.status;
+  const briefCompleted = briefStatus === 'completed';
+
+  // Website delivery status
+  const websiteHasZip = !!websiteDelivery?.website_zip_path;
+  const websiteHasUrl = !!websiteDelivery?.deployment_url;
+  const websiteDelivered = !!websiteDelivery?.delivered_at;
+
+  // Social media stats
+  const postsDelivered = socialPosts.filter(p => p.delivered_to_client).length;
+  const postsGenerated = socialPosts.filter(p => p.status === 'generated' || p.status === 'edited').length;
+  const postsWithImages = socialPosts.filter(p => p.image_path).length;
+  const postsWithVideos = socialPosts.filter(p => p.video_path).length;
+  const postCount = purchasedService.social_media_post_count || 30;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -282,34 +309,59 @@ function ServiceCard({
               <p className="font-inter text-gray-500 text-xs">{serviceDesc}</p>
 
               {/* Progress metrics */}
-              {docsTotal > 0 && (
-                <div className="flex items-center gap-4 mt-3">
+              <div className="flex items-center gap-4 mt-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-inter text-gray-600 text-xs">Intake:</span>
+                  <span className={`font-inter text-xs font-medium ${intakeComplete ? 'text-green-700' : 'text-amber-700'}`}>
+                    {intakeComplete ? 'Complete' : 'Pending'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-inter text-gray-600 text-xs">Brief:</span>
+                  <span className={`font-inter text-xs font-medium ${
+                    briefCompleted ? 'text-green-700'
+                    : briefStatus === 'generating' ? 'text-blue-600'
+                    : briefStatus === 'failed' ? 'text-red-600'
+                    : 'text-gray-500'
+                  }`}>
+                    {briefCompleted ? 'Generated'
+                      : briefStatus === 'generating' ? 'Generating...'
+                      : briefStatus === 'failed' ? 'Failed'
+                      : 'Not generated'}
+                  </span>
+                </div>
+                {isWebsiteService && (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-inter text-gray-600 text-xs">Website:</span>
+                      <span className={`font-inter text-xs font-medium ${websiteDelivered ? 'text-green-700' : websiteHasUrl ? 'text-blue-600' : 'text-gray-500'}`}>
+                        {websiteDelivered ? 'Delivered' : websiteHasUrl ? 'URL Set' : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-inter text-gray-600 text-xs">ZIP:</span>
+                      <span className={`font-inter text-xs font-medium ${websiteHasZip ? 'text-green-700' : 'text-gray-500'}`}>
+                        {websiteHasZip ? 'Uploaded' : 'Not uploaded'}
+                      </span>
+                    </div>
+                  </>
+                )}
+                {isSocialService && (
                   <div className="flex items-center gap-1.5">
-                    <span className="font-inter text-gray-600 text-xs">Intake:</span>
-                    <span className={`font-inter text-xs font-medium ${intakeComplete ? 'text-green-700' : 'text-amber-700'}`}>
-                      {intakeComplete ? 'Complete' : 'Pending'}
+                    <span className="font-inter text-gray-600 text-xs">Posts:</span>
+                    <span className="font-inter text-xs font-medium text-gray-900">
+                      {socialPosts.length}/{postCount}
+                      {postsDelivered > 0 && <span className="text-green-700 ml-1">({postsDelivered} delivered)</span>}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-inter text-gray-600 text-xs">Brief:</span>
-                    <span className={`font-inter text-xs font-medium ${
-                      briefStatus === 'completed' ? 'text-green-700'
-                      : briefStatus === 'generating' ? 'text-blue-600'
-                      : briefStatus === 'failed' ? 'text-red-600'
-                      : 'text-gray-500'
-                    }`}>
-                      {briefStatus === 'completed' ? 'Generated'
-                        : briefStatus === 'generating' ? 'Generating...'
-                        : briefStatus === 'failed' ? 'Failed'
-                        : 'Not generated'}
-                    </span>
-                  </div>
+                )}
+                {!isWebsiteService && !isSocialService && docsTotal > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="font-inter text-gray-600 text-xs">Documents:</span>
                     <span className="font-inter text-xs font-medium text-gray-900">{docsReady}/{docsTotal}</span>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Subscription details */}
               {isSubscription && purchasedService.next_billing_date && (
@@ -328,33 +380,31 @@ function ServiceCard({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-            {!isSubscription && (
-              <>
-                <button
-                  onClick={onGenerateBrief}
-                  disabled={generatingBrief || !intakeSubmitted}
-                  title={!intakeSubmitted ? 'Intake must be submitted first' : `Generate brief for ${serviceName}`}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-inter font-medium transition-all ${
-                    generatingBrief
-                      ? 'bg-blue-100 text-blue-600 cursor-wait'
-                      : intakeSubmitted
-                        ? 'bg-[#1B3F7A] hover:bg-[#2C68C4] text-white'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  {generatingBrief ? (
-                    <>
-                      <RefreshCw size={13} className="animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Briefcase size={13} />
-                      Generate Brief
-                    </>
-                  )}
-                </button>
-              </>
+            {!isSubscription && !briefCompleted && (
+              <button
+                onClick={onGenerateBrief}
+                disabled={generatingBrief || !intakeSubmitted}
+                title={!intakeSubmitted ? 'Intake must be submitted first' : `Generate brief for ${serviceName}`}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-inter font-medium transition-all ${
+                  generatingBrief
+                    ? 'bg-blue-100 text-blue-600 cursor-wait'
+                    : intakeSubmitted
+                      ? 'bg-[#1B3F7A] hover:bg-[#2C68C4] text-white'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {generatingBrief ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Briefcase size={13} />
+                    Generate Brief
+                  </>
+                )}
+              </button>
             )}
             <button
               onClick={() => setExpanded(!expanded)}
@@ -366,54 +416,199 @@ function ServiceCard({
         </div>
       </div>
 
-      {/* Expanded: Document List */}
-      {expanded && docConfigs.length > 0 && (
+      {/* Expanded Details */}
+      {expanded && (
         <div className="border-t border-gray-200 bg-[#FAFBFC] p-5">
-          <h5 className="font-inter font-semibold text-gray-700 text-xs uppercase tracking-wide mb-3">
-            Documents for {serviceName}
-          </h5>
-          <div className="space-y-2">
-            {docConfigs.map(config => {
-              const doc = documents.find((d: any) => d.document_type === config.document_type);
-              const docStatus = doc?.status || 'pending';
-              const isDelivered = doc?.delivered_to_client;
+          {/* Business Foundations Pack — Document List */}
+          {docConfigs.length > 0 && (
+            <>
+              <h5 className="font-inter font-semibold text-gray-700 text-xs uppercase tracking-wide mb-3">
+                Documents for {serviceName}
+              </h5>
+              <div className="space-y-2 mb-4">
+                {docConfigs.map(config => {
+                  const doc = documents.find((d: any) => d.document_type === config.document_type);
+                  const docStatus = doc?.status || 'pending';
+                  const isDelivered = doc?.delivered_to_client;
 
-              const statusStyles: Record<string, { color: string; bg: string; label: string }> = {
-                pending: { color: 'text-gray-500', bg: 'bg-gray-100', label: 'Pending' },
-                generating: { color: 'text-blue-600', bg: 'bg-blue-50', label: 'Generating' },
-                completed: { color: 'text-green-600', bg: 'bg-green-50', label: 'Complete' },
-                failed: { color: 'text-red-600', bg: 'bg-red-50', label: 'Failed' },
-              };
-              const ds = statusStyles[docStatus] || statusStyles.pending;
+                  const statusStyles: Record<string, { color: string; bg: string; label: string }> = {
+                    pending: { color: 'text-gray-500', bg: 'bg-gray-100', label: 'Pending' },
+                    generating: { color: 'text-blue-600', bg: 'bg-blue-50', label: 'Generating' },
+                    completed: { color: 'text-green-600', bg: 'bg-green-50', label: 'Complete' },
+                    failed: { color: 'text-red-600', bg: 'bg-red-50', label: 'Failed' },
+                  };
+                  const ds = statusStyles[docStatus] || statusStyles.pending;
 
-              return (
-                <div key={config.document_type} className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  return (
+                    <div key={config.document_type} className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <FileText size={14} className="text-gray-400 shrink-0" />
+                        <div>
+                          <p className="font-inter text-sm text-gray-900">{config.document_label}</p>
+                          <p className="font-inter text-xs text-gray-500">{config.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${ds.bg} ${ds.color}`}>
+                          {ds.label}
+                        </span>
+                        {isDelivered && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-inter font-medium bg-blue-50 text-blue-600">
+                            <CheckCircle2 size={10} />
+                            Delivered
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Website Copy Pack — Delivery Status */}
+          {isWebsiteService && (
+            <>
+              <h5 className="font-inter font-semibold text-gray-700 text-xs uppercase tracking-wide mb-3">
+                Website Delivery Status
+              </h5>
+              <div className="space-y-2 mb-4">
+                {/* Deployment URL */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <Globe size={14} className="text-gray-400 shrink-0" />
+                    <div>
+                      <p className="font-inter text-sm text-gray-900">Deployment URL</p>
+                      <p className="font-inter text-xs text-gray-500">
+                        {websiteHasUrl ? websiteDelivery.deployment_url : 'Not configured'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${websiteHasUrl ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {websiteHasUrl ? 'Set' : 'Pending'}
+                  </span>
+                </div>
+
+                {/* ZIP Upload */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <Upload size={14} className="text-gray-400 shrink-0" />
+                    <div>
+                      <p className="font-inter text-sm text-gray-900">Website ZIP</p>
+                      <p className="font-inter text-xs text-gray-500">
+                        {websiteHasZip ? websiteDelivery.website_zip_path.split('/').pop() : 'Not uploaded'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${websiteHasZip ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {websiteHasZip ? 'Uploaded' : 'Pending'}
+                  </span>
+                </div>
+
+                {/* Bolt Prompt */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <Briefcase size={14} className="text-gray-400 shrink-0" />
+                    <div>
+                      <p className="font-inter text-sm text-gray-900">Bolt Prompt</p>
+                      <p className="font-inter text-xs text-gray-500">
+                        {websiteDelivery?.bolt_prompt ? 'Generated' : 'Not generated'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${websiteDelivery?.bolt_prompt ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {websiteDelivery?.bolt_prompt ? 'Ready' : 'Pending'}
+                  </span>
+                </div>
+
+                {/* Delivery Status */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <Send size={14} className="text-gray-400 shrink-0" />
+                    <div>
+                      <p className="font-inter text-sm text-gray-900">Delivery to Client</p>
+                      <p className="font-inter text-xs text-gray-500">
+                        {websiteDelivered ? `Delivered ${new Date(websiteDelivery.delivered_at).toLocaleDateString('en-GB')}` : 'Not yet delivered'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${websiteDelivered ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {websiteDelivered ? 'Delivered' : 'Pending'}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Social Media Pack — Posts Status */}
+          {isSocialService && (
+            <>
+              <h5 className="font-inter font-semibold text-gray-700 text-xs uppercase tracking-wide mb-3">
+                Social Media Posts Status
+              </h5>
+              <div className="space-y-2 mb-4">
+                {/* Posts Generated */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
                   <div className="flex items-center gap-3">
                     <FileText size={14} className="text-gray-400 shrink-0" />
                     <div>
-                      <p className="font-inter text-sm text-gray-900">{config.document_label}</p>
-                      <p className="font-inter text-xs text-gray-500">{config.description}</p>
+                      <p className="font-inter text-sm text-gray-900">Posts Generated</p>
+                      <p className="font-inter text-xs text-gray-500">{postsGenerated} of {socialPosts.length} posts generated</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${ds.bg} ${ds.color}`}>
-                      {ds.label}
-                    </span>
-                    {isDelivered && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-inter font-medium bg-blue-50 text-blue-600">
-                        <CheckCircle2 size={10} />
-                        Delivered
-                      </span>
-                    )}
-                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${postsGenerated === socialPosts.length && socialPosts.length > 0 ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                    {socialPosts.length === 0 ? 'None' : `${postsGenerated}/${socialPosts.length}`}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Brief details */}
+                {/* Images */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <ImageIcon size={14} className="text-gray-400 shrink-0" />
+                    <div>
+                      <p className="font-inter text-sm text-gray-900">Images Uploaded</p>
+                      <p className="font-inter text-xs text-gray-500">{postsWithImages} posts have images</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${postsWithImages > 0 ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {postsWithImages}
+                  </span>
+                </div>
+
+                {/* Videos */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <Video size={14} className="text-gray-400 shrink-0" />
+                    <div>
+                      <p className="font-inter text-sm text-gray-900">Videos Uploaded</p>
+                      <p className="font-inter text-xs text-gray-500">{postsWithVideos} posts have videos</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${postsWithVideos > 0 ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {postsWithVideos}
+                  </span>
+                </div>
+
+                {/* Delivery */}
+                <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <Send size={14} className="text-gray-400 shrink-0" />
+                    <div>
+                      <p className="font-inter text-sm text-gray-900">Posts Delivered</p>
+                      <p className="font-inter text-xs text-gray-500">{postsDelivered} of {socialPosts.length} delivered to client</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${postsDelivered === socialPosts.length && socialPosts.length > 0 ? 'bg-green-50 text-green-600' : postsDelivered > 0 ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {postsDelivered}/{socialPosts.length}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Brief details — always shown when expanded and briefs exist */}
           {briefs.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className={docConfigs.length > 0 || isWebsiteService || isSocialService ? 'mt-4 pt-4 border-t border-gray-200' : ''}>
               <h5 className="font-inter font-semibold text-gray-700 text-xs uppercase tracking-wide mb-3">
                 Briefs
               </h5>
@@ -503,7 +698,7 @@ function ServiceCard({
                           </button>
                           <button
                             onClick={() => {
-                              navigator.clipboard.writeText(brief.brief_content || '');
+                              navigator.clipboard.writeText(editedContent || brief.brief_content || '');
                               setCopied(true);
                               setTimeout(() => setCopied(false), 2000);
                             }}
@@ -535,6 +730,14 @@ function ServiceCard({
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* No data message when there's nothing to show */}
+          {docConfigs.length === 0 && !isWebsiteService && !isSocialService && briefs.length === 0 && (
+            <div className="text-center py-6">
+              <Package size={24} className="text-gray-300 mx-auto mb-2" />
+              <p className="font-inter text-gray-500 text-xs">No detailed status available for this service</p>
             </div>
           )}
         </div>
