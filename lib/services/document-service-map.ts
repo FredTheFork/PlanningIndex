@@ -43,6 +43,21 @@ export function isServiceDocumentService(serviceId: string): boolean {
   return getDocumentTypesForService(serviceId).length > 0;
 }
 
+/** Whether service is the Website Copy Pack (has dedicated Website tab). */
+export function isWebsiteService(serviceId: string): boolean {
+  return serviceId === 'website_copy_pack';
+}
+
+/** Whether service is the Social Media Pack (has dedicated Posts tab). */
+export function isSocialMediaService(serviceId: string): boolean {
+  return serviceId === 'social_media_pack';
+}
+
+/** Whether service is Business Foundations Pack (has Documents tab). */
+export function isBusinessFoundationsService(serviceId: string): boolean {
+  return serviceId === 'business_foundations_pack';
+}
+
 /** Group an array of documents by their owning service. */
 function groupDocumentsByService<T extends { document_type: string }>(
   documents: T[],

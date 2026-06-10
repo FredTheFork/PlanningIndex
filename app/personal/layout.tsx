@@ -9,7 +9,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { isServiceDocumentService } from '@/lib/services/document-service-map';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw, Settings } from 'lucide-react';
+import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw, Settings, Globe, Share2 } from 'lucide-react';
 import ChatBubble from '@/components/ui/ChatBubble';
 
 const adminNavItems = [
@@ -42,13 +42,28 @@ export default function PersonalLayout({
       { label: 'Intake Form', href: '/personal/intake', icon: FileText },
     ];
 
-    // Show Status and Documents only if the user has at least one document-producing service
+    // Show Status only if the user has at least one document-producing service
     const hasDocService = safePurchasedServiceIds.some(isServiceDocumentService);
     if (hasDocService) {
-      items.push(
-        { label: 'Status', href: '/personal/status', icon: BarChart3 },
-        { label: 'Documents', href: '/personal/documents', icon: FolderOpen },
-      );
+      items.push({ label: 'Status', href: '/personal/status', icon: BarChart3 });
+    }
+
+    // Show Documents only if user has business_foundations_pack
+    const hasBusinessFoundations = safePurchasedServiceIds.includes('business_foundations_pack');
+    if (hasBusinessFoundations) {
+      items.push({ label: 'Documents', href: '/personal/documents', icon: FolderOpen });
+    }
+
+    // Show Website tab if user has website_copy_pack
+    const hasWebsiteCopy = safePurchasedServiceIds.includes('website_copy_pack');
+    if (hasWebsiteCopy) {
+      items.push({ label: 'Website', href: '/personal/website', icon: Globe });
+    }
+
+    // Show Posts tab if user has social_media_pack
+    const hasSocialMedia = safePurchasedServiceIds.includes('social_media_pack');
+    if (hasSocialMedia) {
+      items.push({ label: 'Posts', href: '/personal/posts', icon: Share2 });
     }
 
     // Add Settings at the end
