@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AIzaSyAb8RN6KLdSjw1BciesDhWk-nwBaBGBLdS2YUYwf7HLefymwtkA";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6KLdSjw1BciesDhWk-nwBaBGBLdS2YUYwf7HLefymwtkA";
 
 async function adminQuery(table: string, select: string, filter: Record<string, string>) {
   const params = new URLSearchParams();
@@ -79,14 +79,12 @@ async function trackGeminiUsage(model: string) {
   }
 }
 
-function buildBriefPrompt(responses: Record<string, any>, serviceId: string | null): string {
+function buildBriefPrompt(responses: Record<string, any>, serviceId: string | null, websitePages: string[]): string {
   const r = responses || {};
 
-  // Service-specific context sections
-  const websitePagesSection = (() => {
-    // This will be populated from services_purchased data if available
-    return "";
-  })();
+  const websitePagesSection = websitePages.length > 0
+    ? `\nWEBSITE PAGES ORDERED AT CHECKOUT\n==================================\nPages: ${websitePages.join(', ')}\n`
+    : '';
 
   const businessIdentity = `
 BUSINESS IDENTITY
@@ -281,7 +279,7 @@ Confidence Level: ${r.q80_confidence_level || 'Not provided'}
   // Build the prompt based on service context
   let serviceContext = "";
   if (serviceId === 'website_copy_pack') {
-    serviceContext = `This brief is specifically for the WEBSITE COPY PACK. Focus on website content, structure, design preferences, and all website-related details. Include the website copy section data as primary context.`;
+    serviceContext = `This brief is specifically for the WEBSITE COPY PACK. Focus on website content, structure, design preferences, and all website-related details. Include the website copy section data as primary context. The client has ordered these pages at checkout: ${websitePages.length > 0 ? websitePages.join(', ') : 'not specified — use standard pages'}.`;
   } else if (serviceId === 'social_media_pack') {
     serviceContext = `This brief is specifically for the SOCIAL MEDIA PACK. Focus on social media strategy, content pillars, posting frequency, platform-specific needs, and tone for social channels. Include the social media section data as primary context.`;
   } else if (serviceId === 'business_foundations_pack') {
@@ -315,6 +313,8 @@ ${brand}
 ${invoice}
 
 ${linkedin}
+
+${websitePagesSection}
 
 ${websiteCopy}
 
@@ -400,8 +400,14 @@ Deno.serve(async (req: Request) => {
 
     const responses = intakeData[0].responses || {};
 
+    // Fetch website pages selected at checkout (for website copy briefs)
+    const servicesData = await adminQuery("services_purchased", "website_pages_selected", { user_id, service_id: "website_copy_pack", status: "active" });
+    const websitePages = servicesData && Array.isArray(servicesData) && servicesData.length > 0
+      ? (servicesData[0].website_pages_selected || [])
+      : [];
+
     // Build the brief prompt
-    const briefPrompt = buildBriefPrompt(responses, service_id || null);
+    const briefPrompt = buildBriefPrompt(responses, service_id || null, websitePages);
 
     // Call Gemini to generate the brief
     const { text: briefContent, model: usedModel } = await callGemini(briefPrompt);
