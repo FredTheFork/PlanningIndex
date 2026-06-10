@@ -84,11 +84,15 @@ async function trackGeminiUsage(model: string) {
 }
 
 // Build the prompt for Gemini to generate a Bolt.new prompt
-function buildGeminiPrompt(intakeData: Record<string, any>, briefContent: string | null): string {
+function buildGeminiPrompt(intakeData: Record<string, any>, briefContent: string | null, websitePages: string[]): string {
   const responses = intakeData.responses || {};
-  const pages = responses.wc1_pages_needed || ['Homepage', 'About', 'Services', 'Contact'];
+  const pages = websitePages.length > 0 ? websitePages : ['Homepage', 'About', 'Services', 'Contact'];
 
   return `You are an expert at creating comprehensive prompts for Bolt.new (an AI-powered full-stack website builder). Generate a complete, detailed prompt that will create a professional website for a UK small business.
+
+## WEBSITE PAGES ORDERED AT CHECKOUT
+
+The client has ordered the following pages: ${Array.isArray(pages) ? pages.join(', ') : pages}
 
 ## CLIENT INFORMATION
 
@@ -353,8 +357,14 @@ Deno.serve(async (req: Request) => {
     // Fetch any uploaded files info
     const uploadsData = await adminQuery("intake_uploads", "question_id,file_name,file_path", { user_id });
 
+    // Fetch website pages selected at checkout
+    const servicesData = await adminQuery("services_purchased", "website_pages_selected", { user_id, service_id: "website_copy_pack", status: "active" });
+    const websitePages = servicesData && Array.isArray(servicesData) && servicesData.length > 0
+      ? (servicesData[0].website_pages_selected || [])
+      : [];
+
     // Build the Gemini prompt
-    const geminiPrompt = buildGeminiPrompt(intakeData[0], briefContent);
+    const geminiPrompt = buildGeminiPrompt(intakeData[0], briefContent, websitePages);
 
     // Call Gemini to generate the Bolt prompt
     const { text: boltPrompt, model: usedModel } = await callGemini(geminiPrompt);

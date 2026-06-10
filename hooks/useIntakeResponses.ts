@@ -159,32 +159,11 @@ export function useIntakeResponses() {
         }
       } else {
         // Initialize with defaults for new users so navigation works
-        // Also fetch website_pages_selected and social_media_post_count from services_purchased
-        const initialResponses: Record<string, any> = {};
-
-        // Fetch website pages and social media post count from services_purchased
-        const { data: servicesData } = await supabase
-          .from('services_purchased')
-          .select('service_id, website_pages_selected, social_media_post_count')
-          .eq('user_id', user.id)
-          .eq('status', 'active');
-
-        if (servicesData && servicesData.length > 0) {
-          for (const svc of servicesData) {
-            if (svc.service_id === 'website_copy_pack' && svc.website_pages_selected) {
-              initialResponses.wc1_pages_needed = svc.website_pages_selected;
-            }
-            if (svc.service_id === 'social_media_pack' && svc.social_media_post_count) {
-              initialResponses.sm_post_count = svc.social_media_post_count;
-            }
-          }
-        }
-
         setData({
           id: '',
           user_id: user.id,
           form_version: 'v4',
-          responses: initialResponses,
+          responses: {},
           current_section_id: 'intro',
           section_progress: {},
           last_saved_at: null,

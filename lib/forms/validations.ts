@@ -204,10 +204,6 @@ function getFinalSchema(): z.ZodObject<any> {
 
 function getWebsiteCopySchema(): z.ZodObject<any> {
   return z.object({
-    // Pages selected at checkout
-    wc1_pages_needed: multiSelect(['Homepage', 'About', 'Services', 'Contact', 'FAQ', 'Blog', 'Portfolio / Case Studies', 'Pricing', 'Testimonials', 'Other'], true),
-    wc_pages_other: optionalString,
-
     // Structure
     wc_service_page_count: singleChoice(['1', '2-3', '4-5', '6+', 'Depends — align with my service descriptions'], true),
     wc_nav_structure: singleChoice(['Single page / scroll', 'Multi-page', 'One-page with sections'], true),

@@ -44,7 +44,6 @@ const OTHER_TEXT_FIELDS = new Set([
   'q39_data_storage_other',
   'q48_tracking_tools_other',
   'q79_how_heard_other',
-  'wc1_pages_needed_other',
   'sm1_platforms_other',
 ]);
 

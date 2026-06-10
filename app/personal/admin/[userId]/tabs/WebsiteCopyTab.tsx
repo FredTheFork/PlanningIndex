@@ -116,6 +116,8 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   const [clientBrief, setClientBrief] = useState<ClientBrief | null>(null);
   const [clientAssets, setClientAssets] = useState<ClientAsset[]>([]);
   const [brandData, setBrandData] = useState<BrandData>({ colours: null, font_style: null });
+  const [websitePagesSelected, setWebsitePagesSelected] = useState<string[]>([]);
+  const [websitePageCount, setWebsitePageCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingBrief, setLoadingBrief] = useState(true);
   const [loadingAssets, setLoadingAssets] = useState(true);
@@ -142,6 +144,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     fetchClientBrief();
     fetchClientAssets();
     fetchBrandData();
+    fetchWebsitePages();
   }, [userId]);
 
   const fetchDelivery = async () => {
@@ -208,6 +211,21 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
         colours: responses.q67_brand_colours || responses.wc_colour_preferences || null,
         font_style: responses.wc_font_style || null,
       });
+    }
+  };
+
+  const fetchWebsitePages = async () => {
+    const { data: servicesData, error } = await supabase
+      .from('services_purchased')
+      .select('website_pages_selected, website_page_count')
+      .eq('user_id', userId)
+      .eq('service_id', 'website_copy_pack')
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!error && servicesData) {
+      setWebsitePagesSelected(servicesData.website_pages_selected || []);
+      setWebsitePageCount(servicesData.website_page_count || null);
     }
   };
 
@@ -544,6 +562,35 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
           </div>
         </div>
       </div>
+
+      {/* Pages Ordered at Checkout */}
+      {websitePagesSelected.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Globe size={20} className="text-[#1B3F7A] shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-inter font-semibold text-[#1B3F7A] mb-1">
+                Pages Ordered at Checkout
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {websitePagesSelected.map((page, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2.5 py-1 bg-white border border-blue-200 rounded text-sm font-inter text-gray-700"
+                  >
+                    {page}
+                  </span>
+                ))}
+              </div>
+              {websitePageCount && (
+                <p className="font-inter text-xs text-gray-600 mt-2">
+                  Total pages: {websitePageCount}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-2 gap-6">
