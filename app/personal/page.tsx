@@ -8,9 +8,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { getServiceById } from '@/lib/services/service-catalog';
-import { getServiceDeliveryStatuses, getNextStepForService, sortNextSteps } from '@/lib/services/service-status';
+import { getServiceDeliveryStatuses, getUnifiedNextStep } from '@/lib/services/service-status';
 import { isServiceDocumentService } from '@/lib/services/document-service-map';
-import { FileText, ArrowRight, CheckCircle2, Clock, Package, RefreshCw } from 'lucide-react';
+import { FileText, ArrowRight, CheckCircle2, Clock, Package, RefreshCw, Sparkles, FolderOpen } from 'lucide-react';
 
 interface DocRow {
   document_type: string;
@@ -21,7 +21,7 @@ interface DocRow {
 export default function PersonalOverview() {
   const router = useRouter();
   const { user } = useAuth();
-  const { profile, intakeFullyComplete, purchasedServiceIds, intakeCompleteForServices } = useClientProfile();
+  const { profile, purchasedServiceIds } = useClientProfile();
   const { isAdmin } = useIsAdmin();
   const [documents, setDocuments] = useState<DocRow[]>([]);
 
@@ -32,7 +32,7 @@ export default function PersonalOverview() {
     }
   }, [isAdmin, router]);
 
-  // Fetch documents for per-service status computation
+  // Fetch documents for status computation
   useEffect(() => {
     if (!user) return;
     const fetchDocs = async () => {
@@ -56,13 +56,13 @@ export default function PersonalOverview() {
   // Compute per-service statuses
   const serviceStatuses = getServiceDeliveryStatuses({
     purchasedServiceIds,
-    intakeCompleteForServices,
+    intakeCompleteForServices: profile.intake_complete_for_services || [],
     documents,
     overallDeliveryStatus: profile.delivery_status,
   });
 
-  // Compute next steps for each service
-  const nextSteps = sortNextSteps(serviceStatuses.map(getNextStepForService));
+  // Get unified next step
+  const unifiedStep = getUnifiedNextStep(serviceStatuses);
 
   // Document-producing services for the "Your Services" card
   const docServiceStatuses = serviceStatuses.filter((s) =>
@@ -73,6 +73,7 @@ export default function PersonalOverview() {
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-8">
         <h1 className="font-inter font-bold text-[#1B3F7A] text-2xl mb-1">
           Welcome to your personal area
@@ -87,21 +88,9 @@ export default function PersonalOverview() {
         </p>
       </div>
 
-      {/* Next steps card */}
-      {nextSteps.length === 1 ? (
-        <NextStepCard step={nextSteps[0]} />
-      ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
-          <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-4">Your Next Steps</h2>
-          <div className="space-y-4">
-            {nextSteps.map((step, i) => (
-              <div key={step.title}>
-                {i > 0 && <div className="border-t border-gray-100 my-4" />}
-                <NextStepRow step={step} />
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Unified Next Step Card */}
+      {unifiedStep && (
+        <UnifiedNextStepCard step={unifiedStep} hasSubmittedIntake={profile.has_submitted_intake} />
       )}
 
       {/* Your Services card */}
@@ -152,60 +141,124 @@ export default function PersonalOverview() {
   );
 }
 
-function NextStepCard({ step }: { step: { title: string; description: string; action: string; link: string; icon: any } }) {
-  const Icon = step.icon;
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
-      <div className="flex items-start gap-4">
-        <div className="bg-[#FAFBFC] rounded-lg p-3 shrink-0">
-          <Icon size={24} className="text-[#1B3F7A]" />
-        </div>
-        <div className="flex-1">
-          <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-2">
-            {step.title}
-          </h2>
-          <p className="font-inter text-gray-600 text-sm mb-4">
-            {step.description}
-          </p>
-          <Link
-            href={step.link}
-            className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors duration-200"
-            style={{ padding: '10px 20px', fontSize: '0.9rem' }}
-          >
-            {step.action}
-            <ArrowRight size={16} />
-          </Link>
+function UnifiedNextStepCard({
+  step,
+  hasSubmittedIntake,
+}: {
+  step: { type: 'intake' | 'preparing' | 'ready'; servicesNeedingIntake: string[]; allDelivered: boolean };
+  hasSubmittedIntake: boolean;
+}) {
+  if (step.type === 'intake') {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
+        <div className="flex items-start gap-4">
+          <div className="bg-[#FAFBFC] rounded-lg p-3 shrink-0">
+            <FileText size={24} className="text-[#1B3F7A]" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-2">
+              {hasSubmittedIntake ? 'Complete Your Intake Form' : 'Tell Us About Your Business'}
+            </h2>
+            <p className="font-inter text-gray-600 text-sm mb-3">
+              {hasSubmittedIntake
+                ? 'You have new sections to complete for your additional services.'
+                : 'Complete your intake form so we can prepare your bespoke deliverables.'}
+            </p>
+            {step.servicesNeedingIntake.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {step.servicesNeedingIntake.map((name) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-inter font-medium bg-[#F0F4FF] text-[#1B3F7A]"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="font-inter text-gray-500 text-xs mb-4">
+              Estimated time: 20-30 minutes. Your answers shape every document we create.
+            </p>
+            <Link
+              href="/personal/intake"
+              className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors duration-200"
+              style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+            >
+              Complete Intake Form
+              <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function NextStepRow({ step }: { step: { title: string; description: string; action: string; link: string; icon: any } }) {
-  const Icon = step.icon;
-  return (
-    <div className="flex items-start gap-4">
-      <div className="bg-[#FAFBFC] rounded-lg p-2.5 shrink-0">
-        <Icon size={18} className="text-[#1B3F7A]" />
+  if (step.type === 'preparing') {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
+        <div className="flex items-start gap-4">
+          <div className="bg-blue-50 rounded-lg p-3 shrink-0">
+            <Sparkles size={24} className="text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-2">
+              We&apos;re Preparing Your Deliverables
+            </h2>
+            <p className="font-inter text-gray-600 text-sm mb-4">
+              Your intake is complete. We&apos;re now crafting your bespoke documents and content. This typically takes up to 24 hours.
+            </p>
+            <Link
+              href="/personal/status"
+              className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors duration-200"
+              style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+            >
+              View Progress
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="font-inter font-semibold text-[#1B3F7A] text-sm mb-1">
-          {step.title}
-        </h3>
-        <p className="font-inter text-gray-600 text-xs mb-2">
-          {step.description}
-        </p>
-        <Link
-          href={step.link}
-          className="inline-flex items-center gap-1.5 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors duration-200"
-          style={{ padding: '6px 14px', fontSize: '0.8rem' }}
-        >
-          {step.action}
-          <ArrowRight size={14} />
-        </Link>
+    );
+  }
+
+  if (step.type === 'ready') {
+    return (
+      <div className="bg-white rounded-lg border border-green-200 p-8 mb-6">
+        <div className="flex items-start gap-4">
+          <div className="bg-green-50 rounded-lg p-3 shrink-0">
+            <CheckCircle2 size={24} className="text-green-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-inter font-bold text-[#1B3F7A] text-lg mb-2">
+              Your Deliverables Are Ready
+            </h2>
+            <p className="font-inter text-gray-600 text-sm mb-4">
+              All your documents and content have been prepared and are ready for download.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/personal/documents"
+                className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors duration-200"
+                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              >
+                <FolderOpen size={16} />
+                View Documents
+              </Link>
+              <Link
+                href="/personal/status"
+                className="inline-flex items-center gap-2 font-inter font-semibold text-[#1B3F7A] bg-white border border-[#1B3F7A] rounded-md hover:bg-gray-50 transition-colors duration-200"
+                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+              >
+                View Status
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
 
 function ServiceStatusBadge({

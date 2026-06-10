@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
-import { getServiceById } from '@/lib/services/service-catalog';
-import { getDocumentTypesForService, isServiceDocumentService } from '@/lib/services/document-service-map';
 import { Lock, Clock, FileText, Eye, EyeOff, Download } from 'lucide-react';
 
 interface DeliveredDoc {
@@ -21,12 +19,11 @@ interface DeliveredDoc {
 }
 
 export default function PersonalDocuments() {
-  const { profile, loading: profileLoading, purchasedServiceIds } = useClientProfile();
+  const { profile, loading: profileLoading } = useClientProfile();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<DeliveredDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
-  const [selectedServiceId, setSelectedServiceId] = useState<string>('all');
 
   useEffect(() => {
     if (!user) return;
@@ -102,17 +99,6 @@ export default function PersonalDocuments() {
     return `${diffDays} days remaining`;
   };
 
-  // Compute which document-producing services the user has purchased
-  const docServiceIds = purchasedServiceIds.filter(isServiceDocumentService);
-
-  // Filter documents based on selected service tab
-  const filteredDocuments = selectedServiceId === 'all'
-    ? documents
-    : documents.filter((doc) => {
-        const typesForService = new Set(getDocumentTypesForService(selectedServiceId));
-        return typesForService.has(doc.document_type);
-      });
-
   if (profileLoading || loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -123,10 +109,10 @@ export default function PersonalDocuments() {
 
   if (!profile) return null;
 
-  const hasDocuments = filteredDocuments.length > 0;
+  const hasDocuments = documents.length > 0;
 
-  // Earliest auto-delete among filtered docs
-  const earliestAutoDelete = filteredDocuments
+  // Earliest auto-delete among docs
+  const earliestAutoDelete = documents
     .map((d) => d.auto_delete_at)
     .filter(Boolean)
     .sort()[0];
@@ -138,43 +124,11 @@ export default function PersonalDocuments() {
           Your Documents
         </h1>
         <p className="font-inter text-gray-600 text-sm">
-          Access your business foundations documents.
+          {hasDocuments
+            ? `${documents.length} document${documents.length === 1 ? '' : 's'} ready for download`
+            : 'Your business documents will appear here once delivered'}
         </p>
       </div>
-
-      {/* Service filter tabs */}
-      {docServiceIds.length > 1 && (
-        <div className="mb-6">
-          <div className="flex gap-1 bg-white rounded-lg border border-gray-200 p-1 overflow-x-auto">
-            <button
-              onClick={() => setSelectedServiceId('all')}
-              className={`px-4 py-2 rounded-md font-inter text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedServiceId === 'all'
-                  ? 'bg-[#1B3F7A] text-white'
-                  : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
-              }`}
-            >
-              All Documents
-            </button>
-            {docServiceIds.map((sid) => {
-              const service = getServiceById(sid);
-              return (
-                <button
-                  key={sid}
-                  onClick={() => setSelectedServiceId(sid)}
-                  className={`px-4 py-2 rounded-md font-inter text-sm font-medium transition-colors whitespace-nowrap ${
-                    selectedServiceId === sid
-                      ? 'bg-[#1B3F7A] text-white'
-                      : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
-                  }`}
-                >
-                  {service?.name ?? sid}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Documents Section */}
       {hasDocuments && (
@@ -194,7 +148,7 @@ export default function PersonalDocuments() {
           )}
 
           <div className="flex flex-col gap-3">
-            {filteredDocuments.map(doc => (
+            {documents.map(doc => (
               <DocumentCard
                 key={doc.id}
                 doc={doc}

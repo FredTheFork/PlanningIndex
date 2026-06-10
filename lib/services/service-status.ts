@@ -154,6 +154,59 @@ export function sortNextSteps(steps: ServiceNextStep[]): ServiceNextStep[] {
 }
 
 /**
+ * Get a unified next step for the Overview page.
+ * Instead of showing per-service intake buttons, this consolidates them into one action.
+ * Returns null if all services are delivered (no action needed).
+ */
+export function getUnifiedNextStep(
+  serviceStatuses: ServiceDeliveryStatus[]
+): { type: 'intake' | 'preparing' | 'ready'; servicesNeedingIntake: string[]; allDelivered: boolean } | null {
+  // Filter out quarterly_refresh - it doesn't follow the normal intake/delivery flow
+  const regularServices = serviceStatuses.filter((s) => s.serviceId !== 'quarterly_refresh');
+
+  if (regularServices.length === 0) {
+    return null;
+  }
+
+  // Check which services need intake
+  const servicesNeedingIntake = regularServices
+    .filter((s) => !s.intakeComplete)
+    .map((s) => s.serviceName);
+
+  // Check if any intake is incomplete
+  if (servicesNeedingIntake.length > 0) {
+    return {
+      type: 'intake',
+      servicesNeedingIntake,
+      allDelivered: false,
+    };
+  }
+
+  // Check delivery status across all services
+  const anyInProgress = regularServices.some((s) => s.deliveryStatus === 'in_progress');
+  const anyNotStarted = regularServices.some((s) => s.deliveryStatus === 'not_started');
+  const allDelivered = regularServices.every((s) => s.deliveryStatus === 'delivered');
+
+  if (anyInProgress || anyNotStarted) {
+    return {
+      type: 'preparing',
+      servicesNeedingIntake: [],
+      allDelivered: false,
+    };
+  }
+
+  if (allDelivered) {
+    return {
+      type: 'ready',
+      servicesNeedingIntake: [],
+      allDelivered: true,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Check whether a user is eligible for document refreshes.
  * Returns false if the quarterly_refresh subscription is cancelled/expired.
  * Used to block refresh requests for inactive subscriptions.
