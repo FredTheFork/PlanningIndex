@@ -6,8 +6,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import {
   Share2, Download, Lock, ChevronDown, ChevronUp,
-  Instagram, Linkedin, Facebook, Twitter
+  Instagram, Linkedin, Facebook, Twitter, Video, Images
 } from 'lucide-react';
+import { PlatformId, PLATFORM_SPECS, ALL_PLATFORM_IDS, extractSelectedPlatforms } from '@/lib/social-platforms';
+
+const PLATFORM_ICON_MAP: Record<PlatformId, React.ElementType> = {
+  LinkedIn: Linkedin,
+  Instagram: Instagram,
+  Facebook: Facebook,
+  X: Twitter,
+  TikTok: Share2,
+  Pinterest: Share2,
+};
 
 interface SocialPost {
   id: string;
@@ -15,18 +25,14 @@ interface SocialPost {
   category: 'educational' | 'promotional' | 'personal';
   caption: string;
   hashtags: string | null;
-  platform: 'LinkedIn' | 'Instagram' | 'Facebook' | 'X';
+  platform: PlatformId;
   image_path: string | null;
+  video_path: string | null;
+  carousel_paths: string[] | null;
+  image_dimensions: string | null;
   week: number;
   day: string;
 }
-
-const PLATFORM_CONFIG = {
-  LinkedIn: { icon: Linkedin, color: 'text-blue-600', bg: 'bg-blue-50', label: 'LinkedIn' },
-  Instagram: { icon: Instagram, color: 'text-pink-600', bg: 'bg-pink-50', label: 'Instagram' },
-  Facebook: { icon: Facebook, color: 'text-blue-700', bg: 'bg-blue-50', label: 'Facebook' },
-  X: { icon: Twitter, color: 'text-gray-800', bg: 'bg-gray-100', label: 'X (Twitter)' },
-};
 
 const CATEGORY_CONFIG = {
   educational: { label: 'Educational', color: 'bg-purple-50 text-purple-700' },
@@ -39,14 +45,16 @@ export default function PersonalPostsPage() {
   const { purchasedServiceIds, profile, loading: profileLoading } = useClientProfile();
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedWeek, setExpandedWeek] = useState<number | null>(1);
-  const [filterPlatform, setFilterPlatform] = useState<string>('all');
+  const [expandedPost, setExpandedPost] = useState<string | null>(null);
+  const [activePlatform, setActivePlatform] = useState<PlatformId | 'all'>('all');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformId[]>([]);
 
   const hasSocialMediaPack = purchasedServiceIds.includes('social_media_pack');
 
   useEffect(() => {
     if (!user) return;
     fetchPosts();
+    fetchIntakePlatforms();
   }, [user]);
 
   const fetchPosts = async () => {
@@ -54,7 +62,7 @@ export default function PersonalPostsPage() {
     try {
       const { data, error } = await supabase
         .from('social_media_posts')
-        .select('id, post_number, category, caption, hashtags, platform, image_path, week, day')
+        .select('id, post_number, category, caption, hashtags, platform, image_path, video_path, carousel_paths, image_dimensions, week, day')
         .eq('user_id', user!.id)
         .eq('delivered_to_client', true)
         .order('post_number', { ascending: true });
@@ -69,16 +77,37 @@ export default function PersonalPostsPage() {
     }
   };
 
+  const fetchIntakePlatforms = async () => {
+    try {
+      const { data } = await supabase
+        .from('intake_responses')
+        .select('responses')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      if (data?.responses) {
+        const platforms = extractSelectedPlatforms(data.responses);
+        if (platforms.length > 0) {
+          setSelectedPlatforms(platforms);
+          setActivePlatform(platforms[0]);
+        } else {
+          setSelectedPlatforms([...ALL_PLATFORM_IDS]);
+        }
+      } else {
+        setSelectedPlatforms([...ALL_PLATFORM_IDS]);
+      }
+    } catch {
+      setSelectedPlatforms([...ALL_PLATFORM_IDS]);
+    }
+  };
+
   const handleImageDownload = async (path: string, name: string) => {
     try {
       const { data, error } = await supabase.storage
         .from('social-media-images')
         .createSignedUrl(path, 3600);
 
-      if (error || !data) {
-        console.error('Download error:', error);
-        return;
-      }
+      if (error || !data) return;
 
       const a = document.createElement('a');
       a.href = data.signedUrl;
@@ -92,23 +121,38 @@ export default function PersonalPostsPage() {
     }
   };
 
-  // Group posts by week
-  const postsByWeek = posts.reduce((acc, post) => {
-    if (!acc[post.week]) acc[post.week] = [];
-    acc[post.week].push(post);
-    return acc;
-  }, {} as Record<number, SocialPost[]>);
+  const handleVideoDownload = async (path: string, name: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('social-media-videos')
+        .createSignedUrl(path, 3600);
 
-  // Filter posts by platform
-  const filteredPostsByWeek = Object.entries(postsByWeek).reduce((acc, [week, weekPosts]) => {
-    const filtered = filterPlatform === 'all'
-      ? weekPosts
-      : weekPosts.filter(p => p.platform === filterPlatform);
-    if (filtered.length > 0) {
-      acc[parseInt(week)] = filtered;
+      if (error || !data) return;
+
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = name;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download error:', err);
     }
+  };
+
+  // Group posts by platform
+  const postsByPlatform = posts.reduce((acc, post) => {
+    if (!acc[post.platform]) acc[post.platform] = [];
+    acc[post.platform].push(post);
     return acc;
-  }, {} as Record<number, SocialPost[]>);
+  }, {} as Record<PlatformId, SocialPost[]>);
+
+  // Filter for single-platform view
+  const visiblePosts = activePlatform === 'all' ? posts : (postsByPlatform[activePlatform as PlatformId] || []);
+
+  // Only show platform tabs for platforms that have posts
+  const platformTabs = selectedPlatforms.filter(p => (postsByPlatform[p] || []).length > 0);
 
   if (authLoading || profileLoading || loading) {
     return (
@@ -181,91 +225,81 @@ export default function PersonalPostsPage() {
       <div className="mb-6">
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setFilterPlatform('all')}
+            onClick={() => setActivePlatform('all')}
             className={`px-3 py-1.5 rounded-lg text-sm font-inter font-medium transition-colors ${
-              filterPlatform === 'all'
+              activePlatform === 'all'
                 ? 'bg-[#1B3F7A] text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             All Platforms ({posts.length})
           </button>
-          {Object.entries(PLATFORM_CONFIG).map(([platform, config]) => {
-            const count = posts.filter(p => p.platform === platform).length;
-            if (count === 0) return null;
-            const Icon = config.icon;
+          {platformTabs.map((platform) => {
+            const spec = PLATFORM_SPECS[platform];
+            const Icon = PLATFORM_ICON_MAP[platform];
+            const count = (postsByPlatform[platform] || []).length;
+            const isActive = activePlatform === platform;
             return (
               <button
                 key={platform}
-                onClick={() => setFilterPlatform(platform)}
+                onClick={() => setActivePlatform(platform)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-inter font-medium transition-colors ${
-                  filterPlatform === platform
-                    ? 'bg-[#1B3F7A] text-white'
+                  isActive
+                    ? `${spec.bgClass} ${spec.textClass} ring-1 ring-current`
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <Icon size={14} />
-                {config.label} ({count})
+                {spec.label} ({count})
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Posts by Week */}
-      <div className="space-y-3">
-        {Object.entries(filteredPostsByWeek).map(([week, weekPosts]) => (
-          <div key={week} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <button
-              onClick={() => setExpandedWeek(expandedWeek === parseInt(week) ? null : parseInt(week))}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
-            >
-              <span className="font-inter font-semibold text-gray-900">
-                Week {week} ({weekPosts.length} posts)
-              </span>
-              {expandedWeek === parseInt(week) ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </button>
-
-            {expandedWeek === parseInt(week) && (
-              <div className="border-t border-gray-200 p-4 space-y-4">
-                {weekPosts.map((post) => {
-                  const PlatformIcon = PLATFORM_CONFIG[post.platform].icon;
-                  const categoryConfig = CATEGORY_CONFIG[post.category];
-
-                  return (
-                    <div key={post.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-inter font-semibold text-[#1B3F7A]">#{post.post_number}</span>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${PLATFORM_CONFIG[post.platform].bg}`}>
-                          <PlatformIcon size={12} className={PLATFORM_CONFIG[post.platform].color} />
-                          {post.platform}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${categoryConfig.color}`}>
-                          {categoryConfig.label}
-                        </span>
-                        <span className="text-xs text-gray-500">{post.day}</span>
-                      </div>
-                      <p className="font-inter text-sm text-gray-700 mb-2 whitespace-pre-wrap">{post.caption}</p>
-                      {post.hashtags && (
-                        <p className="font-inter text-xs text-blue-600 mb-3">{post.hashtags}</p>
-                      )}
-                      {post.image_path && (
-                        <button
-                          onClick={() => handleImageDownload(post.image_path!, `post-${post.post_number}.png`)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded text-xs font-inter font-medium hover:bg-purple-100 transition-colors"
-                        >
-                          <Download size={12} />
-                          Download Image
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+      {/* Platform-Grouped or Single Platform Posts */}
+      {activePlatform === 'all' ? (
+        <div className="space-y-8">
+          {platformTabs.map((platform) => {
+            const platformPosts = postsByPlatform[platform] || [];
+            const spec = PLATFORM_SPECS[platform];
+            const Icon = PLATFORM_ICON_MAP[platform];
+            return (
+              <div key={platform}>
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${spec.bgClass} ${spec.textClass} font-inter font-semibold text-sm mb-4`}>
+                  <Icon size={16} />
+                  {spec.label} ({platformPosts.length})
+                </div>
+                <div className="space-y-3">
+                  {platformPosts.map((post) => (
+                    <ClientPostCard
+                      key={post.id}
+                      post={post}
+                      isExpanded={expandedPost === post.id}
+                      onToggleExpand={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
+                      onImageDownload={handleImageDownload}
+                      onVideoDownload={handleVideoDownload}
+                    />
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visiblePosts.map((post) => (
+            <ClientPostCard
+              key={post.id}
+              post={post}
+              isExpanded={expandedPost === post.id}
+              onToggleExpand={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
+              onImageDownload={handleImageDownload}
+              onVideoDownload={handleVideoDownload}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Tips Section */}
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
@@ -293,6 +327,103 @@ export default function PersonalPostsPage() {
           </li>
         </ul>
       </div>
+    </div>
+  );
+}
+
+// ── Client Post Card ─────────────────────────────────────────────────────────
+function ClientPostCard({
+  post,
+  isExpanded,
+  onToggleExpand,
+  onImageDownload,
+  onVideoDownload,
+}: {
+  post: SocialPost;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onImageDownload: (path: string, name: string) => void;
+  onVideoDownload: (path: string, name: string) => void;
+}) {
+  const spec = PLATFORM_SPECS[post.platform];
+  const PlatformIcon = PLATFORM_ICON_MAP[post.platform];
+  const categoryConfig = CATEGORY_CONFIG[post.category];
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="font-inter font-semibold text-[#1B3F7A]">#{post.post_number}</span>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${spec.bgClass} ${spec.textClass}`}>
+          <PlatformIcon size={12} />
+          {spec.label}
+        </span>
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${categoryConfig.color}`}>
+          {categoryConfig.label}
+        </span>
+        <span className="text-xs text-gray-500">{post.day}</span>
+        <div className="ml-auto">
+          <button
+            onClick={onToggleExpand}
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
+      </div>
+      <p className="font-inter text-sm text-gray-700 mb-2 whitespace-pre-wrap">
+        {isExpanded ? post.caption : post.caption.slice(0, 200) + (post.caption.length > 200 ? '...' : '')}
+      </p>
+      {post.hashtags && (
+        <p className="font-inter text-xs text-blue-600 mb-2">{post.hashtags}</p>
+      )}
+
+      {/* Download buttons */}
+      <div className="flex flex-wrap gap-2 mt-2">
+        {post.image_path && (
+          <button
+            onClick={() => onImageDownload(post.image_path!, `post-${post.post_number}-image.${post.image_path!.split('.').pop()}`)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded text-xs font-inter font-medium hover:bg-purple-100 transition-colors"
+          >
+            <Download size={12} /> Download Image
+          </button>
+        )}
+        {post.video_path && (
+          <button
+            onClick={() => onVideoDownload(post.video_path!, `post-${post.post_number}-video.${post.video_path!.split('.').pop()}`)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded text-xs font-inter font-medium hover:bg-blue-100 transition-colors"
+          >
+            <Video size={12} /> Download Video
+          </button>
+        )}
+        {post.carousel_paths && post.carousel_paths.length > 0 && (
+          <div className="w-full mt-2">
+            <p className="text-xs font-inter text-gray-500 mb-1.5">
+              <Images size={12} className="inline mr-1" />
+              Carousel ({post.carousel_paths.length} slides)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {post.carousel_paths.map((path, index) => (
+                <button
+                  key={index}
+                  onClick={() => onImageDownload(path, `post-${post.post_number}-carousel-${index + 1}.${path.split('.').pop()}`)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 rounded text-xs font-inter font-medium hover:bg-pink-100 transition-colors"
+                >
+                  <Download size={12} /> Slide {index + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Expanded: full caption + dimensions info */}
+      {isExpanded && post.image_dimensions && (
+        <div className={`mt-3 rounded-lg p-2.5 ${spec.bgClass}`}>
+          <p className={`text-xs font-inter ${spec.textClass}`}>
+            Image dimensions: {post.image_dimensions} | Recommended: {spec.imageSpecs.map(s => `${s.width}x${s.height}`).join(' or ')}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
