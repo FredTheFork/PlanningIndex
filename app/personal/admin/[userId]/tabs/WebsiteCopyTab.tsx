@@ -565,7 +565,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       </div>
 
       {/* Pages Ordered at Checkout */}
-      {websitePagesSelected.length > 0 && (
+      {websitePagesSelected.length > 0 ? (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Globe size={20} className="text-[#1B3F7A] shrink-0 mt-0.5" />
@@ -588,6 +588,20 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
                   Total pages: {websitePageCount}
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      ) : data?.purchasedServices?.some((ps: any) => ps.service_id === 'website_copy_pack' && ps.status === 'active') && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Globe size={20} className="text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-inter font-semibold text-amber-800 mb-1">
+                Page Selections Not Recorded
+              </h4>
+              <p className="font-inter text-sm text-amber-700">
+                This client purchased the Website Copy Pack but specific page selections were not captured at checkout. Contact the client to confirm which pages they need.
+              </p>
             </div>
           </div>
         </div>

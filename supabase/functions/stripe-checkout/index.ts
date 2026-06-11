@@ -351,6 +351,16 @@ async function handleGetSession(req: Request): Promise<Response> {
     const serviceIds = serviceIdsStr ? serviceIdsStr.split(",").filter(Boolean) : [];
     const email = session.customer_details?.email || session.customer_email || null;
 
+    const websitePagesSelected = session.metadata?.website_pages_selected
+      ? session.metadata.website_pages_selected.split(",").filter(Boolean)
+      : null;
+    const websitePageCount = session.metadata?.website_page_count
+      ? parseInt(session.metadata.website_page_count, 10)
+      : null;
+    const socialMediaPostCount = session.metadata?.social_media_post_count
+      ? parseInt(session.metadata.social_media_post_count, 10)
+      : null;
+
     return new Response(
       JSON.stringify({
         email,
@@ -359,6 +369,9 @@ async function handleGetSession(req: Request): Promise<Response> {
         payment_status: session.payment_status,
         customer_id: session.customer,
         subscription_id: session.subscription,
+        website_pages_selected: websitePagesSelected,
+        website_page_count: websitePageCount,
+        social_media_post_count: socialMediaPostCount,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

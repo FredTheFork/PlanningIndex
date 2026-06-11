@@ -680,6 +680,51 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
         </div>
       </div>
 
+      {/* Posts Ordered at Checkout */}
+      {socialMediaService && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <FileText size={20} className="text-[#1B3F7A] shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-inter font-semibold text-[#1B3F7A] mb-1">
+                Posts Ordered at Checkout
+              </h4>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center px-3 py-1.5 bg-white border border-blue-200 rounded-lg font-inter font-bold text-[#1B3F7A] text-lg">
+                  {postCount}
+                  <span className="font-normal text-gray-600 text-sm ml-1.5">posts</span>
+                </span>
+                {selectedPlatforms.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPlatforms.map((platform) => {
+                      const spec = PLATFORM_SPECS[platform];
+                      const Icon = PLATFORM_ICON_MAP[platform];
+                      return (
+                        <span
+                          key={platform}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 ${spec.bgClass} border border-blue-200 rounded text-sm font-inter`}
+                        >
+                          <Icon size={14} className={spec.textClass} />
+                          <span className="text-gray-700">{spec.label}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {posts.length > 0 && (
+                <div className="mt-2 flex items-center gap-4 text-xs font-inter text-gray-600">
+                  <span className={posts.length >= postCount ? 'text-green-700 font-medium' : 'text-amber-700 font-medium'}>
+                    {posts.length} of {postCount} created
+                    {posts.length >= postCount ? ' — complete' : ` — ${postCount - posts.length} remaining`}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Platform Tabs */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">

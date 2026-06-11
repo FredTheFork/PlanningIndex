@@ -199,10 +199,10 @@ async function handleCheckoutCompleted(
   // Record services in services_purchased
   if (userId && serviceIds.length > 0) {
     for (const serviceId of serviceIds) {
-      // Check if already recorded
+      // Check if already recorded — also fetch page/post fields to detect gaps
       const { data: existing } = await supabase
         .from("services_purchased")
-        .select("id")
+        .select("id, website_pages_selected, website_page_count, social_media_post_count")
         .eq("user_id", userId)
         .eq("service_id", serviceId)
         .eq("status", "active")
@@ -222,6 +222,32 @@ async function handleCheckoutCompleted(
             website_page_count: serviceId === 'website_copy_pack' && websitePageCount ? websitePageCount : null,
             social_media_post_count: serviceId === 'social_media_pack' && socialMediaPostCount ? socialMediaPostCount : null,
           });
+      } else {
+        // Backfill page/post data if the record exists but lacks it
+        // (success page may have created the record before webhook fired)
+        const updates: Record<string, any> = {};
+
+        if (serviceId === 'website_copy_pack') {
+          if ((!existing.website_pages_selected || existing.website_pages_selected.length === 0) && websitePagesSelected) {
+            updates.website_pages_selected = websitePagesSelected;
+          }
+          if (!existing.website_page_count && websitePageCount) {
+            updates.website_page_count = websitePageCount;
+          }
+        }
+
+        if (serviceId === 'social_media_pack') {
+          if (!existing.social_media_post_count && socialMediaPostCount) {
+            updates.social_media_post_count = socialMediaPostCount;
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await supabase
+            .from("services_purchased")
+            .update(updates)
+            .eq("id", existing.id);
+        }
       }
     }
   }

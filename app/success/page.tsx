@@ -13,6 +13,9 @@ interface SessionInfo {
   payment_status: string;
   customer_id: string | null;
   subscription_id: string | null;
+  website_pages_selected: string[] | null;
+  website_page_count: number | null;
+  social_media_post_count: number | null;
 }
 
 function SuccessContent() {
@@ -66,6 +69,9 @@ function SuccessContent() {
               stripe_subscription_id: sessionInfo.subscription_id || null,
               status: 'active',
               purchased_at: new Date().toISOString(),
+              website_pages_selected: serviceId === 'website_copy_pack' && sessionInfo.website_pages_selected ? sessionInfo.website_pages_selected : null,
+              website_page_count: serviceId === 'website_copy_pack' && sessionInfo.website_page_count ? sessionInfo.website_page_count : null,
+              social_media_post_count: serviceId === 'social_media_pack' && sessionInfo.social_media_post_count ? sessionInfo.social_media_post_count : null,
             });
         }
       }
