@@ -56,7 +56,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-6"
             style={{ fontSize: '0.95rem' }}
           >
-            <strong>Last updated: May 2026</strong>
+            <strong>Last updated: June 2026</strong>
           </p>
 
           <h2
@@ -75,7 +75,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            We are based in the United Kingdom and operate under the UK's Data Protection Act 2018 and the UK GDPR. This policy applies to all visitors to foundationary.vercel.app ("the Website") and customers of Foundationary services.
+            We are based in the United Kingdom and operate under the UK&apos;s Data Protection Act 2018 and the UK GDPR. This policy applies to all visitors to foundationary.vercel.app ("the Website") and customers of Foundationary services — including the Business Foundations Pack, Website Copy Starter Pack, Social Media Starter Pack, and Quarterly Document Refresh.
           </p>
 
           <h2
@@ -104,6 +104,9 @@ function Content() {
             <li>Contact information: name, email address, phone number</li>
             <li>Business information: business name, business type, services offered, pricing, location</li>
             <li>Intake form responses: detailed information about your business, how you work, your processes, and your preferences</li>
+            <li>Social media preferences: preferred platforms (LinkedIn, Instagram, Facebook, X), post quantity, audience, and tone for social media content</li>
+            <li>Website page selections: number of pages, page types (Homepage, About, Services, Contact, FAQ, Blog, Pricing, Testimonials), and page priorities for website copy</li>
+            <li>Brand assets: logo files, colour preferences, brand voice descriptions, and tone guidelines uploaded during the intake process</li>
             <li>Payment information: processed securely through Stripe (we never see your full card details)</li>
             <li>Communications: emails, messages, and support requests</li>
           </ul>
@@ -145,20 +148,43 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li><strong>Delivering services:</strong> generating your personalised documents and delivering them to you</li>
+            <li><strong>Delivering services:</strong> generating your personalised documents, website copy, and social media posts and delivering them to you</li>
+            <li><strong>Subscription management:</strong> managing your Quarterly Document Refresh subscription, including billing and document update delivery</li>
             <li><strong>Communication:</strong> responding to enquiries, providing support, sending order confirmations</li>
-            <li><strong>Billing:</strong> processing payments and maintaining financial records</li>
+            <li><strong>Billing:</strong> processing payments (one-time and recurring) and maintaining financial records</li>
             <li><strong>Improvement:</strong> understanding how customers use Foundationary to improve our service</li>
             <li><strong>Legal compliance:</strong> meeting tax, accounting, and legal obligations</li>
             <li><strong>Security:</strong> preventing fraud and protecting against abuse</li>
-            <li><strong>Marketing:</strong> only if you've explicitly opted in</li>
+            <li><strong>Marketing:</strong> only if you&apos;ve explicitly opted in</li>
           </ul>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            4. Legal Basis for Processing
+            4. AI and Automated Decision-Making
+          </h2>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            Foundationary uses AI-powered tools to generate your bespoke content. Your intake form responses are processed through structured AI prompts to produce documents, website copy, and social media posts. Important details:
+          </p>
+          <ul
+            className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
+            style={{ fontSize: '0.95rem' }}
+          >
+            <li><strong>Human review:</strong> All generated content is reviewed by a human before delivery for accuracy, consistency, and quality.</li>
+            <li><strong>No automated decisions about you:</strong> AI is used to create content based on your explicit inputs. We do not use automated decision-making to determine your eligibility, pricing, or service level.</li>
+            <li><strong>Data processing:</strong> Your intake form data is sent to AI providers solely for content generation. These providers are contractually obligated not to use your data for model training or other purposes.</li>
+            <li><strong>No profiling:</strong> We do not create profiles about you or make decisions about you based on automated processing.</li>
+          </ul>
+
+          <h2
+            className="font-inter font-bold text-dark-text mt-10 mb-4"
+            style={{ fontSize: '1.3rem' }}
+          >
+            5. Legal Basis for Processing
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -170,7 +196,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li><strong>Contract:</strong> to deliver the services you've purchased</li>
+            <li><strong>Contract:</strong> to deliver the services you&apos;ve purchased</li>
             <li><strong>Legal obligation:</strong> to meet tax and accounting requirements</li>
             <li><strong>Legitimate interest:</strong> to improve our service and prevent fraud</li>
             <li><strong>Consent:</strong> for marketing communications (only with your permission)</li>
@@ -180,7 +206,7 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            5. Who We Share Your Data With
+            6. Who We Share Your Data With
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -192,9 +218,10 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li><strong>Service providers:</strong> Supabase (database), Stripe (payments), email providers (for communications). These are processed under Data Processing Agreements.</li>
+            <li><strong>Service providers:</strong> Supabase (database), Stripe (payments and subscription billing), AI providers (for content generation), email providers (for communications). These are processed under Data Processing Agreements.</li>
+            <li><strong>Website deployment services:</strong> If you use the Bolt.new prompt included with the Website Copy Starter Pack, your generated copy may be processed by Bolt.new and deployed to hosting platforms such as Vercel or Netlify. These services have their own privacy policies.</li>
             <li><strong>Legal requirements:</strong> when required by law or court order</li>
-            <li><strong>Business transfer:</strong> if Foundationary is sold or merged, your data may be transferred (you'd be notified)</li>
+            <li><strong>Business transfer:</strong> if Foundationary is sold or merged, your data may be transferred (you&apos;d be notified)</li>
           </ul>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -207,20 +234,20 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            6. International Data Transfers
+            7. International Data Transfers
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            Your data is primarily stored and processed in the UK. Some services we use (Stripe, Supabase) may process data internationally, but only with appropriate safeguards in place (Standard Contractual Clauses or equivalent protections).
+            Your data is primarily stored and processed in the UK. Some services we use (Stripe, Supabase, AI providers, Vercel, Netlify) may process data internationally, but only with appropriate safeguards in place (Standard Contractual Clauses or equivalent protections).
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            7. How Long We Keep Your Data
+            8. How Long We Keep Your Data
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -232,7 +259,9 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li><strong>Customer data:</strong> for the duration of your relationship with us, plus 6 years for tax and legal purposes</li>
+            <li><strong>Customer data (one-time purchases):</strong> for the duration of your relationship with us, plus 6 years for tax and legal purposes</li>
+            <li><strong>Subscription data:</strong> for the duration of your active subscription plus 6 years after cancellation for tax and legal purposes. Billing records are retained for 6 years from the last transaction.</li>
+            <li><strong>Intake form data:</strong> retained while your subscription is active (to generate quarterly updates for Quarterly Refresh customers). For one-time purchases, intake data is retained for 6 years unless you request deletion.</li>
             <li><strong>Email lists:</strong> until you unsubscribe</li>
             <li><strong>Website analytics:</strong> typically 26 months</li>
             <li><strong>Support records:</strong> until resolved, then archived for 3 years</li>
@@ -248,7 +277,7 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            8. Your Rights
+            9. Your Rights
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -266,20 +295,21 @@ function Content() {
             <li><strong>Restriction:</strong> ask us to limit how we use your data</li>
             <li><strong>Portability:</strong> request your data in a portable format</li>
             <li><strong>Object:</strong> object to certain types of processing</li>
-            <li><strong>Withdraw consent:</strong> if you've given consent, you can withdraw it at any time</li>
+            <li><strong>Withdraw consent:</strong> if you&apos;ve given consent, you can withdraw it at any time</li>
+            <li><strong>Cancel subscription:</strong> cancel your Quarterly Document Refresh subscription at any time by emailing us</li>
           </ul>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            To exercise these rights, contact us at foundationarybusiness@gmail.com. We'll respond within 30 days.
+            To exercise these rights, contact us at foundationarybusiness@gmail.com. We&apos;ll respond within 30 days.
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            9. Security
+            10. Security
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -295,7 +325,8 @@ function Content() {
             <li>Secure, encrypted storage in UK-based servers</li>
             <li>Restricted access to personal data (only essential staff)</li>
             <li>Regular security audits and monitoring</li>
-            <li>Secure payment processing through Stripe</li>
+            <li>Secure payment processing through Stripe (one-time and recurring)</li>
+            <li>Row-level security on all database tables</li>
           </ul>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -308,7 +339,7 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            10. Cookies
+            11. Cookies
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -336,46 +367,46 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            11. Third-Party Links
+            12. Third-Party Links
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            The Website may contain links to third-party websites. We're not responsible for their privacy practices. We encourage you to review their privacy policies before sharing personal information.
+            The Website may contain links to third-party websites (including hosting platforms like Vercel and Netlify, and AI tools like Bolt.new). We&apos;re not responsible for their privacy practices. We encourage you to review their privacy policies before sharing personal information.
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            12. Children
+            13. Children
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            Foundationary is designed for business owners, not children. We do not knowingly collect personal data from anyone under 18. If we become aware that we've collected data from a minor, we'll delete it promptly.
+            Foundationary is designed for business owners, not children. We do not knowingly collect personal data from anyone under 18. If we become aware that we&apos;ve collected data from a minor, we&apos;ll delete it promptly.
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            13. Data Protection Officer & Complaints
+            14. Data Protection Officer & Complaints
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            If you have concerns about how we handle your data, please contact us first at foundationarybusiness@gmail.com. If you're not satisfied with our response, you have the right to lodge a complaint with the Information Commissioner's Office (ICO) at ico.org.uk.
+            If you have concerns about how we handle your data, please contact us first at foundationarybusiness@gmail.com. If you&apos;re not satisfied with our response, you have the right to lodge a complaint with the Information Commissioner&apos;s Office (ICO) at ico.org.uk.
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            14. Changes to This Policy
+            15. Changes to This Policy
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -388,7 +419,7 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            15. Contact Us
+            16. Contact Us
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -407,7 +438,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            We're committed to protecting your privacy and responding to your questions promptly.
+            We&apos;re committed to protecting your privacy and responding to your questions promptly.
           </p>
         </div>
       </div>

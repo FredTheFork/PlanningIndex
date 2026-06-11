@@ -29,7 +29,7 @@ export default function Hero() {
             className="font-inter font-normal text-secondary-text mt-5 leading-[1.7]"
             style={{ fontSize: '1.1rem', maxWidth: 480 }}
           >
-            10 professional documents built entirely around your UK sole trader business — contracts, privacy policies, invoices, bios, pitches and more. Done for you. Delivered in 24 hours.
+            Professional documents, website copy, and social media posts built entirely around your UK sole trader business — contracts, privacy policies, invoices, bios, pitches and more. Done for you. Delivered fast.
           </p>
 
           {/* Social Proof Counter */}
@@ -58,7 +58,7 @@ export default function Hero() {
           </div>
 
           <div className="flex flex-wrap gap-6 mt-8">
-            {['UK Law Compliant', '24-Hour Delivery', 'Done For You'].map((badge) => (
+            {['UK Law Compliant', 'Fast Delivery', 'Done For You'].map((badge) => (
               <div key={badge} className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-success shrink-0" />
                 <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.875rem' }}>

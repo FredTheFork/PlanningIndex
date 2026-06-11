@@ -35,17 +35,17 @@ const extras = [
 const upsells = [
   {
     title: 'Website Copy Starter Pack',
-    price: '£49 add-on',
-    desc: 'Homepage, About, Services, and Contact page copy — SEO-aware, written in your voice, ready to paste.',
+    price: 'From £35/page',
+    desc: 'Homepage, About, Services, and Contact page copy — SEO-aware, written in your voice, ready to paste. Choose 1–10 pages.',
   },
   {
     title: 'Social Media Starter Pack',
-    price: '£120 — 30 posts',
-    desc: '30 done-for-you posts tailored to your industry, audience and tone. Captions, hashtags, image ideas.',
+    price: 'From £20 — 5 posts',
+    desc: 'Done-for-you posts tailored to your industry, audience and tone. Captions, hashtags, image ideas. Choose 5–30 posts.',
   },
   {
     title: 'Quarterly Document Refresh',
-    price: '£29 per quarter',
+    price: '£29 every 4 months',
     desc: 'One document updated each quarter as your business evolves. Pricing changes, new services, regulation updates.',
   },
 ];
@@ -151,7 +151,7 @@ export default function Pricing() {
         {/* Bundle savings note */}
         <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-5 text-center">
           <p className="font-inter font-semibold text-green-800" style={{ fontSize: '0.9rem' }}>
-            Bundle and save — add any two services and save £9. Add all three and save £18.
+            Bundle and save — add any two services for 10% off. Add three or more for 15% off — best value.
           </p>
         </div>
       </div>

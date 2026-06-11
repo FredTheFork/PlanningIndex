@@ -44,7 +44,7 @@ function PageHeader() {
           className="font-inter font-extrabold text-white mt-3"
           style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
         >
-          From questionnaire to complete business foundations — in 24 hours.
+          From questionnaire to complete business foundations — delivered fast.
         </h1>
         <p
           className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
@@ -54,7 +54,7 @@ function PageHeader() {
             maxWidth: 560,
           }}
         >
-          Foundationary is a done-for-you service. You tell us about your business once. We create, review, and deliver everything you need to operate professionally and protect yourself — without templates, subscriptions, or ongoing complexity.
+          Foundationary is a done-for-you service. You tell us about your business once. We create, review, and deliver everything you need — documents, website copy, and social media posts — without templates, complexity, or having to piece it together yourself.
         </p>
       </div>
     </section>
@@ -67,32 +67,38 @@ const overviewSteps = [
   {
     num: '01',
     title: 'Complete the questionnaire',
-    body: 'After payment, you receive a secure questionnaire link. It takes around 20 minutes and covers your services, pricing, tone of voice, and how your business actually operates.',
+    body: 'After payment, you receive a secure questionnaire link. It takes around 20 minutes and covers your services, pricing, tone of voice, and how your business actually operates. The questions adapt based on which services you purchased.',
     bullets: [
       'Your services, in your own words',
       'How you charge and work with clients',
       'GDPR and data handling details',
       'Preferred tone (formal, friendly, plain-English)',
+      'Social platform and website page preferences (if applicable)',
     ],
   },
   {
     num: '02',
     title: 'We build everything for you',
-    body: 'Your answers are used to generate each document individually using structured AI prompts designed specifically for UK sole traders.',
+    body: 'Your answers are used to generate each piece of content individually using structured AI prompts designed specifically for UK sole traders — documents, website pages, and social media posts.',
     bullets: [
       'UK-specific legal frameworks embedded',
       'No generic templates',
-      'Each document created separately, not auto-filled',
+      'Each asset created separately, not auto-filled',
+      'Website copy tailored to your brand voice',
+      'Social posts written for your platforms and audience',
     ],
   },
   {
     num: '03',
     title: 'Reviewed, packaged, and delivered',
-    body: 'Every document is reviewed by a human before delivery to ensure consistency, clarity, and compliance.',
+    body: 'Every piece of content is reviewed by a human before delivery to ensure consistency, clarity, and compliance.',
     bullets: [
       'Checked for UK law alignment',
       'Consistent terms across all documents',
-      'Delivered as PDF + editable Word files',
+      'Brand voice consistent across documents, web, and social',
+      'Documents delivered as PDF + editable Word files',
+      'Website copy ready to paste (plus Bolt.new prompt)',
+      'Social posts formatted for your chosen platforms',
     ],
   },
 ];
@@ -158,7 +164,7 @@ function SimpleOverview() {
 const detailedSteps = [
   {
     subheading: '1. Intake & context',
-    text: 'Your questionnaire answers give us the context we need to produce documents that actually fit your business — not an abstract version of it.',
+    text: 'Your questionnaire answers give us the context we need to produce content that actually fits your business — not an abstract version of it. The questions you see depend on which services you purchased.',
     checklist: [
       'Business details & structure',
       'Services and scope boundaries',
@@ -166,15 +172,19 @@ const detailedSteps = [
       'Common client issues',
       'Data collection and GDPR requirements',
       'Branding and tone preferences',
+      'Social media platform and audience details',
+      'Website page structure and priorities',
     ],
   },
   {
-    subheading: '2. Document creation',
-    text: 'Each of the 10 documents is generated using a dedicated prompt that combines your answers with UK-specific legal and professional frameworks.',
+    subheading: '2. Content creation',
+    text: 'Each asset is generated using a dedicated prompt that combines your answers with UK-specific legal and professional frameworks. Documents, website pages, and social media posts are all created separately.',
     explicit: [
-      'Documents are not stitched together',
+      'Content is not stitched together',
       'Each asset is created intentionally',
       'Legal language is appropriate for sole traders (not corporate boilerplate)',
+      'Website copy is SEO-aware and ready for any website builder',
+      'Social posts are tailored per platform',
     ],
   },
   {
@@ -182,18 +192,20 @@ const detailedSteps = [
     text: 'This is the difference between raw AI output and professional work.',
     checklist: [
       'Payment terms match across contract, T&Cs, invoices',
-      'Tone is consistent throughout',
+      'Tone is consistent across documents, website copy, and social posts',
       'Obvious legal or structural issues removed',
       'Formatting cleaned and standardised',
+      'Social post lengths appropriate for each platform',
     ],
   },
   {
     subheading: '4. Delivery & follow-up',
-    text: 'You receive a single organised folder containing everything you need.',
+    text: 'You receive everything organised and ready to use.',
     checklist: [
       'Branded PDFs',
       'Editable Word documents',
-      'How-to-use guide',
+      'Website copy with Bolt.new prompt for generating a styled site',
+      'Social media posts formatted for your platforms',
       'Personal delivery email',
       '7-day follow-up check-in',
     ],
@@ -271,15 +283,16 @@ function DetailedBreakdown() {
 const isItems = [
   'A done-for-you service',
   'Built specifically for UK sole traders',
-  'One-time purchase',
+  'One-time purchase (core pack)',
   'Focused on practical protection and professionalism',
+  'Documents, website copy, and social media in one place',
 ];
 
 const isntItems = [
   'Not a DIY legal tool',
   'Not a generic AI prompt',
   'Not a solicitor retainer',
-  'Not a subscription you forget about',
+  'Not a subscription trap — optional refresh available',
 ];
 
 function WhatThisIs() {
@@ -330,10 +343,10 @@ function WhatThisIs() {
 /* ─── 5. Timeline & Expectations ─── */
 
 const timelineSteps = [
-  { label: 'Payment', desc: 'You pay £79 once. No subscription.' },
-  { label: 'Questionnaire submitted', desc: 'The 24-hour clock starts here.' },
-  { label: 'Work begins', desc: 'Your documents are created and reviewed.' },
-  { label: 'Delivery within 24 hours', desc: 'Everything lands in your inbox.' },
+  { label: 'Payment', desc: 'Choose your service or bundle. One-time payment for documents, website copy, and social posts.' },
+  { label: 'Questionnaire submitted', desc: 'The delivery clock starts here.' },
+  { label: 'Work begins', desc: 'Your content is created and reviewed.' },
+  { label: 'Delivery within 3–5 business days', desc: 'Documents, website copy, and social posts land in your inbox.' },
 ];
 
 function Timeline() {
@@ -381,7 +394,7 @@ function Timeline() {
           className="bg-white border border-medium-blue rounded-xl p-5 mt-4"
         >
           <p className="font-inter font-medium text-navy" style={{ fontSize: '0.9rem' }}>
-            The 24-hour delivery window starts when you submit the questionnaire — not when you pay.
+            The delivery window starts when you submit the questionnaire — not when you pay. Documents are typically delivered within 5 business days; website copy and social media posts within 3–5 business days.
           </p>
         </div>
       </div>
@@ -442,7 +455,7 @@ function TrustStrip() {
 const faqs = [
   {
     q: 'Can I pause and come back to the questionnaire?',
-    a: 'Yes. Once you pay, you receive a unique link to your questionnaire by email. That link is yours to use whenever you are ready — there is no deadline to submit. The 24-hour delivery clock starts when you submit the questionnaire, not when you pay.',
+    a: 'Yes. Once you pay, you receive a unique link to your questionnaire by email. That link is yours to use whenever you are ready — there is no deadline to submit. The delivery clock starts when you submit the questionnaire, not when you pay.',
   },
   {
     q: "What if I'm not sure how to answer a question?",
@@ -455,6 +468,18 @@ const faqs = [
   {
     q: 'Can I request small tweaks after delivery?',
     a: "Every document is delivered in an editable Word format so you can make changes yourself immediately. If you spot something that doesn't reflect your business accurately, email us within 7 days and we'll make reasonable corrections at no extra charge.",
+  },
+  {
+    q: 'How does the Website Copy Starter Pack work?',
+    a: "After purchasing, you answer questions about your brand voice, services, and page priorities in the intake form. We then write professional copy for each page you've selected — Homepage, About, Services, Contact, and more. You receive the copy ready to paste into any website builder, plus a Bolt.new prompt that can generate a complete styled website from your copy.",
+  },
+  {
+    q: 'How does the Social Media Starter Pack work?',
+    a: "During the intake form, you tell us which platforms you use, your audience, and your preferred tone. We write a mix of educational, promotional, and trust-building posts with captions and hashtags tailored to each platform. You choose how many posts you need (5–30) during checkout.",
+  },
+  {
+    q: 'Can I buy just website copy or social media posts without the document pack?',
+    a: "Yes. All three services — Business Foundations Pack, Website Copy Starter Pack, and Social Media Starter Pack — can be purchased on their own or bundled together. Bundling gives you 10% off two services or 15% off three or more.",
   },
 ];
 

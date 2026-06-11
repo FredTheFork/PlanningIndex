@@ -40,7 +40,7 @@ export default function CookieConsent() {
                 We use cookies to improve your experience
               </p>
               <p className="font-inter text-white/80" style={{ fontSize: '0.85rem' }}>
-                We use essential cookies to make our site work. We'd also like to set optional analytics cookies to help us improve.{' '}
+                We use essential cookies to make our site work and manage your service experience. We'd also like to set optional analytics cookies to help us improve.{' '}
                 <Link href="/privacy" className="text-medium-blue hover:underline">
                   Learn more in our Privacy Policy
                 </Link>

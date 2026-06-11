@@ -4,12 +4,12 @@ import { JsonLd } from '@/components/seo';
 import { generateBreadcrumbSchema, SITE_URL } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: 'About | Foundationary - UK Sole Trader Document Service',
-  description: 'Professional foundations for UK sole traders who want to operate properly - without templates, solicitors on retainer, or ongoing complexity. Learn about our mission and approach.',
-  keywords: 'Foundationary about, sole trader document service UK, business foundations company, who we are',
+  title: 'About | Foundationary - Done-for-You Business Content for UK Sole Traders',
+  description: 'Professional foundations for UK sole traders — documents, website copy, and social media posts built around your business. Learn about our mission and approach.',
+  keywords: 'Foundationary about, sole trader document service UK, business foundations company, website copy UK, social media posts UK, who we are',
   openGraph: {
-    title: 'About Foundationary | Professional Documents for UK Sole Traders',
-    description: 'We help UK sole traders operate properly with professional business documents - no templates, no solicitors, no complexity.',
+    title: 'About Foundationary | Professional Content for UK Sole Traders',
+    description: 'We help UK sole traders operate properly with professional documents, website copy, and social media posts — no templates, no solicitors, no complexity.',
     url: `${SITE_URL}/about`,
     images: [{ url: `${SITE_URL}/og/about.png`, width: 1200, height: 630 }],
   },
@@ -68,7 +68,7 @@ function PageHeader() {
             maxWidth: 620,
           }}
         >
-          Foundationary exists for UK sole traders who want to operate properly — without pretending they're a corporation, hiring a solicitor on retainer, or spending weeks stitching together templates from the internet.
+          Foundationary exists for UK sole traders who want to operate properly — with professional documents, website copy that sounds like them, and social media posts that save hours — without pretending they're a corporation, hiring a solicitor on retainer, or spending weeks stitching together templates from the internet.
         </p>
         <p
           className="font-inter font-normal mx-auto mt-5 leading-[1.7]"
@@ -78,7 +78,7 @@ function PageHeader() {
             maxWidth: 620,
           }}
         >
-          This is not a platform. It's not a tool. It's a done-for-you service that quietly fixes the operational gaps most small businesses don't realise they have — until something goes wrong.
+          This is not a platform. It's not a tool. It's a done-for-you service that quietly fixes the operational and presentational gaps most small businesses don't realise they have — until something goes wrong.
         </p>
       </div>
     </section>
@@ -283,6 +283,7 @@ const usualItems = [
   'US-centric legal language',
   'No human review',
   'Tools that assume you know what you\'re doing',
+  'Separate services for documents, website, and social',
 ];
 
 const differentItems = [
@@ -291,6 +292,7 @@ const differentItems = [
   'Plain-English where possible',
   'Reviewed by a human',
   'Delivered ready to use',
+  'Documents, website copy, and social posts in one place',
 ];
 
 function ComparisonBlock() {
@@ -355,25 +357,25 @@ const processSteps = [
     num: '1',
     title: 'You explain your business',
     desc: 'You complete a structured questionnaire that captures:',
-    items: ['What you do', 'How you work', 'How you charge', 'How you handle data', 'How you want to sound'],
+    items: ['What you do', 'How you work', 'How you charge', 'How you handle data', 'How you want to sound', 'Which social platforms and pages you need'],
   },
   {
     num: '2',
     title: 'We generate each asset individually',
-    desc: 'Every document is created separately using prompts designed for:',
-    items: ['UK sole traders', 'Service-based businesses', 'Real-world edge cases'],
+    desc: 'Every document, page, and post is created separately using prompts designed for:',
+    items: ['UK sole traders', 'Service-based businesses', 'Real-world edge cases', 'Your chosen platforms and page structure'],
   },
   {
     num: '3',
     title: 'Human review & consistency checks',
     desc: 'We check for:',
-    items: ['Conflicting terms', 'Legal red flags', 'Tone mismatches', 'Structural clarity'],
+    items: ['Conflicting terms', 'Legal red flags', 'Tone mismatches', 'Structural clarity', 'Brand consistency across documents, web, and social'],
   },
   {
     num: '4',
     title: 'Delivery',
     desc: 'You receive:',
-    items: ['Branded PDFs', 'Editable Word documents', 'One coherent system'],
+    items: ['Branded PDFs and editable Word documents', 'Website copy ready to paste (plus a Bolt.new prompt)', 'Social media posts formatted for your platforms', 'One coherent system'],
   },
 ];
 
@@ -578,7 +580,7 @@ const forYouItems = [
   'You work independently or as a micro-business',
   'You want clarity, not complexity',
   'You value professionalism',
-  'You don\'t want ongoing subscriptions',
+  'You want done-for-you work, not DIY tools',
 ];
 
 const notForYouItems = [
@@ -643,9 +645,9 @@ function WhoItsFor() {
 /* ─── 9. The Ethics Behind the Product ─── */
 
 const ethicsItems = [
-  { label: 'One-time purchase', reason: 'because foundations shouldn\'t be rented' },
+  { label: 'Core service is one-time purchase', reason: 'because foundations shouldn\'t be rented' },
   { label: 'No upsell pressure', reason: 'because trust matters more' },
-  { label: 'Optional add-ons only', reason: 'because the core stands alone' },
+  { label: 'Optional add-ons and subscription only when useful', reason: 'because the core stands alone' },
   { label: 'No false guarantees', reason: 'because honesty scales' },
 ];
 
@@ -708,6 +710,8 @@ const successItems = [
   'Clear boundaries before work starts',
   'Invoices taken seriously',
   'Clients understand what they\'re buying',
+  'Website that sounds like you, not a template',
+  'Social media presence without the blank-page dread',
   'Less explaining, less chasing',
   'More calm',
 ];

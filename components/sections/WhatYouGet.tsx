@@ -69,6 +69,46 @@ export default function WhatYouGet() {
             See Everything That's Included →
           </Link>
         </div>
+
+        {/* Additional services callout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-10">
+          <div
+            className="bg-white rounded-xl border border-border p-6 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className="shrink-0 w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center font-inter font-bold"
+                style={{ fontSize: '0.85rem' }}
+              >
+                W
+              </div>
+              <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
+                Website Copy Starter Pack
+              </h3>
+            </div>
+            <p className="font-inter font-normal text-secondary-text leading-[1.55]" style={{ fontSize: '0.875rem' }}>
+              Professionally written website copy — Homepage, About, Services, Contact, and more. SEO-aware, in your voice, ready to paste into any website builder. From £35 per page.
+            </p>
+          </div>
+          <div
+            className="bg-white rounded-xl border border-border p-6 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className="shrink-0 w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center font-inter font-bold"
+                style={{ fontSize: '0.85rem' }}
+              >
+                S
+              </div>
+              <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
+                Social Media Starter Pack
+              </h3>
+            </div>
+            <p className="font-inter font-normal text-secondary-text leading-[1.55]" style={{ fontSize: '0.875rem' }}>
+              Done-for-you social media posts — educational, promotional, and trust-building content with captions and hashtags. Tailored to your platforms and audience. From £20 for 5 posts.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

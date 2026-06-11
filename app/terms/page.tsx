@@ -56,7 +56,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-6"
             style={{ fontSize: '0.95rem' }}
           >
-            <strong>Last updated: May 2026</strong>
+            <strong>Last updated: June 2026</strong>
           </p>
 
           <h2
@@ -76,14 +76,67 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            2. Description of Service
+            2. Description of Services
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            Foundationary is a done-for-you document generation service for UK sole traders and small businesses. We generate a personalised set of business documents (Terms & Conditions, Privacy Policy, Client Agreement, Invoice Template, and related documents) based on information you provide.
+            Foundationary provides done-for-you business content services for UK sole traders and small businesses. We offer four services:
           </p>
+
+          <h3
+            className="font-inter font-semibold text-dark-text mt-6 mb-3"
+            style={{ fontSize: '1.1rem' }}
+          >
+            2.1 Business Foundations Pack
+          </h3>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            A one-time purchase (£79) providing 10 personalised business documents (Terms & Conditions, Privacy Policy, Client Agreement, Invoice Template, Professional Bio, Elevator Pitches, LinkedIn Profile Script, Welcome Emails, Late Payment Letters, and Service Description Sheets) generated from information you provide.
+          </p>
+
+          <h3
+            className="font-inter font-semibold text-dark-text mt-6 mb-3"
+            style={{ fontSize: '1.1rem' }}
+          >
+            2.2 Website Copy Starter Pack
+          </h3>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            A one-time purchase providing professionally written website copy tailored to your brand voice and services. Priced per page (from £35/page) with quantity-based tiers for 1–10 pages. Delivered as ready-to-paste copy for any website builder, along with a Bolt.new prompt for generating a styled website.
+          </p>
+
+          <h3
+            className="font-inter font-semibold text-dark-text mt-6 mb-3"
+            style={{ fontSize: '1.1rem' }}
+          >
+            2.3 Social Media Starter Pack
+          </h3>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            A one-time purchase providing done-for-you social media posts tailored to your industry, audience, and tone. Priced in quantity-based tiers from £20 for 5 posts up to 30 posts. Each post includes captions and hashtag suggestions.
+          </p>
+
+          <h3
+            className="font-inter font-semibold text-dark-text mt-6 mb-3"
+            style={{ fontSize: '1.1rem' }}
+          >
+            2.4 Quarterly Document Refresh
+          </h3>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            A subscription service (£29 every 4 months) providing one document update per quarter as your business evolves — covering pricing changes, new services, and regulation updates. Requires a Business Foundations Pack purchase. See Section 10 for subscription-specific terms.
+          </p>
+
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
@@ -96,7 +149,8 @@ function Content() {
           >
             <li>A legal service or substitute for legal advice</li>
             <li>A guarantee that your documents will prevent disputes</li>
-            <li>Ongoing legal support or subscription-based</li>
+            <li>A guarantee of social media engagement or results</li>
+            <li>Web development or website hosting</li>
           </ul>
 
           <h2
@@ -139,33 +193,46 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            Prices for Foundationary services are displayed on the Website. All prices are in GBP (£) and include VAT where applicable. Payment is processed through Stripe and must be completed before the Service is activated.
+            Prices for Foundationary services are displayed on the Website. All prices are in GBP (£) and include VAT where applicable. Payment is processed through Stripe and must be completed before the Service is activated. For services with quantity-based pricing (Website Copy and Social Media), the final price depends on the quantity selected at checkout.
           </p>
 
           <h3
             className="font-inter font-semibold text-dark-text mt-6 mb-3"
             style={{ fontSize: '1.1rem' }}
           >
-            4.2 Completion of Intake Form
+            4.2 Bundle Discounts
           </h3>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            After payment, you must complete our structured intake questionnaire. Your documents are generated based on your answers. You are responsible for the accuracy and completeness of the information you provide. Incorrect information may result in documents that don't meet your needs.
+            When you purchase two services together, a 10% discount is applied to the combined total. When you purchase three or more services, a 15% discount is applied. Discounts are calculated automatically at checkout.
           </p>
 
           <h3
             className="font-inter font-semibold text-dark-text mt-6 mb-3"
             style={{ fontSize: '1.1rem' }}
           >
-            4.3 Delivery Timeline
+            4.3 Completion of Intake Form
           </h3>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            We typically deliver your complete document package within 5 business days of receiving your completed intake form. This timeline is a guideline, not a guarantee. We reserve the right to extend this period if issues arise during quality review.
+            After payment, you must complete our structured intake questionnaire. Your content is generated based on your answers. The questions you receive depend on which services you purchased — document customers answer business and legal questions; website copy customers answer questions about their brand and pages; social media customers answer questions about their platforms and audience. You are responsible for the accuracy and completeness of the information you provide. Incorrect information may result in content that doesn&apos;t meet your needs.
+          </p>
+
+          <h3
+            className="font-inter font-semibold text-dark-text mt-6 mb-3"
+            style={{ fontSize: '1.1rem' }}
+          >
+            4.4 Delivery Timeline
+          </h3>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            We typically deliver business documents within 5 business days and website copy / social media posts within 3–5 business days of receiving your completed intake form. These timelines are guidelines, not guarantees. We reserve the right to extend these periods if issues arise during quality review.
           </p>
 
           <h2
@@ -178,25 +245,22 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            Your purchase includes:
+            Depending on your purchase:
           </p>
           <ul
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li>Personalised Terms & Conditions specific to your business</li>
-            <li>GDPR-compliant Privacy Policy</li>
-            <li>Client Service Agreement template</li>
-            <li>Invoice template branded to your business</li>
-            <li>Additional supporting documents (as per your package)</li>
-            <li>Editable Word document versions</li>
-            <li>Professional PDF versions</li>
+            <li><strong>Business Foundations Pack:</strong> 10 personalised documents in editable Word and PDF formats</li>
+            <li><strong>Website Copy Starter Pack:</strong> Professionally written copy for your selected pages, ready to paste into any website builder, plus a Bolt.new prompt for generating a complete styled website</li>
+            <li><strong>Social Media Starter Pack:</strong> Your selected number of posts with captions and hashtag suggestions, formatted for your chosen platforms</li>
+            <li><strong>Quarterly Document Refresh:</strong> One updated document per quarter as described in Section 2.4</li>
           </ul>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            You own these documents outright. There are no licensing restrictions. You can use, modify, and adapt them for your business as needed. You may not resell them or redistribute them to third parties.
+            You own all delivered content outright. There are no licensing restrictions. You can use, modify, and adapt it for your business as needed. You may not resell it or redistribute it to third parties.
           </p>
 
           <h2
@@ -209,14 +273,14 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            The structure, design, and underlying methodology of Foundationary are our intellectual property. Your personalised documents are yours to own and use. You may not:
+            The structure, design, and underlying methodology of Foundationary are our intellectual property. Your personalised content is yours to own and use. You may not:
           </p>
           <ul
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
             <li>Resell or distribute Foundationary services</li>
-            <li>Use documents generated for other businesses</li>
+            <li>Use content generated for other businesses</li>
             <li>Copy the underlying methodology or processes</li>
             <li>Use the Website or Service for competitive purposes</li>
           </ul>
@@ -231,13 +295,14 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            Foundationary provides documents on an "as is" basis. To the maximum extent permitted by law:
+            Foundationary provides content on an "as is" basis. To the maximum extent permitted by law:
           </p>
           <ul
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li>We make no warranties about the documents' effectiveness in disputes or legal proceedings</li>
+            <li>We make no warranties about the documents&apos; effectiveness in disputes or legal proceedings</li>
+            <li>We make no warranties about social media engagement, follower growth, or conversion results</li>
             <li>We are not liable for loss of business, revenue, profits, or data</li>
             <li>We are not liable for indirect or consequential damages</li>
             <li>Our total liability is limited to the amount you paid for the Service</li>
@@ -246,7 +311,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            We take reasonable care in generating documents, but cannot guarantee they will prevent disputes or be enforceable in all circumstances. Your use of the documents and responsibility for legal compliance remains entirely yours.
+            We take reasonable care in generating content, but cannot guarantee it will prevent disputes, be enforceable in all circumstances, or produce specific social media results. Your use of the content and responsibility for legal compliance remains entirely yours.
           </p>
 
           <h2
@@ -271,7 +336,19 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            <strong>Changes in Law:</strong> We update documents based on law at the time of delivery. If legislation changes, you are responsible for reviewing and updating documents as needed.
+            <strong>Changes in Law:</strong> We update documents based on law at the time of delivery. If legislation changes, you are responsible for reviewing and updating documents as needed (unless you subscribe to the Quarterly Refresh).
+          </p>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            <strong>Social Media Results:</strong> Social media posts are professionally written to give you a strong starting point, but no service can guarantee specific engagement, follower growth, or business outcomes from social media content.
+          </p>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            <strong>Website Copy vs. Web Development:</strong> The Website Copy Starter Pack provides written content for your website. It is not web development, design, or hosting. The Bolt.new prompt is provided as a convenience to help you generate a styled website, but the resulting website is your responsibility to deploy and maintain.
           </p>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -296,9 +373,9 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li>Use the Service and documents in compliance with all applicable law</li>
+            <li>Use the Service and content in compliance with all applicable law</li>
             <li>Provide accurate and complete information in your intake form</li>
-            <li>Review documents before using them in business transactions</li>
+            <li>Review all content before using it in business transactions or publishing it</li>
             <li>Update documents if your business materially changes</li>
             <li>Seek professional legal advice if unsure about legal matters</li>
             <li>Not use the Service for illegal, fraudulent, or unethical purposes</li>
@@ -308,32 +385,54 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            10. Refunds and Revisions
+            10. Subscription Services
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            <strong>No Standard Refunds:</strong> Foundationary is a bespoke service. Once documents are generated and delivered, they cannot be "returned" for a refund.
+            The Quarterly Document Refresh is a subscription service billed every 4 months at £29.
+          </p>
+          <ul
+            className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
+            style={{ fontSize: '0.95rem' }}
+          >
+            <li><strong>Billing:</strong> Your payment method will be charged automatically every 4 months through Stripe until you cancel.</li>
+            <li><strong>Cancellation:</strong> You may cancel at any time by emailing foundationarybusiness@gmail.com. Cancellation takes effect at the end of the current billing period — you will not be charged again, but no partial refund is provided for the current period.</li>
+            <li><strong>Service during subscription:</strong> One document update is delivered per quarter while your subscription is active.</li>
+            <li><strong>Price changes:</strong> We reserve the right to change subscription pricing with 30 days&apos; notice. If the price increases, you may cancel before the change takes effect.</li>
+          </ul>
+
+          <h2
+            className="font-inter font-bold text-dark-text mt-10 mb-4"
+            style={{ fontSize: '1.3rem' }}
+          >
+            11. Refunds and Revisions
+          </h2>
+          <p
+            className="font-inter text-secondary-text leading-[1.7] mb-4"
+            style={{ fontSize: '0.95rem' }}
+          >
+            <strong>No Standard Refunds:</strong> Foundationary is a bespoke service. Once content is generated and delivered, it cannot be "returned" for a refund.
           </p>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            <strong>Revisions for Issues:</strong> If documents have clear errors, fail to address your business adequately, or have structural problems, we will revise them at no cost. This is our commitment to quality.
+            <strong>Revisions for Issues:</strong> If content has clear errors, fail to address your business adequately, or has structural problems, we will revise it at no cost. This is our commitment to quality.
           </p>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            <strong>Payment Disputes:</strong> If you believe you were charged incorrectly, contact us within 30 days. We'll review the issue and work toward resolution.
+            <strong>Payment Disputes:</strong> If you believe you were charged incorrectly, contact us within 30 days. We&apos;ll review the issue and work toward resolution.
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            11. Acceptable Use Policy
+            12. Acceptable Use Policy
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -358,7 +457,7 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            12. Modification of Terms
+            13. Modification of Terms
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -371,20 +470,20 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            13. Termination
+            14. Termination
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            Your access to the Service ends when you have received and downloaded your documents. We reserve the right to suspend access to the Website if you breach these terms or engage in abusive, fraudulent, or illegal behaviour. Termination does not affect your ownership of documents already delivered.
+            Your access to the Service ends when you have received and downloaded your content. Subscription services (Quarterly Refresh) continue until cancelled per Section 10. We reserve the right to suspend access to the Website if you breach these terms or engage in abusive, fraudulent, or illegal behaviour. Termination does not affect your ownership of content already delivered.
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            14. Governing Law & Disputes
+            15. Governing Law & Disputes
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -397,7 +496,7 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            15. Third-Party Services
+            16. Third-Party Services
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -409,22 +508,25 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li><strong>Stripe:</strong> for payment processing. Their terms apply to payments.</li>
+            <li><strong>Stripe:</strong> for payment processing (including subscription billing). Their terms apply to payments.</li>
             <li><strong>Supabase:</strong> for data storage and infrastructure</li>
+            <li><strong>Vercel / Netlify:</strong> for website hosting and deployment of generated websites</li>
+            <li><strong>Bolt.new:</strong> for generating styled websites from your copy</li>
+            <li><strong>AI providers:</strong> for content generation (structured prompts are used to create your bespoke content)</li>
             <li><strong>Email providers:</strong> for communications</li>
           </ul>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            We are not responsible for these third parties' services, reliability, or terms. We've selected them for security and reliability.
+            We are not responsible for these third parties&apos; services, reliability, or terms. We&apos;ve selected them for security and reliability.
           </p>
 
           <h2
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            16. Entire Agreement
+            17. Entire Agreement
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -437,7 +539,7 @@ function Content() {
             className="font-inter font-bold text-dark-text mt-10 mb-4"
             style={{ fontSize: '1.3rem' }}
           >
-            17. Contact for Questions
+            18. Contact for Questions
           </h2>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -456,7 +558,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            We're committed to resolving issues fairly and promptly. Reach out and we'll work through it together.
+            We&apos;re committed to resolving issues fairly and promptly. Reach out and we&apos;ll work through it together.
           </p>
         </div>
       </div>

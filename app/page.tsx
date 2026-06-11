@@ -10,12 +10,12 @@ import { JsonLd } from '@/components/seo';
 import { generateServiceSchema, SITE_URL } from '@/lib/seo';
 
 export const metadata = {
-  title: 'Foundationary | Business Documents for UK Sole Traders - Fast & Simple',
-  description: 'Professional business documents for UK sole traders. Client contracts, GDPR privacy policies, invoice templates - UK law compliant, delivered in 24 hours. £79 one-time payment.',
-  keywords: 'sole trader UK, business documents, client contract UK, GDPR privacy policy, invoice template UK, sole trader business setup, freelancer documents UK',
+  title: 'Foundationary | Business Documents, Website Copy & Social Media for UK Sole Traders',
+  description: 'Professional business documents, website copy, and social media posts for UK sole traders. Client contracts, GDPR privacy policies, website content, social posts — UK law compliant, done for you. From £79.',
+  keywords: 'sole trader UK, business documents, client contract UK, GDPR privacy policy, website copy UK, social media posts UK, sole trader business setup, freelancer documents UK',
   openGraph: {
-    title: 'Foundationary | Business Documents for UK Sole Traders',
-    description: 'Get 10 professional business documents for your UK sole trader business. Client contracts, GDPR privacy policy, invoice template & more. £79, delivered in 24 hours.',
+    title: 'Foundationary | Professional Content for UK Sole Traders',
+    description: 'Get professional documents, website copy, and social media posts for your UK sole trader business. Client contracts, GDPR privacy policy, website content, social posts & more. From £79.',
     url: SITE_URL,
     images: [{ url: `${SITE_URL}/og/default.png`, width: 1200, height: 630 }],
   },
