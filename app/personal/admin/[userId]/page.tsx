@@ -70,14 +70,16 @@ interface TabConfig {
   label: string;
   icon: React.ElementType;
   requiredService?: string;
+  activeColor?: string;
+  activeBg?: string;
 }
 
 const ALL_TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: User },
   { id: 'services', label: 'Services', icon: Package },
-  { id: 'documents', label: 'Documents', icon: FileText },
-  { id: 'social_media', label: 'Social Posts', icon: Share2, requiredService: 'social_media_pack' },
-  { id: 'website_copy', label: 'Website Copy', icon: Globe, requiredService: 'website_copy_pack' },
+  { id: 'documents', label: 'Documents', icon: FileText, requiredService: 'business_foundations_pack', activeColor: 'text-emerald-700', activeBg: 'bg-emerald-50' },
+  { id: 'social_media', label: 'Social Posts', icon: Share2, requiredService: 'social_media_pack', activeColor: 'text-sky-700', activeBg: 'bg-sky-50' },
+  { id: 'website_copy', label: 'Website Copy', icon: Globe, requiredService: 'website_copy_pack', activeColor: 'text-violet-700', activeBg: 'bg-violet-50' },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
   { id: 'messaging', label: 'Messaging', icon: Send },
   { id: 'subscription', label: 'Subscription', icon: RefreshCw },
@@ -274,13 +276,18 @@ export default function AdminClientDetail({ params }: { params: { userId: string
             {visibleTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const activeColor = tab.activeColor || 'text-[#1B3F7A]';
+              const activeBg = tab.activeBg || '';
+              const borderColor = tab.activeColor
+                ? tab.activeColor.replace('text-', 'border-')
+                : 'border-[#1B3F7A]';
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-3 border-b-2 font-inter text-sm font-medium transition-colors whitespace-nowrap ${
                     isActive
-                      ? 'border-[#1B3F7A] text-[#1B3F7A]'
+                      ? `${borderColor} ${activeColor} ${activeBg}`
                       : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                   }`}
                 >
