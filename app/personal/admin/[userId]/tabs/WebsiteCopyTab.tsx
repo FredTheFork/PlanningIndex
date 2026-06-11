@@ -121,6 +121,21 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   const [loading, setLoading] = useState(true);
   const [loadingBrief, setLoadingBrief] = useState(true);
   const [loadingAssets, setLoadingAssets] = useState(true);
+
+  // Read from parent-provided purchasedServices first (reliable under admin RLS)
+  useEffect(() => {
+    const websiteService = data?.purchasedServices?.find(
+      (ps: any) => ps.service_id === 'website_copy_pack'
+    );
+    if (websiteService) {
+      if (websiteService.website_pages_selected?.length > 0) {
+        setWebsitePagesSelected(websiteService.website_pages_selected);
+      }
+      if (websiteService.website_page_count) {
+        setWebsitePageCount(websiteService.website_page_count);
+      }
+    }
+  }, [data?.purchasedServices]);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [editing, setEditing] = useState(false);
@@ -216,17 +231,23 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   };
 
   const fetchWebsitePages = async () => {
+    // Skip if parent data already populated these values
+    if (websitePagesSelected.length > 0 || websitePageCount) return;
+
     const { data: servicesData, error } = await supabase
       .from('services_purchased')
       .select('website_pages_selected, website_page_count')
       .eq('user_id', userId)
       .eq('service_id', 'website_copy_pack')
-      .eq('status', 'active')
       .maybeSingle();
 
     if (!error && servicesData) {
-      setWebsitePagesSelected(servicesData.website_pages_selected || []);
-      setWebsitePageCount(servicesData.website_page_count || null);
+      if (servicesData.website_pages_selected?.length > 0) {
+        setWebsitePagesSelected(servicesData.website_pages_selected);
+      }
+      if (servicesData.website_page_count) {
+        setWebsitePageCount(servicesData.website_page_count);
+      }
     }
   };
 

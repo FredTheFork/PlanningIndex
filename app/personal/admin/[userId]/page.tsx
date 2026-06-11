@@ -56,6 +56,9 @@ interface ClientData {
     next_billing_date: string | null;
     subscription_period_start: string | null;
     subscription_period_end: string | null;
+    social_media_post_count: number | null;
+    website_pages_selected: string[] | null;
+    website_page_count: number | null;
   }[];
   email: string;
   authEmail?: string;
@@ -118,7 +121,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
 
       const { data: purchasedServices } = await supabase
         .from('services_purchased')
-        .select('id, service_id, status, purchased_at, expires_at, stripe_subscription_id, next_billing_date, subscription_period_start, subscription_period_end')
+        .select('id, service_id, status, purchased_at, expires_at, stripe_subscription_id, next_billing_date, subscription_period_start, subscription_period_end, social_media_post_count, website_pages_selected, website_page_count')
         .eq('user_id', userId)
         .order('purchased_at', { ascending: true });
 
