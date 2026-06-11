@@ -155,6 +155,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
       .from('client_briefs')
       .select('*')
       .eq('client_id', userId)
+      .eq('service_id', 'social_media_pack')
       .order('generated_at', { ascending: false })
       .limit(1)
       .maybeSingle();

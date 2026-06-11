@@ -174,6 +174,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       .from('client_briefs')
       .select('*')
       .eq('client_id', userId)
+      .eq('service_id', 'website_copy_pack')
       .order('generated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
