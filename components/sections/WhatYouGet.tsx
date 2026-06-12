@@ -28,7 +28,7 @@ const services: ServiceCard[] = [
       'Service Sheets',
     ],
     price: 'From £79 one-time',
-    primary: { label: 'See what\'s included', href: '/services/documents' },
+    primary: { label: "See what's included", href: '/whats-included' },
     secondary: { label: 'Get this pack', href: '/checkout?services=business_foundations_pack' },
   },
   {

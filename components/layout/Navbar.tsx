@@ -13,7 +13,7 @@ const navLinks = [
     label: 'Services',
     href: '/services',
     sub: [
-      { label: 'Business Foundations Pack', href: '/services/documents' },
+      { label: "What's Included (10 Documents)", href: '/whats-included' },
       { label: 'Website Copy Starter Pack', href: '/services/website-copy' },
       { label: 'Social Media Starter Pack', href: '/services/social-media' },
       { label: 'Quarterly Document Refresh', href: '/services/quarterly-refresh' },
@@ -49,29 +49,33 @@ function NavDropdown({ label, href, items }: { label: string; href: string; item
         <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-medium-blue transition-all duration-200 group-hover:w-full" />
       </Link>
       {open && (
-        <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[260px] z-50">
-          {items.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="block font-inter font-medium text-secondary-text hover:text-navy hover:bg-gray-50 px-4 py-2.5 transition-colors"
-              style={{ fontSize: '0.875rem' }}
-              onClick={() => setOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <div className="border-t border-gray-100 mt-1 pt-1">
-            <Link
-              href={href}
-              className="block font-inter font-semibold text-medium-blue hover:bg-blue-50 px-4 py-2.5 transition-colors"
-              style={{ fontSize: '0.875rem' }}
-              onClick={() => setOpen(false)}
-            >
-              View All Services
-            </Link>
+        <>
+          {/* Invisible bridge to close the gap between trigger and dropdown */}
+          <div className="absolute top-full left-0 right-0" style={{ height: 8 }} />
+          <div className="absolute top-full left-0 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[260px] z-50">
+            {items.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="block font-inter font-medium text-secondary-text hover:text-navy hover:bg-gray-50 px-4 py-2.5 transition-colors"
+                style={{ fontSize: '0.875rem' }}
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className="border-t border-gray-100 mt-1 pt-1">
+              <Link
+                href={href}
+                className="block font-inter font-semibold text-medium-blue hover:bg-blue-50 px-4 py-2.5 transition-colors"
+                style={{ fontSize: '0.875rem' }}
+                onClick={() => setOpen(false)}
+              >
+                View All Services
+              </Link>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

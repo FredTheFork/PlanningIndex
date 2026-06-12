@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CheckCircle, Users } from 'lucide-react';
+import { CheckCircle, Users, FileText, Globe, Share2, RefreshCw } from 'lucide-react';
 
 export default function Hero() {
   return (
@@ -68,144 +68,215 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Right column — stacked services visual */}
-        <div className="hidden lg:flex flex-1 justify-center">
-          <div className="relative" style={{ width: 340, height: 580 }}>
-            {/* Item 1: CLIENT CONTRACT */}
+        {/* Right column — premium platform visual */}
+        <div className="hidden lg:flex flex-1 justify-center items-center">
+          <div className="relative" style={{ width: 420, height: 480 }}>
+            {/* Back layer: subtle gradient glow */}
             <div
-              className="absolute rounded-xl bg-white overflow-hidden"
+              className="absolute rounded-3xl"
               style={{
-                width: 240,
-                height: 140,
+                width: 340,
+                height: 420,
+                top: 30,
+                left: 40,
+                background: 'linear-gradient(135deg, rgba(27,63,122,0.06), rgba(44,104,196,0.1))',
+                zIndex: 0,
+              }}
+            />
+
+            {/* Document Stack — top card */}
+            <div
+              className="absolute bg-white rounded-2xl overflow-hidden"
+              style={{
+                width: 300,
+                height: 220,
                 top: 0,
-                left: 50,
-                boxShadow: '0 16px 48px rgba(27,63,122,0.12)',
+                left: 10,
+                boxShadow: '0 24px 64px rgba(27,63,122,0.18), 0 2px 8px rgba(27,63,122,0.06)',
+                zIndex: 3,
+              }}
+            >
+              {/* Navy header bar */}
+              <div
+                className="flex items-center justify-between px-4"
+                style={{
+                  height: 44,
+                  background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)',
+                  borderRadius: '16px 16px 0 0',
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-white/90" />
+                  <span className="font-inter font-semibold text-white" style={{ fontSize: '0.8rem' }}>
+                    CLIENT CONTRACT
+                  </span>
+                </div>
+                <span className="font-inter font-medium text-white/60" style={{ fontSize: '0.7rem' }}>
+                  01/10
+                </span>
+              </div>
+
+              {/* Document content lines */}
+              <div className="p-5">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded" style={{ width: '25%', height: 8, background: '#1B3F7A', borderRadius: 4 }} />
+                    <div className="rounded flex-1" style={{ height: 8, background: '#E2E8F0', borderRadius: 4 }} />
+                  </div>
+                  <div className="rounded" style={{ width: '90%', height: 8, background: '#F0F4FF', borderRadius: 4 }} />
+                  <div className="rounded" style={{ width: '72%', height: 8, background: '#F0F4FF', borderRadius: 4 }} />
+                  <div className="rounded" style={{ width: '85%', height: 8, background: '#F0F4FF', borderRadius: 4 }} />
+                  <div className="flex gap-2 mt-1">
+                    <div className="rounded" style={{ width: 60, height: 24, background: '#38A169', borderRadius: 6 }} />
+                    <div className="rounded" style={{ width: 80, height: 24, background: '#EBF2FF', borderRadius: 6 }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Subtle second/third document edges peeking out */}
+              <div
+                className="absolute rounded-b-2xl"
+                style={{
+                  bottom: -6,
+                  left: 8,
+                  right: 8,
+                  height: 12,
+                  background: '#F0F4FF',
+                  boxShadow: '0 4px 16px rgba(27,63,122,0.06)',
+                  zIndex: -1,
+                }}
+              />
+            </div>
+
+            {/* Website Copy Card */}
+            <div
+              className="absolute bg-white rounded-2xl overflow-hidden"
+              style={{
+                width: 180,
+                height: 130,
+                top: 160,
+                right: 0,
+                boxShadow: '0 20px 48px rgba(27,63,122,0.14), 0 2px 6px rgba(27,63,122,0.05)',
                 zIndex: 4,
               }}
             >
               <div
-                className="bg-navy flex items-center px-3"
-                style={{ height: 32, borderRadius: '12px 12px 0 0' }}
+                className="flex items-center gap-2 px-3"
+                style={{
+                  height: 36,
+                  background: 'linear-gradient(135deg, #2C68C4, #4A90E2)',
+                  borderRadius: '16px 16px 0 0',
+                }}
               >
-                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.65rem' }}>
-                  CLIENT CONTRACT
-                </span>
-              </div>
-              <div className="p-3 flex flex-col gap-2">
-                {[70, 55, 80].map((w, i) => (
-                  <div
-                    key={i}
-                    className="rounded"
-                    style={{ width: `${w}%`, height: 7, background: '#E2E8F0' }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Item 2: WEBSITE COPY */}
-            <div
-              className="absolute rounded-xl bg-white overflow-hidden"
-              style={{
-                width: 240,
-                height: 140,
-                top: 120,
-                left: 46,
-                boxShadow: '0 16px 48px rgba(27,63,122,0.12)',
-                zIndex: 3,
-              }}
-            >
-              <div
-                className="bg-medium-blue flex items-center px-3"
-                style={{ height: 32, borderRadius: '12px 12px 0 0' }}
-              >
-                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.65rem' }}>
+                <Globe size={14} className="text-white/90" />
+                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.7rem' }}>
                   WEBSITE COPY
                 </span>
               </div>
               <div className="p-3 flex flex-col gap-2">
-                {[75, 60, 70, 50].map((w, i) => (
-                  <div
-                    key={i}
-                    className="rounded"
-                    style={{ width: `${w}%`, height: 6, background: '#E2E8F0' }}
-                  />
-                ))}
+                <div className="rounded" style={{ width: '60%', height: 6, background: '#1B3F7A', borderRadius: 3 }} />
+                <div className="rounded" style={{ width: '80%', height: 5, background: '#E2E8F0', borderRadius: 3 }} />
+                <div className="rounded" style={{ width: '45%', height: 5, background: '#E2E8F0', borderRadius: 3 }} />
+                <div className="flex gap-1.5 mt-1">
+                  <div className="rounded" style={{ width: 28, height: 16, background: '#F0F4FF', borderRadius: 4 }} />
+                  <div className="rounded" style={{ width: 28, height: 16, background: '#F0F4FF', borderRadius: 4 }} />
+                </div>
               </div>
             </div>
 
-            {/* Item 3: SOCIAL POSTS */}
+            {/* Social Posts Card */}
             <div
-              className="absolute rounded-xl bg-white overflow-hidden flex items-center justify-center"
+              className="absolute bg-white rounded-2xl overflow-hidden"
               style={{
-                width: 240,
+                width: 170,
                 height: 140,
-                top: 240,
-                left: 42,
-                boxShadow: '0 16px 48px rgba(27,63,122,0.12)',
-                zIndex: 2,
+                bottom: 40,
+                right: 20,
+                boxShadow: '0 20px 48px rgba(27,63,122,0.14), 0 2px 6px rgba(27,63,122,0.05)',
+                zIndex: 5,
               }}
             >
               <div
-                className="bg-success flex items-center px-3"
-                style={{ height: 32, borderRadius: '12px 12px 0 0', position: 'absolute', top: 0, left: 0, right: 0 }}
+                className="flex items-center gap-2 px-3"
+                style={{
+                  height: 36,
+                  background: 'linear-gradient(135deg, #38A169, #48BB78)',
+                  borderRadius: '16px 16px 0 0',
+                }}
               >
-                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.65rem' }}>
+                <Share2 size={14} className="text-white/90" />
+                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.7rem' }}>
                   SOCIAL POSTS
                 </span>
               </div>
-              <div className="pt-12 flex gap-3 pb-6">
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FF6B6B' }} />
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#4ECDC4' }} />
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FFE66D' }} />
+              <div className="p-3 flex flex-col gap-2">
+                {/* Mini post cards */}
+                {[{ color: '#FF6B6B', w: '70%' }, { color: '#4ECDC4', w: '55%' }, { color: '#FFE66D', w: '65%' }].map((post, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 4,
+                        background: post.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div className="rounded flex-1" style={{ height: 5, background: '#E2E8F0', borderRadius: 3, maxWidth: post.w }} />
+                  </div>
+                ))}
+                <div className="flex gap-1 mt-1">
+                  <span className="font-inter text-[0.55rem] text-secondary-text">#freelancer</span>
+                  <span className="font-inter text-[0.55rem] text-secondary-text">#ukbusiness</span>
+                </div>
               </div>
             </div>
 
-            {/* Item 4: QUARTERLY REFRESH */}
+            {/* Quarterly Refresh badge */}
             <div
-              className="absolute rounded-xl bg-white overflow-hidden flex items-center justify-center"
+              className="absolute bg-white rounded-2xl flex items-center gap-3"
               style={{
-                width: 240,
-                height: 140,
-                top: 360,
-                left: 38,
-                boxShadow: '0 16px 48px rgba(27,63,122,0.12)',
-                zIndex: 1,
+                bottom: 0,
+                left: 20,
+                padding: '12px 18px',
+                boxShadow: '0 12px 32px rgba(27,63,122,0.12), 0 2px 4px rgba(27,63,122,0.04)',
+                zIndex: 6,
               }}
             >
               <div
-                className="bg-medium-blue flex items-center px-3"
-                style={{ height: 32, borderRadius: '12px 12px 0 0', position: 'absolute', top: 0, left: 0, right: 0 }}
-              >
-                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.65rem' }}>
-                  QUARTERLY REFRESH
-                </span>
-              </div>
-              <div
+                className="flex items-center justify-center shrink-0"
                 style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: '50%',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
                   background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '2rem',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  marginTop: 16,
                 }}
               >
-                ↻
+                <RefreshCw size={18} className="text-white" />
+              </div>
+              <div>
+                <div className="font-inter font-semibold text-dark-text" style={{ fontSize: '0.75rem' }}>
+                  Quarterly Refresh
+                </div>
+                <div className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>
+                  £29 every 4 months
+                </div>
               </div>
             </div>
 
-            {/* Floating badge */}
+            {/* Floating "4 Services" badge */}
             <div
-              className="absolute bg-white rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] flex items-center gap-2"
-              style={{ bottom: -8, left: 18, padding: '10px 16px', zIndex: 5 }}
+              className="absolute bg-navy rounded-full flex items-center gap-2"
+              style={{
+                top: 60,
+                right: 40,
+                padding: '8px 16px',
+                zIndex: 7,
+                boxShadow: '0 8px 24px rgba(27,63,122,0.3)',
+              }}
             >
-              <span className="text-success font-bold">✓</span>
-              <span className="font-inter font-semibold text-navy" style={{ fontSize: '0.8rem' }}>
+              <span className="text-success font-bold" style={{ fontSize: '0.85rem' }}>✓</span>
+              <span className="font-inter font-semibold text-white" style={{ fontSize: '0.8rem' }}>
                 4 Services
               </span>
             </div>

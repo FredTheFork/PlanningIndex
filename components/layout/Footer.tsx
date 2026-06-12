@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 const serviceLinks = [
-  { label: 'Business Foundations Pack', href: '/services/documents' },
+  { label: "What's Included (10 Documents)", href: '/whats-included' },
   { label: 'Website Copy Starter Pack', href: '/services/website-copy' },
   { label: 'Social Media Starter Pack', href: '/services/social-media' },
   { label: 'Quarterly Document Refresh', href: '/services/quarterly-refresh' },
