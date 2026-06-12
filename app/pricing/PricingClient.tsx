@@ -45,7 +45,7 @@ const packFeatures = [
 ];
 
 const packExtras = [
-  'Delivered within 24 hours',
+  'Delivered within 3-5 business days',
   'PDF + editable Word formats',
   'UK law compliant throughout',
   'Your tone, your business, your name',
@@ -56,7 +56,7 @@ const comparisonRows = [
   { feature: 'Done for you', foundationary: 'check', solicitor: 'check', diy: 'cross', ai: 'cross' },
   { feature: 'UK law compliant', foundationary: 'check', solicitor: 'check', diy: 'partial', ai: 'cross' },
   { feature: 'Specific to your business', foundationary: 'check', solicitor: 'check', diy: 'cross', ai: 'cross' },
-  { feature: 'Delivered in 24 hours', foundationary: 'check', solicitor: 'Weeks', diy: 'You decide', ai: 'Minutes' },
+  { feature: 'Delivered in 3-5 business days', foundationary: 'check', solicitor: 'Weeks', diy: 'You decide', ai: 'Minutes' },
   { feature: 'Professional bio & pitch', foundationary: 'check', solicitor: 'cross', diy: 'cross', ai: 'cross' },
   { feature: 'LinkedIn profile script', foundationary: 'check', solicitor: 'cross', diy: 'cross', ai: 'cross' },
   { feature: 'Invoice template included', foundationary: 'check', solicitor: 'cross', diy: 'cross', ai: 'cross' },
@@ -87,7 +87,7 @@ const faqs = [
   },
   {
     q: 'Can I pay and come back to fill in the questionnaire later?',
-    a: 'Yes. Once you pay, you receive a unique link to your questionnaire by email. That link is yours to use whenever you are ready — there is no deadline to submit. The 24-hour delivery clock starts when you submit the questionnaire, not when you pay.',
+    a: 'Yes. Once you pay, you receive a unique link to your questionnaire by email. That link is yours to use whenever you are ready — there is no deadline to submit. The delivery clock starts when you submit the questionnaire, not when you pay. Documents are typically delivered within 3-5 business days.',
   },
   {
     q: "Is there a refund if I'm not happy?",
@@ -169,7 +169,7 @@ function PageHeader() {
           className="font-inter font-extrabold text-white mt-3"
           style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
         >
-          Every service. Clear pricing. No surprises.
+          Four services. One platform. Your price.
         </h1>
         <p
           className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
@@ -179,7 +179,7 @@ function PageHeader() {
             maxWidth: 600,
           }}
         >
-          Start with the core pack, add services as you need them, or build your own bundle and save.
+          Every service is sold separately. Bundle together and save — 10% off two services, 15% off three or more.
         </p>
       </div>
     </section>
@@ -930,7 +930,7 @@ function BuildYourBundleSection({ purchasedServiceIds }: { purchasedServiceIds: 
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-medium-blue shrink-0" />
                       <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.8rem' }}>
-                        24-hour delivery after intake
+                        3-5 business day delivery
                       </span>
                     </div>
                   </div>
@@ -1140,24 +1140,24 @@ function FinalCTA() {
           className="font-inter font-normal mt-4 leading-[1.7]"
           style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
         >
-          Start with the core pack, or build your own bundle — either way, you get documents tailored to your business, delivered in 24 hours.
+          Start with one service, or build your own bundle — either way, you get content tailored to your business, delivered fast.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
           <Link
-            href="/checkout?services=business_foundations_pack"
+            href="/services"
             className="font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 flex items-center gap-2"
             style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
           >
             <ShoppingCart size={18} />
-            Get the Business Foundations Pack
+            See All Services
           </Link>
           <Link
-            href="/additional-services"
+            href="/checkout?services=business_foundations_pack"
             className="font-inter font-semibold text-white border-2 border-white rounded-lg hover:bg-white hover:text-navy transition-all duration-200 flex items-center gap-2"
             style={{ padding: '16px 32px', fontSize: '0.95rem', minHeight: 48 }}
           >
             <Package size={18} />
-            Browse All Services
+            Start with Documents — £79
           </Link>
         </div>
       </div>

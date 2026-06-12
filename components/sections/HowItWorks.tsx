@@ -1,18 +1,18 @@
 const steps = [
   {
     num: '1',
-    title: 'Pay Once',
-    desc: 'One payment of £79. No subscriptions, no hidden extras, no ongoing commitments.',
+    title: 'Choose Your Services',
+    desc: 'Select the Business Foundations Pack, website copy, social media posts, or any combination. Bundle and save.',
   },
   {
     num: '2',
-    title: 'Fill Your Questionnaire',
-    desc: 'A focused 20–30 minute form about your business. That\u2019s the only work you have to do.',
+    title: 'Tell Us About Your Business',
+    desc: 'Complete a structured questionnaire. The questions adapt to exactly what you\'ve purchased. 20-30 minutes.',
   },
   {
     num: '3',
-    title: 'Receive Your Pack',
-    desc: 'Within 24 hours, 10 professionally completed documents land in your inbox. Ready to use immediately.',
+    title: 'Receive Your Deliverables',
+    desc: 'Documents in PDF + Word. Website copy ready to paste. Social posts formatted for each platform. Delivered within 3-5 business days.',
   },
 ];
 
@@ -68,7 +68,7 @@ export default function HowItWorks() {
             className="bg-off-white border border-medium-blue rounded-full font-inter font-medium text-navy"
             style={{ padding: '10px 20px', fontSize: '0.875rem' }}
           >
-            ⏱ Total time from payment to delivery: under 24 hours
+            ⏱ Total time from payment to delivery: 3-5 business days (documents typically faster)
           </div>
         </div>
       </div>

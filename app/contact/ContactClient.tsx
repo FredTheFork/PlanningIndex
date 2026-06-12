@@ -286,6 +286,9 @@ function ContactForm() {
                   <option value="">Select a subject</option>
                   <option value="general">General Enquiry</option>
                   <option value="pricing">Pricing Question</option>
+                  <option value="website_copy">Website Copy Enquiry</option>
+                  <option value="social_media">Social Media Enquiry</option>
+                  <option value="subscription">Subscription / Refresh Enquiry</option>
                   <option value="customisation">Customisation Request</option>
                   <option value="support">Support</option>
                   <option value="other">Other</option>

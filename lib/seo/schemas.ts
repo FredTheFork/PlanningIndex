@@ -58,9 +58,9 @@ export function generateServiceSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Service',
-    serviceType: 'Document Drafting Service',
-    name: 'Business Foundations Pack',
-    description: 'Professional business documents for UK sole traders including client contracts, GDPR privacy policies, invoice templates, and more.',
+    serviceType: 'Business Foundations Platform',
+    name: 'Foundationary Business Foundations Platform',
+    description: 'Professional documents, website copy, social media posts, and ongoing maintenance for UK sole traders. UK law compliant, done for you, delivered fast.',
     provider: {
       '@type': 'Organization',
       name: SITE_CONFIG.name,
@@ -72,27 +72,77 @@ export function generateServiceSchema() {
     },
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
-      name: 'Business Foundations Pack',
+      name: 'Foundationary Services',
       itemListElement: [
-        { '@type': 'Offer', itemOffered: 'Bespoke Client Contract' },
-        { '@type': 'Offer', itemOffered: 'Terms & Conditions' },
-        { '@type': 'Offer', itemOffered: 'GDPR Privacy Policy' },
-        { '@type': 'Offer', itemOffered: 'Professional Bio' },
-        { '@type': 'Offer', itemOffered: 'Elevator Pitch' },
-        { '@type': 'Offer', itemOffered: 'LinkedIn Profile Script' },
-        { '@type': 'Offer', itemOffered: 'Professional Invoice Template' },
-        { '@type': 'Offer', itemOffered: 'New Client Welcome Emails' },
-        { '@type': 'Offer', itemOffered: 'Late Payment Letters' },
-        { '@type': 'Offer', itemOffered: 'Service Description Sheets' },
+        {
+          '@type': 'OfferCatalog',
+          name: 'Business Foundations Pack',
+          itemListElement: [
+            { '@type': 'Offer', itemOffered: 'Bespoke Client Contract' },
+            { '@type': 'Offer', itemOffered: 'Terms & Conditions' },
+            { '@type': 'Offer', itemOffered: 'GDPR Privacy Policy' },
+            { '@type': 'Offer', itemOffered: 'Professional Bio' },
+            { '@type': 'Offer', itemOffered: 'Elevator Pitch' },
+            { '@type': 'Offer', itemOffered: 'LinkedIn Profile Script' },
+            { '@type': 'Offer', itemOffered: 'Professional Invoice Template' },
+            { '@type': 'Offer', itemOffered: 'New Client Welcome Emails' },
+            { '@type': 'Offer', itemOffered: 'Late Payment Letters' },
+            { '@type': 'Offer', itemOffered: 'Service Description Sheets' },
+          ],
+        },
+        {
+          '@type': 'OfferCatalog',
+          name: 'Website Copy Starter Pack',
+          description: 'Professional website copy written in your voice, SEO-aware, ready to paste.',
+        },
+        {
+          '@type': 'OfferCatalog',
+          name: 'Social Media Starter Pack',
+          description: 'Done-for-you social media posts tailored to your industry and audience.',
+        },
+        {
+          '@type': 'OfferCatalog',
+          name: 'Quarterly Document Refresh',
+          description: 'Keep your documents accurate as your business evolves. One update per quarter.',
+        },
       ],
     },
-    offers: {
-      '@type': 'Offer',
-      price: '79',
-      priceCurrency: 'GBP',
-      availability: 'https://schema.org/InStock',
-      priceValidUntil: '2025-12-31',
-    },
+    offers: [
+      {
+        '@type': 'Offer',
+        name: 'Business Foundations Pack',
+        price: '79',
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Website Copy Starter Pack',
+        price: '35',
+        priceCurrency: 'GBP',
+        priceSpecification: {
+          '@type': 'UnitPriceSpecification',
+          price: '35',
+          priceCurrency: 'GBP',
+          referenceQuantity: { '@type': 'QuantitativeValue', value: '1', unitCode: 'PAGE' },
+        },
+        availability: 'https://schema.org/InStock',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Social Media Starter Pack',
+        price: '20',
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Quarterly Document Refresh',
+        price: '29',
+        priceCurrency: 'GBP',
+        availability: 'https://schema.org/InStock',
+      },
+    ],
   };
 }
 
@@ -174,19 +224,19 @@ export function generateHowToSchema(steps: Array<{ name: string; text: string }>
   return {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
-    name: 'How to Get Your Business Foundations Pack',
-    description: 'A simple 4-step process to get professional business documents for your UK sole trader business.',
+    name: 'How to Get Your Business Foundations',
+    description: 'A simple 3-step process to get professional business documents, website copy, and social media posts for your UK sole trader business.',
     step: steps.map((step, index) => ({
       '@type': 'HowToStep',
       position: index + 1,
       name: step.name,
       text: step.text,
     })),
-    totalTime: 'PT24H',
+    totalTime: 'P5D',
     estimatedCost: {
       '@type': 'MonetaryAmount',
       currency: 'GBP',
-      value: '79',
+      value: '20',
     },
   };
 }

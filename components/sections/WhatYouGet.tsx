@@ -1,16 +1,83 @@
 import Link from 'next/link';
+import { FileText, Globe, Share2, RotateCw } from 'lucide-react';
 
-const documents = [
-  { num: '01', title: 'Bespoke Client Contract', desc: 'UK law-compliant service agreement covering scope, payment, IP, termination, and dispute resolution. Specific to your services.' },
-  { num: '02', title: 'Terms & Conditions', desc: 'Your complete operating rulebook — payment terms, late payment rights (Late Payment Act 1998), refunds, cancellations.' },
-  { num: '03', title: 'GDPR Privacy Policy', desc: 'ICO-compliant and specific to your actual data activities. Not a generic template — built around what you actually collect and why.' },
-  { num: '04', title: 'Professional Bio', desc: '150-word website version and 50-word social version, written in your voice, that makes you sound exactly as good as you are.' },
-  { num: '05', title: 'Elevator Pitch (3 Versions)', desc: "30-second, 2-minute, and written versions. Never stumble over 'so what do you do?' again." },
-  { num: '06', title: 'LinkedIn Profile Script', desc: 'Headline, full About section, and Featured section — keyword-optimised and ready to copy-paste.' },
-  { num: '07', title: 'Professional Invoice Template', desc: 'UK-formatted, VAT-ready, with your branding and the correct statutory late payment interest notice.' },
-  { num: '08', title: 'New Client Welcome Emails (×3)', desc: "The onboarding sequence that makes every client feel like they've hired a professional firm, not a one-person business." },
-  { num: '09', title: 'Late Payment Letters (×3)', desc: 'Friendly reminder → formal demand → Letter Before Action. All legally sound. All ready to send.' },
-  { num: '10', title: 'Service Description Sheets', desc: "One-page professional breakdown per service — what's in, what's out, who it's for, what they get." },
+interface ServiceCard {
+  icon: React.ComponentType<any>;
+  headline: string;
+  inclusions: string[];
+  price: string;
+  primary: { label: string; href: string };
+  secondary: { label: string; href: string };
+  note?: string;
+}
+
+const services: ServiceCard[] = [
+  {
+    icon: FileText,
+    headline: '10 Bespoke Business Documents',
+    inclusions: [
+      'Contract',
+      'T&Cs',
+      'GDPR Policy',
+      'Bio',
+      'Pitch',
+      'LinkedIn',
+      'Invoice',
+      'Welcome Emails',
+      'Late Payment Letters',
+      'Service Sheets',
+    ],
+    price: 'From £79 one-time',
+    primary: { label: 'See what\'s included', href: '/services/documents' },
+    secondary: { label: 'Get this pack', href: '/checkout?services=business_foundations_pack' },
+  },
+  {
+    icon: Globe,
+    headline: 'Professional Website Copy',
+    inclusions: [
+      'Homepage',
+      'About',
+      'Services',
+      'Contact + up to 10 pages',
+      'SEO-aware',
+      'Paste-ready',
+      'Bolt.new prompt included',
+    ],
+    price: 'From £35/page',
+    primary: { label: 'Learn more', href: '/services/website-copy' },
+    secondary: { label: 'Get website copy', href: '/checkout?services=website_copy_pack' },
+  },
+  {
+    icon: Share2,
+    headline: 'Done-For-You Social Posts',
+    inclusions: [
+      'Educational posts',
+      'Promotional posts',
+      'Personal posts',
+      'Captions and hashtags',
+      'Platform-specific',
+      'LinkedIn, Instagram, Facebook, X',
+      '5-30 posts available',
+    ],
+    price: 'From £20 for 5 posts',
+    primary: { label: 'Learn more', href: '/services/social-media' },
+    secondary: { label: 'Get social posts', href: '/checkout?services=social_media_pack' },
+  },
+  {
+    icon: RotateCw,
+    headline: 'Keep Your Foundations Current',
+    inclusions: [
+      'One document per quarter',
+      'Pricing updates',
+      'New services',
+      'GDPR updates',
+      'Regulation changes',
+    ],
+    price: '£29/quarter',
+    note: 'Requires Business Foundations Pack',
+    primary: { label: 'Learn more', href: '/services/quarterly-refresh' },
+    secondary: { label: 'Add refresh', href: '/checkout?services=quarterly_refresh' },
+  },
 ];
 
 export default function WhatYouGet() {
@@ -21,93 +88,88 @@ export default function WhatYouGet() {
           className="font-inter font-semibold text-medium-blue uppercase block mb-3"
           style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}
         >
-          THE PACK
+          OUR SERVICES
         </span>
         <h2
           className="font-inter font-bold text-dark-text"
           style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)' }}
         >
-          10 Documents. Built Around Your Business.
+          Four Ways We Serve Your Business
         </h2>
-        <p
-          className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
-          style={{ fontSize: '1.05rem' }}
-        >
-          Every document is generated specifically for your business — your services, your payment terms, your clients, your voice.
-        </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-14">
-          {documents.map((doc) => (
-            <div
-              key={doc.num}
-              className="bg-white rounded-xl border border-border p-6 flex gap-4 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200"
-            >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-14">
+          {services.map((service, idx) => {
+            const Icon = service.icon;
+            return (
               <div
-                className="shrink-0 w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center font-inter font-bold"
-                style={{ fontSize: '0.85rem' }}
+                key={idx}
+                className="bg-white rounded-xl border border-border p-8 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200 flex flex-col"
               >
-                {doc.num}
-              </div>
-              <div>
-                <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                  {doc.title}
+                <Icon size={32} className="text-medium-blue mb-4" />
+                <h3 className="font-inter font-semibold text-dark-text mb-5" style={{ fontSize: '1.2rem' }}>
+                  {service.headline}
                 </h3>
-                <p className="font-inter font-normal text-secondary-text mt-1.5 leading-[1.55]" style={{ fontSize: '0.875rem' }}>
-                  {doc.desc}
-                </p>
+
+                <div className="mb-6">
+                  <ul className="space-y-2">
+                    {service.inclusions.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-success font-bold shrink-0 mt-0.5">✓</span>
+                        <span className="font-inter font-normal text-secondary-text" style={{ fontSize: '0.9rem' }}>
+                          {item}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="border-t border-border pt-5 mb-5">
+                  <div className="font-inter font-bold text-navy" style={{ fontSize: '1.1rem' }}>
+                    {service.price}
+                  </div>
+                  {service.note && (
+                    <div className="font-inter font-normal text-secondary-text mt-2" style={{ fontSize: '0.85rem' }}>
+                      {service.note}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-3 mt-auto">
+                  <Link
+                    href={service.primary.href}
+                    className="text-center font-inter font-semibold text-medium-blue border border-medium-blue rounded-lg hover:bg-off-white transition-colors duration-200"
+                    style={{ padding: '12px 20px', fontSize: '0.95rem' }}
+                  >
+                    {service.primary.label}
+                  </Link>
+                  <Link
+                    href={service.secondary.href}
+                    className="text-center font-inter font-semibold text-white bg-navy rounded-lg hover:bg-medium-blue hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(27,63,122,0.25)] transition-all duration-200"
+                    style={{ padding: '12px 20px', fontSize: '0.95rem' }}
+                  >
+                    {service.secondary.label}
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div className="text-center mt-10">
+        {/* Bundle Savings Callout */}
+        <div className="bg-success/10 border border-success/30 rounded-xl p-8 text-center mt-14">
+          <h3 className="font-inter font-semibold text-dark-text mb-2" style={{ fontSize: '1.05rem' }}>
+            Bundle and Save
+          </h3>
+          <p className="font-inter font-normal text-secondary-text" style={{ fontSize: '0.95rem' }}>
+            Buy two services? Save 10%. Buy three or more? Save 15%. Applied automatically at checkout.
+          </p>
           <Link
-            href="/whats-included"
-            className="inline-block font-inter font-semibold text-navy border-2 border-navy rounded-lg hover:bg-off-white transition-colors duration-200"
-            style={{ padding: '14px 28px', fontSize: '1rem', minHeight: 48 }}
+            href="/checkout"
+            className="inline-block font-inter font-semibold text-white bg-success rounded-lg hover:bg-[#2d8659] transition-colors duration-200 mt-5"
+            style={{ padding: '12px 32px', fontSize: '0.95rem' }}
           >
-            See Everything That's Included →
+            Build my bundle
           </Link>
-        </div>
-
-        {/* Additional services callout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-10">
-          <div
-            className="bg-white rounded-xl border border-border p-6 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div
-                className="shrink-0 w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center font-inter font-bold"
-                style={{ fontSize: '0.85rem' }}
-              >
-                W
-              </div>
-              <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                Website Copy Starter Pack
-              </h3>
-            </div>
-            <p className="font-inter font-normal text-secondary-text leading-[1.55]" style={{ fontSize: '0.875rem' }}>
-              Professionally written website copy — Homepage, About, Services, Contact, and more. SEO-aware, in your voice, ready to paste into any website builder. From £35 per page.
-            </p>
-          </div>
-          <div
-            className="bg-white rounded-xl border border-border p-6 hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)] transition-all duration-200"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div
-                className="shrink-0 w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center font-inter font-bold"
-                style={{ fontSize: '0.85rem' }}
-              >
-                S
-              </div>
-              <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                Social Media Starter Pack
-              </h3>
-            </div>
-            <p className="font-inter font-normal text-secondary-text leading-[1.55]" style={{ fontSize: '0.875rem' }}>
-              Done-for-you social media posts — educational, promotional, and trust-building content with captions and hashtags. Tailored to your platforms and audience. From £20 for 5 posts.
-            </p>
-          </div>
         </div>
       </div>
     </section>

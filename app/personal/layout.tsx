@@ -180,6 +180,25 @@ export default function PersonalLayout({
                 )}
               </div>
             )}
+
+            {/* Cross-sell link for clients who don't own all services */}
+            {!isAdmin && profile && safePurchasedServiceIds.length < 4 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
+                <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
+                  Expand Your Package
+                </p>
+                <Link
+                  href="/services"
+                  className="font-inter font-medium text-[#2C68C4] hover:underline text-sm flex items-center gap-1.5"
+                >
+                  <Package size={14} />
+                  Add website copy or social posts
+                </Link>
+                <p className="font-inter text-xs text-gray-500 mt-1.5">
+                  Bundle discount applies automatically.
+                </p>
+              </div>
+            )}
           </nav>
 
           {/* Main content */}

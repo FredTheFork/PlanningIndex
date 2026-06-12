@@ -19,7 +19,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Foundationary | Business Documents for UK Sole Traders',
+    default: 'Foundationary | Business Foundations Platform for UK Sole Traders',
     template: '%s | Foundationary',
   },
   description: SITE_CONFIG.description,

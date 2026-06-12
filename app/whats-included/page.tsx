@@ -4,7 +4,7 @@ import { generateServiceSchema, SITE_URL, generateBreadcrumbSchema } from '@/lib
 import WhatsIncludedClient from './WhatsIncludedClient';
 
 export const metadata: Metadata = {
-  title: "What's Included | 10 Business Documents for UK Sole Traders",
+  title: "What's Included — Business Foundations Pack | 10 Documents for UK Sole Traders",
   description: 'Complete breakdown of all 10 documents in the Business Foundations Pack. Client contract, terms & conditions, GDPR privacy policy, professional bio, invoice template, and more.',
   keywords: 'sole trader documents included, business foundations pack, what documents do I get, client contract UK, GDPR privacy policy sole trader',
   openGraph: {

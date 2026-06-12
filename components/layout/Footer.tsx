@@ -1,16 +1,22 @@
 import Link from 'next/link';
 
 const serviceLinks = [
-  { label: "What's Included", href: '/whats-included' },
+  { label: 'Business Foundations Pack', href: '/services/documents' },
+  { label: 'Website Copy Starter Pack', href: '/services/website-copy' },
+  { label: 'Social Media Starter Pack', href: '/services/social-media' },
+  { label: 'Quarterly Document Refresh', href: '/services/quarterly-refresh' },
+  { label: 'View All Services', href: '/services' },
+];
+
+const resourceLinks = [
+  { label: 'How It Works', href: '/how-it-works' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Additional Services', href: '/additional-services' },
-  { label: 'How It Works', href: '/how-it-works' },
+  { label: 'FAQ', href: '/faq' },
 ];
 
 const companyLinks = [
   { label: 'About', href: '/about' },
-  { label: 'FAQ', href: '/faq' },
   { label: 'Contact', href: '/contact' },
 ];
 
@@ -56,6 +62,27 @@ export default function Footer() {
               </h4>
               <ul className="flex flex-col gap-2.5">
                 {serviceLinks.map((l) => (
+                  <li key={l.label}>
+                    <Link
+                      href={l.href}
+                      className="font-inter font-normal hover:text-white transition-colors"
+                      style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4
+                className="font-inter font-semibold text-white uppercase mb-4"
+                style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}
+              >
+                Resources
+              </h4>
+              <ul className="flex flex-col gap-2.5">
+                {resourceLinks.map((l) => (
                   <li key={l.label}>
                     <Link
                       href={l.href}

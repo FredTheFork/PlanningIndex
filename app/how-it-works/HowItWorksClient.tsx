@@ -565,14 +565,14 @@ function FinalCTA() {
           className="font-inter font-normal mt-4 leading-[1.7]"
           style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
         >
-          One questionnaire. One payment. Everything you need — delivered within 24 hours.
+          One questionnaire. Everything you need — documents, website copy, and social media posts — delivered within 3-5 business days.
         </p>
         <Link
-          href="/whats-included"
+          href="/services"
           className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
           style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
         >
-          See what's included in the pack
+          See all services
         </Link>
         <div className="mt-5">
           <Link

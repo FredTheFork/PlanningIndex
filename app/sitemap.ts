@@ -11,8 +11,33 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly' as const,
     },
     {
-      path: '/whats-included',
+      path: '/services',
+      priority: 1.0,
+      changeFrequency: 'weekly' as const,
+    },
+    {
+      path: '/services/documents',
       priority: 0.9,
+      changeFrequency: 'monthly' as const,
+    },
+    {
+      path: '/services/website-copy',
+      priority: 0.9,
+      changeFrequency: 'monthly' as const,
+    },
+    {
+      path: '/services/social-media',
+      priority: 0.9,
+      changeFrequency: 'monthly' as const,
+    },
+    {
+      path: '/services/quarterly-refresh',
+      priority: 0.8,
+      changeFrequency: 'monthly' as const,
+    },
+    {
+      path: '/whats-included',
+      priority: 0.7,
       changeFrequency: 'monthly' as const,
     },
     {
@@ -27,11 +52,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       path: '/about',
-      priority: 0.7,
-      changeFrequency: 'monthly' as const,
-    },
-    {
-      path: '/additional-services',
       priority: 0.7,
       changeFrequency: 'monthly' as const,
     },

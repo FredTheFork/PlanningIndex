@@ -6,7 +6,7 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://foundationa
 export const SITE_CONFIG = {
   name: 'Foundationary',
   tagline: 'Business Foundations for UK Sole Traders',
-  description: 'Professional business documents for UK sole traders. Client contracts, GDPR privacy policies, invoice templates - UK law compliant, delivered in 24 hours. £79 one-time.',
+  description: 'Professional documents, website copy, social media posts, and ongoing maintenance for UK sole traders. UK law compliant, done for you, delivered fast. From £20.',
   url: SITE_URL,
   locale: 'en_GB',
   language: 'en-GB',
@@ -27,6 +27,10 @@ export const KEYWORDS = {
     'GDPR privacy policy sole trader',
     'invoice template UK',
     'sole trader business setup',
+    'website copy for sole traders UK',
+    'social media posts for freelancers UK',
+    'quarterly document refresh',
+    'business foundations platform UK',
   ],
   secondary: [
     'freelancer documents UK',
@@ -37,6 +41,10 @@ export const KEYWORDS = {
     'sole trader registration',
     'self employed UK',
     'UK freelancer',
+    'sole trader website copy',
+    'done for you social media UK',
+    'business content for freelancers',
+    'sole trader subscription service UK',
   ],
   longTail: [
     'how to register as sole trader UK',
@@ -61,7 +69,7 @@ export const OG_IMAGES = {
 
 const NAVIGATION = {
   main: [
-    { name: 'What\'s Included', href: '/whats-included' },
+    { name: 'Services', href: '/services' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'How It Works', href: '/how-it-works' },
     { name: 'Blog', href: '/blog' },

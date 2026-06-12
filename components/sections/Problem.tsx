@@ -1,4 +1,4 @@
-import { FileX, ShieldOff, AlertCircle, UserX, Receipt, MessageSquareOff } from 'lucide-react';
+import { FileX, ShieldOff, Receipt, Globe, Type, Share2, RefreshCw } from 'lucide-react';
 
 const problems = [
   {
@@ -12,24 +12,34 @@ const problems = [
     desc: "The ICO can fine you for not having one. As soon as you collect a client's email address, you legally need it.",
   },
   {
-    icon: AlertCircle,
-    title: 'No Terms & Conditions',
-    desc: 'Scope creep, refund demands, payment disputes — all unenforceable without clearly agreed written terms.',
-  },
-  {
-    icon: UserX,
-    title: 'No Professional Bio',
-    desc: "You're underselling yourself in every pitch, every introduction, every time you describe what you do.",
-  },
-  {
     icon: Receipt,
     title: 'Invoices Without Legal Teeth',
     desc: 'Missing the right statutory wording means clients know they can delay payment with no real consequence.',
   },
   {
-    icon: MessageSquareOff,
-    title: 'No Onboarding System',
-    desc: "Clients feel like they've hired a sole trader. They should feel like they've hired an agency.",
+    icon: Globe,
+    title: 'No Professional Website Copy',
+    desc: 'Your website reads like a draft. Clients judge you before they call. Generic copy means missed opportunities.',
+  },
+  {
+    icon: Type,
+    title: 'No Clear Service Descriptions',
+    desc: 'When clients ask what you do, you describe it differently every time. Inconsistency costs trust.',
+  },
+  {
+    icon: Share2,
+    title: 'Blank Social Media Pages',
+    desc: "Your LinkedIn hasn't been updated in two years. Your Instagram is empty. Every day you're invisible to potential clients.",
+  },
+  {
+    icon: Share2,
+    title: 'No Content Strategy',
+    desc: "You know you should post but don't know what to say, how often, or whether it matters.",
+  },
+  {
+    icon: RefreshCw,
+    title: 'Documents That Go Out of Date',
+    desc: "Your contract was drafted in 2022. Your prices, services, and GDPR tools have all changed since. Is your documentation keeping up?",
   },
 ];
 
@@ -47,16 +57,16 @@ export default function Problem() {
           className="font-inter font-bold text-dark-text leading-snug"
           style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', maxWidth: 640 }}
         >
-          You started your business. But is it properly set up?
+          You started your business. But are the foundations properly in place?
         </h2>
         <p
           className="font-inter font-normal text-secondary-text mt-4 leading-[1.7]"
           style={{ fontSize: '1.05rem', maxWidth: 600 }}
         >
-          Most UK sole traders are running their business legally exposed, professionally underselling themselves, and financially unprotected — not because they're bad at what they do, but because nobody ever helped them get the foundations right.
+          Most UK sole traders are running their business legally exposed, professionally underselling themselves, and financially unprotected — not because they're bad at what they do, but because nobody ever helped them get the foundations right. Documents, website copy, social presence — all of it.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-14">
           {problems.map((p) => (
             <div
               key={p.title}

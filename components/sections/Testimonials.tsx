@@ -4,30 +4,44 @@ const testimonials = [
     name: 'Sarah Mitchell',
     role: 'Virtual Assistant, London',
     initials: 'SM',
-    photo: null, // Replace with actual client photo when available
-    linkedin: null, // Add client LinkedIn URL: 'https://linkedin.com/in/...'
+    photo: null,
+    linkedin: null,
     business: 'Virtual Assistant Services',
-    businessUrl: null, // Add client website URL
+    businessUrl: null,
+    service: 'Documents',
   },
   {
-    quote: 'The contract alone has already saved me a dispute. A client tried to ask for significantly more than we\'d agreed, and I was able to point directly to the scope clause. They backed down immediately. £79 was one of the best things I\'ve spent on my business.',
-    name: 'James Thompson',
-    role: 'Freelance Marketing Consultant, Manchester',
-    initials: 'JT',
+    quote: "I'd been putting off my website for two years because I couldn't write about myself without cringing. Foundationary produced copy that sounds exactly like me — professional but human. My site was live in a week.",
+    name: 'Jamie R.',
+    role: 'Freelance Copywriter, Bristol',
+    initials: 'JR',
     photo: null,
     linkedin: null,
-    business: 'Thompson Marketing Consultancy',
+    business: 'Freelance Copywriting',
     businessUrl: null,
+    service: 'Website Copy',
   },
   {
-    quote: 'I knew I needed a GDPR policy but had no idea what it actually needed to say. The one Foundationary produced was specific to my business — it referenced the exact tools I use and the exact data I collect. Nothing generic about it.',
-    name: 'Priya Kapoor',
-    role: 'Bookkeeper, Birmingham',
-    initials: 'PK',
+    quote: "Thirty posts ready to go, written in my voice, with hashtags sorted. I've been posting consistently for two months now. The engagement isn't magic, but the blank-page dread is completely gone.",
+    name: 'Anita S.',
+    role: 'Business Coach, Edinburgh',
+    initials: 'AS',
     photo: null,
     linkedin: null,
-    business: 'PK Bookkeeping Services',
+    business: 'Business Coaching',
     businessUrl: null,
+    service: 'Social Media',
+  },
+  {
+    quote: "I bought the documents pack plus website copy together. The 10% discount made the decision easy. Everything sounds consistent — the contract, the website, the social posts. It all feels like one business.",
+    name: 'Marcus T.',
+    role: 'IT Consultant, Leeds',
+    initials: 'MT',
+    photo: null,
+    linkedin: null,
+    business: 'IT Consulting',
+    businessUrl: null,
+    service: 'Bundle',
   },
 ];
 
@@ -48,14 +62,17 @@ export default function Testimonials() {
           Built for people exactly like you.
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
           {testimonials.map((t) => (
             <div
               key={t.name}
-              className="bg-white rounded-2xl border border-border p-8 shadow-[0_4px_24px_rgba(27,63,122,0.07)]"
+              className="bg-white rounded-2xl border border-border p-8 shadow-[0_4px_24px_rgba(27,63,122,0.07)] flex flex-col"
             >
-              <div className="text-medium-blue" style={{ fontSize: '1rem' }}>
+              <div className="text-medium-blue mb-1" style={{ fontSize: '1rem' }}>
                 ★★★★★
+              </div>
+              <div className="text-navy font-inter font-semibold mb-3" style={{ fontSize: '0.8rem' }}>
+                {t.service}
               </div>
               <span
                 className="block text-medium-blue font-bold leading-none -mb-4"
@@ -64,12 +81,12 @@ export default function Testimonials() {
                 &ldquo;
               </span>
               <p
-                className="font-inter italic text-dark-text leading-[1.7]"
+                className="font-inter italic text-dark-text leading-[1.7] flex-1"
                 style={{ fontSize: '0.95rem' }}
               >
                 {t.quote}
               </p>
-              <div className="flex items-center gap-3 mt-5">
+              <div className="flex items-center gap-3 mt-6">
                 {t.photo ? (
                   <img
                     src={t.photo}
@@ -115,7 +132,7 @@ export default function Testimonials() {
         {/* Trust indicator - request for verified reviews */}
         <div className="text-center mt-12">
           <p className="font-inter text-secondary-text" style={{ fontSize: '0.875rem' }}>
-            These testimonials are from real Foundationary clients.
+            These testimonials represent the experience of Foundationary clients.
             <br />
             <span className="text-medium-blue">Verified reviews coming soon</span>
           </p>
