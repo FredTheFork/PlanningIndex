@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, ArrowRight, Zap, Code, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, Globe, Sparkles } from 'lucide-react';
 
 /* ─── Sub-components ─── */
 
@@ -31,7 +31,7 @@ function Hero() {
           className="font-inter font-extrabold text-white"
           style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
         >
-          Professional website copy. Written in your voice. Ready to paste. Delivered in 3-5 days.
+          Professional website. Built for you. Ready to deploy. Delivered in 3-5 days.
         </h1>
         <p
           className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
@@ -41,14 +41,14 @@ function Hero() {
             maxWidth: 600,
           }}
         >
-          Page-by-page website copy that sounds like you, converts browsers into clients, and is ready to paste into any website builder.
+          A fully built website created in your voice, aligned with your services, and delivered as source files plus a hosted preview.
         </p>
         <Link
           href="/checkout?services=website_copy_pack"
           className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] transition-colors duration-200 mt-9"
           style={{ padding: '16px 36px', fontSize: '1rem', minHeight: 48 }}
         >
-          Get Website Copy — From £35
+          Get Your Website — From £35
         </Link>
       </div>
     </section>
@@ -62,8 +62,8 @@ function WhatsIncludedSection() {
     'Services page — aligned with your service sheets, outcomes, process',
     'Contact page — clear contact options, contact form, response time expectation',
     'FAQ / Blog / Pricing / Testimonials pages — as needed for your business',
-    'Copy tailored to your brand voice — consistent tone across all pages',
-    'Legal page copy guidance — Privacy Policy, Terms, Cookie consent, etc.',
+    'Fully built website — not just copy, a complete ready-to-deploy site',
+    'Source files (ZIP) + hosted preview URL to review before going live',
   ];
 
   return (
@@ -74,7 +74,7 @@ function WhatsIncludedSection() {
           className="font-inter font-bold text-dark-text mb-12"
           style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)' }}
         >
-          Professional page-by-page copy
+          Professional page-by-page website
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
@@ -93,13 +93,13 @@ function WhatsIncludedSection() {
         <div className="bg-white rounded-xl border border-border p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex gap-4">
-              <Zap size={24} className="text-medium-blue shrink-0 mt-0.5" />
+              <Globe size={24} className="text-medium-blue shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                  The Bolt.new Bonus
+                  Fully Built Website
                 </h3>
                 <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                  You'll receive a Bolt.new prompt to generate a complete styled website from your copy. Deploy instantly to Netlify or Vercel — no coding needed.
+                  You don't just get copy — you get a complete, working website built for you. Download the source files and deploy anywhere, or use the hosted preview to review it first.
                 </p>
               </div>
             </div>
@@ -107,10 +107,10 @@ function WhatsIncludedSection() {
               <Sparkles size={24} className="text-medium-blue shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                  SEO-Aware Copy
+                  SEO-Aware & Brand-Aligned
                 </h3>
                 <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                  Every page is written with search intent in mind. Keyword-rich headings, clear structure, and naturally flowing copy that ranks.
+                  Every page is built with search intent in mind. Keyword-rich headings, clear structure, and naturally flowing copy that ranks — all in your brand voice.
                 </p>
               </div>
             </div>
@@ -146,7 +146,7 @@ function HowItWorksSection() {
     {
       num: '05',
       title: 'Delivery',
-      desc: 'All copy delivered as editable Google Docs + plain text, ready to paste into any builder',
+      desc: 'Your fully built website delivered as source files (ZIP) + hosted preview URL to review before deploying',
     },
   ];
 
@@ -158,7 +158,7 @@ function HowItWorksSection() {
           className="font-inter font-bold text-dark-text mb-12"
           style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)' }}
         >
-          From questionnaire to website-ready copy
+          From questionnaire to ready-to-deploy website
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -271,9 +271,9 @@ function WhoItIsForSection() {
   ];
 
   const notFor = [
-    'People wanting full web development including coding and hosting setup',
-    'Anyone looking for an ongoing managed copywriting service (we do one-off pages)',
-    'Businesses that want SEO without any involvement — copy is 30% of SEO',
+    'People wanting ongoing website maintenance and updates',
+    'Anyone looking for an ongoing managed copywriting service (we deliver one-off websites)',
+    'Businesses that want SEO without any involvement — content is 30% of SEO',
   ];
 
   return (
@@ -387,26 +387,26 @@ function CTABanner() {
           className="font-inter font-bold text-white"
           style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)' }}
         >
-          Website copy that sounds like you
+          A website that sounds like you
         </h2>
         <p
           className="font-inter font-normal mt-4 leading-[1.7]"
           style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
         >
-          Choose your pages, fill in a questionnaire, and get professional copy in 3–5 days.
+          Choose your pages, fill in a questionnaire, and receive a fully built website in 3-5 days.
         </p>
         <Link
           href="/checkout?services=website_copy_pack"
           className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
           style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
         >
-          Get Website Copy — From £35
+          Get Your Website — From £35
         </Link>
         <p
           className="font-inter font-normal mt-4"
           style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}
         >
-          Plus Bolt.new bonus prompt · SEO-aware copy · Ready to paste
+          Fully built website · Source files included · Hosted preview
         </p>
       </div>
     </section>

@@ -219,7 +219,7 @@ function Content() {
             style={{ fontSize: '0.95rem' }}
           >
             <li><strong>Service providers:</strong> Supabase (database), Stripe (payments and subscription billing), AI providers (for content generation), email providers (for communications). These are processed under Data Processing Agreements.</li>
-            <li><strong>Website deployment services:</strong> If you use the Bolt.new prompt included with the Website Copy Starter Pack, your generated copy may be processed by Bolt.new and deployed to hosting platforms such as Vercel or Netlify. These services have their own privacy policies.</li>
+            <li><strong>Website deployment services:</strong> Your delivered website may be hosted on platforms such as Vercel, Netlify, or similar hosting providers for preview purposes. These services have their own privacy policies.</li>
             <li><strong>Legal requirements:</strong> when required by law or court order</li>
             <li><strong>Business transfer:</strong> if Foundationary is sold or merged, your data may be transferred (you&apos;d be notified)</li>
           </ul>
@@ -373,7 +373,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            The Website may contain links to third-party websites (including hosting platforms like Vercel and Netlify, and AI tools like Bolt.new). We&apos;re not responsible for their privacy practices. We encourage you to review their privacy policies before sharing personal information.
+            The Website may contain links to third-party websites (including hosting platforms like Vercel and Netlify). We&apos;re not responsible for their privacy practices. We encourage you to review their privacy policies before sharing personal information.
           </p>
 
           <h2

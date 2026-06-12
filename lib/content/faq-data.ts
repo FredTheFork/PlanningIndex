@@ -142,13 +142,13 @@ export const faqs: FAQ[] = [
     id: 'website-what',
     category: 'Website Copy & Social Media',
     question: 'What does the Website Copy Starter Pack include?',
-    answer: 'You receive professionally written website copy tailored to your brand voice and services. This typically includes Homepage (hero, benefits, CTA), About page, Services page, Contact page, and additional pages as needed (FAQ, Blog, Pricing, Testimonials). Copy is SEO-aware and ready to paste into any website builder. You can choose between 1 and 10 pages.',
+    answer: 'You receive a fully built, ready-to-deploy website tailored to your brand voice and services. This typically includes Homepage (hero, benefits, CTA), About page, Services page, Contact page, and additional pages as needed (FAQ, Blog, Pricing, Testimonials). Your website is delivered as source files (ZIP download) plus a hosted preview URL so you can review it before deploying. You can choose between 1 and 10 pages.',
   },
   {
     id: 'website-delivery',
     category: 'Website Copy & Social Media',
     question: 'How is website copy delivered?',
-    answer: 'Website copy is delivered as a structured document you can paste directly into your website builder (Wix, Squarespace, WordPress, etc.). You\'ll also receive a Bolt.new prompt that can generate a complete, styled website from your copy — a ready-to-deploy site you can host on Vercel or Netlify. This is website copy, not web development — it gives you the words and structure, not a custom-coded site.',
+    answer: 'Your fully built website is delivered as source files (ZIP download) that you can deploy to any hosting platform — Netlify, Vercel, or any other provider. You also receive a hosted preview URL to review your website before deploying it. This is a complete working website, not just copy — it\'s ready to go live as soon as you\'re happy with it.',
   },
   {
     id: 'social-what',

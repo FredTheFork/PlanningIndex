@@ -33,15 +33,15 @@ const services: ServiceCard[] = [
   },
   {
     icon: Globe,
-    headline: 'Professional Website Copy',
+    headline: 'Professional Website',
     inclusions: [
       'Homepage',
       'About',
       'Services',
       'Contact + up to 10 pages',
       'SEO-aware',
-      'Paste-ready',
-      'Bolt.new prompt included',
+      'Fully built & ready to deploy',
+      'Source files + hosted preview',
     ],
     price: 'From £35/page',
     primary: { label: 'Learn more', href: '/services/website-copy' },

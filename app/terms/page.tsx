@@ -108,7 +108,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            A one-time purchase providing professionally written website copy tailored to your brand voice and services. Priced per page (from £35/page) with quantity-based tiers for 1–10 pages. Delivered as ready-to-paste copy for any website builder, along with a Bolt.new prompt for generating a styled website.
+            A one-time purchase providing a fully built, ready-to-deploy website tailored to your brand voice and services. Priced per page (from £35/page) with quantity-based tiers for 1–10 pages. Delivered as source files (ZIP download) and a hosted preview URL.
           </p>
 
           <h3
@@ -252,7 +252,7 @@ function Content() {
             style={{ fontSize: '0.95rem' }}
           >
             <li><strong>Business Foundations Pack:</strong> 10 personalised documents in editable Word and PDF formats</li>
-            <li><strong>Website Copy Starter Pack:</strong> Professionally written copy for your selected pages, ready to paste into any website builder, plus a Bolt.new prompt for generating a complete styled website</li>
+            <li><strong>Website Copy Starter Pack:</strong> A fully built, ready-to-deploy website delivered as source files (ZIP) and a hosted preview URL</li>
             <li><strong>Social Media Starter Pack:</strong> Your selected number of posts with captions and hashtag suggestions, formatted for your chosen platforms</li>
             <li><strong>Quarterly Document Refresh:</strong> One updated document per quarter as described in Section 2.4</li>
           </ul>
@@ -348,7 +348,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4"
             style={{ fontSize: '0.95rem' }}
           >
-            <strong>Website Copy vs. Web Development:</strong> The Website Copy Starter Pack provides written content for your website. It is not web development, design, or hosting. The Bolt.new prompt is provided as a convenience to help you generate a styled website, but the resulting website is your responsibility to deploy and maintain.
+            <strong>Website Delivery:</strong> The Website Copy Starter Pack delivers a fully built website as source files and a hosted preview. You are responsible for deploying the website to your preferred hosting platform and maintaining it after delivery.
           </p>
           <p
             className="font-inter text-secondary-text leading-[1.7] mb-4"
@@ -510,8 +510,7 @@ function Content() {
           >
             <li><strong>Stripe:</strong> for payment processing (including subscription billing). Their terms apply to payments.</li>
             <li><strong>Supabase:</strong> for data storage and infrastructure</li>
-            <li><strong>Vercel / Netlify:</strong> for website hosting and deployment of generated websites</li>
-            <li><strong>Bolt.new:</strong> for generating styled websites from your copy</li>
+            <li><strong>Vercel / Netlify:</strong> for website hosting and deployment</li>
             <li><strong>AI providers:</strong> for content generation (structured prompts are used to create your bespoke content)</li>
             <li><strong>Email providers:</strong> for communications</li>
           </ul>

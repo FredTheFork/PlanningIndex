@@ -375,7 +375,7 @@ const processSteps = [
     num: '4',
     title: 'Delivery',
     desc: 'You receive:',
-    items: ['Branded PDFs and editable Word documents', 'Website copy ready to paste (plus a Bolt.new prompt)', 'Social media posts formatted for your platforms', 'One coherent system'],
+    items: ['Branded PDFs and editable Word documents', 'Fully built website (ZIP + hosted preview)', 'Social media posts formatted for your platforms', 'One coherent system'],
   },
 ];
 

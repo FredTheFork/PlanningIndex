@@ -505,14 +505,14 @@ function ServiceCard({
                   </span>
                 </div>
 
-                {/* Bolt Prompt */}
+                {/* Build Prompt (Internal) */}
                 <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5">
                   <div className="flex items-center gap-3">
                     <Briefcase size={14} className="text-gray-400 shrink-0" />
                     <div>
-                      <p className="font-inter text-sm text-gray-900">Bolt Prompt</p>
+                      <p className="font-inter text-sm text-gray-900">Build Prompt</p>
                       <p className="font-inter text-xs text-gray-500">
-                        {websiteDelivery?.bolt_prompt ? 'Generated' : 'Not generated'}
+                        {websiteDelivery?.bolt_prompt ? 'Generated (internal)' : 'Not generated'}
                       </p>
                     </div>
                   </div>

@@ -29,7 +29,7 @@ const services = [
   {
     id: 'website_copy_pack',
     title: 'Website Copy Starter Pack',
-    tagline: 'Professional website copy written in your voice',
+    tagline: 'A fully built, ready-to-deploy website in your voice',
     price: 'From £35/page',
     priceLabel: 'per page',
     keyItems: [
@@ -38,7 +38,7 @@ const services = [
       'Services',
       'Contact pages',
       'SEO-aware',
-      'Bolt.new prompt included',
+      'Fully built & ready to deploy',
     ],
     learnMoreHref: '/services/website-copy',
     learnMoreLabel: 'Learn more',

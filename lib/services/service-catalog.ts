@@ -123,7 +123,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     id: 'website_copy_pack',
     name: 'Website Copy Starter Pack',
     description:
-      'Professional website copy written in your voice, aligned with your services, and ready to paste into any website builder.',
+      'A fully built, ready-to-deploy website created from your brand voice and services — delivered as source files and a hosted preview.',
     price: 35.0, // Base price per page
     currency: 'gbp',
     currencySymbol: '£',
@@ -142,8 +142,9 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       'Services page (aligned with your service sheets)',
       'Contact page',
       'FAQ, Blog, Pricing, or Testimonials pages (as needed)',
-      'Website copy tailored to your brand voice and CTA',
-      'Legal page copy guidance (Privacy, Terms, Cookie, etc.)',
+      'Fully built website — ready to deploy',
+      'Website source files (ZIP download)',
+      'Hosted preview URL to review before deploying',
     ],
     requiresIntake: true,
     intakeSections: [

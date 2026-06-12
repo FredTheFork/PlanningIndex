@@ -72,19 +72,10 @@ const DEFAULT_HOSTING_INSTRUCTIONS = `## Hosting Your Website
 2. Import from GitHub or upload directly
 3. Automatic SSL and global CDN included
 
-### Option 3: Bolt.new Hosting
-Your site is already deployed on Bolt.new. You can purchase a custom domain directly through their platform.
-
 ## Custom Domain Setup
 1. Purchase a domain from Namecheap, Cloudflare, or GoDaddy
 2. Add a CNAME record pointing to your hosting provider
-3. SSL certificates are automatically provisioned
-
-## Database Integration (Supabase)
-If your site needs a database, user authentication, or file storage:
-1. Create a free Supabase project at supabase.com
-2. Copy your project URL and anon key
-3. Add them as environment variables in your hosting platform`;
+3. SSL certificates are automatically provisioned`;
 
 // Asset categories for organization
 const ASSET_CATEGORIES = {
@@ -383,7 +374,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     // Bolt Prompt section
     if (delivery?.bolt_prompt) {
       sections.push('---');
-      sections.push('## BOLT PROMPT (Paste into Bolt.new)');
+      sections.push('## BUILD PROMPT (Internal Use)');
       sections.push('');
       sections.push(delivery.bolt_prompt);
       sections.push('');
@@ -416,7 +407,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
 
     try {
       await navigator.clipboard.writeText(fullContent);
-      showMessage('Full prompt package copied to clipboard', 'success');
+      showMessage('Build prompt package copied to clipboard', 'success');
     } catch (err) {
       showMessage('Failed to copy to clipboard', 'error');
     }
@@ -429,7 +420,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     }
 
     setGeneratingPrompt(true);
-    showMessage('Generating Bolt prompt with AI...', 'info');
+    showMessage('Generating build prompt with AI...', 'info');
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -547,7 +538,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
               Website Production
             </h3>
             <p className="font-inter text-gray-500 text-sm">
-              Single source of truth for website creation. Generate Bolt prompts, manage brand assets, and deliver completed sites.
+              Build and deliver complete websites. Upload source files, set the preview URL, and deliver to the client.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -630,89 +621,126 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left: Bolt Prompt & Assets */}
+        {/* Left: Delivery Workflow & Assets */}
         <div className="space-y-6">
-          {/* Bolt Prompt Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <Code size={20} className="text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-inter font-semibold text-gray-900">Bolt Prompt</h4>
-                  <p className="text-xs text-gray-500">AI-generated prompt for Bolt.new</p>
-                </div>
+          {/* ZIP Upload Section — Primary */}
+          <div className="bg-white rounded-lg border-2 border-[#1B3F7A]/20 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <FileArchive size={20} className="text-amber-600" />
               </div>
-              <div className="flex items-center gap-2">
-                {promptAvailable && (
-                  <button
-                    onClick={handleCopyFullPrompt}
-                    disabled={!briefAvailable && !promptAvailable}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter transition-colors disabled:opacity-50"
-                  >
-                    <ClipboardCopy size={12} />
-                    Copy Full Prompt
-                  </button>
-                )}
+              <div>
+                <h4 className="font-inter font-semibold text-gray-900">Website Source Files</h4>
+                <p className="text-xs text-gray-500">Upload the completed website ZIP for client download</p>
               </div>
             </div>
 
-            {/* Status Indicators */}
-            <div className="flex gap-2 mb-4">
-              <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
-                briefAvailable ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-              }`}>
-                {briefAvailable ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                Brief {briefAvailable ? 'Ready' : 'Pending'}
+            {delivery?.website_zip_path ? (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileArchive size={24} className="text-amber-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {delivery.website_zip_path.split('/').pop()}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Uploaded {new Date(delivery.updated_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={getZipDownloadUrl() || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded-lg text-sm font-inter transition-colors"
+                    >
+                      <Download size={14} />
+                      Download
+                    </a>
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-inter transition-colors">
+                      <RefreshCw size={14} />
+                      Replace
+                      <input
+                        type="file"
+                        accept=".zip,application/zip"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleZipUpload(file);
+                        }}
+                        className="hidden"
+                        disabled={uploadingZip}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
-              <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
-                promptAvailable ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'
-              }`}>
-                {promptAvailable ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                Prompt {promptAvailable ? 'Ready' : 'Not Generated'}
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+                <input
+                  type="file"
+                  accept=".zip,application/zip"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleZipUpload(file);
+                  }}
+                  className="hidden"
+                  id="zip-upload"
+                  disabled={uploadingZip}
+                />
+                <label htmlFor="zip-upload" className="cursor-pointer">
+                  <Upload size={32} className={`mx-auto mb-3 ${uploadingZip ? 'text-gray-300 animate-pulse' : 'text-gray-400'}`} />
+                  <p className="font-inter text-sm text-gray-600 mb-1">
+                    {uploadingZip ? 'Uploading...' : 'Click to upload ZIP file'}
+                  </p>
+                  <p className="text-xs text-gray-400">Max 100MB</p>
+                </label>
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Generate Button */}
-            <div className="mb-4">
-              <button
-                onClick={handleGeneratePrompt}
-                disabled={generatingPrompt || !data?.profile?.has_submitted_intake}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg text-sm font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {generatingPrompt ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={16} />
-                    {promptAvailable ? 'Regenerate Prompt' : 'Generate Bolt Prompt'}
-                  </>
-                )}
-              </button>
-              {!data?.profile?.has_submitted_intake && (
-                <p className="text-xs text-amber-600 mt-2 text-center">
-                  Client must submit intake form before generating prompt
-                </p>
-              )}
+          {/* Deployment URL Section — Primary */}
+          <div className="bg-white rounded-lg border-2 border-[#1B3F7A]/20 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Globe size={20} className="text-[#1B3F7A]" />
+              </div>
+              <div>
+                <h4 className="font-inter font-semibold text-gray-900">Hosted Preview URL</h4>
+                <p className="text-xs text-gray-500">Where the client can preview the live website</p>
+              </div>
             </div>
 
             {editing ? (
-              <textarea
-                value={form.bolt_prompt}
-                onChange={(e) => setForm({ ...form, bolt_prompt: e.target.value })}
-                rows={6}
-                className="w-full px-3 py-2 bg-gray-900 border-0 rounded-lg text-sm text-green-400 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                placeholder="// Bolt.new prompt will appear here after generation..."
-              />
+              <div className="space-y-3">
+                <input
+                  type="url"
+                  value={form.deployment_url}
+                  onChange={(e) => setForm({ ...form, deployment_url: e.target.value })}
+                  placeholder="https://your-site.netlify.app or https://yourdomain.com"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm font-inter focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:ring-opacity-50"
+                />
+                <p className="text-xs text-gray-500">
+                  Enter the full URL where the website is hosted (for client preview)
+                </p>
+              </div>
             ) : (
-              <div className="p-3 bg-gray-900 rounded-lg overflow-x-auto max-h-48 overflow-y-auto">
-                <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
-                  {promptAvailable || '// No prompt recorded. Click "Generate Bolt Prompt" above'}
-                </pre>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                {delivery?.deployment_url ? (
+                  <a
+                    href={delivery.deployment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-[#1B3F7A] hover:underline text-sm font-inter"
+                  >
+                    <Link2 size={14} />
+                    {delivery.deployment_url}
+                    <ExternalLink size={12} />
+                  </a>
+                ) : (
+                  <span className="text-gray-400 text-sm">No URL configured — click Edit Settings to add</span>
+                )}
               </div>
             )}
           </div>
@@ -810,129 +838,85 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
             )}
           </div>
 
-          {/* Deployment URL Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Globe size={20} className="text-[#1B3F7A]" />
+          {/* Build Prompt (Internal Tool) */}
+          <details className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <summary className="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Code size={16} className="text-gray-500" />
               </div>
-              <div>
-                <h4 className="font-inter font-semibold text-gray-900">Deployment URL</h4>
-                <p className="text-xs text-gray-500">The live Bolt.new deployed site URL</p>
+              <div className="flex-1">
+                <h4 className="font-inter font-semibold text-gray-700 text-sm">Build Prompt (Internal)</h4>
+                <p className="text-xs text-gray-400">Admin-only: generate prompts to help build the website</p>
               </div>
-            </div>
-
-            {editing ? (
-              <div className="space-y-3">
-                <input
-                  type="url"
-                  value={form.deployment_url}
-                  onChange={(e) => setForm({ ...form, deployment_url: e.target.value })}
-                  placeholder="https://your-site.bolt.new or https://yourdomain.com"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm font-inter focus:outline-none focus:ring-2 focus:ring-[#1B3F7A] focus:ring-opacity-50"
-                />
-                <p className="text-xs text-gray-500">
-                  Enter the full URL where the website is deployed (Bolt.new, Netlify, Vercel, or custom domain)
-                </p>
-              </div>
-            ) : (
-              <div className="p-4 bg-gray-50 rounded-lg">
-                {delivery?.deployment_url ? (
-                  <a
-                    href={delivery.deployment_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-[#1B3F7A] hover:underline text-sm font-inter"
-                  >
-                    <Link2 size={14} />
-                    {delivery.deployment_url}
-                    <ExternalLink size={12} />
-                  </a>
-                ) : (
-                  <span className="text-gray-400 text-sm">No URL configured</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* ZIP Upload Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <FileArchive size={20} className="text-amber-600" />
-              </div>
-              <div>
-                <h4 className="font-inter font-semibold text-gray-900">Source Files</h4>
-                <p className="text-xs text-gray-500">Upload the website ZIP for client download</p>
-              </div>
-            </div>
-
-            {delivery?.website_zip_path ? (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileArchive size={24} className="text-amber-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {delivery.website_zip_path.split('/').pop()}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Uploaded {new Date(delivery.updated_at).toLocaleDateString()}
-                      </p>
-                    </div>
+            </summary>
+            <div className="px-6 pb-6 border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex gap-2">
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                    briefAvailable ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    {briefAvailable ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                    Brief {briefAvailable ? 'Ready' : 'Pending'}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={getZipDownloadUrl() || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded-lg text-sm font-inter transition-colors"
-                    >
-                      <Download size={14} />
-                      Download
-                    </a>
-                    {editing && (
-                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-inter transition-colors">
-                        <RefreshCw size={14} />
-                        Replace
-                        <input
-                          type="file"
-                          accept=".zip,application/zip"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleZipUpload(file);
-                          }}
-                          className="hidden"
-                          disabled={uploadingZip}
-                        />
-                      </label>
-                    )}
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                    promptAvailable ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'
+                  }`}>
+                    {promptAvailable ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                    Prompt {promptAvailable ? 'Ready' : 'Not Generated'}
                   </div>
                 </div>
+                {promptAvailable && (
+                  <button
+                    onClick={handleCopyFullPrompt}
+                    disabled={!briefAvailable && !promptAvailable}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter transition-colors disabled:opacity-50"
+                  >
+                    <ClipboardCopy size={12} />
+                    Copy
+                  </button>
+                )}
               </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                <input
-                  type="file"
-                  accept=".zip,application/zip"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleZipUpload(file);
-                  }}
-                  className="hidden"
-                  id="zip-upload"
-                  disabled={uploadingZip}
+
+              <button
+                onClick={handleGeneratePrompt}
+                disabled={generatingPrompt || !data?.profile?.has_submitted_intake}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+              >
+                {generatingPrompt ? (
+                  <>
+                    <RefreshCw size={14} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    {promptAvailable ? 'Regenerate Prompt' : 'Generate Build Prompt'}
+                  </>
+                )}
+              </button>
+              {!data?.profile?.has_submitted_intake && (
+                <p className="text-xs text-amber-600 mb-4 text-center">
+                  Client must submit intake form before generating prompt
+                </p>
+              )}
+
+              {editing ? (
+                <textarea
+                  value={form.bolt_prompt}
+                  onChange={(e) => setForm({ ...form, bolt_prompt: e.target.value })}
+                  rows={6}
+                  className="w-full px-3 py-2 bg-gray-900 border-0 rounded-lg text-sm text-green-400 font-mono focus:outline-none focus:ring-2 focus:ring-gray-500 resize-none"
+                  placeholder="// Build prompt will appear here after generation..."
                 />
-                <label htmlFor="zip-upload" className="cursor-pointer">
-                  <Upload size={32} className={`mx-auto mb-3 ${uploadingZip ? 'text-gray-300 animate-pulse' : 'text-gray-400'}`} />
-                  <p className="font-inter text-sm text-gray-600 mb-1">
-                    {uploadingZip ? 'Uploading...' : 'Click to upload ZIP file'}
-                  </p>
-                  <p className="text-xs text-gray-400">Max 100MB</p>
-                </label>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="p-3 bg-gray-900 rounded-lg overflow-x-auto max-h-48 overflow-y-auto">
+                  <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
+                    {promptAvailable || '// No prompt recorded. Click "Generate Build Prompt" above'}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </details>
 
           {/* Delivery Settings */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
