@@ -22,7 +22,7 @@ function Hero() {
     <section
       className="text-center px-6"
       style={{
-        padding: '80px 0 64px',
+        padding: '152px 0 64px',
         background: 'linear-gradient(135deg, #1B3F7A 0%, #2C68C4 100%)',
       }}
     >

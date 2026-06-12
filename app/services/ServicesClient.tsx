@@ -110,7 +110,7 @@ function HeroSection() {
             fontSize: '0.75rem',
             letterSpacing: '0.15em',
             color: 'rgba(255,255,255,0.7)',
-            marginTop: '48px',
+            marginTop: '72px',
           }}
         >
           OUR SERVICES
