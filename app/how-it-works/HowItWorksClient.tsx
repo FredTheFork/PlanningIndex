@@ -412,7 +412,7 @@ const trustItems = [
   },
   {
     icon: '👤',
-    title: 'Reviewed in depth before delivery',
+    title: 'Reviewed in depth by the team before delivery',
     desc: 'No document leaves our system without a consistency and compliance check.',
   },
   {
