@@ -1,40 +1,103 @@
+'use client';
+
 import Link from 'next/link';
 
 export default function CTABanner() {
   return (
     <section
-      className="py-20 px-6"
-      style={{ background: 'linear-gradient(135deg, #1B3F7A 0%, #2C68C4 100%)' }}
+      className="relative py-24 px-6 overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, #0F2557, #1B3F7A, #2C68C4, #1B3F7A, #0F2557)',
+        backgroundSize: '300% 300%',
+        animation: 'gradientShift 10s ease infinite',
+      }}
     >
-      <div className="max-w-[700px] mx-auto text-center">
+      {/* Subtle top-right orb */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -80,
+          right: -80,
+          width: 400,
+          height: 400,
+          borderRadius: '50%',
+          background: 'rgba(44,104,196,0.3)',
+          filter: 'blur(80px)',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Subtle bottom-left orb */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          bottom: -60,
+          left: -60,
+          width: 320,
+          height: 320,
+          borderRadius: '50%',
+          background: 'rgba(14,165,233,0.15)',
+          filter: 'blur(80px)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div className="max-w-[700px] mx-auto text-center relative" style={{ zIndex: 1 }}>
+        <span
+          className="font-inter font-semibold uppercase block mb-5"
+          style={{ fontSize: '0.75rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.6)' }}
+        >
+          GET STARTED
+        </span>
+
         <h2
           className="font-inter font-bold text-white leading-[1.25]"
           style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)' }}
         >
-          Your business, properly founded. One service or all four.
+          Every week without a contract is a week you are exposed. It takes 20 minutes to change that.
         </h2>
+
         <p
-          className="font-inter font-normal leading-[1.7] mt-4"
-          style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
+          className="font-inter font-normal leading-[1.7] mt-5"
+          style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.82)' }}
         >
-          Documents, website copy, social media, and ongoing support. Bundle and save.
+          One questionnaire. Up to 10 bespoke documents, a fully built website, and 30 social posts — all in your voice, all delivered within 5 days.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-10">
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
+          {/* Primary button with pulse ring */}
+          <div className="relative inline-flex items-center justify-center">
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 rounded-lg"
+              style={{
+                animation: 'pulseRing 2.5s ease-out infinite',
+                background: 'rgba(255,255,255,0.35)',
+                borderRadius: 8,
+              }}
+            />
+            <Link
+              href="/checkout"
+              className="relative inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.25)] transition-all duration-200"
+              style={{ padding: '16px 40px', fontSize: '1rem', minHeight: 52 }}
+            >
+              Get the Documents Pack — £79
+            </Link>
+          </div>
+
           <Link
             href="/services"
-            className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200"
-            style={{ padding: '16px 40px', fontSize: '1rem', minHeight: 48 }}
+            className="inline-block font-inter font-bold text-white border-2 border-white/70 rounded-lg hover:bg-white/10 hover:border-white transition-all duration-200"
+            style={{ padding: '14px 40px', fontSize: '1rem', minHeight: 52 }}
           >
-            See All Services
-          </Link>
-          <Link
-            href="/checkout"
-            className="inline-block font-inter font-bold text-white border-2 border-white rounded-lg hover:bg-white/10 transition-all duration-200"
-            style={{ padding: '14px 40px', fontSize: '1rem', minHeight: 48 }}
-          >
-            Start with Documents — £79
+            See all services
           </Link>
         </div>
+
+        <p className="font-inter font-normal mt-6" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+          One-time payments. No subscription required unless you want one.
+        </p>
       </div>
     </section>
   );

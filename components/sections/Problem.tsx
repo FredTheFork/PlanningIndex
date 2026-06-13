@@ -1,49 +1,44 @@
-import { FileX, ShieldOff, Receipt, Globe, Type, Share2, RefreshCw } from 'lucide-react';
+'use client';
+
+import { FileX, ShieldOff, Receipt, Globe, PenLine, RefreshCw } from 'lucide-react';
+import { useInView } from '@/hooks/useInView';
 
 const problems = [
   {
     icon: FileX,
     title: 'No Client Contract',
-    desc: "When clients dispute, delay, or disappear — without a signed contract, you have no legal protection at all.",
+    desc: "When a client disputes scope, delays payment, or simply disappears — without a signed contract, you have zero legal protection. None.",
   },
   {
     icon: ShieldOff,
     title: 'No GDPR Privacy Policy',
-    desc: "The ICO can fine you for not having one. As soon as you collect a client's email address, you legally need it.",
+    desc: "The moment you collect a client's email address, you legally need one. The ICO can fine you for not having it. Most sole traders don't.",
   },
   {
     icon: Receipt,
     title: 'Invoices Without Legal Teeth',
-    desc: 'Missing the right statutory wording means clients know they can delay payment with no real consequence.',
+    desc: "Missing the right statutory wording means clients know — consciously or not — that late payment carries no real consequence.",
   },
   {
     icon: Globe,
     title: 'No Professional Website Copy',
-    desc: 'Your website reads like a draft. Clients judge you before they call. Generic copy means missed opportunities.',
+    desc: "Your website reads like a draft. Clients judge you in seconds, before they ever get in touch. Generic copy means missed business.",
   },
   {
-    icon: Type,
-    title: 'No Clear Service Descriptions',
-    desc: 'When clients ask what you do, you describe it differently every time. Inconsistency costs trust.',
-  },
-  {
-    icon: Share2,
-    title: 'Blank Social Media Pages',
-    desc: "Your LinkedIn hasn't been updated in two years. Your Instagram is empty. Every day you're invisible to potential clients.",
-  },
-  {
-    icon: Share2,
-    title: 'No Content Strategy',
-    desc: "You know you should post but don't know what to say, how often, or whether it matters.",
+    icon: PenLine,
+    title: 'No Social Media Presence',
+    desc: "Your LinkedIn is bare, your Instagram untouched. You know you should post but don't know what to say or how often. Every day you're invisible.",
   },
   {
     icon: RefreshCw,
     title: 'Documents That Go Out of Date',
-    desc: "Your contract was drafted in 2022. Your prices, services, and GDPR tools have all changed since. Is your documentation keeping up?",
+    desc: "Your contract was written two years ago. Your prices, services, and GDPR tools have all changed since. Your paperwork hasn't.",
   },
 ];
 
 export default function Problem() {
+  const [ref, inView] = useInView(0.1);
+
   return (
     <section id="about" className="bg-white py-24 px-6">
       <div className="max-w-[1200px] mx-auto">
@@ -55,32 +50,43 @@ export default function Problem() {
         </span>
         <h2
           className="font-inter font-bold text-dark-text leading-snug"
-          style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', maxWidth: 640 }}
+          style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', maxWidth: 660 }}
         >
-          You started your business. But are the foundations properly in place?
+          What operating without foundations actually looks like.
         </h2>
         <p
           className="font-inter font-normal text-secondary-text mt-4 leading-[1.7]"
           style={{ fontSize: '1.05rem', maxWidth: 600 }}
         >
-          Most UK sole traders are running their business legally exposed, professionally underselling themselves, and financially unprotected — not because they're bad at what they do, but because nobody ever helped them get the foundations right. Documents, website copy, social presence — all of it.
+          Most UK sole traders are legally exposed, professionally underselling themselves, and financially unprotected — not because they are bad at their work, but because nobody ever helped them get the basics right.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-14">
-          {problems.map((p) => (
-            <div
-              key={p.title}
-              className="bg-off-white rounded-xl p-7 border-l-4 border-medium-blue hover:shadow-md transition-all duration-200"
-            >
-              <p.icon size={24} className="text-medium-blue mb-4" />
-              <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                {p.title}
-              </h3>
-              <p className="font-inter font-normal text-secondary-text mt-1 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                {p.desc}
-              </p>
-            </div>
-          ))}
+        <div
+          ref={ref}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-14"
+        >
+          {problems.map((p, i) => {
+            const Icon = p.icon;
+            return (
+              <div
+                key={p.title}
+                className="bg-off-white rounded-xl p-7 border-l-4 border-medium-blue hover:shadow-md transition-all duration-300"
+                style={{
+                  opacity: inView ? 1 : 0,
+                  transform: inView ? 'translateY(0)' : 'translateY(28px)',
+                  transition: `opacity 0.55s ease ${i * 70}ms, transform 0.55s ease ${i * 70}ms`,
+                }}
+              >
+                <Icon size={24} className="text-medium-blue mb-4" />
+                <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
+                  {p.title}
+                </h3>
+                <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
+                  {p.desc}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

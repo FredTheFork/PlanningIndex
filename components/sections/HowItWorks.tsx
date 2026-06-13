@@ -1,25 +1,36 @@
+'use client';
+
+import { useInView } from '@/hooks/useInView';
+
 const steps = [
   {
     num: '1',
     title: 'Choose Your Services',
-    desc: 'Select the Business Foundations Pack, website copy, social media posts, or any combination. Bundle and save.',
+    desc: 'Select the Documents Pack, website copy, social media posts, quarterly refresh — or any combination. Bundle two or more and your discount applies automatically.',
   },
   {
     num: '2',
     title: 'Tell Us About Your Business',
-    desc: 'Complete a structured questionnaire. The questions adapt to exactly what you\'ve purchased. 20-30 minutes.',
+    desc: 'Complete a structured questionnaire. The questions adapt precisely to what you have purchased. Most clients finish in 20–30 minutes.',
   },
   {
     num: '3',
-    title: 'Receive Your Deliverables',
-    desc: 'Documents in PDF + Word. Website copy ready to paste. Social posts formatted for each platform. Delivered within 3-5 business days.',
+    title: 'We Build Everything',
+    desc: 'Your deliverables are built to your specific answers: documents in PDF and Word, a fully built website, social posts formatted per platform. Delivered within 3–5 business days.',
+  },
+  {
+    num: '4',
+    title: 'Review and Confirm',
+    desc: 'We send everything for your review. If the tone, wording, or content is not right, tell us — we revise at no extra charge until it is.',
   },
 ];
 
 export default function HowItWorks() {
+  const [ref, inView] = useInView(0.15);
+
   return (
     <section id="process" className="bg-white py-24 px-6">
-      <div className="max-w-[900px] mx-auto">
+      <div className="max-w-[1100px] mx-auto">
         <span
           className="font-inter font-semibold text-medium-blue uppercase block mb-3"
           style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}
@@ -30,45 +41,69 @@ export default function HowItWorks() {
           className="font-inter font-bold text-dark-text"
           style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)' }}
         >
-          Three Steps. No Back-and-Forth.
+          Four steps. No back-and-forth.
         </h2>
 
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-10 md:gap-0 mt-14 relative">
-          {/* Connecting line (desktop) */}
+        <div ref={ref} className="mt-14 relative">
+          {/* Animated connector line — desktop only */}
           <div
-            className="hidden md:block absolute top-[26px] left-[calc(16.67%+26px)] right-[calc(16.67%+26px)] border-t border-dashed border-medium-blue pointer-events-none"
-            style={{ borderWidth: 1, zIndex: 0 }}
+            className="hidden md:block absolute pointer-events-none"
+            style={{
+              top: 26,
+              left: 'calc(12.5% + 26px)',
+              right: 'calc(12.5% + 26px)',
+              height: 1,
+              borderTop: '2px dashed #2C68C4',
+              opacity: inView ? 1 : 0,
+              width: inView ? '100%' : '0%',
+              transition: 'width 1.2s ease 0.3s, opacity 0.3s ease 0.3s',
+              zIndex: 0,
+            }}
           />
 
-          {steps.map((step) => (
-            <div key={step.num} className="flex flex-col items-center text-center max-w-[260px] relative">
+          <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-10 md:gap-4">
+            {steps.map((step, i) => (
               <div
-                className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-white font-inter font-bold shrink-0"
+                key={step.num}
+                className="flex flex-col items-center text-center"
                 style={{
-                  fontSize: '1.1rem',
-                  background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)',
-                  zIndex: 1,
-                  position: 'relative',
+                  maxWidth: 240,
+                  flex: 1,
+                  opacity: inView ? 1 : 0,
+                  transform: inView ? 'translateY(0)' : 'translateY(24px)',
+                  transition: `opacity 0.5s ease ${i * 150 + 200}ms, transform 0.5s ease ${i * 150 + 200}ms`,
                 }}
               >
-                {step.num}
+                <div
+                  className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-white font-inter font-bold shrink-0"
+                  style={{
+                    fontSize: '1.1rem',
+                    background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)',
+                    position: 'relative',
+                    zIndex: 1,
+                    boxShadow: '0 6px 20px rgba(27,63,122,0.3)',
+                    animation: inView ? `scaleInBounce 0.5s ease ${i * 150 + 300}ms both` : 'none',
+                  }}
+                >
+                  {step.num}
+                </div>
+                <h3 className="font-inter font-semibold text-dark-text mt-5" style={{ fontSize: '1.05rem' }}>
+                  {step.title}
+                </h3>
+                <p className="font-inter font-normal text-secondary-text mt-2.5 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
+                  {step.desc}
+                </p>
               </div>
-              <h3 className="font-inter font-semibold text-dark-text mt-5" style={{ fontSize: '1.05rem' }}>
-                {step.title}
-              </h3>
-              <p className="font-inter font-normal text-secondary-text mt-2.5 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                {step.desc}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         <div className="flex justify-center mt-12">
           <div
-            className="bg-off-white border border-medium-blue rounded-full font-inter font-medium text-navy"
-            style={{ padding: '10px 20px', fontSize: '0.875rem' }}
+            className="bg-off-white border border-medium-blue/30 rounded-full font-inter font-medium text-navy"
+            style={{ padding: '10px 22px', fontSize: '0.875rem' }}
           >
-            ⏱ Total time from payment to delivery: 3-5 business days (documents typically faster)
+            ⏱ Payment to delivery: 3–5 business days (documents often faster)
           </div>
         </div>
       </div>

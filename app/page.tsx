@@ -5,6 +5,7 @@ import WhatYouGet from '@/components/sections/WhatYouGet';
 import HowItWorks from '@/components/sections/HowItWorks';
 import Testimonials from '@/components/sections/Testimonials';
 import Pricing from '@/components/sections/Pricing';
+import GuaranteeBlock from '@/components/sections/GuaranteeBlock';
 import CTABanner from '@/components/sections/CTABanner';
 import { JsonLd } from '@/components/seo';
 import { generateServiceSchema, SITE_URL } from '@/lib/seo';
@@ -35,6 +36,7 @@ export default function HomePage() {
       <HowItWorks />
       <Testimonials />
       <Pricing />
+      <GuaranteeBlock />
       <CTABanner />
     </>
   );

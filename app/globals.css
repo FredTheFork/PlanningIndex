@@ -40,3 +40,93 @@ a:focus-visible {
   z-index: 9999;
   transition: width 50ms linear;
 }
+
+/* ─── Float animations (hero cards) ──────────────────────────────── */
+@keyframes float-a {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(0.5deg); }
+}
+
+@keyframes float-b {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-9px) rotate(-0.3deg); }
+}
+
+@keyframes float-c {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-18px) rotate(0.8deg); }
+}
+
+/* ─── Fade in up (section entrances) ─────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Scale in with bounce (step circles) ────────────────────────── */
+@keyframes scaleInBounce {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.1); }
+  80%  { transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Draw line (HowItWorks connector) ───────────────────────────── */
+@keyframes drawLine {
+  from { width: 0; opacity: 0; }
+  10%  { opacity: 1; }
+  to   { width: 100%; opacity: 1; }
+}
+
+/* ─── Pulse ring (CTA button halo) ───────────────────────────────── */
+@keyframes pulseRing {
+  0%   { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ─── Hero swirl blobs ───────────────────────────────────────────── */
+@keyframes swirl-1 {
+  0%   { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+  25%  { transform: translate(40px, -30px) rotate(90deg) scale(1.05); }
+  50%  { transform: translate(20px, 40px) rotate(180deg) scale(0.95); }
+  75%  { transform: translate(-30px, 10px) rotate(270deg) scale(1.08); }
+  100% { transform: translate(0px, 0px) rotate(360deg) scale(1); }
+}
+
+@keyframes swirl-2 {
+  0%   { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+  33%  { transform: translate(-50px, 30px) rotate(-120deg) scale(1.1); }
+  66%  { transform: translate(30px, -40px) rotate(-240deg) scale(0.9); }
+  100% { transform: translate(0px, 0px) rotate(-360deg) scale(1); }
+}
+
+@keyframes swirl-3 {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  40%  { transform: translate(30px, -20px) scale(1.12); }
+  70%  { transform: translate(-20px, 30px) scale(0.88); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+/* ─── Animated gradient shift (CTA banner) ───────────────────────── */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ─── Testimonials infinite carousel ─────────────────────────────── */
+@keyframes carousel-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.carousel-track {
+  animation: carousel-scroll 52s linear infinite;
+  display: flex;
+  width: fit-content;
+  will-change: transform;
+}
+
+.carousel-wrapper:hover .carousel-track {
+  animation-play-state: paused;
+}

@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useInView } from '@/hooks/useInView';
 
 interface PricingCard {
   title: string;
@@ -81,6 +84,8 @@ const cards: PricingCard[] = [
 ];
 
 export default function Pricing() {
+  const [ref, inView] = useInView(0.08);
+
   return (
     <section id="pricing" className="bg-white py-24 px-6">
       <div className="max-w-[1200px] mx-auto">
@@ -95,7 +100,7 @@ export default function Pricing() {
             className="font-inter font-bold text-dark-text"
             style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)' }}
           >
-            Four services. One platform. Your price.
+            Clear pricing. No surprises.
           </h2>
           <p
             className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
@@ -106,19 +111,25 @@ export default function Pricing() {
         </div>
 
         {/* Service Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-14">
+        <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-14">
           {cards.map((card, idx) => (
             <div
               key={idx}
-              className={`rounded-xl p-8 border transition-all duration-200 flex flex-col ${
+              className={`rounded-xl p-8 border flex flex-col ${
                 card.mostPopular
                   ? 'border-navy bg-white shadow-[0_16px_64px_rgba(27,63,122,0.12)]'
                   : 'border-border hover:border-medium-blue hover:shadow-[0_8px_32px_rgba(27,63,122,0.08)]'
               }`}
+              style={{
+                position: 'relative',
+                transition: `opacity 0.55s ease ${idx * 80}ms, transform 0.55s ease ${idx * 80}ms`,
+                opacity: inView ? 1 : 0,
+                transform: inView ? 'translateY(0)' : 'translateY(28px)',
+              }}
             >
               {card.mostPopular && (
                 <div
-                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-navy text-white font-inter font-semibold rounded-full"
+                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-navy text-white font-inter font-semibold rounded-full whitespace-nowrap"
                   style={{ padding: '4px 16px', fontSize: '0.7rem', letterSpacing: '0.1em' }}
                 >
                   MOST POPULAR
