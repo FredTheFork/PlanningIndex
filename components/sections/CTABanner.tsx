@@ -66,25 +66,13 @@ export default function CTABanner() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
-          {/* Primary button with pulse ring */}
-          <div className="relative inline-flex items-center justify-center">
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 rounded-lg"
-              style={{
-                animation: 'pulseRing 2.5s ease-out infinite',
-                background: 'rgba(255,255,255,0.35)',
-                borderRadius: 8,
-              }}
-            />
-            <Link
-              href="/checkout"
-              className="relative inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.25)] transition-all duration-200"
-              style={{ padding: '16px 40px', fontSize: '1rem', minHeight: 52 }}
-            >
-              Get the Documents Pack — £79
-            </Link>
-          </div>
+          <Link
+            href="/checkout"
+            className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.25)] transition-all duration-200"
+            style={{ padding: '16px 40px', fontSize: '1rem', minHeight: 52 }}
+          >
+            Get the Documents Pack — £79
+          </Link>
 
           <Link
             href="/services"

@@ -26,7 +26,7 @@ export default function Hero() {
           style={{
             position: 'absolute',
             top: '-80px',
-            right: '-60px',
+            left: 'calc(50% - 80px)',
             width: 560,
             height: 560,
             borderRadius: '50%',
@@ -40,7 +40,7 @@ export default function Hero() {
           style={{
             position: 'absolute',
             top: '80px',
-            right: '120px',
+            left: 'calc(50% + 60px)',
             width: 400,
             height: 400,
             borderRadius: '50%',
@@ -54,7 +54,7 @@ export default function Hero() {
           style={{
             position: 'absolute',
             top: '220px',
-            right: '20px',
+            left: 'calc(50% + 30px)',
             width: 280,
             height: 280,
             borderRadius: '50%',
@@ -68,7 +68,7 @@ export default function Hero() {
           style={{
             position: 'absolute',
             bottom: '-40px',
-            right: '60px',
+            left: 'calc(50% - 30px)',
             width: 340,
             height: 340,
             borderRadius: '50%',

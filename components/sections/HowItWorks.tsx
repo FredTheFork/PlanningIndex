@@ -52,14 +52,28 @@ export default function HowItWorks() {
               top: 26,
               left: 'calc(12.5% + 26px)',
               right: 'calc(12.5% + 26px)',
-              height: 1,
+              height: 2,
               borderTop: '2px dashed #2C68C4',
               opacity: inView ? 1 : 0,
               width: inView ? '100%' : '0%',
               transition: 'width 1.2s ease 0.3s, opacity 0.3s ease 0.3s',
               zIndex: 0,
             }}
-          />
+          >
+            {inView && (
+              <div style={{
+                position: 'absolute',
+                right: 0,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 0,
+                height: 0,
+                borderTop: '5px solid transparent',
+                borderBottom: '5px solid transparent',
+                borderLeft: '8px solid #2C68C4',
+              }} />
+            )}
+          </div>
 
           <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-10 md:gap-4">
             {steps.map((step, i) => (
