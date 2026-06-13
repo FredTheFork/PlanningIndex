@@ -174,7 +174,7 @@ function Content() {
             className="font-inter text-secondary-text leading-[1.7] mb-4 ml-6 list-disc"
             style={{ fontSize: '0.95rem' }}
           >
-            <li><strong>Human review:</strong> All generated content is reviewed by a human before delivery for accuracy, consistency, and quality.</li>
+            <li><strong>Human review:</strong> All content is reviewed in depth by the team before delivery for accuracy, consistency, and quality.</li>
             <li><strong>No automated decisions about you:</strong> AI is used to create content based on your explicit inputs. We do not use automated decision-making to determine your eligibility, pricing, or service level.</li>
             <li><strong>Data processing:</strong> Your intake form data is sent to AI providers solely for content generation. These providers are contractually obligated not to use your data for model training or other purposes.</li>
             <li><strong>No profiling:</strong> We do not create profiles about you or make decisions about you based on automated processing.</li>
