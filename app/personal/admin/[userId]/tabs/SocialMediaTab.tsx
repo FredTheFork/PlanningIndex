@@ -5,13 +5,13 @@ import { supabase } from '@/lib/supabase/client';
 import {
   Instagram, Linkedin, Facebook, Twitter, Download, AlertCircle, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Send, X, Copy, FileUp, Info, RefreshCw, Image as ImageIcon,
-  Video, FileText, Sparkles, ClipboardCopy, Plus, Trash2, Images
+  Video, FileText, ClipboardCopy, Plus, Trash2, Images
 } from 'lucide-react';
 import {
   PlatformId, PLATFORM_SPECS, extractSelectedPlatforms,
   validateImageDimensions, ALL_PLATFORM_IDS, getPrimaryImageSpec
 } from '@/lib/social-platforms';
-import { buildSocialMediaFullPrompt } from '@/lib/services/document-prompts';
+import { buildPlatformPrompt } from '@/lib/services/document-prompts';
 
 // ── Platform icon map ────────────────────────────────────────────────────────
 const PLATFORM_ICON_MAP: Record<PlatformId, React.ElementType> = {
@@ -158,48 +158,34 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
     }
   }, []);
 
-  const handleCopyPrompt = useCallback(async () => {
+  const handleCopyPlatformPrompt = useCallback(async (platform: PlatformId) => {
     try {
-      const fullPrompt = buildSocialMediaFullPrompt(clientBrief?.brief_content || '');
+      const fullPrompt = buildPlatformPrompt(platform, clientBrief?.brief_content || '');
       await navigator.clipboard.writeText(fullPrompt);
-      showMessage('Prompt + brief copied to clipboard', 'success');
+      showMessage(`${PLATFORM_SPECS[platform].label} prompt + brief copied to clipboard`, 'success');
     } catch {
       showMessage('Failed to copy prompt', 'error');
     }
   }, [clientBrief]);
 
-  const handleCopyBrief = useCallback(async () => {
-    if (!clientBrief?.brief_content) {
-      showMessage('No client brief available', 'error');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(clientBrief.brief_content);
-      showMessage('Client brief copied to clipboard', 'success');
-    } catch {
-      showMessage('Failed to copy brief', 'error');
-    }
-  }, [clientBrief]);
-
-  const handleCopyEverything = useCallback(async () => {
+  const handleCopyPlatformPromptWithPosts = useCallback(async (platform: PlatformId) => {
     const sections: string[] = [];
-    sections.push('# Social Media Content Generation Package');
+    sections.push(`# ${PLATFORM_SPECS[platform].label} Content Generation Package`);
     sections.push(`Generated: ${new Date().toLocaleString()}`);
     sections.push('');
     sections.push('---');
-    sections.push('## GENERATION PROMPT + BRIEF');
+    sections.push(`## ${PLATFORM_SPECS[platform].label.toUpperCase()} PROMPT + BRIEF`);
     sections.push('');
-    sections.push(buildSocialMediaFullPrompt(clientBrief?.brief_content || ''));
-    sections.push('');
-    if (posts.length > 0) {
-      sections.push('---');
-      sections.push('## EXISTING POSTS');
+    sections.push(buildPlatformPrompt(platform, clientBrief?.brief_content || ''));
+    const platformPosts = posts.filter(p => p.platform === platform);
+    if (platformPosts.length > 0) {
       sections.push('');
-      posts.forEach((post) => {
+      sections.push('---');
+      sections.push(`## EXISTING ${PLATFORM_SPECS[platform].label.toUpperCase()} POSTS`);
+      sections.push('');
+      platformPosts.forEach((post) => {
         sections.push(`### Post ${post.post_number}`);
-        sections.push(`Platform: ${post.platform}`);
-        sections.push(`Category: ${post.category}`);
-        sections.push(`Week: ${post.week}, Day: ${post.day}`);
+        sections.push(`Category: ${post.category} | Week: ${post.week}, Day: ${post.day}`);
         sections.push('');
         sections.push('Caption:');
         sections.push(post.caption);
@@ -216,7 +202,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
     }
     try {
       await navigator.clipboard.writeText(sections.join('\n'));
-      showMessage('Full package copied to clipboard', 'success');
+      showMessage(`${PLATFORM_SPECS[platform].label} full package copied`, 'success');
     } catch {
       showMessage('Failed to copy to clipboard', 'error');
     }
@@ -615,17 +601,35 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
           )}
         </div>
 
-        {/* Clipboard Workflow */}
-        <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
-          <button onClick={handleCopyPrompt} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter font-medium transition-colors">
-            <Sparkles size={13} /> Copy Prompt
-          </button>
-          <button onClick={handleCopyBrief} disabled={!clientBrief} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            <Copy size={13} /> Copy Brief
-          </button>
-          <button onClick={handleCopyEverything} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors">
-            <ClipboardCopy size={13} /> Copy Everything
-          </button>
+        {/* Platform-specific Copy Prompt Buttons */}
+        <div className="pt-4 border-t border-gray-200">
+          <p className="font-inter text-xs font-medium text-gray-500 mb-2.5">
+            Copy a platform-specific prompt + brief, ready to paste into an AI:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {selectedPlatforms.map((platform) => {
+              const spec = PLATFORM_SPECS[platform];
+              const Icon = PLATFORM_ICON_MAP[platform];
+              return (
+                <button
+                  key={platform}
+                  onClick={() => handleCopyPlatformPrompt(platform)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-inter font-semibold transition-all hover:shadow-md ${spec.bgClass} ${spec.textClass} border ${spec.borderClass} hover:opacity-90`}
+                >
+                  <Icon size={14} />
+                  Copy {spec.label} Prompt
+                </button>
+              );
+            })}
+          </div>
+          <p className="font-inter text-xs text-gray-400 mt-2">
+            {selectedPlatforms.includes('Instagram') && 'Instagram: optimised for image-generating AI (Midjourney, DALL-E, etc.) '}
+            {selectedPlatforms.includes('LinkedIn') && 'LinkedIn: text-first with optional image prompts '}
+            {selectedPlatforms.includes('Facebook') && 'Facebook: text + image combined prompts '}
+            {selectedPlatforms.includes('X') && 'X: short-form text, punchy and opinionated '}
+            {selectedPlatforms.includes('TikTok') && 'TikTok: video concept + casual caption '}
+            {selectedPlatforms.includes('Pinterest') && 'Pinterest: visual-first, SEO-rich image prompts'}
+          </p>
         </div>
       </div>
 
@@ -674,7 +678,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
         </div>
       )}
 
-      {/* Platform Tabs */}
+      {/* Platform Tabs + Spec Quick Reference */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -707,13 +711,22 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
           </div>
           <div className="flex items-center gap-2">
             {activePlatform !== 'all' && (
-              <button
-                onClick={() => handleDeliverAllForPlatform(activePlatform as PlatformId)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-inter font-medium transition-colors"
-              >
-                <Send size={13} />
-                Deliver All for {PLATFORM_SPECS[activePlatform as PlatformId].label}
-              </button>
+              <>
+                <button
+                  onClick={() => handleCopyPlatformPromptWithPosts(activePlatform as PlatformId)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-xs font-inter font-medium transition-colors"
+                >
+                  <ClipboardCopy size={13} />
+                  Copy with Posts
+                </button>
+                <button
+                  onClick={() => handleDeliverAllForPlatform(activePlatform as PlatformId)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-inter font-medium transition-colors"
+                >
+                  <Send size={13} />
+                  Deliver All for {PLATFORM_SPECS[activePlatform as PlatformId].label}
+                </button>
+              </>
             )}
             {deliveredCount < posts.length && posts.length > 0 && (
               <button
@@ -726,6 +739,64 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
             )}
           </div>
         </div>
+
+        {/* Platform spec quick reference (shown when a single platform is active) */}
+        {activePlatform !== 'all' && (() => {
+          const spec = PLATFORM_SPECS[activePlatform as PlatformId];
+          const Icon = PLATFORM_ICON_MAP[activePlatform as PlatformId];
+          const platformPosts = postsByPlatform[activePlatform as PlatformId] || [];
+          const delivered = platformPosts.filter(p => p.delivered_to_client).length;
+          const withCaptions = platformPosts.filter(p => p.caption.trim()).length;
+          const withImages = platformPosts.filter(p => p.image_path || (p.carousel_paths?.length ?? 0) > 0).length;
+          const withVideos = platformPosts.filter(p => p.video_path).length;
+          const aiType = activePlatform === 'Instagram' || activePlatform === 'Pinterest'
+            ? 'Image-generating AI (Midjourney, DALL-E, etc.)'
+            : activePlatform === 'LinkedIn' || activePlatform === 'X'
+            ? 'Text-generating AI (Claude, ChatGPT) + optional image AI'
+            : activePlatform === 'TikTok'
+            ? 'Video concept + text-generating AI'
+            : 'Text + image-generating AI combined';
+
+          return (
+            <div className={`mt-3 rounded-lg p-3 ${spec.bgClass} border ${spec.borderClass}`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon size={16} className={spec.textClass} />
+                    <span className={`font-inter font-semibold text-sm ${spec.textClass}`}>{spec.label} Quick Reference</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-inter">
+                    <div>
+                      <span className="text-gray-500">Best AI for this:</span>
+                      <p className="font-medium text-gray-700 mt-0.5">{aiType}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Image sizes:</span>
+                      <p className="font-medium text-gray-700 mt-0.5">{spec.imageSpecs.map(s => `${s.width}x${s.height}`).join(', ')}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Caption limit:</span>
+                      <p className="font-medium text-gray-700 mt-0.5">{spec.captionLimit.toLocaleString()} chars</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Hashtag limit:</span>
+                      <p className="font-medium text-gray-700 mt-0.5">{spec.hashtagLimit} tags</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-xs font-inter text-gray-500 mb-1">Progress</div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-inter">
+                    <span className="text-gray-600">{withCaptions}/{platformPosts.length} captions</span>
+                    <span className="text-gray-600">{withImages} images</span>
+                    <span className="text-gray-600">{withVideos} videos</span>
+                    <span className="text-gray-600">{delivered} delivered</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Posts by Platform Section */}
@@ -734,7 +805,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
           <ImageIcon size={40} className="text-gray-400 mx-auto mb-4" />
           <p className="font-inter text-gray-600 mb-2">No posts created yet</p>
           <p className="font-inter text-gray-500 text-sm mb-4">
-            Use the "Copy Prompt" and "Copy Brief" buttons above, then paste into Claude or ChatGPT to generate posts.
+            Use the "Copy [Platform] Prompt" buttons above, then paste into an AI to generate posts for that platform.
           </p>
         </div>
       ) : activePlatform === 'all' ? (
