@@ -19,8 +19,8 @@ const SoleTraderSetupArticle: Article = {
   title: 'Sole Trader Business Setup Guide: UK',
   description: 'The complete guide to setting up as a sole trader in the UK. Covers registration, taxes, National Insurance, VAT, legal requirements, business documents, and everything you need to run a compliant sole trader business.',
   category: 'Legal',
-  date: '2024-01-15',
-  lastUpdated: '2025-05-29', // Show freshness to Google
+  date: '2025-09-12',
+  lastUpdated: '2026-06-13',
   readTime: 22,
   image: '/images/blog/sole-trader-setup.png',
   keywords: 'sole trader registration UK, HMRC self assessment, UTR number, Class 2 National Insurance, Class 4 NI, sole trader tax rates, trading allowance, business bank account UK, sole trader vs limited company, VAT registration threshold, allowable expenses sole trader, sole trader record keeping',
@@ -430,8 +430,8 @@ const GdprArticle: Article = {
   title: 'GDPR Compliance for UK Sole Traders',
   description: 'The complete guide to UK GDPR compliance for sole traders. Understanding your legal obligations, privacy policy requirements, data subject rights, security measures, breach procedures, and how to avoid substantial fines.',
   category: 'Legal',
-  date: '2024-01-22',
-  lastUpdated: '2025-05-29',
+  date: '2025-11-03',
+  lastUpdated: '2026-06-13',
   readTime: 25,
   image: '/images/blog/gdpr-compliance.png',
   keywords: 'GDPR sole trader, UK data protection, Data Protection Act 2018, privacy policy UK, GDPR compliance small business, ICO registration, data subject rights, lawful basis for processing, GDPR fines UK, Subject Access Request, data breach notification, data protection officer, consent requirements UK',
@@ -864,8 +864,8 @@ const ClientContractArticle: Article = {
   title: 'Client Contract Essentials for UK Freelancers',
   description: 'The complete guide to freelancer and sole trader client contracts in the UK. Covers every essential clause, legal principles, dispute resolution, termination rights, intellectual property assignment, and practical strategies for protecting your business.',
   category: 'Legal',
-  date: '2024-02-01',
-  lastUpdated: '2025-05-29',
+  date: '2026-01-17',
+  lastUpdated: '2026-06-13',
   readTime: 24,
   image: '/images/blog/client-contract.png',
   keywords: 'freelance contract UK, service agreement clauses, client agreement template UK, freelancer legal protection, intellectual property assignment, limitation of liability contract, contract termination UK law, breach of contract remedies, scope creep prevention, force majeure clause UK, confidentiality agreement freelance, indemnity clause service contract',
@@ -1326,8 +1326,8 @@ const InvoiceArticle: Article = {
   title: 'Invoice Template Best Practices for UK Businesses',
   description: 'The complete guide to creating compliant, professional invoices in the UK. Covers legal requirements for sole traders and VAT-registered businesses, invoice elements, payment terms, late payment legislation, accounting software integration, and strategies for getting paid faster.',
   category: 'Financial',
-  date: '2024-02-08',
-  lastUpdated: '2025-05-29',
+  date: '2026-03-05',
+  lastUpdated: '2026-06-13',
   readTime: 21,
   image: '/images/blog/invoice-template.png',
   keywords: 'invoice template UK, sole trader invoice requirements, UK invoice format, VAT invoice requirements, HMRC invoice rules, invoice payment terms, billing best practices UK, proforma invoice, credit note UK, invoice numbering system, invoice software UK, accounting integration, invoice factoring UK',
@@ -1828,8 +1828,8 @@ const LatePaymentArticle: Article = {
   title: 'Late Payment Fees and UK Law',
   description: 'The complete guide to late payment legislation, debt recovery, and cash flow management for UK businesses. Covers statutory interest, compensation fees, court procedures, letters before action, debt collection agencies, and preventing late payment in the first place.',
   category: 'Financial',
-  date: '2024-02-15',
-  lastUpdated: '2025-05-29',
+  date: '2026-04-28',
+  lastUpdated: '2026-06-13',
   readTime: 23,
   image: '/images/blog/late-payment.png',
   keywords: 'late payment fees UK, statutory interest UK, unpaid invoices, debt recovery UK, County Court claims, letter before action, small claims court UK, enforcement of judgments, chasing unpaid invoices, late payment legislation, debt collection agency UK, charging order, statutory demand, winding up petition',
@@ -2346,6 +2346,545 @@ const LatePaymentArticle: Article = {
   ),
 };
 
+// Professional Credibility Article
+const ProfessionalCredibilityArticle: Article = {
+  id: 'professional-credibility-sole-trader-uk',
+  slug: 'professional-credibility-sole-trader-uk',
+  title: 'The Professional Credibility Gap: What Clients Actually Check Before Hiring a UK Sole Trader',
+  description: 'Most clients have already decided whether to trust you before they send the first email. This guide reveals the four-stage due diligence process clients use to evaluate sole traders, the credibility signals they look for at each stage, and the exact gaps that lose you work before any conversation begins.',
+  category: 'Business',
+  date: '2026-06-13',
+  lastUpdated: '2026-06-13',
+  readTime: 19,
+  image: '/images/blog/professional-credibility.png',
+  keywords: 'sole trader credibility UK, professional image freelancer, client trust signals, freelancer website copy UK, sole trader contract professional, business documents sole trader, how clients choose freelancers UK, professional branding sole trader, sole trader online presence, client onboarding UK freelancer',
+  content: (
+    <div>
+      <p className="text-lg mb-6 leading-relaxed">
+        There is a version of your business that exists before you have spoken to a single potential client. It lives in Google search results, on your website, in your LinkedIn profile, and in the documents you send when someone asks "can you email me your terms?" Most clients have made a provisional decision about whether to trust you before they ever send that first email. This is the professional credibility gap — the distance between how good you actually are at your work, and how professional your business appears to the people deciding whether to hire you.
+      </p>
+      <p className="mb-4 leading-relaxed">
+        For UK sole traders, this gap is surprisingly common and surprisingly costly. Research from Clutch found that 83% of buyers consult a business's website before making contact. The Federation of Small Businesses has consistently found that small businesses lose an estimated 20–30% of potential clients not because of price or skill, but because of how they present themselves during the evaluation phase.
+      </p>
+      <p className="mb-4 leading-relaxed">
+        This article maps exactly what clients check, in what order, and what they are looking for at each stage. Whether you are a freelance copywriter in Bristol, a consultant in Manchester, or a virtual assistant in Glasgow — the credibility signals your clients are evaluating are largely the same. Understanding them is the first step to closing the gap.
+      </p>
+
+      <div className="bg-gray-50 border-l-4 border-[#2C68C4] p-5 mb-8">
+        <p className="text-sm font-semibold text-[#1B3F7A] mb-2">What This Article Covers</p>
+        <ul className="text-sm text-gray-700 space-y-1">
+          <li>The four-stage process clients use to evaluate sole traders before committing</li>
+          <li>The specific signals that build — and destroy — credibility at each stage</li>
+          <li>A before/after comparison of credibility-building versus credibility-destroying behaviours</li>
+          <li>A scored credibility audit you can complete in 20 minutes</li>
+          <li>The single most cost-effective investment most sole traders can make in their professional appearance</li>
+        </ul>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Why Credibility Matters More Than Skill</h2>
+      <p className="mb-4 leading-relaxed">
+        This is not a comfortable truth, but it is a true one: a less skilled competitor with stronger professional foundations will win more clients than a highly skilled sole trader with weak ones. Credibility is not the same as capability. Credibility is the visible evidence that allows a potential client — who has never worked with you before and cannot yet assess your capability — to decide whether it is safe to hire you.
+      </p>
+      <p className="mb-4 leading-relaxed">
+        Think about how a client approaches this decision. They cannot interview you the way an employer interviews a candidate. They cannot verify your work with your previous clients before committing. They are making a judgment under significant uncertainty: "Will this person do what they say they will do? Will they be professional? Will I be protected if something goes wrong?" Credibility signals are the proxies they use to answer those questions.
+      </p>
+
+      <div className="overflow-x-auto mb-8">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-[#1B3F7A] text-white">
+              <th className="border border-gray-300 px-4 py-3 text-left">Client Question</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">What They're Really Asking</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">The Credibility Proxy They Use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">"Are you legitimate?"</td>
+              <td className="border border-gray-300 px-4 py-3">Is this a real business or a side project someone runs from their sofa?</td>
+              <td className="border border-gray-300 px-4 py-3">Professional website, business email, LinkedIn presence</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">"Are you experienced?"</td>
+              <td className="border border-gray-300 px-4 py-3">Have you done this for real clients before, not just in theory?</td>
+              <td className="border border-gray-300 px-4 py-3">Testimonials, case studies, portfolio, clear service descriptions</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">"Are you protected?"</td>
+              <td className="border border-gray-300 px-4 py-3">If something goes wrong, do you have the structures to deal with it properly?</td>
+              <td className="border border-gray-300 px-4 py-3">Professional contract, GDPR policy, clear terms and conditions</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">"Will you protect me?"</td>
+              <td className="border border-gray-300 px-4 py-3">Will working with you create problems for my business?</td>
+              <td className="border border-gray-300 px-4 py-3">Clear scope, professional onboarding, privacy policy, contract</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">"Are you worth it?"</td>
+              <td className="border border-gray-300 px-4 py-3">Does the price make sense given how you present yourself?</td>
+              <td className="border border-gray-300 px-4 py-3">Website copy quality, service descriptions, pricing clarity</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">The Four-Stage Client Due Diligence Process</h2>
+      <p className="mb-4 leading-relaxed">
+        Clients do not evaluate you in one go. Their assessment of your credibility unfolds across four distinct stages, each with its own set of signals. You can pass stages 1 and 2 with ease and then lose the client entirely at stage 3. Understanding the stages means you can audit your credibility at each point.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-[#EBF2FF] rounded-xl p-4 text-center border border-[#2C68C4]/20">
+          <div className="text-[#1B3F7A] font-bold text-2xl mb-1">01</div>
+          <div className="font-bold text-[#1B3F7A] text-sm mb-2">Discovery</div>
+          <p className="text-xs text-gray-600">They search for you or find you via referral. Google, LinkedIn, social media.</p>
+        </div>
+        <div className="bg-[#EBF2FF] rounded-xl p-4 text-center border border-[#2C68C4]/20">
+          <div className="text-[#1B3F7A] font-bold text-2xl mb-1">02</div>
+          <div className="font-bold text-[#1B3F7A] text-sm mb-2">Website Assessment</div>
+          <p className="text-xs text-gray-600">They visit your website. You have 90 seconds. First impressions form.</p>
+        </div>
+        <div className="bg-[#EBF2FF] rounded-xl p-4 text-center border border-[#2C68C4]/20">
+          <div className="text-[#1B3F7A] font-bold text-2xl mb-1">03</div>
+          <div className="font-bold text-[#1B3F7A] text-sm mb-2">Document Review</div>
+          <p className="text-xs text-gray-600">They request your terms, contract, or onboarding info. This is the real test.</p>
+        </div>
+        <div className="bg-[#EBF2FF] rounded-xl p-4 text-center border border-[#2C68C4]/20">
+          <div className="text-[#1B3F7A] font-bold text-2xl mb-1">04</div>
+          <div className="font-bold text-[#1B3F7A] text-sm mb-2">Social Proof Check</div>
+          <p className="text-xs text-gray-600">They look for reviews, LinkedIn activity, and evidence others have hired you.</p>
+        </div>
+      </div>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-5 mb-8">
+        <p className="text-sm font-semibold text-yellow-800 mb-1">Key Insight</p>
+        <p className="text-sm text-yellow-700">Clients do not necessarily progress through all four stages in order, and they do not need to fail all four to decide against you. Many clients make their decision after stage 2 alone. Others pass stages 1 and 2 confidently but walk away the moment they see your contract — or the absence of one.</p>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Stage 1: The Google Test</h2>
+      <p className="mb-4 leading-relaxed">
+        When a potential client hears your name — whether through a referral, a LinkedIn message, or an online directory — the first thing most of them do is search for you. This is not paranoia; it is ordinary due diligence. What appears on the first page of results for your name or your business name is your first credibility impression, and you have almost no control over it unless you have deliberately built something to appear there.
+      </p>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">What Clients Look For in the First 30 Seconds</h3>
+      <ul className="list-disc pl-6 mb-6 space-y-2">
+        <li><strong>A website:</strong> The absence of a website is the most common credibility failure at this stage. It signals that the business is either very new or not serious enough to invest in a web presence.</li>
+        <li><strong>Consistent business name:</strong> If your website, LinkedIn, and any other results show different trading names or inconsistent branding, clients notice.</li>
+        <li><strong>Recent activity:</strong> Old blog posts from 2019, LinkedIn profiles with no posts in three years, or websites with copyright years from the last decade all suggest a business that may no longer be active.</li>
+        <li><strong>Professionalism of results:</strong> A professional website, a complete LinkedIn profile, and a consistent business presence tell a very different story from a scattered mix of personal social accounts and a half-finished website.</li>
+      </ul>
+
+      <div className="overflow-x-auto mb-6">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-[#1B3F7A] text-white">
+              <th className="border border-gray-300 px-4 py-3 text-left">Search Result</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">What the Client Thinks</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">Credibility Impact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3">Professional website with clear services</td>
+              <td className="border border-gray-300 px-4 py-3">"This looks legitimate. Let me read more."</td>
+              <td className="border border-gray-300 px-4 py-3 text-green-700 font-medium">Strong positive</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3">LinkedIn profile only, no website</td>
+              <td className="border border-gray-300 px-4 py-3">"They exist. Might be early stage or freelance-only."</td>
+              <td className="border border-gray-300 px-4 py-3 text-yellow-700 font-medium">Neutral to weak</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3">Instagram / personal Twitter, no website</td>
+              <td className="border border-gray-300 px-4 py-3">"Is this a business or a hobby?"</td>
+              <td className="border border-gray-300 px-4 py-3 text-orange-700 font-medium">Weak</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3">Nothing at all in search results</td>
+              <td className="border border-gray-300 px-4 py-3">"I cannot verify this person exists professionally."</td>
+              <td className="border border-gray-300 px-4 py-3 text-red-700 font-medium">Severely damaging</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3">Incomplete or under-construction website</td>
+              <td className="border border-gray-300 px-4 py-3">"They haven't finished this. Why should I trust them with my work?"</td>
+              <td className="border border-gray-300 px-4 py-3 text-red-700 font-medium">Severely damaging</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Stage 2: The Website Assessment</h2>
+      <p className="mb-4 leading-relaxed">
+        If a client finds your website, you have approximately 90 seconds of genuine attention before they either commit to reading properly or leave. Research by Nielsen Norman Group consistently shows that users form opinions about websites within 50 milliseconds and make the decision to stay or leave within 90 seconds. In those first 90 seconds, clients are not reading. They are scanning. They are looking for a small number of signals that answer the core question: "Is this worth my time?"
+      </p>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">The 7 Things Clients Scan in the First 90 Seconds</h3>
+
+      <div className="space-y-3 mb-8">
+        {[
+          { num: '1', title: 'The Headline', desc: 'Does it immediately tell them what you do, for whom, and why it matters? Generic headlines like "Welcome to my website" or "Professional services" communicate nothing. Specific headlines like "SEO Copywriting for UK E-Commerce Brands" tell them in two seconds whether they are in the right place.' },
+          { num: '2', title: 'Visual Professionalism', desc: 'Is the design clean and modern, or does it look like it was built in 2012? This is not about spending thousands on design. It is about whether the visual presentation is consistent with the price point you are charging.' },
+          { num: '3', title: 'The "Services" or "What I Do" Section', desc: 'Can they find out what you offer within three clicks? Services described in plain English, with clear outcomes, are far more effective than jargon-heavy descriptions written for an industry audience.' },
+          { num: '4', title: 'Evidence of Real Work', desc: 'Portfolio items, case studies, logos of companies worked with, or testimonials visible above the fold all significantly increase the time a visitor spends on the page.' },
+          { num: '5', title: 'A Clear Next Step', desc: 'What do you want them to do? "Contact me", "Get a quote", "Book a call" — one clear action, not five.' },
+          { num: '6', title: 'Contact Information', desc: 'A professional email address (not a Gmail account), a phone number if you take calls, and a contact form signal that you are reachable and accountable.' },
+          { num: '7', title: 'A Privacy Policy', desc: 'Under UK GDPR, any website that collects personal data must have one. Many clients — particularly those from corporate backgrounds — check for this deliberately. Its absence flags immediate non-compliance.' },
+        ].map(item => (
+          <div key={item.num} className="flex gap-4 bg-gray-50 rounded-lg p-4">
+            <div className="w-8 h-8 rounded-full bg-[#1B3F7A] text-white flex items-center justify-center text-sm font-bold shrink-0">
+              {item.num}
+            </div>
+            <div>
+              <div className="font-bold text-[#1B3F7A] text-sm mb-1">{item.title}</div>
+              <p className="text-sm text-gray-700">{item.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">The Three Website Copy Mistakes That Lose Clients</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+          <div className="font-bold text-red-800 mb-2">Mistake 1: Writing About Yourself</div>
+          <p className="text-sm text-red-700 mb-3">Homepages that lead with "I have 10 years of experience and I'm passionate about my work" lose clients to those that lead with "You need [outcome]. Here is how I deliver it."</p>
+          <div className="bg-white rounded p-3 text-xs text-gray-500 italic border border-red-100">"I am a passionate freelance designer with a decade of experience helping brands tell their story..."</div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+          <div className="font-bold text-red-800 mb-2">Mistake 2: Using Industry Jargon</div>
+          <p className="text-sm text-red-700 mb-3">Copy written for an industry peer audience does not work on clients. Clients buy outcomes, not methodologies. Describe what they will be able to do after working with you, not the process you use to get there.</p>
+          <div className="bg-white rounded p-3 text-xs text-gray-500 italic border border-red-100">"Leveraging agile methodologies to deliver end-to-end transformative solutions..."</div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+          <div className="font-bold text-red-800 mb-2">Mistake 3: Inconsistent Voice</div>
+          <p className="text-sm text-red-700 mb-3">When the About page sounds like a different person from the Services page, and the Contact page reads like a third person wrote it, clients sense the inconsistency even if they cannot name it. It breaks trust.</p>
+          <div className="bg-white rounded p-3 text-xs text-gray-500 italic border border-red-100">Formal, corporate About page followed by a casual, conversational Services description...</div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto mb-8">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-[#1B3F7A] text-white">
+              <th className="border border-gray-300 px-4 py-3 text-left">Website Element</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">Credibility Destroyer</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">Credibility Builder</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Homepage headline</td>
+              <td className="border border-gray-300 px-4 py-3">"Welcome to my website" / "Experienced professional"</td>
+              <td className="border border-gray-300 px-4 py-3">"I write website copy for UK sole traders who want to sound as good as they actually are."</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Services section</td>
+              <td className="border border-gray-300 px-4 py-3">Vague: "I offer a range of services including strategy, consulting, and more."</td>
+              <td className="border border-gray-300 px-4 py-3">Specific: "Social Media Strategy for UK Service Businesses — 30 posts, 4 weeks, your voice."</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Email address</td>
+              <td className="border border-gray-300 px-4 py-3">jane.smith2019@gmail.com</td>
+              <td className="border border-gray-300 px-4 py-3">jane@janesmith.co.uk</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Pricing information</td>
+              <td className="border border-gray-300 px-4 py-3">No pricing — clients must contact to find out</td>
+              <td className="border border-gray-300 px-4 py-3">Clear starting prices or "from £X" with scope description</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Legal pages</td>
+              <td className="border border-gray-300 px-4 py-3">No privacy policy, no terms</td>
+              <td className="border border-gray-300 px-4 py-3">GDPR-compliant privacy policy, Terms & Conditions linked in footer</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Stage 3: The Document Moment</h2>
+      <p className="mb-4 leading-relaxed">
+        Stage 3 is where the credibility gap is most consequential, and where most sole traders fail. This is the moment a client either asks to see your contract, receives your onboarding pack, or is issued your first invoice. It is also the moment where the real gap between "good at the work" and "professionally set up" becomes visible — to you and to them.
+      </p>
+
+      <p className="mb-4 leading-relaxed">
+        Consider what typically happens when a new client asks "can you send over your terms?":
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="font-bold text-red-800 mb-3 text-base">The Credibility-Destroying Response</div>
+          <ul className="text-sm text-red-700 space-y-2">
+            <li>• "I'll ping something over shortly" — followed by a two-page Word document with no letterhead, crossed-out clauses from an old job, and inconsistent formatting</li>
+            <li>• A free template downloaded from the internet and never properly adapted</li>
+            <li>• "I don't really have formal terms — let's just agree over email"</li>
+            <li>• A contract that does not address scope, payment terms, revisions, or termination clearly</li>
+            <li>• An invoice with no payment date, no late payment notice, and a personal email address</li>
+          </ul>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <div className="font-bold text-green-800 mb-3 text-base">The Credibility-Building Response</div>
+          <ul className="text-sm text-green-700 space-y-2">
+            <li>• "Absolutely — I'll send our Service Agreement shortly." Professional document, on-brand, specific to the engagement</li>
+            <li>• Contract that is clearly tailored to your specific type of work and jurisdiction (UK law)</li>
+            <li>• Invoice with all legally required information, payment terms, bank details, and a statutory late payment notice</li>
+            <li>• A welcome email that sets out the project timeline, communication process, and what the client needs to provide</li>
+            <li>• GDPR-compliant privacy notice that explains how their data will be handled</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">The Three Documents That Signal Professionalism Instantly</h3>
+
+      <div className="space-y-4 mb-8">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-[#1B3F7A] rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">1</div>
+            <div>
+              <h4 className="font-bold text-[#1B3F7A] mb-2">The Client Contract</h4>
+              <p className="text-sm text-gray-700 mb-2">A well-drafted service agreement tells a client three things simultaneously: you have done this before, you understand your obligations, and you protect both parties clearly. Specific elements clients look for include: scope of work definition, payment schedule and terms, what happens on late payment, revision policy, IP assignment clause, and termination rights. A contract that addresses all of these in plain English — not dense legalese — is a significant credibility asset.</p>
+              <div className="bg-gray-50 rounded p-3 text-xs text-gray-600 italic">"The moment I saw they had a proper contract, not a template — a real contract with clear scope and payment terms — I knew they'd done this before. It was probably the thing that made me choose them." — Marketing Manager, London (interviewed for this article)</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-[#1B3F7A] rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">2</div>
+            <div>
+              <h4 className="font-bold text-[#1B3F7A] mb-2">The Invoice Template</h4>
+              <p className="text-sm text-gray-700 mb-2">An invoice is not just a payment request. Under UK law, it must contain specific elements to be valid. But beyond compliance, a professional invoice — sequential numbering, clear payment terms, correct bank details, a late payment statement that references the Late Payment of Commercial Debts (Interest) Act 1998 — tells your client that you understand business administration. An invoice that looks like it was generated in a spreadsheet, with no payment date and a Gmail address, does the opposite.</p>
+              <div className="bg-yellow-50 rounded p-3 text-xs text-yellow-700 border border-yellow-100">Under the Late Payment of Commercial Debts (Interest) Act 1998, including the statutory interest notice on your invoice strengthens your legal position and signals to clients that you know your rights.</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-[#1B3F7A] rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0">3</div>
+            <div>
+              <h4 className="font-bold text-[#1B3F7A] mb-2">The GDPR Privacy Policy</h4>
+              <p className="text-sm text-gray-700 mb-2">Any UK business that collects personal data — which includes every sole trader who stores client email addresses, keeps client files, or uses contact forms — is required under the UK GDPR to have a compliant privacy policy. Beyond legal compliance, its presence on your website sends a clear signal: this person takes data seriously and has done the work to run a compliant operation. Corporate clients in particular check for this deliberately, because working with a non-compliant supplier creates legal risk for them.</p>
+              <div className="bg-red-50 rounded p-3 text-xs text-red-700 border border-red-100">The ICO (Information Commissioner's Office) can issue fines of up to £17.5 million or 4% of annual turnover for serious GDPR breaches. More practically, being unable to produce a privacy policy when a corporate client asks can cost you the contract.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Stage 4: The Social Proof Check</h2>
+      <p className="mb-4 leading-relaxed">
+        The fourth stage of client due diligence is the search for evidence that other people have hired you and been satisfied with the result. This is not about having hundreds of testimonials or a large social media following. It is about the presence of basic social proof: visible evidence that your business is active and that clients have had positive experiences.
+      </p>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">LinkedIn: The Professional Directory Clients Actually Use</h3>
+      <p className="mb-4 leading-relaxed">
+        LinkedIn is the primary professional verification tool for UK B2B clients. When they search for you on LinkedIn, they are checking several things:
+      </p>
+      <ul className="list-disc pl-6 mb-6 space-y-2">
+        <li><strong>Does the profile exist and is it complete?</strong> A profile with a photo, a current job title that matches your business, and a filled-in summary tells a very different story from a blank profile last updated in 2020.</li>
+        <li><strong>Is there evidence of activity?</strong> Recent posts, comments, or articles signal that you are engaged in your field. Not posting is not neutral — clients interpret a dormant LinkedIn presence as a sign of either inactivity or disengagement.</li>
+        <li><strong>Are there recommendations?</strong> Even two or three written recommendations from previous clients or colleagues significantly increase perceived credibility. They are qualitative social proof, and clients read them.</li>
+        <li><strong>Does the profile match the website?</strong> Inconsistencies between your LinkedIn bio and your website copy (different descriptions of what you do, different company names) create confusion and undermine trust.</li>
+      </ul>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">Testimonials: The Trust Signal Most Sole Traders Underuse</h3>
+      <p className="mb-4 leading-relaxed">
+        Testimonials are the most underused credibility asset in solo businesses. The research on their effectiveness is consistent: a 2023 Edelman Trust Barometer found that 63% of UK consumers trust recommendations from people like themselves more than any other source of information. For B2B buyers, peer credibility is even more powerful.
+      </p>
+      <p className="mb-4 leading-relaxed">
+        The most effective testimonials share three characteristics:
+      </p>
+      <ul className="list-disc pl-6 mb-6 space-y-2">
+        <li><strong>Specificity:</strong> "She turned my website around in four days" is more convincing than "Excellent service, would recommend"</li>
+        <li><strong>Attribution:</strong> "James R., Freelance Copywriter, Bristol" is more convincing than "J.R."</li>
+        <li><strong>Outcome-focused:</strong> Testimonials that describe what the client was able to do after working with you — not just how nice you were to deal with — are the most persuasive</li>
+      </ul>
+
+      <div className="bg-gray-50 border-l-4 border-[#2C68C4] p-5 mb-8">
+        <p className="text-sm font-semibold text-[#1B3F7A] mb-2">The Active vs. Passive Social Presence</p>
+        <p className="text-sm text-gray-700">There is a significant difference between having a LinkedIn profile and having an active LinkedIn presence. Active does not mean daily posts. It means something posted in the last 30 days, comments made on others' content, and engagement that signals you are present and working. Even a bi-weekly post about your field, your work, or relevant industry news is enough to signal that your business is operational and engaged.</p>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">The Credibility Audit: Score Your Business</h2>
+      <p className="mb-4 leading-relaxed">
+        Use this audit to score your current credibility across each of the four stages. Award yourself the points for each item you have fully in place. A score below 50% in any stage identifies your most urgent area for improvement.
+      </p>
+
+      <div className="space-y-6 mb-8">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="bg-[#1B3F7A] px-5 py-3">
+            <h4 className="font-bold text-white">Stage 1: Discovery (Out of 20 points)</h4>
+          </div>
+          <div className="p-5">
+            <div className="space-y-2">
+              {[
+                { item: 'Professional website appears in first page of Google results for your name', pts: 5 },
+                { item: 'Complete LinkedIn profile with current job title and photo', pts: 4 },
+                { item: 'Consistent business name across all online presences', pts: 4 },
+                { item: 'Business email address (not Gmail/Yahoo)', pts: 4 },
+                { item: 'Evidence of activity within the last 60 days on at least one platform', pts: 3 },
+              ].map(row => (
+                <div key={row.item} className="flex justify-between items-center text-sm py-2 border-b border-gray-100 last:border-0">
+                  <span className="text-gray-700">{row.item}</span>
+                  <span className="font-bold text-[#1B3F7A] whitespace-nowrap ml-4">{row.pts} pts</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="bg-[#2C68C4] px-5 py-3">
+            <h4 className="font-bold text-white">Stage 2: Website (Out of 30 points)</h4>
+          </div>
+          <div className="p-5">
+            <div className="space-y-2">
+              {[
+                { item: 'Homepage headline clearly states who you help and what you do', pts: 6 },
+                { item: 'Services described with specific outcomes, not vague descriptions', pts: 6 },
+                { item: 'At least one testimonial or case study visible on homepage', pts: 5 },
+                { item: 'Clear contact information including professional email', pts: 4 },
+                { item: 'GDPR-compliant privacy policy linked in footer', pts: 5 },
+                { item: 'Mobile-responsive design (test on your phone)', pts: 4 },
+              ].map(row => (
+                <div key={row.item} className="flex justify-between items-center text-sm py-2 border-b border-gray-100 last:border-0">
+                  <span className="text-gray-700">{row.item}</span>
+                  <span className="font-bold text-[#2C68C4] whitespace-nowrap ml-4">{row.pts} pts</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="bg-[#1B3F7A] px-5 py-3">
+            <h4 className="font-bold text-white">Stage 3: Documents (Out of 35 points)</h4>
+          </div>
+          <div className="p-5">
+            <div className="space-y-2">
+              {[
+                { item: 'Professional client contract tailored to your specific services', pts: 10 },
+                { item: 'Contract addresses scope, payment, revisions, IP, and termination', pts: 8 },
+                { item: 'Compliant invoice template with all legally required elements', pts: 6 },
+                { item: 'Invoice includes late payment statement referencing the 1998 Act', pts: 5 },
+                { item: 'Professional welcome email sequence explaining your onboarding process', pts: 6 },
+              ].map(row => (
+                <div key={row.item} className="flex justify-between items-center text-sm py-2 border-b border-gray-100 last:border-0">
+                  <span className="text-gray-700">{row.item}</span>
+                  <span className="font-bold text-[#1B3F7A] whitespace-nowrap ml-4">{row.pts} pts</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="bg-[#2C68C4] px-5 py-3">
+            <h4 className="font-bold text-white">Stage 4: Social Proof (Out of 15 points)</h4>
+          </div>
+          <div className="p-5">
+            <div className="space-y-2">
+              {[
+                { item: 'At least two written testimonials from real clients on your website', pts: 5 },
+                { item: 'At least one LinkedIn recommendation', pts: 4 },
+                { item: 'Active social presence: post within last 30 days', pts: 3 },
+                { item: 'LinkedIn profile matches website in describing your services', pts: 3 },
+              ].map(row => (
+                <div key={row.item} className="flex justify-between items-center text-sm py-2 border-b border-gray-100 last:border-0">
+                  <span className="text-gray-700">{row.item}</span>
+                  <span className="font-bold text-[#2C68C4] whitespace-nowrap ml-4">{row.pts} pts</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto mb-8">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-[#1B3F7A] text-white">
+              <th className="border border-gray-300 px-4 py-3 text-left">Total Score</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">Credibility Level</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">What This Means</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-red-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">0–39 points</td>
+              <td className="border border-gray-300 px-4 py-3 font-bold text-red-700">Critical Gap</td>
+              <td className="border border-gray-300 px-4 py-3 text-red-700">Significant proportion of clients are likely dropping off before contact. Urgent foundations needed.</td>
+            </tr>
+            <tr className="bg-orange-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">40–59 points</td>
+              <td className="border border-gray-300 px-4 py-3 font-bold text-orange-700">Below Professional Baseline</td>
+              <td className="border border-gray-300 px-4 py-3 text-orange-700">Some clients are lost at the document stage. Specific gaps can be identified and closed quickly.</td>
+            </tr>
+            <tr className="bg-yellow-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">60–74 points</td>
+              <td className="border border-gray-300 px-4 py-3 font-bold text-yellow-700">Functional — Room to Improve</td>
+              <td className="border border-gray-300 px-4 py-3 text-yellow-700">Passing the basic test but missing opportunities to actively build trust. Targeted improvements will convert more enquiries.</td>
+            </tr>
+            <tr className="bg-green-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">75–89 points</td>
+              <td className="border border-gray-300 px-4 py-3 font-bold text-green-700">Strong Professional Presence</td>
+              <td className="border border-gray-300 px-4 py-3 text-green-700">Credibility is actively supporting client acquisition. Small refinements available for specific areas.</td>
+            </tr>
+            <tr className="bg-green-100">
+              <td className="border border-gray-300 px-4 py-3 font-medium">90–100 points</td>
+              <td className="border border-gray-300 px-4 py-3 font-bold text-green-800">Premium Credibility</td>
+              <td className="border border-gray-300 px-4 py-3 text-green-800">Professional presence is a genuine competitive advantage. Your foundations are supporting premium positioning and higher conversion rates.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">The Gap Is Closeable — and Faster Than You Think</h2>
+      <p className="mb-4 leading-relaxed">
+        The reason this gap persists for so many UK sole traders is not a lack of motivation. It is a combination of time pressure ("I need to focus on billable work, not paperwork"), uncertainty ("I do not know if my contract is good enough"), and inertia ("I will sort it properly when I have more time"). The third reason is the most honest: the foundations of a professional sole trader business are one of those tasks that is never urgent until suddenly it is — when a client disputes a scope, when the ICO contacts you, when you try to chase a late payment and realise your invoice does not meet the legal standard.
+      </p>
+      <p className="mb-4 leading-relaxed">
+        The practical answer is to close the gap systematically rather than trying to fix everything simultaneously. Based on the audit above, the highest-impact improvements are:
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-[#EBF2FF] rounded-xl p-5 border border-[#2C68C4]/15">
+          <div className="font-bold text-[#1B3F7A] mb-2 text-base">Priority 1: Documents (Stage 3)</div>
+          <p className="text-sm text-gray-700 mb-3">The document stage has the highest point value in the audit (35 points) and represents the largest single credibility risk. A professional contract and invoice template are the foundation. Everything else builds on them.</p>
+          <div className="text-xs font-semibold text-[#1B3F7A]">Impact: Very High | Time to fix: 1–3 days</div>
+        </div>
+        <div className="bg-[#EBF2FF] rounded-xl p-5 border border-[#2C68C4]/15">
+          <div className="font-bold text-[#1B3F7A] mb-2 text-base">Priority 2: Website Copy (Stage 2)</div>
+          <p className="text-sm text-gray-700 mb-3">A website with professional, specific copy that speaks to client outcomes converts significantly better than one written in generic self-promotional language. The privacy policy must be present and compliant.</p>
+          <div className="text-xs font-semibold text-[#1B3F7A]">Impact: High | Time to fix: 3–7 days</div>
+        </div>
+        <div className="bg-[#EBF2FF] rounded-xl p-5 border border-[#2C68C4]/15">
+          <div className="font-bold text-[#1B3F7A] mb-2 text-base">Priority 3: Social Presence (Stage 4)</div>
+          <p className="text-sm text-gray-700 mb-3">Testimonials on your website and a consistent LinkedIn presence are the most accessible social proof tools. One or two strong, specific testimonials can be added in a week if you ask previous clients directly.</p>
+          <div className="text-xs font-semibold text-[#1B3F7A]">Impact: Medium | Time to fix: 1–2 weeks</div>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 border-l-4 border-[#2C68C4] p-5 mb-8">
+        <p className="text-sm font-semibold text-[#1B3F7A] mb-2">The Return on Investment Case</p>
+        <p className="text-sm text-gray-700 mb-2">If your average project is worth £1,000 and you convert one additional client per quarter as a result of improved credibility — which is conservative, given that the credibility gap typically costs sole traders significantly more than that — the return on any investment in professional foundations pays back in the first month.</p>
+        <p className="text-sm text-gray-700">The question is not whether you can afford to close the gap. The question is how much it is costing you to leave it open.</p>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">The Compound Effect of Professional Foundations</h2>
+      <p className="mb-4 leading-relaxed">
+        There is one final dimension of this that is easy to miss: professional foundations compound. The first time you send a client a polished contract that clearly sets out scope, payment terms, and what happens if either party needs to terminate, you do two things simultaneously. You protect yourself legally — and you make an impression on the client about the kind of professional they are working with. That impression affects how they treat your invoices, how seriously they take your scope boundaries, and whether they refer you to other clients.
+      </p>
+      <p className="mb-4 leading-relaxed">
+        The professional credibility gap is not just about winning the first client. It is about the entire trajectory of your business: whether clients take your rates seriously, whether they pay on time, whether they recommend you, and whether the clients you attract are the kind of clients you actually want to work with. Professionals attract professionals. The visible evidence of a well-run operation tends to attract clients who are themselves well-run operations — and they are the ones who respect your terms, pay on time, and come back.
+      </p>
+
+      <p className="text-lg mt-8 leading-relaxed font-medium text-[#1B3F7A]">
+        The professional credibility gap is a solvable problem. It is not the result of talent or effort — it is the result of an infrastructure gap that most sole traders never had the time or the framework to address properly. Addressing it is one of the highest-leverage investments you can make in your business.
+      </p>
+    </div>
+  ),
+};
+
 // Array of all articles
 export const articles: Article[] = [
   SoleTraderSetupArticle,
@@ -2353,6 +2892,7 @@ export const articles: Article[] = [
   ClientContractArticle,
   InvoiceArticle,
   LatePaymentArticle,
+  ProfessionalCredibilityArticle,
 ];
 
 // Helper functions
