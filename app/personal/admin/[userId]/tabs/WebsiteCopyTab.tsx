@@ -8,6 +8,7 @@ import {
   Monitor, Tablet, Smartphone, Maximize2, RefreshCw, AlertTriangle,
   Copy, Image, FileText, Sparkles, FolderOpen, Palette, Type, File, ClipboardCopy
 } from 'lucide-react';
+import { buildWebsiteFullPrompt } from '@/lib/services/document-prompts';
 
 interface WebsiteCopyTabProps {
   userId: string;
@@ -408,6 +409,21 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     try {
       await navigator.clipboard.writeText(fullContent);
       showMessage('Build prompt package copied to clipboard', 'success');
+    } catch (err) {
+      showMessage('Failed to copy to clipboard', 'error');
+    }
+  };
+
+  const handleCopyWebsitePromptAndBrief = async () => {
+    if (!clientBrief?.brief_content) {
+      showMessage('No website brief available — generate one first', 'error');
+      return;
+    }
+
+    try {
+      const fullPrompt = buildWebsiteFullPrompt(clientBrief.brief_content);
+      await navigator.clipboard.writeText(fullPrompt);
+      showMessage('Website prompt + brief copied to clipboard', 'success');
     } catch (err) {
       showMessage('Failed to copy to clipboard', 'error');
     }
@@ -872,9 +888,17 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter transition-colors disabled:opacity-50"
                   >
                     <ClipboardCopy size={12} />
-                    Copy
+                    Copy Build Prompt
                   </button>
                 )}
+                <button
+                  onClick={handleCopyWebsitePromptAndBrief}
+                  disabled={!briefAvailable}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Copy size={12} />
+                  Copy Website Prompt + Brief
+                </button>
               </div>
 
               <button

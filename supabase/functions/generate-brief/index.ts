@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = "AIzaSyCRsSMAhd0EWT4NpMaUzn8eHhDV1SF1YTA";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 
 function errorResponse(status: number, error: string, details?: Record<string, unknown>) {
   return new Response(JSON.stringify({ error, ...details }), {
@@ -84,30 +84,330 @@ async function trackGeminiUsage(model: string) {
   }
 }
 
-async function testGeminiKey(): Promise<{ valid: boolean; error?: string; keyPrefix?: string }> {
-  if (!GEMINI_API_KEY) return { valid: false, error: "GEMINI_API_KEY is empty", keyPrefix: "(empty)" };
-  const keyPrefix = GEMINI_API_KEY.substring(0, 6) + "...";
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`,
-      { method: "GET" }
-    );
-    if (res.ok) return { valid: true, keyPrefix };
-    const text = await res.text();
-    return { valid: false, error: `${res.status}: ${text.substring(0, 200)}`, keyPrefix };
-  } catch (err) {
-    return { valid: false, error: err instanceof Error ? err.message : "Network error", keyPrefix };
-  }
-}
+// ─── Service-specific brief prompt builders ─────────────────────────────────
 
-function buildBriefPrompt(responses: Record<string, any>, serviceId: string | null, websitePages: string[]): string {
-  const r = responses || {};
-
-  const websitePagesSection = websitePages.length > 0
-    ? `\nWEBSITE PAGES ORDERED AT CHECKOUT\n==================================\nPages: ${websitePages.join(', ')}\n`
+function buildDocumentsBriefPrompt(r: Record<string, any>, websitePages: string[]): string {
+  const wpSection = websitePages.length > 0
+    ? `\n=== WEBSITE PAGES ORDERED ===\nPages: ${websitePages.join(', ')}\n`
     : '';
 
-  const businessIdentity = `
+  return `You are a professional business analyst creating a COMPREHENSIVE client brief for the BUSINESS FOUNDATIONS PACK (Documents).
+
+This brief will be used to generate 10 professional documents: Terms & Conditions, Service Agreement Contract, GDPR Privacy Policy, Professional Invoice Template, Late Payment Letters, Welcome Email Sequence, Professional Bio, Elevator Pitch, LinkedIn Profile Script, and Service Description Sheets.
+
+These documents span legal, financial, operational, branding, and marketing domains. The brief MUST contain EVERY detail about the client because each document needs different information. A missing detail could result in an inaccurate legal clause, an unenforceable contract term, or a missed branding opportunity.
+
+Include ALL information below. Where data is missing, note it clearly as [NOT PROVIDED] rather than guessing.
+
+Generate the brief using these exact section headers:
+
+=== BUSINESS IDENTITY ===
+Legal Name: ${r.q1_legal_name || '[NOT PROVIDED]'}
+Business Name: ${r.q2_business_name || '[NOT PROVIDED]'}
+Registration: ${r.q3_business_registered || '[NOT PROVIDED]'}
+${r.q4_companies_house ? `Companies House: ${r.q4_companies_house}` : ''}
+Jurisdiction: ${r.q5_jurisdiction || '[NOT PROVIDED]'}
+Address: ${r.q6_business_address || '[NOT PROVIDED]'}
+Document Email: ${r.q7_document_email || '[NOT PROVIDED]'}
+${r.q8_business_phone ? `Phone: ${r.q8_business_phone}` : ''}
+Website: ${r.q9_has_website || '[NOT PROVIDED]'}${r.q10_website_url ? ` — ${r.q10_website_url}` : ''}
+Social: ${Array.isArray(r.q11_social_platforms) ? r.q11_social_platforms.join(', ') : '[NOT PROVIDED]'}
+
+=== SERVICES ===
+What They Do: ${r.q13_what_you_do || '[NOT PROVIDED]'}
+Flagship Service: ${r.q14_flagship_service || '[NOT PROVIDED]'}
+Services Detail:
+${Array.isArray(r.q15_services)
+  ? r.q15_services.map((s: any, i: number) =>
+      `${i + 1}. ${s.service_name}: ${s.service_includes || 'No details'}\n   Excludes: ${s.service_excludes || 'Not specified'}\n   Client Provides: ${s.service_client_provides || 'Not specified'}\n   Timeline: ${s.service_timeline || 'Not specified'}\n   Outcome: ${s.service_outcome || 'Not specified'}${s.service_starting_price ? `\n   Starting Price: ${s.service_starting_price}` : ''}`
+    ).join('\n')
+  : '[NOT PROVIDED]'}
+Uses Subcontractors: ${r.q16_uses_subcontractors || '[NOT PROVIDED]'}
+${r.q17_inform_subcontractors ? `Inform Clients: ${r.q17_inform_subcontractors}` : ''}
+Sends Proposal: ${r.q18_sends_proposal || '[NOT PROVIDED]'}
+
+=== CLIENTS & WORK ===
+Client Type: ${r.q19_client_type || '[NOT PROVIDED]'}
+Ideal Client: ${r.q20_ideal_client || '[NOT PROVIDED]'}
+${r.q21_client_industries ? `Industries: ${r.q21_client_industries}` : ''}
+Issues Experienced: ${Array.isArray(r.q22_client_issues) ? r.q22_client_issues.join(', ') : 'None reported'}
+${r.q23_dispute_details ? `Dispute Details: ${r.q23_dispute_details}` : ''}
+${r.q24_client_concerns ? `Concerns: ${r.q24_client_concerns}` : ''}
+
+=== PRICING & PAYMENT ===
+Pricing Model: ${Array.isArray(r.q25_pricing_model) ? r.q25_pricing_model.join(', ') : '[NOT PROVIDED]'}
+Payment Terms: ${r.q26_payment_terms || '[NOT PROVIDED]'}
+${r.q27_payment_detail ? `Payment Detail: ${r.q27_payment_detail}` : ''}
+Deposit: ${r.q28_requires_deposit || '[NOT PROVIDED]'}
+${r.q29_deposit_detail ? `Deposit Detail: ${r.q29_deposit_detail}` : ''}
+Payment Methods: ${Array.isArray(r.q30_payment_methods) ? r.q30_payment_methods.join(', ') : '[NOT PROVIDED]'}
+Refund Policy: ${r.q31_refund_policy || '[NOT PROVIDED]'}
+${r.q32_refund_detail ? `Refund Detail: ${r.q32_refund_detail}` : ''}
+Late Payment Interest: ${r.q33_late_payment_interest || '[NOT PROVIDED]'}
+VAT Registered: ${r.q34_vat_registered || '[NOT PROVIDED]'}
+${r.q35_vat_number ? `VAT Number: ${r.q35_vat_number}` : ''}
+
+=== GDPR & DATA PROTECTION ===
+Data Collected: ${Array.isArray(r.q36_data_collected) ? r.q36_data_collected.join(', ') : '[NOT PROVIDED]'}
+Collection Method: ${Array.isArray(r.q37_data_collection_method) ? r.q37_data_collection_method.join(', ') : '[NOT PROVIDED]'}
+Purpose: ${r.q38_data_purpose || '[NOT PROVIDED]'}
+Storage: ${Array.isArray(r.q39_data_storage) ? r.q39_data_storage.join(', ') : '[NOT PROVIDED]'}
+Retention: ${r.q40_data_retention || '[NOT PROVIDED]'}
+Third Party Tools: ${r.q41_uses_third_party_tools || '[NOT PROVIDED]'}
+${r.q42_third_party_tools ? `Tools Detail: ${r.q42_third_party_tools}` : ''}
+Shares Data: ${r.q43_shares_data || '[NOT PROVIDED]'}
+${r.q44_data_sharing_detail ? `Sharing Detail: ${r.q44_data_sharing_detail}` : ''}
+Marketing: ${r.q45_sends_marketing || '[NOT PROVIDED]'}
+${r.q46_marketing_platform ? `Platform: ${r.q46_marketing_platform}` : ''}
+Cookies: ${r.q47_uses_cookies || '[NOT PROVIDED]'}
+${r.q48_tracking_tools ? `Tracking: ${Array.isArray(r.q48_tracking_tools) ? r.q48_tracking_tools.join(', ') : r.q48_tracking_tools}` : ''}
+
+=== LEGAL & RISK ===
+Regulated Services: ${r.q49_regulated_services || '[NOT PROVIDED]'}
+${r.q50_regulatory_detail ? `Regulatory Detail: ${r.q50_regulatory_detail}` : ''}
+Indemnity Insurance: ${r.q51_indemnity_insurance || '[NOT PROVIDED]'}
+${r.q52_certifications ? `Certifications: ${r.q52_certifications}` : ''}
+${r.q53_specific_clauses ? `Specific Clauses: ${r.q53_specific_clauses}` : ''}
+${r.q54_exclusions ? `Exclusions: ${r.q54_exclusions}` : ''}
+
+=== BRAND & VOICE ===
+First Name: ${r.q55_first_name || '[NOT PROVIDED]'}
+Business Story: ${r.q56_business_story || '[NOT PROVIDED]'}
+Experience: ${r.q57_experience || '[NOT PROVIDED]'}
+${r.q58_achievements ? `Achievements: ${r.q58_achievements}` : ''}
+${r.q59_client_compliments ? `Compliments: ${r.q59_client_compliments}` : ''}
+12 Month Goal: ${r.q60_12_month_goal || '[NOT PROVIDED]'}
+Differentiator: ${r.q61_differentiator || '[NOT PROVIDED]'}
+Tone of Voice: ${Array.isArray(r.q62_tone_of_voice) ? r.q62_tone_of_voice.join(', ') : '[NOT PROVIDED]'}
+${r.q63_avoid_words ? `Avoid Words: ${r.q63_avoid_words}` : ''}
+Brand Identity: ${r.q64_brand_identity || '[NOT PROVIDED]'}
+Has Logo: ${r.q65_has_logo || '[NOT PROVIDED]'}
+${r.q67_brand_colours ? `Brand Colours: ${r.q67_brand_colours}` : ''}
+Visual Style: ${r.q68_visual_style || '[NOT PROVIDED]'}
+
+=== INVOICE PREFERENCES ===
+Bank Details: ${r.q69_bank_details || '[NOT PROVIDED]'}
+Invoice Due Date: ${r.q70_invoice_due_date || '[NOT PROVIDED]'}
+Invoice Fields: ${Array.isArray(r.q71_invoice_fields) ? r.q71_invoice_fields.join(', ') : '[NOT PROVIDED]'}
+
+=== LINKEDIN ===
+Usage: ${r.q72_linkedin_usage || '[NOT PROVIDED]'}
+${r.q73_linkedin_url ? `URL: ${r.q73_linkedin_url}` : ''}
+Target: ${r.q74_linkedin_target || '[NOT PROVIDED]'}
+${r.q75_linkedin_keywords ? `Keywords: ${r.q75_linkedin_keywords}` : ''}
+${wpSection}
+=== ADDITIONAL INFORMATION ===
+${r.q78_anything_else ? `Anything Else: ${r.q78_anything_else}` : ''}
+Confidence Level: ${r.q80_confidence_level || '[NOT PROVIDED]'}
+
+Generate the brief now. Organise the raw data above into a structured, professional client brief. Add analytical commentary where useful — identify legal risks, flag GDPR compliance gaps, note contradictions, highlight areas where the documents will need to be especially protective. This analysis helps the document generator produce better, more protective documents.`;
+}
+
+function buildSocialMediaBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional social media strategist creating a DETAILED client brief for the SOCIAL MEDIA PACK.
+
+This brief will be used to generate social media posts (educational, promotional, personal) across multiple platforms. It must contain everything a content creator needs: brand identity, voice, visual style, services to promote, audience insights, and platform-specific strategy.
+
+Do NOT include legal, GDPR, financial, or operational details unless they directly affect what can/cannot be posted publicly. Focus exclusively on information that helps create engaging, on-brand social content.
+
+Generate the brief using these exact section headers:
+
+=== BUSINESS IDENTITY ===
+Business Name: ${r.q2_business_name || '[NOT PROVIDED]'}
+Owner First Name: ${r.q55_first_name || '[NOT PROVIDED]'}
+Website: ${r.q9_has_website || '[NOT PROVIDED]'}${r.q10_website_url ? ` — ${r.q10_website_url}` : ''}
+Email: ${r.q7_document_email || '[NOT PROVIDED]'}
+${r.q8_business_phone ? `Phone: ${r.q8_business_phone}` : ''}
+Social Platforms: ${Array.isArray(r.q11_social_platforms) ? r.q11_social_platforms.join(', ') : '[NOT PROVIDED]'}
+
+=== SERVICES TO PROMOTE ===
+What They Do: ${r.q13_what_you_do || '[NOT PROVIDED]'}
+Flagship Service: ${r.q14_flagship_service || '[NOT PROVIDED]'}
+Services Summary:
+${Array.isArray(r.q15_services)
+  ? r.q15_services.map((s: any, i: number) =>
+      `${i + 1}. ${s.service_name}: ${s.service_includes || 'No details'}${s.service_starting_price ? ` — From ${s.service_starting_price}` : ''}`
+    ).join('\n')
+  : '[NOT PROVIDED]'}
+Sends Proposal: ${r.q18_sends_proposal || '[NOT PROVIDED]'}
+
+=== TARGET AUDIENCE ===
+Client Type: ${r.q19_client_type || '[NOT PROVIDED]'}
+Ideal Client: ${r.q20_ideal_client || '[NOT PROVIDED]'}
+${r.q21_client_industries ? `Industries: ${r.q21_client_industries}` : ''}
+${r.q24_client_concerns ? `Client Concerns: ${r.q24_client_concerns}` : ''}
+
+=== BRAND & VOICE ===
+Business Story: ${r.q56_business_story || '[NOT PROVIDED]'}
+Experience: ${r.q57_experience || '[NOT PROVIDED]'}
+${r.q58_achievements ? `Achievements: ${r.q58_achievements}` : ''}
+${r.q59_client_compliments ? `Compliments Received: ${r.q59_client_compliments}` : ''}
+12 Month Goal: ${r.q60_12_month_goal || '[NOT PROVIDED]'}
+Differentiator: ${r.q61_differentiator || '[NOT PROVIDED]'}
+Tone of Voice: ${Array.isArray(r.q62_tone_of_voice) ? r.q62_tone_of_voice.join(', ') : '[NOT PROVIDED]'}
+${r.q63_avoid_words ? `Avoid Words: ${r.q63_avoid_words}` : ''}
+Brand Identity: ${r.q64_brand_identity || '[NOT PROVIDED]'}
+${r.q67_brand_colours ? `Brand Colours: ${r.q67_brand_colours}` : ''}
+Visual Style: ${r.q68_visual_style || '[NOT PROVIDED]'}
+
+=== SOCIAL MEDIA STRATEGY ===
+Platforms: ${Array.isArray(r.sm1_platforms) ? r.sm1_platforms.join(', ') : '[NOT PROVIDED]'}
+Content Types: ${Array.isArray(r.sm2_content_types) ? r.sm2_content_types.join(', ') : '[NOT PROVIDED]'}
+${r.sm3_avoid_topics ? `Topics to Avoid: ${r.sm3_avoid_topics}` : ''}
+Posting Frequency: ${r.sm4_posting_frequency || '[NOT PROVIDED]'}
+Content Pillars: ${r.sm5_content_pillars || '[NOT PROVIDED]'}
+Personal Boundaries: ${r.sm6_personal_boundaries || '[NOT PROVIDED]'}
+Hashtag Strategy: ${r.sm7_hashtag_strategy || '[NOT PROVIDED]'}
+${r.sm8_competitor_accounts ? `Competitor Accounts: ${r.sm8_competitor_accounts}` : ''}
+Content Tone: ${r.sm9_content_tone || '[NOT PROVIDED]'}
+${r.sm10_call_to_action ? `Preferred CTA: ${r.sm10_call_to_action}` : ''}
+${r.sm11_existing_accounts ? `Existing Accounts: ${r.sm11_existing_accounts}` : ''}
+Content Calendar: ${r.sm12_content_calendar || '[NOT PROVIDED]'}
+${r.sm13_upcoming_launches ? `Upcoming Launches: ${r.sm13_upcoming_launches}` : ''}
+
+=== ADDITIONAL INFORMATION ===
+${r.q78_anything_else ? `Anything Else: ${r.q78_anything_else}` : ''}
+
+Generate the brief now. Transform the raw data above into a well-organised social media strategy brief. Add strategic commentary: suggest content themes based on their services, identify opportunities for viral/shareable content, note any brand consistency issues, and recommend how to position this business on social media for maximum impact.`;
+}
+
+function buildWebsiteBriefPrompt(r: Record<string, any>, websitePages: string[]): string {
+  const pagesSection = websitePages.length > 0
+    ? `PAGES ORDERED AT CHECKOUT\n========================\nPages: ${websitePages.join(', ')}\nTotal: ${websitePages.length} pages\n`
+    : '';
+
+  return `You are a professional web strategist creating a COMPREHENSIVE client brief for the WEBSITE COPY PACK.
+
+This brief will be used to generate a complete, production-ready website. A website is the public representation of a business — it must contain everything a visitor needs to understand the business, trust the business, and take action. Missing details result in a poor-quality website.
+
+Include: full business identity, every service in detail, client profile, brand/visual specifications, ALL website-specific requirements, and any legal context relevant to website publication.
+
+Generate the brief using these exact section headers:
+
+=== BUSINESS IDENTITY ===
+Legal Name: ${r.q1_legal_name || '[NOT PROVIDED]'}
+Business Name: ${r.q2_business_name || '[NOT PROVIDED]'}
+Registration: ${r.q3_business_registered || '[NOT PROVIDED]'}
+${r.q4_companies_house ? `Companies House: ${r.q4_companies_house}` : ''}
+Jurisdiction: ${r.q5_jurisdiction || '[NOT PROVIDED]'}
+Address: ${r.q6_business_address || '[NOT PROVIDED]'}
+Document Email: ${r.q7_document_email || '[NOT PROVIDED]'}
+${r.q8_business_phone ? `Phone: ${r.q8_business_phone}` : ''}
+Website: ${r.q9_has_website || '[NOT PROVIDED]'}${r.q10_website_url ? ` — ${r.q10_website_url}` : ''}
+Social: ${Array.isArray(r.q11_social_platforms) ? r.q11_social_platforms.join(', ') : '[NOT PROVIDED]'}
+
+=== SERVICES (FULL DETAIL FOR SERVICE PAGES) ===
+What They Do: ${r.q13_what_you_do || '[NOT PROVIDED]'}
+Flagship Service: ${r.q14_flagship_service || '[NOT PROVIDED]'}
+Services Detail:
+${Array.isArray(r.q15_services)
+  ? r.q15_services.map((s: any, i: number) =>
+      `${i + 1}. ${s.service_name}: ${s.service_includes || 'No details'}\n   Excludes: ${s.service_excludes || 'Not specified'}\n   Timeline: ${s.service_timeline || 'Not specified'}\n   Outcome: ${s.service_outcome || 'Not specified'}${s.service_starting_price ? `\n   Starting Price: ${s.service_starting_price}` : ''}`
+    ).join('\n')
+  : '[NOT PROVIDED]'}
+Uses Subcontractors: ${r.q16_uses_subcontractors || '[NOT PROVIDED]'}
+Sends Proposal: ${r.q18_sends_proposal || '[NOT PROVIDED]'}
+
+=== TARGET AUDIENCE ===
+Client Type: ${r.q19_client_type || '[NOT PROVIDED]'}
+Ideal Client: ${r.q20_ideal_client || '[NOT PROVIDED]'}
+${r.q21_client_industries ? `Industries: ${r.q21_client_industries}` : ''}
+${r.q22_client_issues ? `Issues: ${Array.isArray(r.q22_client_issues) ? r.q22_client_issues.join(', ') : r.q22_client_issues}` : ''}
+${r.q24_client_concerns ? `Concerns: ${r.q24_client_concerns}` : ''}
+
+=== BRAND & VISUAL IDENTITY ===
+First Name: ${r.q55_first_name || '[NOT PROVIDED]'}
+Business Story: ${r.q56_business_story || '[NOT PROVIDED]'}
+Experience: ${r.q57_experience || '[NOT PROVIDED]'}
+${r.q58_achievements ? `Achievements: ${r.q58_achievements}` : ''}
+${r.q59_client_compliments ? `Compliments: ${r.q59_client_compliments}` : ''}
+12 Month Goal: ${r.q60_12_month_goal || '[NOT PROVIDED]'}
+Differentiator: ${r.q61_differentiator || '[NOT PROVIDED]'}
+Tone of Voice: ${Array.isArray(r.q62_tone_of_voice) ? r.q62_tone_of_voice.join(', ') : '[NOT PROVIDED]'}
+${r.q63_avoid_words ? `Avoid Words: ${r.q63_avoid_words}` : ''}
+Brand Identity: ${r.q64_brand_identity || '[NOT PROVIDED]'}
+Has Logo: ${r.q65_has_logo || '[NOT PROVIDED]'}
+${r.q67_brand_colours ? `Brand Colours: ${r.q67_brand_colours}` : ''}
+Visual Style: ${r.q68_visual_style || '[NOT PROVIDED]'}
+
+=== ${pagesSection}WEBSITE STRUCTURE & CONTENT ===
+Primary Action: ${r.wc2_primary_action || '[NOT PROVIDED]'}
+${r.wc3_inspiration_urls ? `Inspiration URLs: ${r.wc3_inspiration_urls}` : ''}
+Nav Structure: ${r.wc_nav_structure || '[NOT PROVIDED]'}
+Service Pages: ${r.wc_service_page_count || '[NOT PROVIDED]'}
+${r.wc_headline_idea ? `Headline Idea: ${r.wc_headline_idea}` : ''}
+Hero Message: ${r.wc_hero_message || '[NOT PROVIDED]'}
+${r.wc_differentiator ? `Differentiator: ${r.wc_differentiator}` : ''}
+Problems Solved: ${r.wc_problems_solved || '[NOT PROVIDED]'}
+Visitor Feeling: ${Array.isArray(r.wc_visitor_feeling) ? r.wc_visitor_feeling.join(', ') : '[NOT PROVIDED]'}
+
+=== WEBSITE VISUAL DESIGN ===
+Colour Preferences: ${r.wc_colour_preferences || r.q67_brand_colours || '[NOT PROVIDED]'}
+Colour Palette Style: ${r.wc_colour_palette_style || '[NOT PROVIDED]'}
+Font Style: ${r.wc_font_style || '[NOT PROVIDED]'}
+Imagery Style: ${r.wc_imagery_style || '[NOT PROVIDED]'}
+Logo Placement: ${r.wc_logo_placement || '[NOT PROVIDED]'}
+Brand Guidelines: ${r.wc_has_brand_guidelines || '[NOT PROVIDED]'}
+${r.wc_competitor_urls ? `Competitor URLs: ${r.wc_competitor_urls}` : ''}
+${r.wc_disliked_urls ? `Disliked URLs: ${r.wc_disliked_urls}` : ''}
+
+=== WEBSITE FEATURES ===
+Forms Needed: ${Array.isArray(r.wc_forms_needed) ? r.wc_forms_needed.join(', ') : '[NOT PROVIDED]'}
+Legal Pages: ${Array.isArray(r.wc_legal_pages) ? r.wc_legal_pages.join(', ') : '[NOT PROVIDED]'}
+Pricing Display: ${r.wc_show_pricing_on_website || '[NOT PROVIDED]'}
+${r.wc_pricing_text ? `Pricing Text: ${r.wc_pricing_text}` : ''}
+Payment Methods Display: ${Array.isArray(r.wc_payment_methods_display) ? r.wc_payment_methods_display.join(', ') : '[NOT PROVIDED]'}
+Data Collection: ${r.wc_website_collects_data || '[NOT PROVIDED]'}
+Cookie Consent: ${r.wc_needs_cookie_consent || '[NOT PROVIDED]'}
+Business Hours: ${r.wc_show_business_hours || '[NOT PROVIDED]'}${r.wc_business_hours ? ` — ${r.wc_business_hours}` : ''}
+Phone on Website: ${r.wc_phone_on_website || '[NOT PROVIDED]'}
+${r.q8_business_phone ? `Phone Number: ${r.q8_business_phone}` : ''}
+Email Display: ${r.wc_email_display || r.q7_document_email || '[NOT PROVIDED]'}
+Address Display: ${r.wc_address_on_website || '[NOT PROVIDED]'}
+Social Links: ${r.wc_show_social_links || '[NOT PROVIDED]'}${r.wc_social_links_to_show ? ` — ${Array.isArray(r.wc_social_links_to_show) ? r.wc_social_links_to_show.join(', ') : r.wc_social_links_to_show}` : ''}
+${r.wc_linkedin_url ? `LinkedIn URL: ${r.wc_linkedin_url}` : ''}
+${r.wc_instagram_url ? `Instagram URL: ${r.wc_instagram_url}` : ''}
+${r.wc_facebook_url ? `Facebook URL: ${r.wc_facebook_url}` : ''}
+
+=== TESTIMONIALS & CREDENTIALS ===
+Testimonials: ${r.wc_testimonials || '[NOT PROVIDED]'}
+Testimonials Count: ${r.wc_testimonials_count || '[NOT PROVIDED]'}
+${r.wc_credentials_to_show ? `Credentials: ${r.wc_credentials_to_show}` : ''}
+${r.wc_awards_or_press ? `Awards/Press: ${r.wc_awards_or_press}` : ''}
+${r.q52_certifications ? `Certifications: ${r.q52_certifications}` : ''}
+
+=== BOOKING & NEWSLETTER ===
+Booking Tool: ${r.wc_booking_tool || '[NOT PROVIDED]'}${r.wc_booking_url ? ` — ${r.wc_booking_url}` : ''}
+Newsletter: ${r.wc_newsletter_signup || '[NOT PROVIDED]'}${r.wc_newsletter_platform ? ` — ${r.wc_newsletter_platform}` : ''}
+
+=== GDPR FOR WEBSITE ===
+Data Collected on Website: ${Array.isArray(r.q36_data_collected) ? r.q36_data_collected.join(', ') : '[NOT PROVIDED]'}
+Collection Method: ${Array.isArray(r.q37_data_collection_method) ? r.q37_data_collection_method.join(', ') : '[NOT PROVIDED]'}
+Third Party Tools: ${r.q41_uses_third_party_tools || '[NOT PROVIDED]'}
+${r.q42_third_party_tools ? `Tools Detail: ${r.q42_third_party_tools}` : ''}
+Marketing: ${r.q45_sends_marketing || '[NOT PROVIDED]'}
+${r.q46_marketing_platform ? `Platform: ${r.q46_marketing_platform}` : ''}
+Cookies/Tracking: ${r.q47_uses_cookies || '[NOT PROVIDED]'}
+${r.q48_tracking_tools ? `Tracking: ${Array.isArray(r.q48_tracking_tools) ? r.q48_tracking_tools.join(', ') : r.q48_tracking_tools}` : ''}
+
+=== ADDITIONAL INFORMATION ===
+${r.q78_anything_else ? `Anything Else: ${r.q78_anything_else}` : ''}
+Confidence Level: ${r.q80_confidence_level || '[NOT PROVIDED]'}
+
+Generate the brief now. Transform the raw data into a structured, comprehensive website strategy brief. Add analytical commentary: identify content gaps, suggest page structures for each ordered page, recommend CTAs based on their business type, flag contradictions, and note any missing information that would prevent a complete website.`;
+}
+
+function buildComprehensiveBriefPrompt(r: Record<string, any>, websitePages: string[]): string {
+  const wpSection = websitePages.length > 0
+    ? `\nWEBSITE PAGES ORDERED\n=====================\nPages: ${websitePages.join(', ')}\n`
+    : '';
+
+  return `You are a professional business analyst creating a comprehensive client brief covering all purchased services.
+
+Generate a comprehensive, well-structured client brief that captures everything needed to produce professional deliverables. Use the client's actual information throughout — no placeholders, no generic filler.
+
+Structure the brief with clear section headers using === SECTION NAME === format.
+
 BUSINESS IDENTITY
 =================
 Legal Name: ${r.q1_legal_name || 'Not provided'}
@@ -120,9 +420,7 @@ Document Email: ${r.q7_document_email || 'Not provided'}
 ${r.q8_business_phone ? `Phone: ${r.q8_business_phone}` : ''}
 Website: ${r.q9_has_website || 'Not provided'}${r.q10_website_url ? ` — ${r.q10_website_url}` : ''}
 Social: ${Array.isArray(r.q11_social_platforms) ? r.q11_social_platforms.join(', ') : 'Not provided'}
-`;
 
-  const services = `
 SERVICES
 ========
 What They Do: ${r.q13_what_you_do || 'Not provided'}
@@ -136,9 +434,7 @@ ${Array.isArray(r.q15_services)
 Uses Subcontractors: ${r.q16_uses_subcontractors || 'Not provided'}
 ${r.q17_inform_subcontractors ? `Inform Clients: ${r.q17_inform_subcontractors}` : ''}
 Sends Proposal: ${r.q18_sends_proposal || 'Not provided'}
-`;
 
-  const clients = `
 CLIENTS & HOW THEY WORK
 ========================
 Client Type: ${r.q19_client_type || 'Not provided'}
@@ -147,9 +443,7 @@ ${r.q21_client_industries ? `Industries: ${r.q21_client_industries}` : ''}
 Issues Experienced: ${Array.isArray(r.q22_client_issues) ? r.q22_client_issues.join(', ') : 'None reported'}
 ${r.q23_dispute_details ? `Dispute Details: ${r.q23_dispute_details}` : ''}
 ${r.q24_client_concerns ? `Concerns: ${r.q24_client_concerns}` : ''}
-`;
 
-  const pricing = `
 PRICING & PAYMENT
 =================
 Pricing Model: ${Array.isArray(r.q25_pricing_model) ? r.q25_pricing_model.join(', ') : 'Not provided'}
@@ -163,9 +457,7 @@ ${r.q32_refund_detail ? `Refund Detail: ${r.q32_refund_detail}` : ''}
 Late Payment Interest: ${r.q33_late_payment_interest || 'Not provided'}
 VAT Registered: ${r.q34_vat_registered || 'Not provided'}
 ${r.q35_vat_number ? `VAT Number: ${r.q35_vat_number}` : ''}
-`;
 
-  const gdpr = `
 GDPR & DATA PROTECTION
 =======================
 Data Collected: ${Array.isArray(r.q36_data_collected) ? r.q36_data_collected.join(', ') : 'Not provided'}
@@ -181,9 +473,7 @@ Marketing: ${r.q45_sends_marketing || 'Not provided'}
 ${r.q46_marketing_platform ? `Platform: ${r.q46_marketing_platform}` : ''}
 Cookies: ${r.q47_uses_cookies || 'Not provided'}
 ${r.q48_tracking_tools ? `Tracking: ${Array.isArray(r.q48_tracking_tools) ? r.q48_tracking_tools.join(', ') : r.q48_tracking_tools}` : ''}
-`;
 
-  const legal = `
 LEGAL & RISK
 =============
 Regulated Services: ${r.q49_regulated_services || 'Not provided'}
@@ -192,9 +482,7 @@ Indemnity Insurance: ${r.q51_indemnity_insurance || 'Not provided'}
 ${r.q52_certifications ? `Certifications: ${r.q52_certifications}` : ''}
 ${r.q53_specific_clauses ? `Specific Clauses: ${r.q53_specific_clauses}` : ''}
 ${r.q54_exclusions ? `Exclusions: ${r.q54_exclusions}` : ''}
-`;
 
-  const brand = `
 BRAND & VOICE
 ==============
 First Name: ${r.q55_first_name || 'Not provided'}
@@ -210,26 +498,20 @@ Brand Identity: ${r.q64_brand_identity || 'Not provided'}
 Has Logo: ${r.q65_has_logo || 'Not provided'}
 ${r.q67_brand_colours ? `Brand Colours: ${r.q67_brand_colours}` : ''}
 Visual Style: ${r.q68_visual_style || 'Not provided'}
-`;
 
-  const invoice = `
 INVOICE PREFERENCES
 ====================
 Bank Details: ${r.q69_bank_details || 'Not provided'}
 Invoice Due Date: ${r.q70_invoice_due_date || 'Not provided'}
 Invoice Fields: ${Array.isArray(r.q71_invoice_fields) ? r.q71_invoice_fields.join(', ') : 'Not provided'}
-`;
 
-  const linkedin = `
 LINKEDIN
 =========
 Usage: ${r.q72_linkedin_usage || 'Not provided'}
 ${r.q73_linkedin_url ? `URL: ${r.q73_linkedin_url}` : ''}
 Target: ${r.q74_linkedin_target || 'Not provided'}
 ${r.q75_linkedin_keywords ? `Keywords: ${r.q75_linkedin_keywords}` : ''}
-`;
-
-  const websiteCopy = `
+${wpSection}
 WEBSITE COPY
 =============
 Primary Action: ${r.wc2_primary_action || 'Not provided'}
@@ -270,9 +552,7 @@ ${r.wc_credentials_to_show ? `Credentials: ${r.wc_credentials_to_show}` : ''}
 ${r.wc_awards_or_press ? `Awards/Press: ${r.wc_awards_or_press}` : ''}
 Booking Tool: ${r.wc_booking_tool || 'Not provided'}${r.wc_booking_url ? ` — ${r.wc_booking_url}` : ''}
 Newsletter: ${r.wc_newsletter_signup || 'Not provided'}${r.wc_newsletter_platform ? ` — ${r.wc_newsletter_platform}` : ''}
-`;
 
-  const socialMedia = `
 SOCIAL MEDIA
 =============
 Platforms: ${Array.isArray(r.sm1_platforms) ? r.sm1_platforms.join(', ') : 'Not provided'}
@@ -288,67 +568,31 @@ ${r.sm10_call_to_action ? `CTA: ${r.sm10_call_to_action}` : ''}
 ${r.sm11_existing_accounts ? `Existing Accounts: ${r.sm11_existing_accounts}` : ''}
 Content Calendar: ${r.sm12_content_calendar || 'Not provided'}
 ${r.sm13_upcoming_launches ? `Upcoming Launches: ${r.sm13_upcoming_launches}` : ''}
-`;
 
-  const additional = `
 ADDITIONAL INFORMATION
 =======================
 ${r.q78_anything_else ? `Anything Else: ${r.q78_anything_else}` : ''}
 Confidence Level: ${r.q80_confidence_level || 'Not provided'}
-`;
-
-  let serviceContext = "";
-  if (serviceId === 'website_copy_pack') {
-    serviceContext = `This brief is specifically for the WEBSITE COPY PACK. Focus on website content, structure, design preferences, and all website-related details. Include the website copy section data as primary context. The client has ordered these pages at checkout: ${websitePages.length > 0 ? websitePages.join(', ') : 'not specified — use standard pages'}.`;
-  } else if (serviceId === 'social_media_pack') {
-    serviceContext = `This brief is specifically for the SOCIAL MEDIA PACK. Focus on social media strategy, content pillars, posting frequency, platform-specific needs, and tone for social channels. Include the social media section data as primary context.`;
-  } else if (serviceId === 'business_foundations_pack') {
-    serviceContext = `This brief is for the BUSINESS FOUNDATIONS PACK. Focus on legal, financial, and operational document requirements. Include all business identity, services, clients, pricing, GDPR, legal, brand, and invoice data as primary context.`;
-  } else {
-    serviceContext = `This is a comprehensive brief covering all purchased services. Include all relevant sections.`;
-  }
-
-  return `You are a professional business analyst creating a detailed client brief for a UK small business.
-
-${serviceContext}
-
-Generate a comprehensive, well-structured client brief that captures everything needed to produce professional deliverables. Use the client's actual information throughout — no placeholders, no generic filler.
-
-Structure the brief with clear section headers using === SECTION NAME === format.
-
-${businessIdentity}
-
-${services}
-
-${clients}
-
-${pricing}
-
-${gdpr}
-
-${legal}
-
-${brand}
-
-${invoice}
-
-${linkedin}
-
-${websitePagesSection}
-
-${websiteCopy}
-
-${socialMedia}
-
-${additional}
 
 Generate the brief now. Be thorough, specific, and use the client's actual information. Where information is missing, note it clearly rather than making assumptions.`;
 }
 
-async function callGemini(prompt: string): Promise<{ text: string; model: string; finishReason?: string }> {
-  const model = "gemini-2.5-flash";
+function buildBriefPrompt(responses: Record<string, any>, serviceId: string | null, websitePages: string[]): string {
+  const r = responses || {};
+  if (serviceId === 'business_foundations_pack') {
+    return buildDocumentsBriefPrompt(r, websitePages);
+  } else if (serviceId === 'social_media_pack') {
+    return buildSocialMediaBriefPrompt(r);
+  } else if (serviceId === 'website_copy_pack') {
+    return buildWebsiteBriefPrompt(r, websitePages);
+  } else {
+    return buildComprehensiveBriefPrompt(r, websitePages);
+  }
+}
 
-  console.log(`Calling Gemini API with model=${model}, prompt length=${prompt.length}`);
+async function callGemini(prompt: string, maxTokens: number = 8192): Promise<{ text: string; model: string; finishReason?: string }> {
+  const model = "gemini-2.5-flash";
+  console.log(`Calling Gemini API with model=${model}, prompt length=${prompt.length}, maxOutputTokens=${maxTokens}`);
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
@@ -357,7 +601,7 @@ async function callGemini(prompt: string): Promise<{ text: string; model: string
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+        generationConfig: { temperature: 0.7, maxOutputTokens: maxTokens },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -375,8 +619,6 @@ async function callGemini(prompt: string): Promise<{ text: string; model: string
   }
 
   const data = await response.json();
-
-  // Check for safety blocks / empty responses with detailed info
   const candidate = data.candidates?.[0];
   const finishReason = candidate?.finishReason;
   const generatedText = candidate?.content?.parts?.[0]?.text;
@@ -392,7 +634,6 @@ async function callGemini(prompt: string): Promise<{ text: string; model: string
   }
 
   await trackGeminiUsage(model);
-
   return { text: generatedText, model, finishReason };
 }
 
@@ -401,22 +642,17 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  // ─── Health / debug endpoint ────────────────────────────────────────────
   if (req.method === "GET") {
-    const keyTest = await testGeminiKey();
     return successResponse({
       status: "generate-brief endpoint active",
       env: {
         hasSupabaseUrl: !!SUPABASE_URL,
         hasServiceRoleKey: !!SERVICE_ROLE_KEY,
         hasGeminiKey: !!GEMINI_API_KEY,
-        geminiKeyPrefix: GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 6) + "..." : "(empty)",
       },
-      geminiKeyTest: keyTest,
     });
   }
 
-  // ─── Brief generation ───────────────────────────────────────────────────
   try {
     const body = await req.json();
     const { user_id, service_id, debug } = body as { user_id?: string; service_id?: string; debug?: boolean };
@@ -434,16 +670,6 @@ Deno.serve(async (req: Request) => {
     const debugInfo: Record<string, unknown> = {};
     const shouldDebug = debug === true;
 
-    // Step 1: Verify Gemini key works
-    if (shouldDebug) {
-      const keyTest = await testGeminiKey();
-      debugInfo.geminiKeyTest = keyTest;
-      if (!keyTest.valid) {
-        return errorResponse(500, "Gemini API key is invalid", debugInfo);
-      }
-    }
-
-    // Step 2: Fetch intake data
     const { data: intakeData, error: intakeError } = await adminQuery(
       "intake_responses", "responses,purchased_service_ids", { user_id }
     );
@@ -460,7 +686,6 @@ Deno.serve(async (req: Request) => {
       debugInfo.purchasedServiceIds = intakeData[0].purchased_service_ids;
     }
 
-    // Step 3: Fetch website pages
     const { data: servicesData } = await adminQuery(
       "services_purchased", "website_pages_selected", { user_id, service_id: "website_copy_pack", status: "active" }
     );
@@ -468,7 +693,6 @@ Deno.serve(async (req: Request) => {
       ? (servicesData[0].website_pages_selected || [])
       : [];
 
-    // Step 4: Build prompt
     const briefPrompt = buildBriefPrompt(responses, service_id || null, websitePages);
     if (shouldDebug) {
       debugInfo.promptLength = briefPrompt.length;
@@ -476,11 +700,11 @@ Deno.serve(async (req: Request) => {
       debugInfo.websitePages = websitePages;
     }
 
-    // Step 5: Call Gemini
+    const maxTokens = service_id === 'business_foundations_pack' ? 16384 : 8192;
     let briefContent: string;
     let usedModel: string;
     try {
-      const result = await callGemini(briefPrompt);
+      const result = await callGemini(briefPrompt, maxTokens);
       briefContent = result.text;
       usedModel = result.model;
       if (shouldDebug) {
@@ -490,7 +714,6 @@ Deno.serve(async (req: Request) => {
       const errMsg = geminiErr instanceof Error ? geminiErr.message : "Unknown Gemini error";
       console.error("Gemini call failed:", errMsg);
 
-      // Save failed status to client_briefs
       try {
         await fetch(`${SUPABASE_URL}/rest/v1/client_briefs`, {
           method: "POST",
@@ -512,7 +735,6 @@ Deno.serve(async (req: Request) => {
       return errorResponse(502, `Gemini API failed: ${errMsg}`, shouldDebug ? debugInfo : undefined);
     }
 
-    // Step 6: Save to client_briefs
     const briefFilter = service_id
       ? `client_id=eq.${user_id}&service_id=eq.${service_id}`
       : `client_id=eq.${user_id}&service_id=is.null`;

@@ -11,6 +11,7 @@ import {
   PlatformId, PLATFORM_SPECS, extractSelectedPlatforms,
   validateImageDimensions, ALL_PLATFORM_IDS, getPrimaryImageSpec
 } from '@/lib/social-platforms';
+import { buildSocialMediaFullPrompt } from '@/lib/services/document-prompts';
 
 // ── Platform icon map ────────────────────────────────────────────────────────
 const PLATFORM_ICON_MAP: Record<PlatformId, React.ElementType> = {
@@ -65,52 +66,6 @@ const CATEGORY_STYLES = {
   promotional: { label: 'Promotional', bg: 'bg-amber-50', text: 'text-amber-700' },
   personal: { label: 'Personal', bg: 'bg-green-50', text: 'text-green-700' },
 };
-
-const SOCIAL_MEDIA_PROMPT = `You are a social media content strategist creating engaging posts for UK small businesses.
-
-OBJECTIVE
-Create posts that:
-• Build brand awareness
-• Demonstrate expertise
-• Drive engagement
-• Attract ideal clients
-• Save time with ready-to-post content
-
-OUTPUT FORMAT
-Return a JSON object with this exact structure:
-{
-  "posts": [
-    {
-      "postNumber": 1,
-      "category": "educational",
-      "platform": "LinkedIn",
-      "week": 1,
-      "day": "Mon",
-      "caption": "Full post text ready to copy-paste",
-      "hashtags": "#tag1 #tag2 #tag3 #tag4 #tag5",
-      "imagePrompt": "1-2 sentence description of the accompanying image"
-    }
-  ]
-}
-
-CONTENT MIX
-• 30% Educational posts (tips, insights, how-tos)
-• 30% Personal posts (behind-scenes, philosophy, story)
-• 40% Promotional posts (services, results, offers)
-
-CAPTION GUIDELINES
-• LinkedIn: 200-300 words, professional tone
-• Instagram: 100-150 words, visual focus
-• Facebook: 150-200 words, community-building
-• X: 50-80 words, punchy, conversation-starting
-• TikTok: 100-150 words, casual, trendy
-• Pinterest: 50-80 words, keyword-rich, descriptive
-
-WRITING REQUIREMENTS
-• Match the client's brand voice
-• Be authentic and specific to their industry
-• Avoid generic inspirational quotes
-• No hashtags in captions (add separately)`;
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function SocialMediaTab({ userId, data, refreshData }: SocialMediaTabProps) {
@@ -205,12 +160,13 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
 
   const handleCopyPrompt = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(SOCIAL_MEDIA_PROMPT);
-      showMessage('Prompt copied to clipboard', 'success');
+      const fullPrompt = buildSocialMediaFullPrompt(clientBrief?.brief_content || '');
+      await navigator.clipboard.writeText(fullPrompt);
+      showMessage('Prompt + brief copied to clipboard', 'success');
     } catch {
       showMessage('Failed to copy prompt', 'error');
     }
-  }, []);
+  }, [clientBrief]);
 
   const handleCopyBrief = useCallback(async () => {
     if (!clientBrief?.brief_content) {
@@ -231,17 +187,10 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
     sections.push(`Generated: ${new Date().toLocaleString()}`);
     sections.push('');
     sections.push('---');
-    sections.push('## GENERATION PROMPT');
+    sections.push('## GENERATION PROMPT + BRIEF');
     sections.push('');
-    sections.push(SOCIAL_MEDIA_PROMPT);
+    sections.push(buildSocialMediaFullPrompt(clientBrief?.brief_content || ''));
     sections.push('');
-    if (clientBrief?.brief_content) {
-      sections.push('---');
-      sections.push('## CLIENT BRIEF');
-      sections.push('');
-      sections.push(clientBrief.brief_content);
-      sections.push('');
-    }
     if (posts.length > 0) {
       sections.push('---');
       sections.push('## EXISTING POSTS');

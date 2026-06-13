@@ -63,7 +63,38 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
   };
 
   const fetchBrief = async () => {
-    const { data: briefs } = await supabase
+    // Fetch the documents-specific brief first
+    const { data: docBriefs } = await supabase
+      .from('client_briefs')
+      .select('brief_content, status, service_id')
+      .eq('client_id', userId)
+      .eq('service_id', 'business_foundations_pack')
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (docBriefs && docBriefs.length > 0 && docBriefs[0].brief_content) {
+      setBriefContent(docBriefs[0].brief_content);
+      return;
+    }
+
+    // Fallback: comprehensive brief (null service_id)
+    const { data: compBriefs } = await supabase
+      .from('client_briefs')
+      .select('brief_content, status, service_id')
+      .eq('client_id', userId)
+      .is('service_id', null)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (compBriefs && compBriefs.length > 0 && compBriefs[0].brief_content) {
+      setBriefContent(compBriefs[0].brief_content);
+      return;
+    }
+
+    // Last resort: any completed brief
+    const { data: anyBriefs } = await supabase
       .from('client_briefs')
       .select('brief_content, status')
       .eq('client_id', userId)
@@ -71,8 +102,8 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       .order('created_at', { ascending: false })
       .limit(1);
 
-    if (briefs && briefs.length > 0 && briefs[0].brief_content) {
-      setBriefContent(briefs[0].brief_content);
+    if (anyBriefs && anyBriefs.length > 0 && anyBriefs[0].brief_content) {
+      setBriefContent(anyBriefs[0].brief_content);
     }
   };
 

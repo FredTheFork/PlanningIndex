@@ -355,11 +355,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Fetch client brief if available
-    const briefData = await adminQuery("client_briefs", "brief_content", { client_id: user_id });
-    const briefContent = briefData && Array.isArray(briefData) && briefData.length > 0
-      ? briefData[0].brief_content
-      : null;
+    // Fetch website-specific brief first, then fall back to comprehensive, then any
+    let briefContent: string | null = null;
+
+    const websiteBrief = await adminQuery("client_briefs", "brief_content", { client_id: user_id, service_id: "website_copy_pack" });
+    if (websiteBrief && Array.isArray(websiteBrief) && websiteBrief.length > 0 && websiteBrief[0].brief_content) {
+      briefContent = websiteBrief[0].brief_content;
+    }
+
+    if (!briefContent) {
+      const compBrief = await adminQuery("client_briefs", "brief_content", { client_id: user_id });
+      if (compBrief && Array.isArray(compBrief) && compBrief.length > 0 && compBrief[0].brief_content) {
+        briefContent = compBrief[0].brief_content;
+      }
+    }
 
     // Fetch any uploaded files info
     const uploadsData = await adminQuery("intake_uploads", "question_id,file_name,file_path", { user_id });
