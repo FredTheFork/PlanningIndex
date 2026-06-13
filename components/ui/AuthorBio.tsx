@@ -44,16 +44,16 @@ export default function AuthorBio({
 
           <div className="mt-3 flex items-center gap-4">
             <a
-              href="https://twitter.com/foundationary"
+              href="https://twitter.com/foundationarybusiness"
               target="_blank"
               rel="noopener noreferrer"
               className="font-inter text-medium-blue hover:text-navy transition-colors"
               style={{ fontSize: '0.85rem' }}
             >
-              @Foundationary
+              @Foundationarybusiness
             </a>
             <a
-              href="https://www.linkedin.com/company/foundationary"
+              href="https://www.linkedin.com/company/foundationarybusiness"
               target="_blank"
               rel="noopener noreferrer"
               className="font-inter text-medium-blue hover:text-navy transition-colors"
