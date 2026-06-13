@@ -91,7 +91,7 @@ const overviewSteps = [
   {
     num: '03',
     title: 'Reviewed, packaged, and delivered',
-    body: 'Every piece of content is reviewed in depth before delivery to ensure consistency, clarity, and compliance.',
+    body: 'Every piece of content is reviewed in depth by the team before delivery to ensure consistency, clarity, and compliance.',
     bullets: [
       'Checked for UK law alignment',
       'Consistent terms across all documents',
