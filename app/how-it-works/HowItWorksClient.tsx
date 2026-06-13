@@ -91,7 +91,7 @@ const overviewSteps = [
   {
     num: '03',
     title: 'Reviewed, packaged, and delivered',
-    body: 'Every piece of content is reviewed by a human before delivery to ensure consistency, clarity, and compliance.',
+    body: 'Every piece of content is reviewed in depth before delivery to ensure consistency, clarity, and compliance.',
     bullets: [
       'Checked for UK law alignment',
       'Consistent terms across all documents',
@@ -412,7 +412,7 @@ const trustItems = [
   },
   {
     icon: '👤',
-    title: 'Reviewed by a human before delivery',
+    title: 'Reviewed in depth before delivery',
     desc: 'No document leaves our system without a consistency and compliance check.',
   },
   {
