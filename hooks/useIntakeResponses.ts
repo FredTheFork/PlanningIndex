@@ -46,6 +46,7 @@ export function useIntakeResponses() {
   const pendingResponsesRef = useRef<Record<string, any> | null>(null);
   const localLastSavedRef = useRef<string | null>(null);
   const lastVerifiedIdsRef = useRef<string>('');
+  const lastSubmissionAtRef = useRef<string | null>(null);
 
   // Ensure arrays are always arrays (defensive against corrupted state)
   const safeServiceIds = Array.isArray(purchasedServiceIds) && purchasedServiceIds.length > 0
@@ -159,6 +160,7 @@ export function useIntakeResponses() {
         });
         setLastSaved(row.last_saved_at ? new Date(row.last_saved_at) : null);
         localLastSavedRef.current = row.last_saved_at;
+        lastSubmissionAtRef.current = row.submitted_at || null;
 
         if (rowPsi.length > 0) {
           setPurchasedServiceIds(rowPsi);
@@ -204,13 +206,25 @@ export function useIntakeResponses() {
           if (newRow) {
             setData((prev) => {
               if (!prev) return prev;
-              // Use explicit undefined check — null is a valid value (means "cleared"),
-              // only fall back to prev if the field is genuinely missing from the payload.
+
+              // Guard: if we just submitted and the realtime payload has a stale
+              // edit_granted_at (from before submission), ignore it. The timestamp
+              // comparison in isLocked/hasEditAccess already handles this, but
+              // we also prevent the stale value from entering state.
+              const newSubmitted = newRow.submitted_at !== undefined ? newRow.submitted_at : prev.submitted_at;
+              const newEditGranted = newRow.edit_granted_at !== undefined ? newRow.edit_granted_at : prev.edit_granted_at;
+
+              // If we have a recent submission and the realtime edit_granted_at
+              // is from before that submission, force it to null
+              const safeEditGranted = (newSubmitted && newEditGranted && newEditGranted <= newSubmitted)
+                ? null
+                : newEditGranted;
+
               return {
                 ...prev,
-                submitted_at: newRow.submitted_at !== undefined ? newRow.submitted_at : prev.submitted_at,
+                submitted_at: newSubmitted,
                 edit_requested_at: newRow.edit_requested_at !== undefined ? newRow.edit_requested_at : prev.edit_requested_at,
-                edit_granted_at: newRow.edit_granted_at !== undefined ? newRow.edit_granted_at : prev.edit_granted_at,
+                edit_granted_at: safeEditGranted,
                 submission_count: newRow.submission_count !== undefined ? newRow.submission_count : prev.submission_count,
                 intake_complete_for_services: Array.isArray(newRow.intake_complete_for_services)
                   ? newRow.intake_complete_for_services
@@ -233,8 +247,17 @@ export function useIntakeResponses() {
       if (row) {
         setData((prev) => {
           if (!prev) return prev;
-          const newEditGranted = row.edit_granted_at || null;
-          const newEditRequested = row.edit_requested_at || null;
+          const newSubmitted = row.submitted_at || prev.submitted_at;
+          const rawEditGranted = row.edit_granted_at || null;
+          const rawEditRequested = row.edit_requested_at || null;
+          // If edit_granted_at is from before the current submission, treat as null
+          const newEditGranted = (newSubmitted && rawEditGranted && rawEditGranted <= newSubmitted)
+            ? null
+            : rawEditGranted;
+          // Same for edit_requested_at
+          const newEditRequested = (newSubmitted && rawEditRequested && rawEditRequested <= newSubmitted)
+            ? null
+            : rawEditRequested;
           const newCount = row.submission_count ?? prev.submission_count;
           const newIcf = Array.isArray(row.intake_complete_for_services) ? row.intake_complete_for_services : prev.intake_complete_for_services;
           if (prev.edit_granted_at === newEditGranted && prev.edit_requested_at === newEditRequested && prev.submission_count === newCount && prev.intake_complete_for_services === newIcf) return prev;
@@ -268,9 +291,10 @@ export function useIntakeResponses() {
     return false;
   }, [user]);
 
-  // The form is locked when submitted and no edit access granted.
-  // Autosave is BLOCKED when locked.
-  const isLocked = !!data?.submitted_at && !data?.edit_granted_at;
+  // The form is locked when submitted and edit access has not been granted AFTER that submission.
+  // Uses timestamp comparison so stale edit_granted_at values (before resubmission) don't unlock.
+  const isLocked = !!data?.submitted_at
+    && (!data?.edit_granted_at || data.edit_granted_at <= data.submitted_at);
 
   // Debounced save to database
   const saveToDatabase = useCallback(async (responses: Record<string, any>) => {
@@ -413,6 +437,9 @@ export function useIntakeResponses() {
         submission_count: resultCount,
       } : prev);
 
+      // Track the last submission time to defend against stale realtime updates
+      lastSubmissionAtRef.current = result.submitted_at;
+
       if (resultPsi.length > 0) {
         setPurchasedServiceIds(resultPsi);
       }
@@ -500,16 +527,23 @@ export function useIntakeResponses() {
   })();
 
   // ── Edit access logic ──────────────────────────────────────────────────
+  // CRITICAL: hasEditAccess requires edit_granted_at to be AFTER submitted_at.
+  // This prevents stale edit_granted_at values (from before resubmission) from
+  // incorrectly unlocking the form due to realtime/polling race conditions.
   const hasSubmitted = !!data?.submitted_at;
-  const hasEditAccess = hasSubmitted && !!data?.edit_granted_at;
-  const editRequested = !!data?.edit_requested_at;
+  const hasEditAccess = hasSubmitted
+    && !!data?.edit_granted_at
+    && !!data?.submitted_at
+    && data.edit_granted_at > data.submitted_at;
+  const editRequested = !!data?.edit_requested_at
+    && (!data?.submitted_at || data.edit_requested_at > data.submitted_at);
   const submissionCount = data?.submission_count || 0;
   const submissionsRemaining = MAX_SUBMISSIONS - submissionCount;
 
   // Client can request an edit if:
   // - Form has been submitted
-  // - Edit has NOT already been granted
-  // - Edit has NOT already been requested (pending)
+  // - Edit has NOT already been granted (for this submission)
+  // - Edit has NOT already been requested (for this submission)
   // - They haven't used all 3 submissions yet
   const canRequestEdit = hasSubmitted && !hasEditAccess && !editRequested && submissionsRemaining > 0;
 
