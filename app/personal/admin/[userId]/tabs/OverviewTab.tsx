@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
-  Mail, Phone, MapPin, ExternalLink, AlertTriangle, Calendar, FileText
+  Mail, Phone, MapPin, ExternalLink, AlertTriangle, Calendar, FileText, Unlock, Clock, CheckCircle2
 } from 'lucide-react';
 
 interface OverviewTabProps {
@@ -17,6 +17,19 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
   const [saving, setSaving] = useState(false);
   const [adminNotes, setAdminNotes] = useState(data.profile?.admin_notes || '');
   const [autoDeleteDays, setAutoDeleteDays] = useState(30);
+  const [editStatus, setEditStatus] = useState<{ edit_requested_at: string | null; edit_granted_at: string | null; edit_granted_by: string | null } | null>(null);
+
+  useEffect(() => {
+    // Fetch intake edit status
+    supabase
+      .from('intake_responses')
+      .select('edit_requested_at, edit_granted_at, edit_granted_by')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setEditStatus(data);
+      });
+  }, [userId]);
 
   useEffect(() => {
     // Initial data fetch if needed
@@ -152,6 +165,45 @@ export default function OverviewTab({ userId, data, refreshData }: OverviewTabPr
           )}
         </div>
       </div>
+
+      {/* Intake Edit Status */}
+      {editStatus && (editStatus.edit_requested_at || editStatus.edit_granted_at) && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="font-inter font-bold text-[#1B3F7A] text-lg mb-4">
+            Intake Edit Status
+          </h3>
+          <div className="space-y-3">
+            {editStatus.edit_granted_at && (
+              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg p-3">
+                <Unlock size={18} className="text-green-600 shrink-0" />
+                <div>
+                  <p className="font-inter font-semibold text-green-900 text-sm">Edit Access Granted</p>
+                  <p className="font-inter text-green-700 text-xs">
+                    Granted on {new Date(editStatus.edit_granted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="font-inter text-green-600 text-xs mt-1">
+                    Client can now re-enter and edit their intake form. Briefs will auto-regenerate on resubmission.
+                  </p>
+                </div>
+              </div>
+            )}
+            {editStatus.edit_requested_at && !editStatus.edit_granted_at && (
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <Clock size={18} className="text-amber-600 shrink-0" />
+                <div>
+                  <p className="font-inter font-semibold text-amber-900 text-sm">Edit Requested</p>
+                  <p className="font-inter text-amber-700 text-xs">
+                    Requested on {new Date(editStatus.edit_requested_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="font-inter text-amber-600 text-xs mt-1">
+                    Go to the Messages tab to grant or deny edit access.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Admin Notes */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">

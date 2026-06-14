@@ -24,6 +24,8 @@ interface IntakeData {
   purchased_service_ids: string[];
   intake_complete_for_services: string[];
   last_visited_at: string | null;
+  edit_requested_at: string | null;
+  edit_granted_at: string | null;
 }
 
 export function useIntakeResponses() {
@@ -149,6 +151,8 @@ export function useIntakeResponses() {
           purchased_service_ids: rowPsi,
           intake_complete_for_services: rowIcf,
           last_visited_at: row.last_visited_at,
+          edit_requested_at: row.edit_requested_at || null,
+          edit_granted_at: row.edit_granted_at || null,
         });
         setLastSaved(row.last_saved_at ? new Date(row.last_saved_at) : null);
         localLastSavedRef.current = row.last_saved_at;
@@ -172,6 +176,8 @@ export function useIntakeResponses() {
           purchased_service_ids: [],
           intake_complete_for_services: [],
           last_visited_at: null,
+          edit_requested_at: null,
+          edit_granted_at: null,
         });
       }
 
@@ -418,6 +424,72 @@ export function useIntakeResponses() {
       .filter((id) => !newSectionIds.includes(id));
   })();
 
+  // Edit access logic
+  const canRequestEdit = (() => {
+    if (!data?.submitted_at) return false;
+    if (data.edit_granted_at) return false; // already granted, no need to request again
+    if (data.edit_requested_at) return false; // already requested
+    const submittedAt = new Date(data.submitted_at);
+    const oneHourAfter = new Date(submittedAt.getTime() + 60 * 60 * 1000);
+    return new Date() < oneHourAfter; // within 1 hour of submission
+  })();
+
+  const hasEditAccess = (() => {
+    if (!data?.submitted_at) return false;
+    if (!data.edit_granted_at) return false;
+    return true;
+  })();
+
+  const editRequested = !!data?.edit_requested_at;
+
+  const requestEdit = useCallback(async () => {
+    if (!user || !canRequestEdit) return false;
+
+    const now = new Date().toISOString();
+
+    const { error } = await supabase
+      .from('intake_responses')
+      .update({ edit_requested_at: now })
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error requesting edit:', error);
+      return false;
+    }
+
+    // Send a message to admin
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return false;
+
+    // Find the admin user to send the message to
+    const { data: admins } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .limit(1);
+
+    const adminId = admins && admins.length > 0 ? admins[0].user_id : null;
+    if (!adminId) return false;
+
+    const conversationId = [user.id, adminId].sort().join('_');
+
+    const { error: msgError } = await supabase
+      .from('client_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        recipient_id: adminId,
+        message_content: 'Could I please go back to the intake form and change something?',
+        message_type: 'intake_edit_request',
+      });
+
+    if (msgError) {
+      console.error('Error sending edit request message:', msgError);
+    }
+
+    setData(prev => prev ? { ...prev, edit_requested_at: now } : prev);
+    return true;
+  }, [user, canRequestEdit, supabase]);
+
   return {
     data,
     loading: authLoading || loading,
@@ -436,5 +508,9 @@ export function useIntakeResponses() {
     submitForm,
     uploadFile,
     removeFile,
+    canRequestEdit,
+    hasEditAccess,
+    editRequested,
+    requestEdit,
   };
 }

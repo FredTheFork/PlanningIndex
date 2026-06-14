@@ -39,6 +39,10 @@ export default function IntakeWizard() {
     removeFile,
     conflictDetected,
     dismissConflict,
+    canRequestEdit,
+    hasEditAccess,
+    editRequested,
+    requestEdit,
   } = useIntakeResponses();
 
   const { profile } = useClientProfile();
@@ -259,7 +263,15 @@ export default function IntakeWizard() {
   }
 
   // Already fully submitted, no new sections (includes legacy accounts where tracking columns were empty)
-  if (isFullyComplete || isLegacyComplete) {
+  if ((isFullyComplete || isLegacyComplete) && !hasEditAccess) {
+    const submittedDate = data.submitted_at
+      ? new Date(data.submitted_at).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'an unknown date';
+
     return (
       <div>
         <div className="mb-8">
@@ -283,26 +295,156 @@ export default function IntakeWizard() {
                 Form Submitted
               </h2>
               <p className="font-inter text-gray-600 text-sm mb-4">
-                Your intake form was submitted on{' '}
-                {data.submitted_at
-                  ? new Date(data.submitted_at).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })
-                  : 'an unknown date'}
-                . We&apos;re now preparing your bespoke business documents.
+                Your intake form was submitted on {submittedDate}. We&apos;re now preparing your bespoke business documents.
               </p>
-              <a
-                href="/personal/status"
-                className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors"
-                style={{ padding: '10px 20px', fontSize: '0.9rem' }}
-              >
-                View Status
-              </a>
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href="/personal/status"
+                  className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-[#1B3F7A] rounded-md hover:bg-[#2C68C4] transition-colors"
+                  style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                >
+                  View Status
+                </a>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Edit request section */}
+        {canRequestEdit && !editRequested && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mt-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-amber-100 rounded-lg p-3 shrink-0">
+                <Clock size={20} className="text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-inter font-bold text-amber-900 text-base mb-2">
+                  Need to change something?
+                </h3>
+                <p className="font-inter text-amber-800 text-sm mb-4">
+                  You can request to edit your intake form within the first hour after submission. After that, your answers are locked so we can begin preparing your documents.
+                </p>
+                <button
+                  onClick={async () => {
+                    const success = await requestEdit();
+                    if (success) {
+                      // Force re-read by brief re-render
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors"
+                  style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                >
+                  Request to Edit Intake Form
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editRequested && !hasEditAccess && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-blue-100 rounded-lg p-3 shrink-0">
+                <Clock size={20} className="text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-inter font-bold text-blue-900 text-base mb-2">
+                  Edit Request Sent
+                </h3>
+                <p className="font-inter text-blue-800 text-sm">
+                  Your request to edit the intake form has been sent. We&apos;ll review it and grant access if appropriate. You&apos;ll be notified when you can make changes.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // If admin has granted edit access, allow them back into the form
+  if (hasEditAccess && (isFullyComplete || isLegacyComplete)) {
+    return (
+      <div>
+        <div className="mb-6">
+          <h1 className="font-inter font-bold text-[#1B3F7A] text-2xl mb-1">
+            Edit Intake Form
+          </h1>
+          <p className="font-inter text-gray-600 text-sm">
+            You have been granted access to update your intake form. Make your changes and resubmit when ready.
+          </p>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={18} className="text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-inter font-semibold text-blue-900 text-sm">
+                Your client briefs will be automatically regenerated after resubmission
+              </p>
+              <p className="font-inter text-blue-800 text-xs mt-1">
+                All changes will trigger new brief versions (v2, v3, etc.) to ensure your documents reflect the updated information.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Render the full editable form */}
+        {safeFormSections.length > 0 && (() => {
+          const editCurrentSection = safeFormSections.find(s => s.id === currentSectionId) || safeFormSections[0];
+          return (
+            <>
+              <ProgressBar
+                sections={safeFormSections}
+                responses={data?.responses || {}}
+                currentSectionId={currentSectionId}
+                onNavigate={handleNavigate}
+                completedSectionIds={safeCompletedSectionIds}
+                newSectionIds={safeNewSectionIds}
+              />
+
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Save size={14} className={saving ? 'text-[#2C68C4] animate-pulse' : 'text-[#38A169]'} />
+                  <span className="font-inter text-xs text-[#4A5568]">
+                    {saving
+                      ? 'Saving...'
+                      : lastSaved
+                      ? `Saved at ${lastSaved.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                      : 'Autosave enabled'}
+                  </span>
+                </div>
+              </div>
+
+              {showValidationSummary && Object.keys(errors).length > 0 && (
+                <ValidationSummary errors={errors} fieldMeta={fieldMeta} onScrollToField={scrollToField} />
+              )}
+
+              {editCurrentSection && (
+                <SectionRenderer
+                  section={editCurrentSection}
+                  responses={data?.responses || {}}
+                  onUpdateField={handleUpdateField}
+                  onUploadFile={handleUploadFile}
+                  onRemoveFile={handleRemoveFile}
+                  errors={errors}
+                  prefillSuggestions={prefillSuggestions}
+                />
+              )}
+
+              <SectionNav
+                sections={safeFormSections}
+                currentSectionId={currentSectionId}
+                onNavigate={handleNavigate}
+                onValidateAndNext={validateCurrentSection}
+                onSubmit={handleSubmit}
+                submitting={submitting}
+                completedSectionIds={safeCompletedSectionIds}
+                newSectionIds={safeNewSectionIds}
+              />
+            </>
+          );
+        })()}
       </div>
     );
   }

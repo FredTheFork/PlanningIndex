@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquare, Phone, Loader, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Send, MessageSquare, Phone, Loader, Clock, AlertCircle, CheckCircle2, Unlock } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { triggerMessageNotification } from '@/app/actions/messaging';
@@ -47,6 +47,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const [loading, setLoading] = useState(true);
   const [conversationId, setConversationId] = useState('');
   const [clientPreferences, setClientPreferences] = useState<any>(null);
+  const [clientEditGranted, setClientEditGranted] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -127,6 +128,18 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
       .maybeSingle()
       .then(({ data: prefs }) => {
         if (componentActiveRef.current) setClientPreferences(prefs);
+      });
+
+    // Check if client already has edit access
+    supabase
+      .from('intake_responses')
+      .select('edit_granted_at')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data: intakeData }) => {
+        if (componentActiveRef.current && intakeData?.edit_granted_at) {
+          setClientEditGranted(true);
+        }
       });
 
     // Setup Realtime
@@ -344,6 +357,42 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
     }
   };
 
+  const handleGrantEditAccess = async () => {
+    if (!user) return;
+    try {
+      const now = new Date().toISOString();
+      // Grant edit access in intake_responses
+      const { error: updateError } = await supabase
+        .from('intake_responses')
+        .update({ edit_granted_at: now, edit_granted_by: user.id })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error granting edit access:', updateError);
+        return;
+      }
+
+      setClientEditGranted(true);
+
+      // Send confirmation message to client
+      const { error: msgError } = await supabase
+        .from('client_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          recipient_id: userId,
+          message_content: 'You have been granted access to edit your intake form. Go to the Intake Form page to make your changes.',
+          message_type: 'intake_edit_granted',
+        });
+
+      if (msgError) {
+        console.error('Error sending grant message:', msgError);
+      }
+    } catch (err) {
+      console.error('Error granting edit access:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -485,6 +534,8 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
                             }`}>
                               {msg.message_type === 'document_query' && 'Document'}
                               {msg.message_type === 'intake_query' && 'Intake'}
+                              {msg.message_type === 'intake_edit_request' && 'Edit Request'}
+                              {msg.message_type === 'intake_edit_granted' && 'Edit Access'}
                             </p>
                           )}
                           <p className="font-inter break-words leading-snug">{msg.message_content}</p>
@@ -507,6 +558,36 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         </div>
 
         <div className="border-t border-gray-200 bg-white p-3 space-y-2">
+          {/* Grant Edit Access banner (admin only, when client requested edit) */}
+          {messages.some(m => m.message_type === 'intake_edit_request' && m.sender_id === userId) && !clientEditGranted && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Unlock size={16} className="text-amber-600 shrink-0" />
+                  <p className="font-inter text-xs font-medium text-amber-900">
+                    Client requested to edit their intake form
+                  </p>
+                </div>
+                <button
+                  onClick={handleGrantEditAccess}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-xs font-inter font-semibold transition-colors shrink-0"
+                >
+                  <Unlock size={12} />
+                  Grant Edit Access
+                </button>
+              </div>
+            </div>
+          )}
+          {clientEditGranted && messages.some(m => m.message_type === 'intake_edit_request') && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-green-600 shrink-0" />
+                <p className="font-inter text-xs font-medium text-green-900">
+                  Edit access granted — client can now update their intake form
+                </p>
+              </div>
+            </div>
+          )}
           <select
             value={messageType}
             onChange={(e) => setMessageType(e.target.value as any)}

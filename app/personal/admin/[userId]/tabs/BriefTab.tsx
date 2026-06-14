@@ -297,6 +297,7 @@ export default function BriefTab({ userId, data, refreshData }: BriefTabProps) {
                 >
                   <Package size={10} />
                   {b.service_id ? (getServiceById(b.service_id)?.name?.replace(' Pack', '').replace(' Starter', '') ?? b.service_id) : 'Comprehensive'}
+                  {b.version > 1 && <span className="opacity-70 ml-0.5">v{b.version}</span>}
                 </button>
               ))}
             </div>
@@ -388,6 +389,14 @@ export default function BriefTab({ userId, data, refreshData }: BriefTabProps) {
           {/* Metadata Bar */}
           <div className="bg-[#FAFBFC] border-b border-gray-200 px-6 py-3">
             <div className="flex flex-wrap items-center gap-6 text-sm">
+              {(selectedBrief.version > 1 || true) && (
+                <div>
+                  <span className="font-inter text-gray-600">Version: </span>
+                  <span className="font-inter font-semibold text-[#1B3F7A]">
+                    v{selectedBrief.version || 1}
+                  </span>
+                </div>
+              )}
               {selectedBrief.service_id && (
                 <div>
                   <span className="font-inter text-gray-600">Service: </span>

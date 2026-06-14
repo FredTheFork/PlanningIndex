@@ -24,6 +24,7 @@ interface DocumentsTabProps {
 export default function DocumentsTab({ userId, data, refreshData }: DocumentsTabProps) {
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const [briefContent, setBriefContent] = useState<string>('');
+  const [briefVersion, setBriefVersion] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
@@ -66,7 +67,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     // Fetch the documents-specific brief first
     const { data: docBriefs } = await supabase
       .from('client_briefs')
-      .select('brief_content, status, service_id')
+      .select('brief_content, status, service_id, version')
       .eq('client_id', userId)
       .eq('service_id', 'business_foundations_pack')
       .eq('status', 'completed')
@@ -75,13 +76,14 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
 
     if (docBriefs && docBriefs.length > 0 && docBriefs[0].brief_content) {
       setBriefContent(docBriefs[0].brief_content);
+      setBriefVersion(docBriefs[0].version || 1);
       return;
     }
 
     // Fallback: comprehensive brief (null service_id)
     const { data: compBriefs } = await supabase
       .from('client_briefs')
-      .select('brief_content, status, service_id')
+      .select('brief_content, status, service_id, version')
       .eq('client_id', userId)
       .is('service_id', null)
       .eq('status', 'completed')
@@ -90,13 +92,14 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
 
     if (compBriefs && compBriefs.length > 0 && compBriefs[0].brief_content) {
       setBriefContent(compBriefs[0].brief_content);
+      setBriefVersion(compBriefs[0].version || 1);
       return;
     }
 
     // Last resort: any completed brief
     const { data: anyBriefs } = await supabase
       .from('client_briefs')
-      .select('brief_content, status')
+      .select('brief_content, status, version')
       .eq('client_id', userId)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
@@ -104,6 +107,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
 
     if (anyBriefs && anyBriefs.length > 0 && anyBriefs[0].brief_content) {
       setBriefContent(anyBriefs[0].brief_content);
+      setBriefVersion(anyBriefs[0].version || 1);
     }
   };
 
@@ -280,6 +284,11 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
             {!briefContent && (
               <p className="font-inter text-amber-600 text-xs mt-1">
                 No client brief found — prompts will include a placeholder section instead of brief context.
+              </p>
+            )}
+            {briefContent && briefVersion > 1 && (
+              <p className="font-inter text-blue-600 text-xs mt-1">
+                Using brief v{briefVersion} (updated after intake edit)
               </p>
             )}
           </div>

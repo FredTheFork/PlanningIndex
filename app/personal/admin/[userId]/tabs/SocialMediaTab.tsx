@@ -59,6 +59,7 @@ interface ClientBrief {
   brief_content: string;
   status: string;
   generated_at: string;
+  version: number;
 }
 
 const CATEGORY_STYLES = {
@@ -129,7 +130,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
     setLoadingBrief(true);
     const { data: briefData, error } = await supabase
       .from('client_briefs')
-      .select('*')
+      .select('id, client_id, brief_content, status, generated_at, version')
       .eq('client_id', userId)
       .eq('service_id', 'social_media_pack')
       .order('generated_at', { ascending: false })
@@ -582,7 +583,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
             clientBrief ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
           }`}>
             {clientBrief ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-            Brief {clientBrief ? 'Ready' : 'Pending'}
+            Brief {clientBrief ? `Ready${clientBrief.version > 1 ? ` (v${clientBrief.version})` : ''}` : 'Pending'}
           </div>
           <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
             posts.length >= postCount ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'

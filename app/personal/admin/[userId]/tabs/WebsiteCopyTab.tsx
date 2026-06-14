@@ -37,6 +37,7 @@ interface ClientBrief {
   brief_content: string;
   status: string;
   generated_at: string;
+  version: number;
 }
 
 interface ClientAsset {
@@ -872,7 +873,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
                     briefAvailable ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
                   }`}>
                     {briefAvailable ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                    Brief {briefAvailable ? 'Ready' : 'Pending'}
+                    Brief {briefAvailable ? `Ready${clientBrief?.version && clientBrief.version > 1 ? ` (v${clientBrief.version})` : ''}` : 'Pending'}
                   </div>
                   <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
                     promptAvailable ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'
