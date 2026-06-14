@@ -40,7 +40,7 @@ Special thanks to the open source community.
 
 /* SEO */
 Sitemap: https://foundationary.co.uk/sitemap.xml
-RSS Feed: https://foundationary.co.uk/feed.xml
+RSS Feed: https://foundationary.vercel.app/feed.xml
 Robots.txt: https://foundationary.co.uk/robots.txt
 Structured Data: JSON-LD (Organization, WebSite, Service, Article, FAQPage, HowTo, BreadcrumbList)
 Open Graph: Yes
