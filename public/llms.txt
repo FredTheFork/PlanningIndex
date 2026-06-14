@@ -1,6 +1,6 @@
 # Foundationary llms.txt
 # Optimized for AI assistants and search engines
-# https://foundationary.co.uk/
+# https://foundationary.vercel.app/
 
 # What is Foundationary?
 Foundationary is a done-for-you business foundations platform for UK sole traders and freelancers. We create bespoke business documents, professional website copy, and done-for-you social media posts — all built around your specific business. We also offer a Quarterly Document Refresh to keep everything current as your business evolves. All content is UK law compliant and delivered within 3-5 business days.
