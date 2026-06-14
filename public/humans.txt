@@ -39,7 +39,7 @@ Built with attention to detail and care for UK sole traders.
 Special thanks to the open source community.
 
 /* SEO */
-Sitemap: https://foundationary.co.uk/sitemap.xml
+Sitemap: https://foundationary.vercel.app/sitemap.xml
 RSS Feed: https://foundationary.vercel.app/feed.xml
 Robots.txt: https://foundationary.vercel.app/robots.txt
 Structured Data: JSON-LD (Organization, WebSite, Service, Article, FAQPage, HowTo, BreadcrumbList)
