@@ -241,6 +241,68 @@ export function generateHowToSchema(steps: Array<{ name: string; text: string }>
   };
 }
 
+export function generateProductSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: 'Foundationary Business Foundations Pack',
+    description: '10 professional, UK-law-compliant business documents for sole traders. Includes client contract, GDPR privacy policy, terms & conditions, invoice template, and more.',
+    brand: {
+      '@type': 'Brand',
+      name: 'Foundationary',
+    },
+    category: 'Business Documents',
+    image: `${SITE_URL}/og/pricing.png`,
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'GBP',
+      lowPrice: '20',
+      highPrice: '79',
+      offerCount: 4,
+      offers: [
+        {
+          '@type': 'Offer',
+          name: 'Business Foundations Pack',
+          price: '79',
+          priceCurrency: 'GBP',
+          availability: 'https://schema.org/InStock',
+          url: `${SITE_URL}/pricing`,
+        },
+        {
+          '@type': 'Offer',
+          name: 'Website Copy Starter Pack',
+          price: '35',
+          priceCurrency: 'GBP',
+          availability: 'https://schema.org/InStock',
+          url: `${SITE_URL}/pricing`,
+        },
+        {
+          '@type': 'Offer',
+          name: 'Social Media Starter Pack',
+          price: '20',
+          priceCurrency: 'GBP',
+          availability: 'https://schema.org/InStock',
+          url: `${SITE_URL}/pricing`,
+        },
+        {
+          '@type': 'Offer',
+          name: 'Quarterly Document Refresh',
+          price: '29',
+          priceCurrency: 'GBP',
+          availability: 'https://schema.org/InStock',
+          url: `${SITE_URL}/pricing`,
+        },
+      ],
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '12',
+      bestRating: '5',
+    },
+  };
+}
+
 function generateLocalBusinessSchema() {
   return {
     '@context': 'https://schema.org',

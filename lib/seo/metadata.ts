@@ -15,7 +15,7 @@ interface PageSEO {
   noIndex?: boolean;
 }
 
-function generatePageMetadata({
+export function generatePageMetadata({
   title,
   description,
   path,
@@ -29,7 +29,7 @@ function generatePageMetadata({
   noIndex = false,
 }: PageSEO): Metadata {
   const url = `${SITE_URL}${path}`;
-  const ogImage = image || OG_IMAGES.default;
+  const ogImage = image || `${SITE_URL}/api/og?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description.slice(0, 100))}`;
 
   const metadata: Metadata = {
     title,
@@ -72,11 +72,15 @@ function generatePageMetadata({
 
     alternates: {
       canonical: url,
+      languages: {
+        'en-GB': url,
+        'x-default': url,
+      },
     },
 
     robots: noIndex
       ? { index: false, follow: false }
-      : { index: true, follow: true },
+      : { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
 
     other: {
       'geo.region': 'GB',
@@ -88,7 +92,7 @@ function generatePageMetadata({
   return metadata;
 }
 
-function generateArticleMetadata(article: {
+export function generateArticleMetadata(article: {
   title: string;
   description: string;
   slug: string;
@@ -104,7 +108,7 @@ function generateArticleMetadata(article: {
     description: article.description,
     path: `/blog/${article.slug}`,
     type: 'article',
-    image: article.image ? `${SITE_URL}/og/articles/${article.slug}.png` : undefined,
+    image: article.image ? `${SITE_URL}/og/articles/${article.slug}.png` : `${SITE_URL}/api/og?title=${encodeURIComponent(article.title)}&description=${encodeURIComponent(article.description.slice(0, 100))}&type=blog`,
     publishedTime: article.date,
     modifiedTime: article.modifiedDate || article.date,
     author: article.author || SITE_CONFIG.name,

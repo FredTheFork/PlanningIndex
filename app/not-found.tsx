@@ -1,7 +1,16 @@
-'use client';
-
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { Home, FileText, HelpCircle, ArrowLeft } from 'lucide-react';
+import { SITE_URL } from '@/lib/seo';
+
+export const metadata: Metadata = {
+  title: 'Page Not Found',
+  description: 'The page you are looking for does not exist. Return to Foundationary for UK sole trader business documents, website copy and social media.',
+  robots: { index: false, follow: false },
+  alternates: {
+    canonical: SITE_URL,
+  },
+};
 
 export default function NotFound() {
   return (
@@ -75,14 +84,14 @@ export default function NotFound() {
         </div>
 
         {/* Back link */}
-        <button
-          onClick={() => window.history.back()}
-          className="inline-flex items-center gap-2 font-inter font-medium text-medium-blue hover:underline mt-8 cursor-pointer bg-transparent border-none"
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 font-inter font-medium text-medium-blue hover:underline mt-8"
           style={{ fontSize: '0.9rem' }}
         >
           <ArrowLeft size={16} />
           Go back to previous page
-        </button>
+        </Link>
       </div>
     </div>
   );
