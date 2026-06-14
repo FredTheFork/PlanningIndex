@@ -48,6 +48,7 @@ export default function IntakeWizard() {
   const { profile } = useClientProfile();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showValidationSummary, setShowValidationSummary] = useState(false);
+  const [enteringNewSections, setEnteringNewSections] = useState(false);
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Defensive: ensure arrays are always arrays
@@ -60,10 +61,12 @@ export default function IntakeWizard() {
   const currentSection = safeFormSections.find((s) => s.id === currentSectionId);
 
   const hasSubmitted = !!data?.submitted_at;
-  // Legacy accounts: submitted_at set but intake_complete_for_services empty → treat as fully complete
-  const isLegacyComplete = hasSubmitted && !intakeFullyComplete && safeNewSectionIds.length === 0;
   const isNewSectionsMode = hasSubmitted && !intakeFullyComplete && safeNewSectionIds.length > 0;
-  const isFullyComplete = hasSubmitted && intakeFullyComplete;
+
+  // The form is LOCKED whenever submitted and no edit access has been granted.
+  // New sections mode is handled FROM the lock screen via a separate entry point,
+  // not by bypassing the lock.
+  const isFormLocked = hasSubmitted && !hasEditAccess;
 
   // Compute prefill suggestions
   const prefillSuggestions = useMemo(() => {
@@ -262,8 +265,9 @@ export default function IntakeWizard() {
     );
   }
 
-  // Already fully submitted, no new sections (includes legacy accounts where tracking columns were empty)
-  if ((isFullyComplete || isLegacyComplete) && !hasEditAccess) {
+  // Form is LOCKED — submitted and no edit access
+  // Exception: if user is entering new sections mode, show the new-sections form instead
+  if (isFormLocked && !enteringNewSections) {
     const submittedDate = data.submitted_at
       ? new Date(data.submitted_at).toLocaleDateString('en-GB', {
           day: 'numeric',
@@ -309,6 +313,38 @@ export default function IntakeWizard() {
             </div>
           </div>
         </div>
+
+        {/* New sections available */}
+        {isNewSectionsMode && !enteringNewSections && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-blue-100 rounded-lg p-3 shrink-0">
+                <AlertTriangle size={20} className="text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-inter font-bold text-blue-900 text-base mb-2">
+                  New Sections Available
+                </h3>
+                <p className="font-inter text-blue-800 text-sm mb-4">
+                  You have additional intake sections to complete for your new services. Your previous answers are locked, but you can fill in the new sections now.
+                </p>
+                <button
+                  onClick={() => {
+                    setEnteringNewSections(true);
+                    const firstNewSection = safeFormSections.find((s) =>
+                      safeNewSectionIds.includes(s.id)
+                    );
+                    if (firstNewSection) setCurrentSection(firstNewSection.id);
+                  }}
+                  className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                  style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                >
+                  Complete New Sections
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Edit request section */}
         {canRequestEdit && !editRequested && (
@@ -362,8 +398,8 @@ export default function IntakeWizard() {
     );
   }
 
-  // If admin has granted edit access, allow them back into the form
-  if (hasEditAccess && (isFullyComplete || isLegacyComplete)) {
+  // If admin has granted edit access, allow them back into the full form
+  if (hasSubmitted && hasEditAccess) {
     return (
       <div>
         <div className="mb-6">

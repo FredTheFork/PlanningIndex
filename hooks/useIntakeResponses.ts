@@ -185,6 +185,62 @@ export function useIntakeResponses() {
     };
 
     fetchData();
+
+    // Subscribe to realtime changes on intake_responses (e.g., admin grants edit access)
+    const channel = supabase
+      .channel(`intake_responses:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'intake_responses',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newRow = payload.new as any;
+          if (newRow) {
+            setData((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                submitted_at: newRow.submitted_at ?? prev.submitted_at,
+                edit_requested_at: newRow.edit_requested_at ?? prev.edit_requested_at,
+                edit_granted_at: newRow.edit_granted_at ?? prev.edit_granted_at,
+                intake_complete_for_services: Array.isArray(newRow.intake_complete_for_services)
+                  ? newRow.intake_complete_for_services
+                  : prev.intake_complete_for_services,
+              };
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Poll for edit status changes every 10 seconds (fallback for realtime)
+    const editPollRef = setInterval(async () => {
+      const { data: row } = await supabase
+        .from('intake_responses')
+        .select('edit_granted_at, edit_requested_at, submitted_at, intake_complete_for_services')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      if (row) {
+        setData((prev) => {
+          if (!prev) return prev;
+          const newEditGranted = row.edit_granted_at || null;
+          const newEditRequested = row.edit_requested_at || null;
+          const newIcf = Array.isArray(row.intake_complete_for_services) ? row.intake_complete_for_services : prev.intake_complete_for_services;
+          if (prev.edit_granted_at === newEditGranted && prev.edit_requested_at === newEditRequested && prev.intake_complete_for_services === newIcf) return prev;
+          return { ...prev, edit_granted_at: newEditGranted, edit_requested_at: newEditRequested, intake_complete_for_services: newIcf };
+        });
+      }
+    }, 10000);
+
+    return () => {
+      channel.unsubscribe();
+      clearInterval(editPollRef);
+    };
   }, [user, authLoading]);
 
   // Check for autosave conflicts before writing
@@ -206,9 +262,13 @@ export function useIntakeResponses() {
     return false;
   }, [user]);
 
-  // Debounced save to database
+  // Debounced save to database — BLOCKED when form is locked (submitted + no edit access + no new sections)
   const saveToDatabase = useCallback(async (responses: Record<string, any>) => {
     if (!user) return;
+
+    // BLOCK: Do not save if the form is submitted, no edit access, and no new sections to complete
+    const hasNewSections = data?.submitted_at && !isIntakeFullyComplete(safeServiceIds, Array.isArray(data?.intake_complete_for_services) ? data.intake_complete_for_services : []);
+    if (data?.submitted_at && !data?.edit_granted_at && !hasNewSections) return;
 
     setSaving(true);
     try {
@@ -270,14 +330,16 @@ export function useIntakeResponses() {
     });
   }, [saveToDatabase]);
 
-  // Update current section
+  // Update current section — BLOCKED when form is locked (no edit access, no new sections)
   const setCurrentSection = useCallback((sectionId: string) => {
     setData((prev) => {
       if (!prev) return prev;
       return { ...prev, current_section_id: sectionId };
     });
 
-    if (user) {
+    // Only persist section changes when form is not locked
+    const hasNewSections = data?.submitted_at && !isIntakeFullyComplete(safeServiceIds, Array.isArray(data?.intake_complete_for_services) ? data.intake_complete_for_services : []);
+    if (user && !(data?.submitted_at && !data?.edit_granted_at && !hasNewSections)) {
       supabase
         .from('intake_responses')
         .update({ current_section_id: sectionId })
@@ -286,7 +348,7 @@ export function useIntakeResponses() {
           if (error) console.error('Error updating current section:', error);
         });
     }
-  }, [user]);
+  }, [user, data?.submitted_at, data?.edit_granted_at]);
 
   // Submit the form via server-side endpoint for security
   const submitForm = useCallback(async (responses: Record<string, any>) => {
@@ -334,6 +396,8 @@ export function useIntakeResponses() {
         submitted_at: result.submitted_at,
         purchased_service_ids: resultPsi,
         intake_complete_for_services: resultIcf,
+        edit_granted_at: null,
+        edit_requested_at: null,
       } : prev);
 
       if (resultPsi.length > 0) {
@@ -447,6 +511,7 @@ export function useIntakeResponses() {
 
     const now = new Date().toISOString();
 
+    // 1. Record the edit request in intake_responses
     const { error } = await supabase
       .from('intake_responses')
       .update({ edit_requested_at: now })
@@ -457,19 +522,42 @@ export function useIntakeResponses() {
       return false;
     }
 
-    // Send a message to admin
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return false;
+    // 2. Find an admin to send the message to — try multiple approaches
+    let adminId: string | null = null;
 
-    // Find the admin user to send the message to
+    // Try admin_users first
     const { data: admins } = await supabase
       .from('admin_users')
       .select('user_id')
       .limit(1);
 
-    const adminId = admins && admins.length > 0 ? admins[0].user_id : null;
-    if (!adminId) return false;
+    if (admins && admins.length > 0 && admins[0].user_id) {
+      adminId = admins[0].user_id;
+    }
 
+    // Fallback: try finding admin from client_messages (admin who messaged this client before)
+    if (!adminId) {
+      const { data: existingMsgs } = await supabase
+        .from('client_messages')
+        .select('sender_id')
+        .eq('recipient_id', user.id)
+        .neq('sender_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (existingMsgs && existingMsgs.length > 0 && existingMsgs[0].sender_id) {
+        adminId = existingMsgs[0].sender_id;
+      }
+    }
+
+    if (!adminId) {
+      console.error('Could not find an admin to send edit request message to');
+      // Still update the local state since the DB write succeeded
+      setData(prev => prev ? { ...prev, edit_requested_at: now } : prev);
+      return true;
+    }
+
+    // 3. Send the message
     const conversationId = [user.id, adminId].sort().join('_');
 
     const { error: msgError } = await supabase
@@ -484,11 +572,12 @@ export function useIntakeResponses() {
 
     if (msgError) {
       console.error('Error sending edit request message:', msgError);
+      // Still return true since the DB edit_requested_at was set
     }
 
     setData(prev => prev ? { ...prev, edit_requested_at: now } : prev);
     return true;
-  }, [user, canRequestEdit, supabase]);
+  }, [user, canRequestEdit]);
 
   return {
     data,
