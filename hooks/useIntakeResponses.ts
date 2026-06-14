@@ -10,6 +10,7 @@ import { isSectionComplete } from '@/lib/forms/conditional-logic';
 
 const DEFAULT_SERVICE_IDS = ['business_foundations_pack'];
 const DEFAULT_FORM_SECTIONS = buildIntakeForm(DEFAULT_SERVICE_IDS);
+const MAX_SUBMISSIONS = 3;
 
 interface IntakeData {
   id: string;
@@ -26,6 +27,7 @@ interface IntakeData {
   last_visited_at: string | null;
   edit_requested_at: string | null;
   edit_granted_at: string | null;
+  submission_count: number;
 }
 
 export function useIntakeResponses() {
@@ -153,16 +155,15 @@ export function useIntakeResponses() {
           last_visited_at: row.last_visited_at,
           edit_requested_at: row.edit_requested_at || null,
           edit_granted_at: row.edit_granted_at || null,
+          submission_count: row.submission_count || 0,
         });
         setLastSaved(row.last_saved_at ? new Date(row.last_saved_at) : null);
         localLastSavedRef.current = row.last_saved_at;
 
-        // If row has purchased_service_ids, prefer those over derived ones
         if (rowPsi.length > 0) {
           setPurchasedServiceIds(rowPsi);
         }
       } else {
-        // Initialize with defaults for new users so navigation works
         setData({
           id: '',
           user_id: user.id,
@@ -178,6 +179,7 @@ export function useIntakeResponses() {
           last_visited_at: null,
           edit_requested_at: null,
           edit_granted_at: null,
+          submission_count: 0,
         });
       }
 
@@ -186,7 +188,7 @@ export function useIntakeResponses() {
 
     fetchData();
 
-    // Subscribe to realtime changes on intake_responses (e.g., admin grants edit access)
+    // Subscribe to realtime changes (admin grants edit access, resubmission clears edit fields)
     const channel = supabase
       .channel(`intake_responses:${user.id}`)
       .on(
@@ -202,11 +204,14 @@ export function useIntakeResponses() {
           if (newRow) {
             setData((prev) => {
               if (!prev) return prev;
+              // Use explicit undefined check — null is a valid value (means "cleared"),
+              // only fall back to prev if the field is genuinely missing from the payload.
               return {
                 ...prev,
-                submitted_at: newRow.submitted_at ?? prev.submitted_at,
-                edit_requested_at: newRow.edit_requested_at ?? prev.edit_requested_at,
-                edit_granted_at: newRow.edit_granted_at ?? prev.edit_granted_at,
+                submitted_at: newRow.submitted_at !== undefined ? newRow.submitted_at : prev.submitted_at,
+                edit_requested_at: newRow.edit_requested_at !== undefined ? newRow.edit_requested_at : prev.edit_requested_at,
+                edit_granted_at: newRow.edit_granted_at !== undefined ? newRow.edit_granted_at : prev.edit_granted_at,
+                submission_count: newRow.submission_count !== undefined ? newRow.submission_count : prev.submission_count,
                 intake_complete_for_services: Array.isArray(newRow.intake_complete_for_services)
                   ? newRow.intake_complete_for_services
                   : prev.intake_complete_for_services,
@@ -217,11 +222,11 @@ export function useIntakeResponses() {
       )
       .subscribe();
 
-    // Poll for edit status changes every 10 seconds (fallback for realtime)
+    // Poll for edit status changes every 10 seconds
     const editPollRef = setInterval(async () => {
       const { data: row } = await supabase
         .from('intake_responses')
-        .select('edit_granted_at, edit_requested_at, submitted_at, intake_complete_for_services')
+        .select('edit_granted_at, edit_requested_at, submitted_at, submission_count, intake_complete_for_services')
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -230,9 +235,10 @@ export function useIntakeResponses() {
           if (!prev) return prev;
           const newEditGranted = row.edit_granted_at || null;
           const newEditRequested = row.edit_requested_at || null;
+          const newCount = row.submission_count ?? prev.submission_count;
           const newIcf = Array.isArray(row.intake_complete_for_services) ? row.intake_complete_for_services : prev.intake_complete_for_services;
-          if (prev.edit_granted_at === newEditGranted && prev.edit_requested_at === newEditRequested && prev.intake_complete_for_services === newIcf) return prev;
-          return { ...prev, edit_granted_at: newEditGranted, edit_requested_at: newEditRequested, intake_complete_for_services: newIcf };
+          if (prev.edit_granted_at === newEditGranted && prev.edit_requested_at === newEditRequested && prev.submission_count === newCount && prev.intake_complete_for_services === newIcf) return prev;
+          return { ...prev, edit_granted_at: newEditGranted, edit_requested_at: newEditRequested, submission_count: newCount, intake_complete_for_services: newIcf };
         });
       }
     }, 10000);
@@ -262,13 +268,14 @@ export function useIntakeResponses() {
     return false;
   }, [user]);
 
-  // Debounced save to database — BLOCKED when form is locked (submitted + no edit access + no new sections)
+  // The form is locked when submitted and no edit access granted.
+  // Autosave is BLOCKED when locked.
+  const isLocked = !!data?.submitted_at && !data?.edit_granted_at;
+
+  // Debounced save to database
   const saveToDatabase = useCallback(async (responses: Record<string, any>) => {
     if (!user) return;
-
-    // BLOCK: Do not save if the form is submitted, no edit access, and no new sections to complete
-    const hasNewSections = data?.submitted_at && !isIntakeFullyComplete(safeServiceIds, Array.isArray(data?.intake_complete_for_services) ? data.intake_complete_for_services : []);
-    if (data?.submitted_at && !data?.edit_granted_at && !hasNewSections) return;
+    if (isLocked) return;
 
     setSaving(true);
     try {
@@ -309,10 +316,12 @@ export function useIntakeResponses() {
     } finally {
       setSaving(false);
     }
-  }, [user, safeFormSections, data?.current_section_id, safeServiceIds, checkForConflicts]);
+  }, [user, safeFormSections, data?.current_section_id, safeServiceIds, checkForConflicts, isLocked]);
 
   // Update a single field value and trigger debounced save
   const updateField = useCallback((fieldId: string, value: any) => {
+    if (isLocked) return;
+
     setData((prev) => {
       if (!prev) return prev;
       const newResponses = { ...prev.responses, [fieldId]: value };
@@ -328,9 +337,9 @@ export function useIntakeResponses() {
 
       return { ...prev, responses: newResponses };
     });
-  }, [saveToDatabase]);
+  }, [saveToDatabase, isLocked]);
 
-  // Update current section — BLOCKED when form is locked (no edit access, no new sections)
+  // Update current section
   const setCurrentSection = useCallback((sectionId: string) => {
     setData((prev) => {
       if (!prev) return prev;
@@ -338,8 +347,7 @@ export function useIntakeResponses() {
     });
 
     // Only persist section changes when form is not locked
-    const hasNewSections = data?.submitted_at && !isIntakeFullyComplete(safeServiceIds, Array.isArray(data?.intake_complete_for_services) ? data.intake_complete_for_services : []);
-    if (user && !(data?.submitted_at && !data?.edit_granted_at && !hasNewSections)) {
+    if (user && !isLocked) {
       supabase
         .from('intake_responses')
         .update({ current_section_id: sectionId })
@@ -348,9 +356,9 @@ export function useIntakeResponses() {
           if (error) console.error('Error updating current section:', error);
         });
     }
-  }, [user, data?.submitted_at, data?.edit_granted_at]);
+  }, [user, isLocked]);
 
-  // Submit the form via server-side endpoint for security
+  // Submit the form via server-side endpoint
   const submitForm = useCallback(async (responses: Record<string, any>) => {
     if (!user) return false;
 
@@ -378,6 +386,7 @@ export function useIntakeResponses() {
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Submit error:', errData.error || res.status);
+        setSubmitting(false);
         return false;
       }
 
@@ -387,7 +396,10 @@ export function useIntakeResponses() {
 
       const resultPsi = Array.isArray(result.purchased_service_ids) ? result.purchased_service_ids : safeServiceIds;
       const resultIcf = Array.isArray(result.intake_complete_for_services) ? result.intake_complete_for_services : [];
+      const resultCount = typeof result.submission_count === 'number' ? result.submission_count : (data?.submission_count || 0) + 1;
 
+      // CRITICAL: Immediately set the form into locked state after successful submission.
+      // This prevents any window where the form could be editable.
       setData((prev) => prev ? {
         ...prev,
         responses: result.rejected_fields
@@ -398,6 +410,7 @@ export function useIntakeResponses() {
         intake_complete_for_services: resultIcf,
         edit_granted_at: null,
         edit_requested_at: null,
+        submission_count: resultCount,
       } : prev);
 
       if (resultPsi.length > 0) {
@@ -411,7 +424,7 @@ export function useIntakeResponses() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, data?.current_section_id, safeServiceIds]);
+  }, [user, data?.current_section_id, safeServiceIds, data?.submission_count]);
 
   // Upload a file to intake-uploads bucket
   const uploadFile = useCallback(async (fieldId: string, file: File) => {
@@ -458,7 +471,6 @@ export function useIntakeResponses() {
   const newSectionIds = (() => {
     if (!data?.submitted_at) return [];
     const completedFor = Array.isArray(data.intake_complete_for_services) ? data.intake_complete_for_services : [];
-    // Legacy: submitted but no tracking data → assume all current services were completed already
     if (completedFor.length === 0) return [];
     if (isIntakeFullyComplete(safeServiceIds, completedFor)) return [];
 
@@ -474,7 +486,6 @@ export function useIntakeResponses() {
   const intakeFullyComplete = (() => {
     if (!data?.submitted_at) return false;
     const icf = Array.isArray(data.intake_complete_for_services) ? data.intake_complete_for_services : [];
-    // Legacy: submitted but intake_complete_for_services empty → treat as fully complete
     if (icf.length === 0) return true;
     return isIntakeFullyComplete(safeServiceIds, icf);
   })();
@@ -488,23 +499,19 @@ export function useIntakeResponses() {
       .filter((id) => !newSectionIds.includes(id));
   })();
 
-  // Edit access logic
-  const canRequestEdit = (() => {
-    if (!data?.submitted_at) return false;
-    if (data.edit_granted_at) return false; // already granted, no need to request again
-    if (data.edit_requested_at) return false; // already requested
-    const submittedAt = new Date(data.submitted_at);
-    const oneHourAfter = new Date(submittedAt.getTime() + 60 * 60 * 1000);
-    return new Date() < oneHourAfter; // within 1 hour of submission
-  })();
-
-  const hasEditAccess = (() => {
-    if (!data?.submitted_at) return false;
-    if (!data.edit_granted_at) return false;
-    return true;
-  })();
-
+  // ── Edit access logic ──────────────────────────────────────────────────
+  const hasSubmitted = !!data?.submitted_at;
+  const hasEditAccess = hasSubmitted && !!data?.edit_granted_at;
   const editRequested = !!data?.edit_requested_at;
+  const submissionCount = data?.submission_count || 0;
+  const submissionsRemaining = MAX_SUBMISSIONS - submissionCount;
+
+  // Client can request an edit if:
+  // - Form has been submitted
+  // - Edit has NOT already been granted
+  // - Edit has NOT already been requested (pending)
+  // - They haven't used all 3 submissions yet
+  const canRequestEdit = hasSubmitted && !hasEditAccess && !editRequested && submissionsRemaining > 0;
 
   const requestEdit = useCallback(async () => {
     if (!user || !canRequestEdit) return false;
@@ -522,10 +529,9 @@ export function useIntakeResponses() {
       return false;
     }
 
-    // 2. Find an admin to send the message to — try multiple approaches
+    // 2. Find an admin to send the message to
     let adminId: string | null = null;
 
-    // Try admin_users first
     const { data: admins } = await supabase
       .from('admin_users')
       .select('user_id')
@@ -535,7 +541,6 @@ export function useIntakeResponses() {
       adminId = admins[0].user_id;
     }
 
-    // Fallback: try finding admin from client_messages (admin who messaged this client before)
     if (!adminId) {
       const { data: existingMsgs } = await supabase
         .from('client_messages')
@@ -552,7 +557,6 @@ export function useIntakeResponses() {
 
     if (!adminId) {
       console.error('Could not find an admin to send edit request message to');
-      // Still update the local state since the DB write succeeded
       setData(prev => prev ? { ...prev, edit_requested_at: now } : prev);
       return true;
     }
@@ -566,18 +570,17 @@ export function useIntakeResponses() {
         conversation_id: conversationId,
         sender_id: user.id,
         recipient_id: adminId,
-        message_content: 'Could I please go back to the intake form and change something?',
+        message_content: `Could I please go back to the intake form and change something? (Submission ${submissionCount} of ${MAX_SUBMISSIONS})`,
         message_type: 'intake_edit_request',
       });
 
     if (msgError) {
       console.error('Error sending edit request message:', msgError);
-      // Still return true since the DB edit_requested_at was set
     }
 
     setData(prev => prev ? { ...prev, edit_requested_at: now } : prev);
     return true;
-  }, [user, canRequestEdit]);
+  }, [user, canRequestEdit, submissionCount]);
 
   return {
     data,
@@ -597,9 +600,14 @@ export function useIntakeResponses() {
     submitForm,
     uploadFile,
     removeFile,
-    canRequestEdit,
+    hasSubmitted,
     hasEditAccess,
     editRequested,
+    canRequestEdit,
     requestEdit,
+    submissionCount,
+    submissionsRemaining,
+    isLocked,
+    maxSubmissions: MAX_SUBMISSIONS,
   };
 }

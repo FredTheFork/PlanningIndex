@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Save, Clock, AlertTriangle } from 'lucide-react';
+import { Save, Clock, AlertTriangle, Lock, MessageSquare } from 'lucide-react';
 import { useIntakeResponses } from '@/hooks/useIntakeResponses';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { validateSection, isFieldConditionallyVisible } from '@/lib/forms/conditional-logic';
@@ -39,10 +39,15 @@ export default function IntakeWizard() {
     removeFile,
     conflictDetected,
     dismissConflict,
-    canRequestEdit,
+    hasSubmitted,
     hasEditAccess,
     editRequested,
+    canRequestEdit,
     requestEdit,
+    submissionCount,
+    submissionsRemaining,
+    isLocked,
+    maxSubmissions,
   } = useIntakeResponses();
 
   const { profile } = useClientProfile();
@@ -60,13 +65,7 @@ export default function IntakeWizard() {
   const currentSectionId = data?.current_section_id || 'intro';
   const currentSection = safeFormSections.find((s) => s.id === currentSectionId);
 
-  const hasSubmitted = !!data?.submitted_at;
   const isNewSectionsMode = hasSubmitted && !intakeFullyComplete && safeNewSectionIds.length > 0;
-
-  // The form is LOCKED whenever submitted and no edit access has been granted.
-  // New sections mode is handled FROM the lock screen via a separate entry point,
-  // not by bypassing the lock.
-  const isFormLocked = hasSubmitted && !hasEditAccess;
 
   // Compute prefill suggestions
   const prefillSuggestions = useMemo(() => {
@@ -129,7 +128,6 @@ export default function IntakeWizard() {
       setErrors((prev) => {
         const next = { ...prev };
         delete next[fieldId];
-        // Also clear repeating section sub-field errors
         Object.keys(next).forEach((key) => {
           if (key.startsWith(fieldId + '[')) delete next[key];
         });
@@ -163,24 +161,16 @@ export default function IntakeWizard() {
     [removeFile, data?.responses, updateField]
   );
 
-  // Validate current section using Zod + conditional logic
   const validateCurrentSection = useCallback((): boolean => {
     if (!data?.responses || !currentSection) return true;
     if (currentSectionId === 'intro') return true;
 
-    // In new-sections mode, only validate new sections
     if (isNewSectionsMode && !safeNewSectionIds.includes(currentSection.id)) return true;
 
-    // Zod validation
     const zodErrors = validateSectionWithZod(currentSection.id, data.responses);
-
-    // Also run conditional-logic validation for conditional fields
     const conditionalErrors = validateSection(currentSection.fields, data.responses);
-
-    // Merge: Zod errors take priority, conditional errors fill gaps
     const merged = { ...zodErrors, ...conditionalErrors };
 
-    // Filter out errors for fields that are not visible (conditional)
     const visibleFieldIds = new Set(
       currentSection.fields
         .filter((f) => isFieldConditionallyVisible(f, data.responses))
@@ -189,7 +179,6 @@ export default function IntakeWizard() {
 
     const filteredErrors: Record<string, string> = {};
     for (const [key, msg] of Object.entries(merged)) {
-      // For repeating section sub-fields like "q15_services[0].service_name"
       const baseFieldId = key.split('[')[0];
       if (visibleFieldIds.has(baseFieldId) || key.includes('[')) {
         filteredErrors[key] = msg;
@@ -230,6 +219,7 @@ export default function IntakeWizard() {
     const success = await submitForm(data.responses);
     if (success) {
       setShowValidationSummary(false);
+      setEnteringNewSections(false);
     }
   }, [data?.responses, safeFormSections, isNewSectionsMode, safeNewSectionIds, submitForm]);
 
@@ -247,7 +237,6 @@ export default function IntakeWizard() {
     if (!isNewSectionsMode) return;
     if (currentSectionId !== 'intro') return;
 
-    // If user has new sections to complete, navigate to the first one
     const firstNewSection = safeFormSections.find((s) =>
       safeNewSectionIds.includes(s.id)
     );
@@ -256,7 +245,7 @@ export default function IntakeWizard() {
     }
   }, [loading, data, isNewSectionsMode, safeNewSectionIds, safeFormSections, currentSectionId, setCurrentSection]);
 
-  // Loading state
+  // ── Loading state ─────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -265,10 +254,11 @@ export default function IntakeWizard() {
     );
   }
 
-  // Form is LOCKED — submitted and no edit access
-  // Exception: if user is entering new sections mode, show the new-sections form instead
-  if (isFormLocked && !enteringNewSections) {
-    const submittedDate = data.submitted_at
+  // ── LOCKED: Form has been submitted, no edit access ───────────────────
+  // This is the ONLY state a client sees after submission until admin grants access.
+  // The enteringNewSections exception allows completing genuinely new service sections.
+  if (isLocked && !enteringNewSections) {
+    const submittedDate = data?.submitted_at
       ? new Date(data.submitted_at).toLocaleDateString('en-GB', {
           day: 'numeric',
           month: 'long',
@@ -287,6 +277,7 @@ export default function IntakeWizard() {
           </p>
         </div>
 
+        {/* Submission confirmed card */}
         <div className="bg-white rounded-lg border border-gray-200 p-8">
           <div className="flex items-start gap-4">
             <div className="bg-green-100 rounded-lg p-3 shrink-0">
@@ -301,6 +292,12 @@ export default function IntakeWizard() {
               <p className="font-inter text-gray-600 text-sm mb-4">
                 Your intake form was submitted on {submittedDate}. We&apos;re now preparing your bespoke business documents.
               </p>
+              {submissionCount > 1 && (
+                <p className="font-inter text-gray-500 text-xs mb-4">
+                  Submission {submissionCount} of {maxSubmissions}
+                  {submissionsRemaining > 0 && ` — ${submissionsRemaining} edit${submissionsRemaining !== 1 ? 's' : ''} remaining`}
+                </p>
+              )}
               <div className="flex flex-wrap gap-3">
                 <a
                   href="/personal/status"
@@ -315,7 +312,7 @@ export default function IntakeWizard() {
         </div>
 
         {/* New sections available */}
-        {isNewSectionsMode && !enteringNewSections && (
+        {isNewSectionsMode && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
             <div className="flex items-start gap-4">
               <div className="bg-blue-100 rounded-lg p-3 shrink-0">
@@ -346,30 +343,31 @@ export default function IntakeWizard() {
           </div>
         )}
 
-        {/* Edit request section */}
-        {canRequestEdit && !editRequested && (
+        {/* Request to edit — available when under the submission limit */}
+        {canRequestEdit && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mt-6">
             <div className="flex items-start gap-4">
               <div className="bg-amber-100 rounded-lg p-3 shrink-0">
-                <Clock size={20} className="text-amber-600" />
+                <Lock size={20} className="text-amber-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-inter font-bold text-amber-900 text-base mb-2">
                   Need to change something?
                 </h3>
                 <p className="font-inter text-amber-800 text-sm mb-4">
-                  You can request to edit your intake form within the first hour after submission. After that, your answers are locked so we can begin preparing your documents.
+                  You can request to edit your intake form. We&apos;ll review your request and grant access if appropriate.
+                  {submissionsRemaining > 0 && (
+                    <span className="font-semibold"> You have {submissionsRemaining} edit{submissionsRemaining !== 1 ? 's' : ''} remaining (maximum {maxSubmissions} submissions).</span>
+                  )}
                 </p>
                 <button
                   onClick={async () => {
-                    const success = await requestEdit();
-                    if (success) {
-                      // Force re-read by brief re-render
-                    }
+                    await requestEdit();
                   }}
                   className="inline-flex items-center gap-2 font-inter font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors"
                   style={{ padding: '10px 20px', fontSize: '0.9rem' }}
                 >
+                  <MessageSquare size={16} />
                   Request to Edit Intake Form
                 </button>
               </div>
@@ -377,6 +375,7 @@ export default function IntakeWizard() {
           </div>
         )}
 
+        {/* Edit request pending */}
         {editRequested && !hasEditAccess && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
             <div className="flex items-start gap-4">
@@ -394,11 +393,30 @@ export default function IntakeWizard() {
             </div>
           </div>
         )}
+
+        {/* Max submissions reached — no more edits possible */}
+        {!canRequestEdit && hasSubmitted && !hasEditAccess && !editRequested && submissionsRemaining <= 0 && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mt-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-gray-200 rounded-lg p-3 shrink-0">
+                <Lock size={20} className="text-gray-500" />
+              </div>
+              <div>
+                <h3 className="font-inter font-bold text-gray-700 text-base mb-2">
+                  Maximum Submissions Reached
+                </h3>
+                <p className="font-inter text-gray-600 text-sm">
+                  You have reached the maximum of {maxSubmissions} submissions for your intake form. No further edits are permitted. If you need urgent changes, please contact us via the chat.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  // If admin has granted edit access, allow them back into the full form
+  // ── EDIT MODE: Admin has granted edit access ──────────────────────────
   if (hasSubmitted && hasEditAccess) {
     return (
       <div>
@@ -419,7 +437,7 @@ export default function IntakeWizard() {
                 Your client briefs will be automatically regenerated after resubmission
               </p>
               <p className="font-inter text-blue-800 text-xs mt-1">
-                All changes will trigger new brief versions (v2, v3, etc.) to ensure your documents reflect the updated information.
+                This will be submission {submissionCount + 1} of {maxSubmissions}. All changes will trigger new brief versions (v{submissionCount + 1}) to ensure your documents reflect the updated information.
               </p>
             </div>
           </div>
@@ -485,6 +503,7 @@ export default function IntakeWizard() {
     );
   }
 
+  // ── MAIN FORM: Initial fill or new sections completion ────────────────
   const isOnIntro = currentSectionId === 'intro';
 
   return (
@@ -492,10 +511,10 @@ export default function IntakeWizard() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="font-inter font-bold text-[#1B3F7A] text-2xl mb-1">
-          {isNewSectionsMode ? 'Complete New Sections' : 'Intake Form'}
+          {isNewSectionsMode || enteringNewSections ? 'Complete New Sections' : 'Intake Form'}
         </h1>
         <p className="font-inter text-gray-600 text-sm">
-          {isNewSectionsMode
+          {isNewSectionsMode || enteringNewSections
             ? 'Please complete the new sections for your additional services.'
             : 'Tell us about your business so we can create your bespoke documents.'}
         </p>
@@ -517,7 +536,7 @@ export default function IntakeWizard() {
       )}
 
       {/* New sections banner */}
-      {isNewSectionsMode && (
+      {(isNewSectionsMode || enteringNewSections) && (
         <NewSectionsBanner
           newSectionIds={safeNewSectionIds}
           sectionTitles={sectionTitles}
@@ -588,7 +607,7 @@ export default function IntakeWizard() {
       )}
 
       {/* Read-only completed sections (new-sections mode) */}
-      {isNewSectionsMode && (
+      {(isNewSectionsMode || enteringNewSections) && (
         <div className="space-y-3 mb-6">
           {safeFormSections
             .filter(
@@ -618,7 +637,7 @@ export default function IntakeWizard() {
           errors={errors}
           prefillSuggestions={prefillSuggestions}
           readOnly={
-            isNewSectionsMode &&
+            (isNewSectionsMode || enteringNewSections) &&
             safeCompletedSectionIds.includes(currentSection.id) &&
             !safeNewSectionIds.includes(currentSection.id)
           }

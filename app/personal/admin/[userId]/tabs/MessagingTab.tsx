@@ -48,6 +48,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
   const [conversationId, setConversationId] = useState('');
   const [clientPreferences, setClientPreferences] = useState<any>(null);
   const [clientEditGranted, setClientEditGranted] = useState(false);
+  const [clientSubmissionCount, setClientSubmissionCount] = useState(0);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -130,15 +131,16 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
         if (componentActiveRef.current) setClientPreferences(prefs);
       });
 
-    // Check if client already has edit access
+    // Check if client already has edit access and their submission count
     supabase
       .from('intake_responses')
-      .select('edit_granted_at')
+      .select('edit_granted_at, submission_count')
       .eq('user_id', userId)
       .maybeSingle()
       .then(({ data: intakeData }) => {
-        if (componentActiveRef.current && intakeData?.edit_granted_at) {
-          setClientEditGranted(true);
+        if (componentActiveRef.current) {
+          if (intakeData?.edit_granted_at) setClientEditGranted(true);
+          setClientSubmissionCount(intakeData?.submission_count || 0);
         }
       });
 
@@ -359,6 +361,19 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
   const handleGrantEditAccess = async () => {
     if (!user) return;
+
+    // Re-check submission count before granting (server-side validation)
+    const { data: intakeCheck } = await supabase
+      .from('intake_responses')
+      .select('submission_count, submitted_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (intakeCheck && (intakeCheck.submission_count || 0) >= 3) {
+      console.error('Cannot grant edit access — client has reached maximum submissions');
+      return;
+    }
+
     try {
       const now = new Date().toISOString();
       // Grant edit access in intake_responses
@@ -559,13 +574,13 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
 
         <div className="border-t border-gray-200 bg-white p-3 space-y-2">
           {/* Grant Edit Access banner (admin only, when client requested edit) */}
-          {messages.some(m => m.message_type === 'intake_edit_request' && m.sender_id === userId) && !clientEditGranted && (
+          {messages.some(m => m.message_type === 'intake_edit_request' && m.sender_id === userId) && !clientEditGranted && clientSubmissionCount < 3 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Unlock size={16} className="text-amber-600 shrink-0" />
                   <p className="font-inter text-xs font-medium text-amber-900">
-                    Client requested to edit their intake form
+                    Client requested to edit their intake form (submission {clientSubmissionCount}/3)
                   </p>
                 </div>
                 <button
@@ -575,6 +590,16 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
                   <Unlock size={12} />
                   Grant Edit Access
                 </button>
+              </div>
+            </div>
+          )}
+          {messages.some(m => m.message_type === 'intake_edit_request' && m.sender_id === userId) && !clientEditGranted && clientSubmissionCount >= 3 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="text-red-600 shrink-0" />
+                <p className="font-inter text-xs font-medium text-red-900">
+                  Client has reached the maximum of 3 submissions — edit access cannot be granted
+                </p>
               </div>
             </div>
           )}
