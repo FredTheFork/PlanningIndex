@@ -56,8 +56,8 @@ Accessibility: Yes
 Performance Optimized: Yes
 
 /* POLICIES */
-Privacy Policy: https://foundationary.co.uk/privacy
-Terms of Use: https://foundationary.co.uk/terms
+Privacy Policy: https://foundationary.vercel.app/privacy
+Terms of Use: https://foundationary.vercel.app/terms
 GDPR Compliant: Yes
 UK Law Compliant: Yes
 
