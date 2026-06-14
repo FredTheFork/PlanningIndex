@@ -1,12 +1,12 @@
 /* TEAM */
 Name: Foundationary
-Site: https://foundationary.co.uk
+Site: https://foundationary.vercel.app
 Email: foundationarybusiness@gmail.com
 Phone: +44 7377 203834
 Location: United Kingdom
 Language: English (UK)
 Twitter: @Foundationary
-LinkedIn: https://www.linkedin.com/company/foundationary
+LinkedIn: https://www.linkedin.com/company/foundationarybusiness
 
 /* TECHNOLOGY */
 Framework: Next.js 14 + React 18
