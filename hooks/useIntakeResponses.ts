@@ -141,6 +141,15 @@ export function useIntakeResponses() {
         const rowSp = row.section_progress && typeof row.section_progress === 'object' ? row.section_progress : {};
         const rowResp = row.responses && typeof row.responses === 'object' ? row.responses : {};
 
+        // Apply the same timestamp guard as polling/realtime handlers:
+        // If edit_granted_at or edit_requested_at predate submitted_at, treat as null.
+        const rawEditGranted = row.edit_granted_at || null;
+        const safeEditGranted = (row.submitted_at && rawEditGranted && rawEditGranted <= row.submitted_at)
+          ? null : rawEditGranted;
+        const rawEditRequested = row.edit_requested_at || null;
+        const safeEditRequested = (row.submitted_at && rawEditRequested && rawEditRequested <= row.submitted_at)
+          ? null : rawEditRequested;
+
         setData({
           id: row.id,
           user_id: row.user_id,
@@ -154,8 +163,8 @@ export function useIntakeResponses() {
           purchased_service_ids: rowPsi,
           intake_complete_for_services: rowIcf,
           last_visited_at: row.last_visited_at,
-          edit_requested_at: row.edit_requested_at || null,
-          edit_granted_at: row.edit_granted_at || null,
+          edit_requested_at: safeEditRequested,
+          edit_granted_at: safeEditGranted,
           submission_count: row.submission_count || 0,
         });
         setLastSaved(row.last_saved_at ? new Date(row.last_saved_at) : null);

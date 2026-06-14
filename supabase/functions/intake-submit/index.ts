@@ -12,7 +12,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MAX_SUBMISSIONS = 3;
 
 async function adminUpsert(table: string, data: Record<string, unknown>, onConflict: string) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
     method: "POST",
     headers: {
       apikey: SERVICE_ROLE_KEY,
@@ -173,13 +173,14 @@ Deno.serve(async (req: Request) => {
     const now = new Date().toISOString();
 
     // Get existing intake row
-    const existingRows = await adminQuery("intake_responses", "purchased_service_ids,intake_complete_for_services,section_progress,edit_granted_at,edit_requested_at,submission_count", { user_id: userId });
+    const existingRows = await adminQuery("intake_responses", "purchased_service_ids,intake_complete_for_services,section_progress,edit_granted_at,edit_requested_at,submitted_at,submission_count", { user_id: userId });
     const existing = Array.isArray(existingRows) && existingRows.length > 0 ? existingRows[0] : null;
 
     const purchasedServiceIds: string[] = existing?.purchased_service_ids || ["business_foundations_pack"];
     const previousCompleteFor: string[] = existing?.intake_complete_for_services || [];
     const sectionProgress: Record<string, boolean> = existing?.section_progress || {};
-    const hadEditAccess = !!existing?.edit_granted_at;
+    const hadEditAccess = !!existing?.edit_granted_at
+      && (!existing?.submitted_at || existing.edit_granted_at > existing.submitted_at);
     const currentCount: number = existing?.submission_count || 0;
 
     // Enforce submission limit: if this is a resubmission (had edit access), check the count
@@ -187,6 +188,18 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({
         error: "Maximum submissions reached",
         detail: `You have reached the maximum of ${MAX_SUBMISSIONS} submissions. No further edits are permitted.`,
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // If user already submitted and does NOT have valid edit access, reject the resubmission.
+    // This prevents stale sessions or direct API calls from bypassing the lock.
+    if (existing?.submitted_at && !hadEditAccess) {
+      return new Response(JSON.stringify({
+        error: "Form is locked",
+        detail: "You do not have edit access. Request permission from an admin before resubmitting.",
       }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -214,6 +227,14 @@ Deno.serve(async (req: Request) => {
     };
 
     await adminUpsert("intake_responses", updateData, "user_id");
+
+    // PATCH explicitly clears edit access fields — PostgREST upsert may not apply null
+    // values to existing non-null columns, so a separate PATCH is required for reliability.
+    await adminUpdate("intake_responses", {
+      edit_granted_at: null,
+      edit_granted_by: null,
+      edit_requested_at: null,
+    }, { user_id: userId });
 
     // Update client_profiles
     await adminUpdate("client_profiles", {
