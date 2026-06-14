@@ -47,12 +47,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: '2026-06-10',
     },
     {
-      path: '/additional-services',
-      priority: 0.9,
-      changeFrequency: 'monthly',
-      lastModified: '2026-06-14',
-    },
-    {
       path: '/whats-included',
       priority: 0.7,
       changeFrequency: 'monthly',
