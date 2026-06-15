@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
-import { generateHowToSchema, SITE_URL, generateBreadcrumbSchema } from '@/lib/seo';
+import { generateHowToSchema, SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import HowItWorksClient from './HowItWorksClient';
 
 export const metadata: Metadata = {
@@ -31,9 +31,15 @@ export default function HowItWorksPage() {
     { name: 'How It Works', path: '/how-it-works' },
   ]);
 
+  const webPage = generateWebPageSchema({
+    name: 'How It Works | Get Business Documents in 24 Hours',
+    description: 'Simple 4-step process to get your professional business documents.',
+    path: '/how-it-works',
+  });
+
   return (
     <>
-      <JsonLd data={[generateHowToSchema(steps), breadcrumbs]} />
+      <JsonLd data={[generateHowToSchema(steps), breadcrumbs, webPage]} />
       <HowItWorksClient />
     </>
   );

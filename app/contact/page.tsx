@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
-import { SITE_URL, generateBreadcrumbSchema } from '@/lib/seo';
+import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import ContactClient from './ContactClient';
 
 export const metadata: Metadata = {
@@ -24,9 +24,15 @@ export default function ContactPage() {
     { name: 'Contact', path: '/contact' },
   ]);
 
+  const webPage = generateWebPageSchema({
+    name: 'Contact | Foundationary - UK Sole Trader Document Service',
+    description: 'Get in touch with Foundationary. We respond within 24 hours.',
+    path: '/contact',
+  });
+
   return (
     <>
-      <JsonLd data={breadcrumbs} />
+      <JsonLd data={[breadcrumbs, webPage]} />
       <ContactClient />
     </>
   );

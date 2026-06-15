@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getArticleBySlug, getRelatedArticles, articles } from '@/lib/content/articles';
 import { JsonLd } from '@/components/seo';
-import { generateArticleSchema, generateBreadcrumbSchema, SITE_URL } from '@/lib/seo';
+import { generateArticleSchema, generateBreadcrumbSchema, generateWebPageSchema, SITE_URL } from '@/lib/seo';
 import BlogArticleClient from './BlogArticleClient';
 
 export async function generateStaticParams() {
@@ -94,12 +94,22 @@ export default function BlogArticlePage({ params }: { params: { slug: string } }
     description: article.description,
     slug: article.slug,
     date: article.date,
+    modifiedDate: article.lastUpdated || article.date,
     category: article.category,
+  });
+
+  const webPage = generateWebPageSchema({
+    name: article.title,
+    description: article.description,
+    path: `/blog/${article.slug}`,
+    type: 'Article',
+    datePublished: article.date,
+    dateModified: article.lastUpdated || article.date,
   });
 
   return (
     <>
-      <JsonLd data={[articleSchema, breadcrumbs]} />
+      <JsonLd data={[articleSchema, breadcrumbs, webPage]} />
       <BlogArticleClient article={article} relatedArticles={relatedArticles} />
     </>
   );

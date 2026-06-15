@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
-import { generateServiceSchema, SITE_URL, generateBreadcrumbSchema } from '@/lib/seo';
+import { generateServiceSchema, SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import WhatsIncludedClient from './WhatsIncludedClient';
 
 export const metadata: Metadata = {
@@ -24,9 +24,15 @@ export default function WhatsIncludedPage() {
     { name: "What's Included", path: '/whats-included' },
   ]);
 
+  const webPage = generateWebPageSchema({
+    name: "What's Included — Business Foundations Pack",
+    description: 'Complete breakdown of all 10 documents in the Business Foundations Pack.',
+    path: '/whats-included',
+  });
+
   return (
     <>
-      <JsonLd data={[generateServiceSchema(), breadcrumbs]} />
+      <JsonLd data={[generateServiceSchema(), breadcrumbs, webPage]} />
       <WhatsIncludedClient />
     </>
   );

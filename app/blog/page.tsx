@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
-import { SITE_URL, generateBreadcrumbSchema } from '@/lib/seo';
+import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import BlogClient from './BlogClient';
 
 export const metadata: Metadata = {
@@ -24,9 +24,15 @@ export default function BlogPage() {
     { name: 'Blog', path: '/blog' },
   ]);
 
+  const webPage = generateWebPageSchema({
+    name: 'Blog | UK Sole Trader Guides & Resources',
+    description: 'Expert guides for UK sole traders. Learn about business registration, GDPR compliance, client contracts, invoicing best practices and more.',
+    path: '/blog',
+  });
+
   return (
     <>
-      <JsonLd data={breadcrumbs} />
+      <JsonLd data={[breadcrumbs, webPage]} />
       <BlogClient />
     </>
   );

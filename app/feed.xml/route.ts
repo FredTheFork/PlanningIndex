@@ -1,46 +1,9 @@
 import { NextResponse } from 'next/server';
 import { SITE_URL, SITE_CONFIG } from '@/lib/seo';
+import { articles } from '@/lib/content/articles';
 
 export async function GET() {
   const base = SITE_URL;
-
-  const articles = [
-    {
-      title: 'Sole Trader Business Setup Guide: UK',
-      slug: 'sole-trader-business-setup-guide-uk',
-      description: 'A comprehensive guide to setting up as a sole trader in the UK, including registration, taxes, and legal requirements.',
-      date: '2024-01-15',
-      category: 'Legal',
-    },
-    {
-      title: 'GDPR Compliance for UK Sole Traders',
-      slug: 'gdpr-compliance-for-sole-traders-uk',
-      description: 'Everything UK sole traders need to know about GDPR compliance, privacy policies, and data protection.',
-      date: '2024-01-22',
-      category: 'Legal',
-    },
-    {
-      title: 'Client Contract Essentials for UK Freelancers',
-      slug: 'client-contract-essentials-uk-freelancers',
-      description: 'Key clauses every UK freelancer should include in their client contracts to protect their business.',
-      date: '2024-02-01',
-      category: 'Legal',
-    },
-    {
-      title: 'Invoice Template Best Practices for UK Businesses',
-      slug: 'invoice-template-best-practices-uk',
-      description: 'How to create professional invoices that comply with UK requirements and get you paid faster.',
-      date: '2024-02-08',
-      category: 'Financial',
-    },
-    {
-      title: 'Late Payment Fees and UK Law',
-      slug: 'late-payment-fees-uk-law',
-      description: 'Your rights under UK law for charging late payment fees and interest on unpaid invoices.',
-      date: '2024-02-15',
-      category: 'Financial',
-    },
-  ];
 
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">

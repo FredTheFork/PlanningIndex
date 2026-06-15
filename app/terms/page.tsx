@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
+import { JsonLd } from '@/components/seo';
+import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Terms of Use | Foundationary',
   description: 'The terms and conditions that govern your use of Foundationary services.',
+  alternates: {
+    canonical: `${SITE_URL}/terms`,
+  },
 };
 
 function PageHeader() {
@@ -566,8 +571,20 @@ function Content() {
 }
 
 export default function TermsOfUsePage() {
+  const breadcrumbs = generateBreadcrumbSchema([
+    { name: 'Home', path: '/' },
+    { name: 'Terms of Use', path: '/terms' },
+  ]);
+
+  const webPage = generateWebPageSchema({
+    name: 'Terms of Use | Foundationary',
+    description: 'The terms and conditions that govern your use of Foundationary services.',
+    path: '/terms',
+  });
+
   return (
     <>
+      <JsonLd data={[breadcrumbs, webPage]} />
       <PageHeader />
       <Content />
     </>

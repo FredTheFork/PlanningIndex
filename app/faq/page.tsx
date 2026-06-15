@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
-import { generateFAQSchema, SITE_URL, generateBreadcrumbSchema } from '@/lib/seo';
+import { generateFAQSchema, SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import FAQClient from './FAQClient';
 import { faqs } from '@/lib/content/faq-data';
 
@@ -30,9 +30,15 @@ export default function FAQPage() {
     { name: 'FAQ', path: '/faq' },
   ]);
 
+  const webPage = generateWebPageSchema({
+    name: 'FAQ | Common Questions from UK Sole Traders',
+    description: 'Get answers to common questions about Foundationary services. Pricing, delivery, customisation and more.',
+    path: '/faq',
+  });
+
   return (
     <>
-      <JsonLd data={[generateFAQSchema(simpleFaqs), breadcrumbs]} />
+      <JsonLd data={[generateFAQSchema(simpleFaqs), breadcrumbs, webPage]} />
       <FAQClient faqs={faqs} />
     </>
   );

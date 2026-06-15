@@ -10,6 +10,21 @@ const nextConfig = {
       },
     ],
   },
+  poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: '/additional-services',
+        destination: '/services',
+        permanent: true,
+      },
+      {
+        source: '/additional-services/:path*',
+        destination: '/services',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
-import { generateBreadcrumbSchema, SITE_URL } from '@/lib/seo';
+import { generateBreadcrumbSchema, generateWebPageSchema, SITE_URL } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'About | Foundationary - Done-for-You Business Content for UK Sole Traders',
@@ -457,13 +457,19 @@ function FounderSection() {
               className="font-inter font-normal text-white/90 leading-[1.7] mb-4"
               style={{ fontSize: '1rem' }}
             >
-              Foundationary was founded after years of watching talented freelancers and sole traders struggle with the same operational gaps — contracts that weren't enforceable, invoices that went unpaid, privacy policies that didn't hold up, and professional materials that looked like afterthoughts.
+              Foundationary was founded in 2024 after years of watching talented freelancers and sole traders struggle with the same operational gaps — contracts that weren&apos;t enforceable, invoices that went unpaid, privacy policies that didn&apos;t hold up, and professional materials that looked like afterthoughts.
             </p>
             <p
               className="font-inter font-normal text-white/90 leading-[1.7] mb-4"
               style={{ fontSize: '1rem' }}
             >
-              The legal industry priced out most small businesses. Template sites offered generic, often US-centric documents that didn't reflect UK law. DIY tools assumed knowledge most people didn't have. And solicitors treated sole traders like small corporations, over-engineering everything.
+              The legal industry priced out most small businesses. Template sites offered generic, often US-centric documents that didn&apos;t reflect UK law. DIY tools assumed knowledge most people didn&apos;t have. And solicitors treated sole traders like small corporations, over-engineering everything.
+            </p>
+            <p
+              className="font-inter font-normal text-white/90 leading-[1.7] mb-4"
+              style={{ fontSize: '1rem' }}
+            >
+              Having worked closely with sole traders across industries — from consultants and coaches to designers and tradespeople — the same patterns kept appearing. Skilled professionals who were excellent at what they did, but whose business foundations were held together with verbal agreements, copied-and-pasted policies, and templates that didn&apos;t reflect how they actually worked.
             </p>
             <p
               className="font-inter font-semibold text-white leading-[1.7]"
@@ -478,10 +484,10 @@ function FounderSection() {
               </div>
               <div>
                 <p className="font-inter font-semibold text-white" style={{ fontSize: '1rem' }}>
-                  The Foundationary Team
+                  Foundationary
                 </p>
                 <p className="font-inter text-white/70" style={{ fontSize: '0.85rem' }}>
-                  UK-based, focused on sole traders
+                  Founded 2024 &middot; UK-based &middot; Focused solely on sole traders
                 </p>
               </div>
             </div>
@@ -497,6 +503,7 @@ function FounderSection() {
                 'Documents should work in the real world',
                 'Small business deserves big business tools',
                 'Done-for-you beats do-it-yourself',
+                'UK-specific, not US-centred',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <span className="text-success font-bold shrink-0">✓</span>
@@ -504,6 +511,25 @@ function FounderSection() {
                 </li>
               ))}
             </ul>
+
+            <div className="mt-6 pt-5 border-t border-white/10">
+              <h3 className="font-inter font-semibold text-white mb-3" style={{ fontSize: '1rem' }}>
+                Our commitment:
+              </h3>
+              <ul className="flex flex-col gap-2">
+                {[
+                  'Not a law firm — and we don\'t pretend to be',
+                  'Every document is human-reviewed before delivery',
+                  'UK GDPR compliant data handling',
+                  'Transparent, one-time pricing with no hidden fees',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <span className="text-medium-blue font-bold shrink-0" style={{ fontSize: '0.8rem' }}>→</span>
+                    <span className="font-inter font-medium text-white/80" style={{ fontSize: '0.85rem' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -955,9 +981,15 @@ export default function AboutPage() {
     { name: 'About', path: '/about' },
   ]);
 
+  const webPage = generateWebPageSchema({
+    name: 'About | Foundationary - Done-for-You Business Content for UK Sole Traders',
+    description: 'Professional foundations for UK sole traders — documents, website copy, and social media posts built around your business.',
+    path: '/about',
+  });
+
   return (
     <>
-      <JsonLd data={breadcrumbs} />
+      <JsonLd data={[breadcrumbs, webPage]} />
       <PageHeader />
       <ClarityStrip />
       <ProblemDiagram />

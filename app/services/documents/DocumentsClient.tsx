@@ -323,6 +323,80 @@ function BundleSection() {
   );
 }
 
+const docFaqs = [
+  {
+    q: 'What documents do I get in the Business Foundations Pack?',
+    a: 'You receive 10 bespoke documents: Client Agreement, Terms & Conditions, GDPR Privacy Policy, Professional Bio, Elevator Pitch, LinkedIn Profile Script, Invoice Template, New Client Welcome Emails, Late Payment Letters, and Service Description Sheets. Each is written specifically for your business.',
+  },
+  {
+    q: 'How is this different from downloading templates?',
+    a: 'Templates are generic and often US-centric. Every Foundationary document is generated from your answers to our structured questionnaire, then reviewed by a human for consistency and UK legal compliance. You receive documents written for your business, not fill-in-the-blank forms.',
+  },
+  {
+    q: 'Is this legal advice?',
+    a: 'No. Foundationary provides professionally drafted documents, not legal advice. If you need guidance specific to your situation, we recommend consulting a solicitor. Our documents are practical, UK-specific, and reviewed for accuracy — but they are not a substitute for legal counsel.',
+  },
+  {
+    q: 'How long does delivery take?',
+    a: 'We deliver your documents within 5 business days of receiving your completed intake questionnaire. Many clients receive them sooner.',
+  },
+  {
+    q: 'What format do I receive the documents in?',
+    a: 'All documents are delivered in both PDF and editable Word format. You can use them immediately or customise them further as your business evolves.',
+  },
+  {
+    q: 'Can I update my documents later?',
+    a: 'Yes. You own all delivered content outright. You can modify it at any time. We also offer a Quarterly Document Refresh (£29 every 4 months) if you want us to keep your documents current as your business changes.',
+  },
+  {
+    q: 'Is the £79 price a subscription?',
+    a: 'No. The Business Foundations Pack is a one-time payment of £79. There are no recurring charges unless you choose to add the Quarterly Document Refresh or other services.',
+  },
+];
+
+function FAQSection() {
+  return (
+    <section className="bg-off-white py-24 px-6">
+      <div className="mx-auto" style={{ maxWidth: 800 }}>
+        <SectionLabel>FAQ</SectionLabel>
+        <h2
+          className="font-inter font-bold text-dark-text"
+          style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}
+        >
+          Common questions
+        </h2>
+        <div className="flex flex-col gap-5 mt-10">
+          {docFaqs.map((faq, i) => (
+            <div key={i} className="bg-white rounded-xl border border-border p-6">
+              <h3 className="font-inter font-semibold text-dark-text mb-2" style={{ fontSize: '1rem' }}>
+                {faq.q}
+              </h3>
+              <p className="font-inter font-normal text-secondary-text leading-[1.7]" style={{ fontSize: '0.925rem' }}>
+                {faq.a}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Disclaimer() {
+  return (
+    <section className="bg-white py-12 px-6">
+      <div className="mx-auto text-center" style={{ maxWidth: 680 }}>
+        <p
+          className="font-inter font-medium text-secondary-text leading-[1.7]"
+          style={{ fontSize: '0.875rem' }}
+        >
+          Foundationary provides professionally drafted business documents, not legal advice. Our documents are UK-specific and reviewed for accuracy, but they are not a substitute for legal counsel. If you have questions about your legal obligations, consult a qualified solicitor.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function CTABanner() {
   return (
     <section
@@ -370,6 +444,8 @@ export default function DocumentsClient() {
       <WhatsIncludedGrid />
       <PricingCard />
       <BundleSection />
+      <FAQSection />
+      <Disclaimer />
       <CTABanner />
     </>
   );

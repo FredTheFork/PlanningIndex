@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
-import { SITE_URL } from '@/lib/seo';
+import { JsonLd } from '@/components/seo';
+import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import ServicesClient from './ServicesClient';
 
 export const metadata: Metadata = {
@@ -14,9 +15,29 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: `${SITE_URL}/services`,
+    languages: {
+      'en-GB': `${SITE_URL}/services`,
+      'x-default': `${SITE_URL}/services`,
+    },
   },
 };
 
 export default function ServicesPage() {
-  return <ServicesClient />;
+  const breadcrumbs = generateBreadcrumbSchema([
+    { name: 'Home', path: '/' },
+    { name: 'Services', path: '/services' },
+  ]);
+
+  const webPage = generateWebPageSchema({
+    name: 'Services — Business Documents, Website Copy & Social Media',
+    description: 'Professional documents, website copy, social media posts, and ongoing maintenance for UK sole traders.',
+    path: '/services',
+  });
+
+  return (
+    <>
+      <JsonLd data={[breadcrumbs, webPage]} />
+      <ServicesClient />
+    </>
+  );
 }

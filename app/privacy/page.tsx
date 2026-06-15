@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
+import { JsonLd } from '@/components/seo';
+import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Foundationary',
   description: 'How Foundationary handles, protects, and respects your data. UK GDPR compliant privacy policy.',
+  alternates: {
+    canonical: `${SITE_URL}/privacy`,
+  },
 };
 
 function PageHeader() {
@@ -447,8 +452,20 @@ function Content() {
 }
 
 export default function PrivacyPolicyPage() {
+  const breadcrumbs = generateBreadcrumbSchema([
+    { name: 'Home', path: '/' },
+    { name: 'Privacy Policy', path: '/privacy' },
+  ]);
+
+  const webPage = generateWebPageSchema({
+    name: 'Privacy Policy | Foundationary',
+    description: 'How Foundationary handles, protects, and respects your data. UK GDPR compliant privacy policy.',
+    path: '/privacy',
+  });
+
   return (
     <>
+      <JsonLd data={[breadcrumbs, webPage]} />
       <PageHeader />
       <Content />
     </>

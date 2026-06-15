@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
-import { generateProductSchema, SITE_URL, generateBreadcrumbSchema } from '@/lib/seo';
+import { generateProductSchema, SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import PricingClient from './PricingClient';
 
 export const metadata: Metadata = {
@@ -28,9 +28,15 @@ export default function PricingPage() {
     { name: 'Pricing', path: '/pricing' },
   ]);
 
+  const webPage = generateWebPageSchema({
+    name: 'Pricing | Business Documents for UK Sole Traders - £79',
+    description: 'Get 10 professional business documents for your UK sole trader business for just £79 one-time.',
+    path: '/pricing',
+  });
+
   return (
     <>
-      <JsonLd data={[generateProductSchema(), breadcrumbs]} />
+      <JsonLd data={[generateProductSchema(), breadcrumbs, webPage]} />
       <PricingClient />
     </>
   );

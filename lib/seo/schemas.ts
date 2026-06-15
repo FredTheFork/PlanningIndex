@@ -2,7 +2,7 @@ import { SITE_CONFIG, SITE_URL, SOCIAL_LINKS } from './config';
 
 // JSON-LD Schema Generators for Foundationary
 
-function generateOrganizationSchema() {
+export function generateOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -30,7 +30,7 @@ function generateOrganizationSchema() {
   };
 }
 
-function generateWebSiteSchema() {
+export function generateWebSiteSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -303,7 +303,7 @@ export function generateProductSchema() {
   };
 }
 
-function generateLocalBusinessSchema() {
+export function generateLocalBusinessSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
@@ -327,5 +327,30 @@ function generateLocalBusinessSchema() {
       SOCIAL_LINKS.linkedin,
       SOCIAL_LINKS.twitter,
     ].filter(Boolean),
+  };
+}
+
+export function generateWebPageSchema(options: {
+  name: string;
+  description: string;
+  path: string;
+  type?: string;
+  datePublished?: string;
+  dateModified?: string;
+}) {
+  const url = `${SITE_URL}${options.path}`;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': options.type || 'WebPage',
+    '@id': `${url}#webpage`,
+    name: options.name,
+    description: options.description,
+    url,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    about: { '@id': `${SITE_URL}/#organization` },
+    inLanguage: 'en-GB',
+    ...(options.datePublished && { datePublished: options.datePublished }),
+    ...(options.dateModified && { dateModified: options.dateModified }),
   };
 }

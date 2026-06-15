@@ -8,7 +8,7 @@ import Pricing from '@/components/sections/Pricing';
 import GuaranteeBlock from '@/components/sections/GuaranteeBlock';
 import CTABanner from '@/components/sections/CTABanner';
 import { JsonLd } from '@/components/seo';
-import { generateProductSchema, SITE_URL } from '@/lib/seo';
+import { generateProductSchema, generateWebPageSchema, SITE_URL } from '@/lib/seo';
 
 export const metadata = {
   title: 'Foundationary | Business Documents, Website Copy & Social Media for UK Sole Traders',
@@ -41,9 +41,15 @@ export const metadata = {
 };
 
 export default function HomePage() {
+  const webPage = generateWebPageSchema({
+    name: 'Foundationary | Business Documents, Website Copy & Social Media for UK Sole Traders',
+    description: 'Professional business documents, website copy, and social media posts for UK sole traders. UK law compliant, done for you. From £79.',
+    path: '',
+  });
+
   return (
     <>
-      <JsonLd data={generateProductSchema()} />
+      <JsonLd data={[generateProductSchema(), webPage]} />
       <Hero />
       <SocialProof />
       <Problem />
