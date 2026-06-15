@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import dynamic from 'next/dynamic';
+import Script from 'next/script';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -164,6 +165,18 @@ export default function RootLayout({
         <link rel="alternate" type="application/rss+xml" title="Foundationary Blog" href={`${SITE_URL}/feed.xml`} />
       </head>
       <body>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-2H97MZ9P07"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-2H97MZ9P07');
+          `}
+        </Script>
         <JsonLd data={generateRootSchemas()} />
         <Navbar />
         <main>{children}</main>
