@@ -10,6 +10,7 @@ import {
   getDocumentTypesListForService,
   getDocumentLabel,
 } from '@/lib/services/document-configs';
+import { getServiceById } from '@/lib/services/service-catalog';
 
 interface SubscriptionTabProps {
   userId: string;
@@ -73,10 +74,21 @@ function formatDate(iso: string | null): string {
 export default function SubscriptionTab({ userId, data, refreshData }: SubscriptionTabProps) {
   const purchasedServices: SubscriptionRecord[] = data?.purchasedServices ?? [];
   const documentServiceIds = purchasedServices
-    .filter(s => s.service_id !== 'quarterly_refresh')
+    .filter(s => s.service_id !== 'quarterly_refresh' && s.service_id !== 'monthly_care_plan')
     .map(s => s.service_id);
 
-  const refreshSub = purchasedServices.find(s => s.service_id === 'quarterly_refresh') ?? null;
+  // Check for either monthly care plan or legacy quarterly refresh
+  const refreshSub = purchasedServices.find(s =>
+    s.service_id === 'monthly_care_plan' || s.service_id === 'quarterly_refresh'
+  ) ?? null;
+
+  // Determine subscription type for display
+  const isMonthly = refreshSub?.service_id === 'monthly_care_plan';
+  const subscriptionType = isMonthly ? 'monthly' : 'quarterly';
+  const subscriptionTitle = isMonthly ? 'Monthly Care Plan' : 'Quarterly Document Refresh';
+  const subscriptionDescription = isMonthly
+    ? 'Monthly document updates and ongoing business support'
+    : 'Quarterly document updates for your business';
 
   const [refreshJobs, setRefreshJobs] = useState<RefreshJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,9 +202,9 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
         <CreditCard size={48} className="text-gray-300 mx-auto mb-4" />
-        <h4 className="font-inter font-semibold text-gray-900 text-lg mb-2">No Subscription</h4>
+        <h4 className="font-inter font-semibold text-gray-900 text-lg mb-2">No Care Plan</h4>
         <p className="font-inter text-gray-600 text-sm">
-          This client has not purchased the Quarterly Document Refresh service.
+          This client has not purchased a Monthly Care Plan or Quarterly Document Refresh subscription.
         </p>
       </div>
     );
@@ -212,8 +224,8 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h3 className="font-inter font-bold text-[#1B3F7A] text-lg">Quarterly Document Refresh</h3>
-            <p className="font-inter text-gray-500 text-sm mt-0.5">Subscription Details</p>
+            <h3 className="font-inter font-bold text-[#1B3F7A] text-lg">{subscriptionTitle}</h3>
+            <p className="font-inter text-gray-500 text-sm mt-0.5">{subscriptionDescription}</p>
           </div>
           <StatusBadge status={refreshSub.status} />
         </div>
@@ -256,7 +268,7 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
               Subscription cancelled — refreshes not permitted
             </p>
             <p className="font-inter text-red-700 text-xs mt-1">
-              This client's Quarterly Document Refresh subscription has been cancelled.
+              This client's {subscriptionTitle} subscription has been cancelled.
               Document refreshes cannot be initiated until the subscription is reactivated.
             </p>
           </div>
@@ -292,13 +304,10 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-md font-inter text-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4]"
                 >
                   {documentServiceIds.map(sid => {
-                    const catalog = data?.purchasedServices?.find((s: any) => s.service_id === sid);
+                    const service = getServiceById(sid);
                     return (
                       <option key={sid} value={sid}>
-                        {sid === 'business_foundations_pack' ? 'Business Foundations Pack'
-                          : sid === 'website_copy_pack' ? 'Website Copy Pack'
-                          : sid === 'social_media_pack' ? 'Social Media Pack'
-                          : sid}
+                        {service?.name ?? sid}
                       </option>
                     );
                   })}

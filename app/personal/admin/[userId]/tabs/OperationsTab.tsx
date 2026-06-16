@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   Package, FileText, Clock, CheckCircle2, AlertCircle,
-  RefreshCw, Briefcase, ChevronDown, ChevronUp, Save, Copy
+  RefreshCw, Briefcase, ChevronDown, ChevronUp, Save, Copy, Zap, Layers
 } from 'lucide-react';
 import { getServiceById, isOperationsService } from '@/lib/services/service-catalog';
 import { getDocumentConfigsForService } from '@/lib/services/document-configs';
@@ -21,6 +21,7 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
   const [briefs, setBriefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
+  const [generatingAllBriefs, setGeneratingAllBriefs] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
 
@@ -95,6 +96,54 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
     }
   };
 
+  const handleGenerateAllBriefs = async () => {
+    if (!data.profile?.has_submitted_intake) {
+      showMessage('Client must submit intake form first', 'error');
+      return;
+    }
+
+    const confirmMsg = `Generate briefs for all ${operationsServices.length} operations packs? This will generate or regenerate briefs for each service.`;
+    if (!confirm(confirmMsg)) return;
+
+    setGeneratingAllBriefs(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const ps of operationsServices) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-brief`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ user_id: userId, service_id: ps.service_id }),
+          }
+        );
+        const result = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        if (response.ok && result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    setGeneratingAllBriefs(false);
+    await fetchData();
+    refreshData();
+
+    if (failCount === 0) {
+      showMessage(`All ${successCount} operations briefs generated successfully`, 'success');
+    } else {
+      showMessage(`${successCount} briefs generated, ${failCount} failed`, 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -123,6 +172,43 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
           {messageType === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />}
           {messageType === 'error' && <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />}
           <p className="font-inter text-sm font-medium">{message}</p>
+        </div>
+      )}
+
+      {/* Bulk Actions Header */}
+      {operationsServices.length > 1 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-amber-50 rounded-lg p-2">
+                <Layers size={18} className="text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-inter font-semibold text-gray-900 text-sm">
+                  Operations Tier ({operationsServices.length} packs)
+                </h3>
+                <p className="font-inter text-xs text-gray-500">
+                  Generate briefs for all operations services at once
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleGenerateAllBriefs}
+              disabled={generatingAllBriefs || !data.profile?.has_submitted_intake}
+              title={!data.profile?.has_submitted_intake ? 'Intake must be submitted first' : undefined}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-inter font-medium transition-all ${
+                generatingAllBriefs ? 'bg-blue-100 text-blue-600 cursor-wait'
+                : data.profile?.has_submitted_intake ? 'bg-[#1B3F7A] hover:bg-[#2C68C4] text-white'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {generatingAllBriefs ? (
+                <><RefreshCw size={13} className="animate-spin" />Generating All...</>
+              ) : (
+                <><Zap size={13} />Generate All Briefs</>
+              )}
+            </button>
+          </div>
         </div>
       )}
 

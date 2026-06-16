@@ -6,9 +6,9 @@ import { supabase } from '@/lib/supabase/client';
 import {
   Users, FileText, Clock, CheckCircle2, Search, ChevronRight,
   Filter, Download, RefreshCw, AlertTriangle, Briefcase, Send,
-  Calendar, X, TrendingUp, BarChart3, Inbox, Package
+  Calendar, X, TrendingUp, BarChart3, Inbox, Package, Layers, Building2
 } from 'lucide-react';
-import { getServiceById } from '@/lib/services/service-catalog';
+import { getServiceById, getHighestTier, isIndustryService, type ServiceTier, type IndustryCategory } from '@/lib/services/service-catalog';
 
 interface ClientRow {
   user_id: string;
@@ -25,7 +25,10 @@ interface ClientRow {
   documents_count?: number;
   risk_level?: string;
   has_quarterly_refresh?: boolean;
+  has_monthly_care_plan?: boolean;
   purchased_services?: Array<{ service_id: string; status: string }>;
+  tier: ServiceTier;
+  industry: IndustryCategory | null;
 }
 
 export default function AdminDashboard() {
@@ -34,6 +37,8 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterIntake, setFilterIntake] = useState<string>('all');
+  const [filterTier, setFilterTier] = useState<string>('all');
+  const [filterIndustry, setFilterIndustry] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
@@ -114,24 +119,6 @@ export default function AdminDashboard() {
           }
         }
 
-        // Fetch quarterly refresh subscription status
-        const { data: refreshSubs } = await supabase
-          .from('services_purchased')
-          .select('user_id')
-          .in('user_id', userIds)
-          .eq('service_id', 'quarterly_refresh')
-          .eq('status', 'active');
-
-        if (refreshSubs) {
-          for (const sub of refreshSubs) {
-            const existing = clientDataMap.get(sub.user_id) || {};
-            clientDataMap.set(sub.user_id, {
-              ...existing,
-              has_quarterly_refresh: true,
-            });
-          }
-        }
-
         // Fetch all purchased services per client
         const { data: allServices } = await supabase
           .from('services_purchased')
@@ -148,10 +135,30 @@ export default function AdminDashboard() {
           }
           for (const [uid, svcs] of servicesByUser) {
             const existing = clientDataMap.get(uid) || {};
+            const serviceIds = svcs.map(s => s.service_id);
+
+            // Compute highest tier from purchased services
+            const tier = getHighestTier(serviceIds);
+
+            // Compute primary industry from purchased industry packs
+            const industryService = svcs.find(s => isIndustryService(s.service_id));
+            let industry: IndustryCategory | null = null;
+            if (industryService) {
+              const service = getServiceById(industryService.service_id);
+              industry = service?.industry ?? null;
+            }
+
+            // Check for subscription services
+            const hasQuarterlyRefresh = serviceIds.includes('quarterly_refresh');
+            const hasMonthlyCarePlan = serviceIds.includes('monthly_care_plan');
+
             clientDataMap.set(uid, {
               ...existing,
               purchased_services: svcs,
-              has_quarterly_refresh: svcs.some(s => s.service_id === 'quarterly_refresh'),
+              has_quarterly_refresh: hasQuarterlyRefresh,
+              has_monthly_care_plan: hasMonthlyCarePlan,
+              tier,
+              industry,
             });
           }
         }
@@ -174,7 +181,10 @@ export default function AdminDashboard() {
           documents_count: data.documents_count || 0,
           risk_level: data.risk_level,
           has_quarterly_refresh: data.has_quarterly_refresh ?? false,
+          has_monthly_care_plan: data.has_monthly_care_plan ?? false,
           purchased_services: data.purchased_services || [],
+          tier: data.tier ?? 'foundation',
+          industry: data.industry ?? null,
         };
       });
 
@@ -192,7 +202,9 @@ export default function AdminDashboard() {
     const matchesIntake = filterIntake === 'all' ||
       (filterIntake === 'submitted' && c.has_submitted_intake) ||
       (filterIntake === 'pending' && !c.has_submitted_intake);
-    return matchesSearch && matchesFilter && matchesIntake;
+    const matchesTier = filterTier === 'all' || c.tier === filterTier;
+    const matchesIndustry = filterIndustry === 'all' || c.industry === filterIndustry;
+    return matchesSearch && matchesFilter && matchesIntake && matchesTier && matchesIndustry;
   }).sort((a, b) => {
     let comparison = 0;
     switch (sortBy) {
@@ -222,6 +234,9 @@ export default function AdminDashboard() {
     delivered: clients.filter(c => c.delivery_status === 'delivered').length,
     totalDocs: clients.reduce((sum, c) => sum + (c.documents_count || 0), 0),
     highRisk: clients.filter(c => c.risk_level === 'High').length,
+    foundation: clients.filter(c => c.tier === 'foundation').length,
+    operations: clients.filter(c => c.tier === 'operations').length,
+    industry: clients.filter(c => c.tier === 'industry').length,
   };
 
   const handleSelectClient = (userId: string) => {
@@ -297,7 +312,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Stats cards - 6 stats max for cleaner layout */}
+      {/* Stats cards - key metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard icon={Users} label="Total" value={stats.total} color="navy" />
         <StatCard icon={Inbox} label="Pending" value={stats.pending} color="amber" alert={stats.pending > 0} />
@@ -305,6 +320,13 @@ export default function AdminDashboard() {
         <StatCard icon={Send} label="Delivered" value={stats.delivered} color="success" />
         <StatCard icon={Briefcase} label="Docs" value={stats.totalDocs} color="medium-blue" />
         <StatCard icon={AlertTriangle} label="Risk" value={stats.highRisk} color="red" alert={stats.highRisk > 0} />
+      </div>
+
+      {/* Tier breakdown */}
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard icon={Layers} label="Foundation" value={stats.foundation} color="blue" />
+        <StatCard icon={Layers} label="Operations" value={stats.operations} color="amber" />
+        <StatCard icon={Layers} label="Industry" value={stats.industry} color="teal" />
       </div>
 
       {/* Filters & Search */}
@@ -355,7 +377,7 @@ export default function AdminDashboard() {
 
         {/* Expanded Filters */}
         {showFilters && (
-          <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <div>
               <label className="block font-inter text-gray-700 text-xs mb-1">Delivery Status</label>
               <select
@@ -383,11 +405,42 @@ export default function AdminDashboard() {
               </select>
             </div>
 
+            <div>
+              <label className="block font-inter text-gray-700 text-xs mb-1">Tier</label>
+              <select
+                value={filterTier}
+                onChange={(e) => setFilterTier(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
+              >
+                <option value="all">All Tiers</option>
+                <option value="foundation">Foundation</option>
+                <option value="operations">Operations</option>
+                <option value="industry">Industry</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-inter text-gray-700 text-xs mb-1">Industry</label>
+              <select
+                value={filterIndustry}
+                onChange={(e) => setFilterIndustry(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C68C4] focus:border-[#2C68C4] font-inter text-sm bg-white"
+              >
+                <option value="all">All Industries</option>
+                <option value="coach">Coach</option>
+                <option value="photographer">Photographer</option>
+                <option value="consultant">Consultant</option>
+                <option value="contractor">Contractor</option>
+              </select>
+            </div>
+
             <div className="flex items-end gap-2">
               <button
                 onClick={() => {
                   setFilterStatus('all');
                   setFilterIntake('all');
+                  setFilterTier('all');
+                  setFilterIndustry('all');
                   setSearch('');
                 }}
                 className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-sm font-medium transition-colors"
@@ -415,7 +468,7 @@ export default function AdminDashboard() {
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full min-w-[950px]">
+            <table className="w-full min-w-[1100px]">
               <thead>
                 <tr className="bg-[#FAFBFC] border-b border-gray-200">
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5 w-10">
@@ -427,12 +480,14 @@ export default function AdminDashboard() {
                     />
                   </th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Client</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Tier</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Industry</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Intake</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Brief</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Docs</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Services</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Status</th>
-                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Refresh</th>
+                  <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Sub</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-2.5">Created</th>
                   <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-right px-4 py-2.5 w-20"></th>
                 </tr>
@@ -467,6 +522,19 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
+                      <TierBadge tier={client.tier} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {client.industry ? (
+                        <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">
+                          <Building2 size={10} />
+                          {client.industry.charAt(0).toUpperCase() + client.industry.slice(1)}
+                        </span>
+                      ) : (
+                        <span className="font-inter text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
                       {client.has_submitted_intake ? (
                         <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
                           <CheckCircle2 size={10} />
@@ -496,23 +564,22 @@ export default function AdminDashboard() {
                       <div className="flex flex-wrap gap-1">
                         {(client.purchased_services || []).map((svc: { service_id: string; status: string }) => {
                           const service = getServiceById(svc.service_id);
+                          if (!service || service.mode === 'subscription') return null;
                           const name = service?.name?.replace(' Pack', '').replace(' Starter', '') ?? svc.service_id;
-                          const isSubscription = service?.mode === 'subscription';
                           return (
                             <span
                               key={svc.service_id}
-                              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${
-                                isSubscription
-                                  ? 'bg-teal-50 text-teal-700'
-                                  : 'bg-[#1B3F7A]/5 text-[#1B3F7A]'
-                              }`}
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-inter font-medium bg-[#1B3F7A]/5 text-[#1B3F7A]"
                             >
                               <Package size={9} />
                               {name}
                             </span>
                           );
                         })}
-                        {(!client.purchased_services || client.purchased_services.length === 0) && (
+                        {(!client.purchased_services || client.purchased_services.filter((s: any) => {
+                          const svc = getServiceById(s.service_id);
+                          return svc && svc.mode !== 'subscription';
+                        }).length === 0) && (
                           <span className="font-inter text-xs text-gray-400">—</span>
                         )}
                       </div>
@@ -521,10 +588,10 @@ export default function AdminDashboard() {
                       <StatusBadge status={client.delivery_status} />
                     </td>
                     <td className="px-4 py-3">
-                      {client.has_quarterly_refresh ? (
+                      {client.has_monthly_care_plan || client.has_quarterly_refresh ? (
                         <span className="inline-flex items-center gap-1 font-inter text-xs font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">
                           <RefreshCw size={10} />
-                          Active
+                          {client.has_monthly_care_plan ? 'Monthly' : 'Qtrly'}
                         </span>
                       ) : (
                         <span className="font-inter text-xs text-gray-400">—</span>
@@ -580,7 +647,9 @@ function StatCard({ icon: Icon, label, value, color, alert }: {
   const colorMap: Record<string, string> = {
     navy: 'bg-[#1B3F7A]',
     'medium-blue': 'bg-[#2C68C4]',
+    blue: 'bg-blue-500',
     amber: 'bg-amber-500',
+    teal: 'bg-teal-500',
     success: 'bg-green-600',
     red: 'bg-red-500',
   };
@@ -652,6 +721,23 @@ function RiskBadge({ level }: { level: string }) {
   return (
     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-inter font-medium ${c.color} ${c.bg}`}>
       {level}
+    </span>
+  );
+}
+
+function TierBadge({ tier }: { tier: ServiceTier }) {
+  const config: Record<ServiceTier, { label: string; color: string; bg: string }> = {
+    foundation: { label: 'Foundation', color: 'text-blue-700', bg: 'bg-blue-50' },
+    operations: { label: 'Operations', color: 'text-amber-700', bg: 'bg-amber-50' },
+    industry: { label: 'Industry', color: 'text-teal-700', bg: 'bg-teal-50' },
+  };
+
+  const c = config[tier] || config.foundation;
+
+  return (
+    <span className={`inline-flex items-center gap-1 font-inter text-xs font-medium px-2 py-0.5 rounded-full ${c.color} ${c.bg}`}>
+      <Layers size={10} />
+      {c.label}
     </span>
   );
 }

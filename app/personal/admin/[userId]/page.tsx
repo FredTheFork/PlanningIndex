@@ -8,7 +8,7 @@ import {
   ArrowLeft, User, FileText, Clock, Save, AlertCircle, FileCheck,
   MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
   Download, Eye, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-  ChevronRight, FileDown, Send, Loader, Package, Share2, Globe, Briefcase, Building2
+  ChevronRight, FileDown, Send, Loader, Package, Share2, Globe, Briefcase, Building2, Layers
 } from 'lucide-react';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
@@ -17,6 +17,8 @@ import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
 import OverviewTab from './tabs/OverviewTab';
 import DocumentsTab from './tabs/DocumentsTab';
 import ServicesTab from './tabs/ServicesTab';
+import BriefTab from './tabs/BriefTab';
+import TierBundleTab from './tabs/TierBundleTab';
 import IntakeTab from './tabs/IntakeTab';
 import MessagingTab from './tabs/MessagingTab';
 import SubscriptionTab from './tabs/SubscriptionTab';
@@ -82,6 +84,8 @@ interface TabConfig {
 const ALL_TABS: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: User },
   { id: 'services', label: 'Services', icon: Package },
+  { id: 'tier_bundle', label: 'Tier & Bundle', icon: Layers },
+  { id: 'brief', label: 'Brief', icon: Briefcase },
   { id: 'documents', label: 'Documents', icon: FileText, requiredService: 'business_foundations_pack', activeColor: 'text-emerald-700', activeBg: 'bg-emerald-50' },
   { id: 'social_media', label: 'Social Posts', icon: Share2, requiredService: 'social_media_pack', activeColor: 'text-sky-700', activeBg: 'bg-sky-50' },
   { id: 'website_copy', label: 'Website Copy', icon: Globe, requiredService: 'website_copy_pack', activeColor: 'text-violet-700', activeBg: 'bg-violet-50' },
@@ -326,6 +330,12 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           {activeTab === 'services' && (
             <ServicesTab userId={userId} data={data} refreshData={refreshData} />
           )}
+          {activeTab === 'tier_bundle' && (
+            <TierBundleTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'brief' && (
+            <BriefTab userId={userId} data={data} refreshData={refreshData} />
+          )}
           {activeTab === 'intake' && (
             <IntakeTab userId={userId} data={data} refreshData={refreshData} />
           )}
@@ -350,7 +360,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
 // Quick Status Badges
 function QuickStatusBadges({ profile, purchasedServices }: { profile: any; purchasedServices: any[] }) {
   const hasActiveRefresh = purchasedServices.some(
-    s => s.service_id === 'quarterly_refresh' && s.status === 'active'
+    s => (s.service_id === 'quarterly_refresh' || s.service_id === 'monthly_care_plan') && s.status === 'active'
   );
 
   const purchasedServiceIds = purchasedServices.map((s: any) => s.service_id);
@@ -383,7 +393,7 @@ function QuickStatusBadges({ profile, purchasedServices }: { profile: any; purch
       {hasActiveRefresh && (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-xs font-inter font-medium">
           <RefreshCw size={12} />
-          Refresh Active
+          Care Plan Active
         </span>
       )}
     </div>
