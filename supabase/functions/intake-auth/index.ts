@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // 3. Active subscriptions from stripe_subscriptions
-      const subs = await adminQuery("stripe_subscriptions", "price_id,status", {
+      const subs = await adminQuery("stripe_subscriptions", "price_id,status,subscription_id", {
         customer_id: customerId,
       });
       if (subs && Array.isArray(subs)) {
@@ -114,8 +114,24 @@ Deno.serve(async (req: Request) => {
               price_1TX34AGfxcDbzGRtxVtQN95g: "business_foundations_pack",
             };
             const serviceId = priceToService[sub.price_id];
-            if (serviceId) ids.add(serviceId);
-            else if (sub.price_id) ids.add("quarterly_refresh");
+            if (serviceId) {
+              ids.add(serviceId);
+            } else if (sub.subscription_id) {
+              // Look up the service_id from services_purchased which the webhook populates
+              const subService = await adminQuery("services_purchased", "service_id", {
+                user_id: userId,
+                stripe_subscription_id: sub.subscription_id,
+                status: "active",
+              });
+              if (subService && Array.isArray(subService) && subService.length > 0) {
+                ids.add(subService[0].service_id);
+              } else if (sub.price_id) {
+                // Default: monthly_care_plan is the standard subscription
+                ids.add("monthly_care_plan");
+              }
+            } else if (sub.price_id) {
+              ids.add("monthly_care_plan");
+            }
           }
         }
       }

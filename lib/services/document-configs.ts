@@ -319,7 +319,7 @@ const COACH_INDUSTRY: DocumentConfig[] = [
     supportsRefresh: true,
   },
   {
-    document_type: 'session_terms_cancellation_policy',
+    document_type: 'session_terms_policy',
     service_id: 'coach_industry_pack',
     document_label: 'Session Terms & Cancellation Policy',
     description: 'Session booking terms, cancellation windows, late cancellation fees, and rescheduling procedures',
@@ -382,7 +382,7 @@ const PHOTOGRAPHER_INDUSTRY: DocumentConfig[] = [
     description: 'Structured shot list template for capturing client requirements, scene details, and technical specifications',
   },
   {
-    document_type: 'delivery_terms_timeline_policy',
+    document_type: 'delivery_terms_policy',
     service_id: 'photographer_industry_pack',
     document_label: 'Delivery Terms & Timeline Policy',
     description: 'Policy governing image delivery timelines, editing rounds, file formats, and revision procedures',

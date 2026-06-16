@@ -5145,6 +5145,1660 @@ No placeholders.
 `,
     agentInstructions: SHARED_AGENT_INSTRUCTIONS,
   },
+
+  // ─── Coach Industry Pack (7 documents) ─────────────────────────────────
+
+  {
+    document_type: 'coaching_agreement',
+    document_label: 'Coaching Agreement',
+    generationPrompt: `You are a UK legal specialist in coaching and professional services contracts.
+
+Create a comprehensive Coaching Agreement.
+
+This agreement must govern the coaching engagement between a UK-based sole trader coach and their clients, complying with UK contract law and aligned with International Coach Federation (ICF) or European Mentoring & Coaching Council (EMCC) standards.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a coaching agreement that:
+
+• Defines the scope and nature of the coaching engagement
+• Establishes session format, duration, and scheduling terms
+• Covers payment terms including session fees, packages, and cancellations
+• Sets clear boundaries on coaching vs therapy, counselling, or medical advice
+• Addresses confidentiality and its specific exceptions (risk of harm, legal duty, supervision)
+• Includes data protection provisions compliant with UK GDPR
+• Establishes professional standards and code of ethics commitment
+• Covers termination, refund, and dispute resolution procedures
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Parties and definitions
+2. Nature of coaching engagement (scope, boundaries, what coaching is NOT)
+3. Session terms (format, length, frequency, scheduling)
+4. Programme structure (individual sessions vs fixed programme vs retainer)
+5. Fees and payment terms (session rate, package pricing, payment methods)
+6. Cancellation and rescheduling policy (notice periods, late cancellation fees)
+7. Confidentiality and data protection (with specific coaching exceptions)
+8. Professional standards and code of ethics commitment
+9. Supervision arrangements (if applicable)
+10. Limitation of liability
+11. Termination provisions
+12. Dispute resolution
+13. Governing law (England & Wales / Scotland / Northern Ireland as appropriate)
+
+Use the client's brief to populate all specifics: coaching modality, accreditation, session format, programme structure, cancellation policy, and supervision details.
+
+Return only the completed coaching agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'session_terms_policy',
+    document_label: 'Session Terms & Cancellation Policy',
+    generationPrompt: `You are a UK professional services contract specialist with expertise in coaching and consultancy scheduling terms.
+
+Create a comprehensive Session Terms & Cancellation Policy.
+
+This policy must clearly define how coaching sessions are booked, rescheduled, and cancelled, including fee implications for late cancellations and no-shows.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a session terms policy that:
+
+• Establishes clear booking and scheduling procedures
+• Defines cancellation notice periods with fee consequences
+• Covers rescheduling procedures and timeframes
+• Addresses no-show policies and session forfeiture
+• Handles programme-specific terms (fixed programme vs ad hoc sessions)
+• Covers force majeure and exceptional circumstances
+• Provides transparent fee structures for policy breaches
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Booking procedures and confirmation process
+2. Session scheduling and availability
+3. Cancellation policy by notice period (24h, 48h, 72h, etc.)
+4. Late cancellation fees (percentage or fixed amount)
+5. No-show policy and session forfeiture rules
+6. Rescheduling procedures and limits
+7. Programme-specific terms (sessions within a package)
+8. Client-initiated vs coach-initiated changes
+9. Emergency and force majeure provisions
+10. Refund calculations for cancelled sessions
+11. Communication requirements for changes
+
+Use the client's brief to populate: session length, cancellation notice period, late cancellation fee policy, programme structure, and confidentiality exceptions.
+
+Return only the completed session terms and cancellation policy.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'supervision_policy',
+    document_label: 'Supervision Policy',
+    generationPrompt: `You are a UK coaching professional standards specialist with expertise in supervision requirements for practising coaches.
+
+Create a comprehensive Supervision Policy.
+
+This policy must document the coach's supervision arrangements, professional accountability structures, and ethical oversight commitments, aligned with ICF, EMCC, or Association for Coaching (AC) supervision requirements.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a supervision policy that:
+
+• Defines the purpose and scope of coaching supervision
+• Documents the supervision arrangement (frequency, format, supervisor credentials)
+• Establishes confidentiality boundaries within supervision
+• Clarifies what client information is shared in supervision
+• Addresses professional accountability and ethical oversight
+• Covers the distinction between supervision, mentoring, and therapy
+• Meets professional body requirements for supervision
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Purpose and definition of coaching supervision
+2. Supervision arrangement (frequency, duration, format)
+3. Supervisor credentials and professional standing
+4. Confidentiality boundaries (what is and is not shared)
+5. Client consent and awareness of supervision
+6. Professional accountability framework
+7. Ethical oversight and duty of care
+8. Types of issues brought to supervision
+9. Record-keeping within supervision
+10. Professional body alignment statement
+
+Use the client's brief to populate: supervision arrangement frequency, coaching modality, accreditation body, and any specific professional requirements.
+
+Return only the completed supervision policy.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'cpd_tracker_template',
+    document_label: 'CPD Tracker Template',
+    generationPrompt: `You are a professional development specialist creating a Continuing Professional Development (CPD) tracking template for a UK-based coach.
+
+Create a comprehensive CPD Tracker Template.
+
+This template must enable a practising coach to track, record, and evidence their CPD activities in alignment with their professional body's requirements (ICF, EMCC, AC, or other).
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a CPD tracker that:
+
+• Provides a structured format for recording all CPD activities
+• Categorises CPD by type (formal learning, self-directed, professional practice)
+• Tracks hours against professional body requirements
+• Includes reflection prompts for each activity
+• Provides annual summary and review sections
+• Supports audit preparation and credential renewal
+• Covers the full range of CPD: training, reading, supervision, peer learning
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. CPD policy statement and professional body requirements
+2. Annual CPD targets and hour requirements
+3. CPD activity log (date, type, description, hours, provider, evidence)
+4. Activity categories: formal training, self-directed study, supervision, peer learning, professional practice, writing/research
+5. Reflection prompts per activity
+6. Quarterly review sections
+7. Annual summary and total hours
+8. Evidence checklist for credential renewal
+9. Next year planning section
+10. Professional body reference and standards alignment
+
+Use the client's brief to populate: accreditation body, CPD hours target, coaching modality, and any specific CPD requirements.
+
+Return only the completed CPD tracker template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'coaching_code_of_ethics',
+    document_label: 'Coaching Code of Ethics',
+    generationPrompt: `You are a UK coaching professional standards specialist creating a Code of Ethics for a practising coach.
+
+Create a comprehensive Coaching Code of Ethics.
+
+This code must establish the ethical principles and professional conduct standards for a UK-based coach, aligned with the International Coach Federation (ICF) Code of Ethics or equivalent professional body standards.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a code of ethics that:
+
+• Establishes core ethical principles for coaching practice
+• Defines professional conduct standards and expectations
+• Addresses confidentiality and its specific coaching exceptions
+• Covers boundaries between coaching and other professions (therapy, counselling, mentoring)
+• Addresses conflicts of interest and multiple relationships
+• Establishes data protection and client record standards
+• Provides for complaint and grievance procedures
+• Aligns with ICF, EMCC, or AC ethical frameworks
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Purpose and scope of the code
+2. Core ethical principles (autonomy, beneficence, non-maleficence, justice, fidelity)
+3. Professional competence and scope of practice
+4. Client relationship standards (boundaries, dual relationships, conflicts of interest)
+5. Confidentiality standards and exceptions (risk of harm, legal duty, supervision disclosure)
+6. Boundaries of coaching practice (what coaching is and is not)
+7. Informed consent and client autonomy
+8. Data protection and client records (UK GDPR compliance)
+9. Professional development and supervision commitment
+10. Equality, diversity, and inclusion commitment
+11. Complaints and grievance procedure
+12. Breach of ethics consequences
+13. Professional body alignment statement
+
+Use the client's brief to populate: coaching modality, accreditation body, supervision arrangement, and confidentiality exceptions.
+
+Return only the completed coaching code of ethics.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'client_progress_tracker',
+    document_label: 'Client Progress Tracker',
+    generationPrompt: `You are a professional coaching practice management specialist creating a client progress tracking template for a UK-based coach.
+
+Create a comprehensive Client Progress Tracker.
+
+This template must enable a coach to systematically track client goals, session outcomes, actions, and overall progress across the coaching engagement.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a progress tracker that:
+
+• Provides a structured format for tracking each client's coaching journey
+• Records goals, actions, and outcomes per session
+• Tracks progress against initial objectives
+• Includes reflective prompts for both coach and client
+• Provides summary views for progress reporting
+• Supports programme milestone tracking
+• Enables evidence-based coaching practice
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Client profile and engagement overview
+2. Initial goals and desired outcomes (from onboarding)
+3. Session log (date, focus area, key discussion points, insights, actions agreed)
+4. Action tracking (action items, completion status, obstacles, adjustments)
+5. Goal progress indicators (baseline, current, target)
+6. Milestone checkpoints (aligned with programme structure)
+7. Client self-assessment sections
+8. Coach observations and reflections
+9. Overall progress summary and trend indicators
+10. Next steps and recommendations section
+
+Use the client's brief to populate: session format, programme structure, coaching modality, and session length.
+
+Return only the completed client progress tracker template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'testimonial_request_template',
+    document_label: 'Testimonial Request Template',
+    generationPrompt: `You are a professional copywriter and coaching business specialist creating a testimonial request template for a UK-based coach.
+
+Create a comprehensive Testimonial Request Template.
+
+This template must provide a professional, ethical approach to requesting testimonials from coaching clients, with guidance on timing, phrasing, and GDPR-compliant consent for using client feedback.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a testimonial request that:
+
+• Provides a professional, respectful approach to requesting feedback
+• Includes multiple template variations (email, in-session verbal, follow-up)
+• Guides the client on what makes a useful testimonial
+• Obtains explicit consent for using the testimonial (GDPR compliance)
+• Covers different use contexts (website, LinkedIn, marketing materials)
+• Maintains coaching professionalism and boundaries
+• Includes guidance on timing the request appropriately
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Timing guidance for testimonial requests (when to ask)
+2. Email template variations (formal, warm, brief)
+3. In-session verbal request script
+4. Guidance on what makes an effective coaching testimonial
+5. Prompt questions for the client (outcomes, experience, transformation)
+6. GDPR consent form for testimonial use
+7. Approved use contexts (website, social media, print, third-party)
+8. Anonymisation and editing provisions
+9. Client right to withdraw consent
+10. Follow-up reminder template
+
+Use the client's brief to populate: coaching modality, first name, business name, and tone of voice.
+
+Return only the completed testimonial request template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+
+  // ─── Photographer Industry Pack (7 documents) ─────────────────────────────
+
+  {
+    document_type: 'photography_licensing_agreement',
+    document_label: 'Photography Licensing Agreement',
+    generationPrompt: `You are a UK intellectual property and media law specialist creating a photography licensing agreement.
+
+Create a comprehensive Photography Licensing Agreement.
+
+This agreement must govern the licensing of photographs from a UK-based sole trader photographer to their clients, complying with the Copyright, Designs and Patents Act 1988 (CDPA) and UK contract law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a licensing agreement that:
+
+• Clearly defines the copyright ownership position
+• Specifies the scope of the licence (personal, commercial, editorial)
+• Covers usage territory, duration, and exclusivity
+• Addresses digital and print reproduction rights
+• Handles sub-licensing and third-party use restrictions
+• Covers attribution and credit requirements
+• Addresses alteration, modification, and derivative works
+• Complies with UK CDPA 1988 and moral rights provisions
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Parties and definitions
+2. Copyright ownership declaration
+3. Grant of licence (scope, purpose, territory)
+4. Permitted uses (personal, commercial, editorial, advertising)
+5. Restrictions (sub-licensing, resale, modification limits)
+6. Duration and territory of licence
+7. Exclusivity provisions
+8. Attribution and credit requirements
+9. Moral rights (right of attribution, integrity)
+10. Fee and payment terms
+11. Indemnification (model release reliance, content liability)
+12. Breach and termination of licence
+13. Governing law (UK jurisdiction)
+
+Use the client's brief to populate: photography specialism, licensing intent, commercial use, delivery format, and portfolio usage preferences.
+
+Return only the completed photography licensing agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'model_release_form',
+    document_label: 'Model Release Form',
+    generationPrompt: `You are a UK media and privacy law specialist creating a model release form for a professional photographer.
+
+Create a comprehensive Model Release Form.
+
+This form must obtain lawful consent from individuals whose likeness appears in photographs, complying with UK data protection law (UK GDPR, DPA 2018), privacy law, and the Copyright, Designs and Patents Act 1988.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a model release that:
+
+• Obtains informed consent for use of the subject's image
+• Specifies permitted uses (personal, commercial, editorial, advertising)
+• Covers digital and print reproduction
+• Addresses UK GDPR compliance for biometric data in photographs
+• Includes provisions for minors (parental/guardian consent)
+• Covers duration and territory of consent
+• Provides for withdrawal of consent under GDPR
+• Addresses moral rights and attribution
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Photographer and model details
+2. Shoot details (date, location, project reference)
+3. Grant of consent (specific uses authorised)
+4. Permitted media (print, digital, online, advertising, editorial)
+5. Territory and duration of consent
+6. UK GDPR consent for processing biometric/image data
+7. Minor provisions (parental/guardian consent section)
+8. Right to withdraw consent (process and consequences)
+9. Compensation and consideration
+10. Indemnification provisions
+11. Data protection notice (how images will be stored and processed)
+12. Signatures and date
+
+Use the client's brief to populate: photography specialism, model release needs, commercial use, and portfolio usage preferences.
+
+Return only the completed model release form.
+
+Ready for PDF, DOCX, and wet/digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'shot_list_template',
+    document_label: 'Shot List Template',
+    generationPrompt: `You are a professional photography workflow specialist creating a shot list template for a UK-based photographer.
+
+Create a comprehensive Shot List Template.
+
+This template must provide a structured format for planning and executing photography shoots, ensuring all required images are captured efficiently and to the client's specifications.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a shot list that:
+
+• Provides a clear, organised format for shot planning
+• Categorises shots by type, priority, and sequence
+• Includes technical specifications (lens, lighting, composition notes)
+• Tracks completion status during the shoot
+• Supports different photography specialisms
+• Enables client communication and approval of planned shots
+• Integrates with the broader project workflow
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Project/client overview
+2. Shoot details (date, location, duration, weather contingency)
+3. Shot categories (must-have, desired, bonus/creative)
+4. Per-shot specification: subject, composition, angle, lens, lighting notes
+5. Sequence and timing suggestions
+6. Equipment checklist aligned to shot requirements
+7. Client must-provide items list
+8. Shot completion tracker (captured, review, retake)
+9. Post-shoot notes section
+10. Client sign-off section
+
+Use the client's brief to populate: photography specialism, client type, delivery format, and delivery timeline.
+
+Return only the completed shot list template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'delivery_terms_policy',
+    document_label: 'Delivery Terms & Timeline Policy',
+    generationPrompt: `You are a UK professional services contract specialist creating delivery terms for a photography business.
+
+Create a comprehensive Delivery Terms & Timeline Policy.
+
+This policy must clearly define how photographs are delivered to clients, including timelines, formats, revision procedures, and delivery method, complying with UK consumer rights and contract law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a delivery policy that:
+
+• Defines delivery timelines for different shoot types
+• Specifies file formats and resolution standards
+• Covers editing and post-production processes
+• Addresses revision rounds and client feedback procedures
+• Handles delivery method (online gallery, USB, download link)
+• Covers storage and archival policies
+• Addresses force majeure and delay provisions
+• Complies with UK Consumer Rights Act 2015 where applicable
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Delivery timeline standards (by shoot type)
+2. File format specifications (JPEG, TIFF, RAW policy)
+3. Resolution and quality standards
+4. Editing process and style description
+5. Client proofing and selection process
+6. Revision rounds included and additional revision fees
+7. Delivery method (online gallery, download, physical media)
+8. Storage and archival policy (duration, backup, deletion schedule)
+9. Delay provisions and force majeure
+10. Client responsibilities for timely feedback
+11. Re-delivery and access recovery provisions
+12. Governing law
+
+Use the client's brief to populate: delivery format, delivery timeline, editing rounds, and photography specialism.
+
+Return only the completed delivery terms and timeline policy.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'editing_brief_template',
+    document_label: 'Editing Brief Template',
+    generationPrompt: `You are a professional photography post-production specialist creating an editing brief template for a UK-based photographer.
+
+Create a comprehensive Editing Brief Template.
+
+This template must capture all the information needed to guide the post-production editing process, ensuring consistency with the photographer's style and the client's expectations.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an editing brief that:
+
+• Captures the desired editing style and aesthetic
+• Defines colour grading, toning, and white balance preferences
+• Covers retouching level and specific requirements
+• Addresses cropping and composition adjustments
+• Handles black-and-white vs colour decisions
+• Covers export specifications (format, resolution, colour space)
+• Provides a communication framework for feedback between photographer and editor
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Project overview and client details
+2. Shooting context and conditions
+3. Style reference (mood board description, reference images)
+4. Colour grading preferences (warm, cool, natural, film-inspired)
+5. Exposure and contrast treatment
+6. Retouching level (minimal, moderate, extensive with specifics)
+7. Specific retouching instructions (skin, blemishes, backgrounds, objects)
+8. Cropping and composition guidance
+9. Black-and-white vs colour decisions
+10. Export specifications (format, resolution, colour space, naming convention)
+11. Priority images for first delivery
+12. Client feedback and revision instructions
+
+Use the client's brief to populate: photography specialism, editing rounds, delivery format, and visual style.
+
+Return only the completed editing brief template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'print_release_form',
+    document_label: 'Print Release Form',
+    generationPrompt: `You are a UK intellectual property law specialist creating a print release form for a professional photographer.
+
+Create a comprehensive Print Release Form.
+
+This form must authorise the client to reproduce photographs for print purposes while maintaining the photographer's copyright, complying with the Copyright, Designs and Patents Act 1988.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a print release that:
+
+• Grants specific permission for print reproduction
+• Maintains the photographer's copyright ownership
+• Defines permitted print uses (personal, gift, display)
+• Restricts commercial reproduction and resale
+• Covers print size and quality specifications
+• Addresses third-party printer requirements
+• Includes attribution requirements
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Photographer and client details
+2. Copyright ownership declaration
+3. Grant of print permission (scope and purpose)
+4. Permitted print uses (personal, gift, wall display)
+5. Restrictions (commercial, advertising, resale prohibited)
+6. Print specifications (size limits, resolution requirements)
+7. Third-party printer provisions (lab requirements, file handling)
+8. Attribution and credit requirements
+9. File format and delivery specifications
+10. Limitations and liability
+11. Signatures and date
+
+Use the client's brief to populate: licensing intent, commercial use policy, and delivery format.
+
+Return only the completed print release form.
+
+Ready for PDF, DOCX, and wet/digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'event_photography_terms',
+    document_label: 'Event Photography Terms',
+    generationPrompt: `You are a UK event and commercial photography contract specialist creating terms and conditions for event photography services.
+
+Create comprehensive Event Photography Terms.
+
+These terms must govern the provision of photography services at events, covering access, liability, exclusivity, guest photography, and force majeure, compliant with UK contract law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create event photography terms that:
+
+• Define the scope of event photography services
+• Cover venue access and logistical requirements
+• Address exclusivity and guest photography policies
+• Handle event cancellation and postponement provisions
+• Cover liability for missed shots or equipment failure
+• Address image usage by the venue, sponsors, and third parties
+• Include force majeure provisions
+• Cover health and safety at the event
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Parties and event details
+2. Scope of services (coverage duration, deliverables, shot list)
+3. Photographer access and logistical requirements
+4. Exclusivity provisions (exclusive vs non-exclusive coverage)
+5. Guest photography policy (restrictions, social media)
+6. Venue, sponsor, and third-party image usage
+7. Delivery timeline and format
+8. Cancellation and postponement provisions (client-initiated and force majeure)
+9. Liability limitations (equipment failure, venue restrictions, weather)
+10. Health and safety obligations
+11. Payment terms and deposit requirements
+12. Image licensing and copyright
+13. Governing law
+
+Use the client's brief to populate: photography specialism, event cancellation policy, delivery timeline, and licensing intent.
+
+Return only the completed event photography terms.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+
+  // ─── Consultant Industry Pack (7 documents) ──────────────────────────────
+
+  {
+    document_type: 'consulting_agreement',
+    document_label: 'Consulting Agreement',
+    generationPrompt: `You are a UK commercial contract specialist with expertise in consulting and professional services agreements.
+
+Create a comprehensive Consulting Agreement.
+
+This agreement must govern the consulting engagement between a UK-based sole trader consultant and their client, complying with UK contract law and reflecting consulting best practices.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a consulting agreement that:
+
+• Defines the consulting scope and deliverables with precision
+• Establishes the engagement model (fixed-scope, time and materials, retainer)
+• Covers intellectual property ownership and licensing
+• Addresses confidentiality and NDA provisions
+• Establishes milestone tracking and acceptance criteria
+• Covers knowledge transfer obligations
+• Handles conflicts of interest and professional independence
+• Includes data protection provisions compliant with UK GDPR
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Parties and definitions
+2. Scope of consulting services (detailed description)
+3. Engagement model and fee structure
+4. Deliverables specification and acceptance criteria
+5. Timeline and milestones
+6. Consultant obligations and professional standards
+7. Client obligations (access, information, cooperation)
+8. Intellectual property ownership and licensing
+9. Confidentiality and NDA provisions
+10. Data protection (UK GDPR compliance)
+11. Conflicts of interest and professional independence
+12. Knowledge transfer obligations
+13. Fees, invoicing, and payment terms
+14. Limitation of liability and indemnification
+15. Termination provisions
+16. Dispute resolution
+17. Governing law (UK jurisdiction)
+
+Use the client's brief to populate: consulting specialism, engagement model, deliverable types, methodology, knowledge transfer approach, conflicts of interest position, milestones, and acceptance criteria.
+
+Return only the completed consulting agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'consultant_nda',
+    document_label: 'Consultant NDA',
+    generationPrompt: `You are a UK commercial confidentiality and intellectual property law specialist creating a Non-Disclosure Agreement for consulting engagements.
+
+Create a comprehensive Consultant NDA.
+
+This NDA must protect confidential information exchanged during consulting engagements, complying with UK contract law and the Trade Secrets (Enforcement, etc.) Regulations 2019.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an NDA that:
+
+• Protects both parties' confidential information (mutual or one-way as appropriate)
+• Defines confidential information with sufficient breadth and clarity
+• Covers all forms of disclosure (oral, written, electronic, visual)
+• Addresses return and destruction of confidential information
+• Covers permitted disclosures (legal obligations, professional advisors)
+• Includes remedies for breach (injunction, damages)
+• Addresses trade secrets with enhanced protection
+• Complies with UK GDPR for any personal data shared
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Parties and effective date
+2. Definition of confidential information (broad, specific categories)
+3. Obligations of receiving party (use limitation, protection standard)
+4. Permitted disclosures (employees, advisors, legal requirements)
+5. Exclusions from confidentiality (public domain, independent development)
+6. Duration of confidentiality obligations
+7. Return and destruction of confidential information
+8. Trade secrets (enhanced protection under Trade Secrets Regulations 2019)
+9. Remedies for breach (injunction, damages, indemnity)
+10. Data protection provisions (UK GDPR where personal data is shared)
+11. No licence or rights granted
+12. Governing law and jurisdiction
+
+Use the client's brief to populate: NDA type preference (mutual vs one-way) and consulting specialism context.
+
+Return only the completed consultant NDA.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'deliverables_specification',
+    document_label: 'Deliverables Specification',
+    generationPrompt: `You are a professional consulting practice specialist creating a deliverables specification template for a UK-based consultant.
+
+Create a comprehensive Deliverables Specification Template.
+
+This template must define consulting deliverables with sufficient precision to prevent scope disputes and establish clear acceptance criteria, aligned with consulting best practices.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a specification that:
+
+• Defines each deliverable with measurable precision
+• Establishes acceptance criteria and review processes
+• Covers format, medium, and quality standards
+• Addresses revision rounds and change management
+• Links deliverables to project milestones
+• Covers partial delivery and interim deliverables
+• Establishes sign-off procedures and approval timelines
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Project overview and engagement context
+2. Deliverable inventory (complete list with references)
+3. Per-deliverable specification: description, format, length/size, quality standard
+4. Acceptance criteria for each deliverable
+5. Review and feedback process (timeline for client review)
+6. Revision policy (included rounds, additional revision fees)
+7. Delivery schedule linked to milestones
+8. Interim and partial deliverable provisions
+9. Sign-off procedure (written acceptance, email confirmation, meeting)
+10. Change management (scope change impact on deliverables)
+11. Quality assurance process
+12. Final delivery confirmation and project closure
+
+Use the client's brief to populate: deliverable types, engagement model, methodology, milestones, and acceptance criteria.
+
+Return only the completed deliverables specification template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'milestone_tracking_template',
+    document_label: 'Milestone Tracking Template',
+    generationPrompt: `You are a professional consulting project management specialist creating a milestone tracking template for a UK-based consultant.
+
+Create a comprehensive Milestone Tracking Template.
+
+This template must enable a consultant to track project milestones, payments, deliverables, and overall engagement progress systematically.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a milestone tracker that:
+
+• Maps all project milestones with dates and dependencies
+• Tracks deliverable completion against milestones
+• Links milestone achievement to payment triggers
+• Provides status visibility for both consultant and client
+• Handles milestone delays and adjustments
+• Supports different engagement models (fixed-scope, T&M, retainer)
+• Enables progress reporting and stakeholder communication
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Project overview and engagement model
+2. Milestone register (name, description, target date, status)
+3. Deliverable mapping per milestone
+4. Payment schedule linked to milestones
+5. Status indicators (planned, in progress, delivered, accepted, overdue)
+6. Dependency tracking between milestones
+7. Risk and issue log per milestone
+8. Client sign-off tracker per milestone
+9. Timeline Gantt-style view (simplified)
+10. Progress summary dashboard
+11. Change and adjustment log
+12. Reporting frequency and next review date
+
+Use the client's brief to populate: milestones, reporting frequency, and acceptance criteria.
+
+Return only the completed milestone tracking template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'knowledge_transfer_protocol',
+    document_label: 'Knowledge Transfer Protocol',
+    generationPrompt: `You are a UK consulting professional standards specialist creating a knowledge transfer protocol for consulting engagements.
+
+Create a comprehensive Knowledge Transfer Protocol.
+
+This protocol must govern the structured handover of knowledge, methodology, and deliverables from the consultant to the client, ensuring the client can maintain and build upon the consultant's work after the engagement ends.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a protocol that:
+
+• Defines what knowledge must be transferred and in what format
+• Establishes the timeline and process for knowledge transfer
+• Covers documentation, training, and walkthrough requirements
+• Addresses proprietary methodology licensing vs transfer
+• Handles ongoing access and support provisions
+• Ensures institutional knowledge is captured before engagement ends
+• Provides for verification that transfer is complete
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Purpose and scope of knowledge transfer
+2. Knowledge inventory (what must be transferred)
+3. Transfer methods (documentation, training sessions, walkthroughs, Q&A)
+4. Documentation requirements (format, detail level, accessibility)
+5. Training and walkthrough schedule
+6. Proprietary methodology provisions (licence vs full transfer)
+7. Key personnel involvement (who participates from both sides)
+8. Timeline and milestones for transfer activities
+9. Verification and acceptance criteria for successful transfer
+10. Post-engagement access and support provisions
+11. Confidentiality during and after transfer
+12. Knowledge transfer sign-off
+
+Use the client's brief to populate: knowledge transfer approach, methodology, deliverable types, and reporting frequency.
+
+Return only the completed knowledge transfer protocol.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'consultant_code_of_conduct',
+    document_label: 'Consultant Code of Conduct',
+    generationPrompt: `You are a UK professional consulting standards specialist creating a code of conduct for a practising consultant.
+
+Create a comprehensive Consultant Code of Conduct.
+
+This code must establish the ethical principles and professional conduct standards for a UK-based sole trader consultant, covering integrity, objectivity, competence, and confidentiality.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a code of conduct that:
+
+• Establishes core ethical principles for consulting practice
+• Addresses conflicts of interest and professional independence
+• Covers confidentiality and client data protection
+• Establishes competence and continuous development standards
+• Addresses gift, hospitality, and bribery prevention (Bribery Act 2010)
+• Covers client relationship boundaries and expectations
+• Provides for complaint and grievance procedures
+• Addresses social media and public communications
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Purpose and scope
+2. Core principles (integrity, objectivity, competence, confidentiality, professionalism)
+3. Conflicts of interest and professional independence
+4. Client engagement standards
+5. Confidentiality and data protection (UK GDPR)
+6. Competence and professional development
+7. Anti-bribery and corruption (Bribery Act 2010 compliance)
+8. Gifts and hospitality policy
+9. Client relationship boundaries
+10. Intellectual property and ownership ethics
+11. Social media and public communications
+12. Reporting concerns and whistleblowing
+13. Breach consequences and disciplinary provisions
+14. Review and updates
+
+Use the client's brief to populate: consulting specialism, conflicts of interest approach, and methodology.
+
+Return only the completed consultant code of conduct.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'engagement_closure_report',
+    document_label: 'Engagement Closure Report',
+    generationPrompt: `You are a professional consulting practice specialist creating an engagement closure report template for a UK-based consultant.
+
+Create a comprehensive Engagement Closure Report Template.
+
+This template must provide a structured format for formally closing a consulting engagement, documenting outcomes, lessons learned, and knowledge handover status.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a closure report that:
+
+• Documents the engagement scope, objectives, and outcomes achieved
+• Tracks deliverable completion and acceptance status
+• Records knowledge transfer completion and verification
+• Captures lessons learned for both consultant and client
+• Provides formal closure confirmation and sign-off
+• Addresses any outstanding items or ongoing obligations
+• Supports testimonial and reference discussions
+• Enables future re-engagement with clear context
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Engagement overview (scope, duration, objectives)
+2. Outcomes achieved vs original objectives
+3. Deliverable completion and acceptance status
+4. Knowledge transfer completion and verification
+5. Outstanding items and post-engagement obligations
+6. Key findings and recommendations summary
+7. Lessons learned (what worked, what could improve)
+8. Client feedback and satisfaction summary
+9. Ongoing support or warranty provisions
+10. Engagement sign-off (consultant and client)
+11. Appendix: deliverable inventory with acceptance dates
+12. Appendix: knowledge transfer checklist completion status
+
+Use the client's brief to populate: consulting specialism, deliverable types, methodology, and knowledge transfer approach.
+
+Return only the completed engagement closure report template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+
+  // ─── Contractor Industry Pack (8 documents) ──────────────────────────────
+
+  {
+    document_type: 'health_safety_policy',
+    document_label: 'Health & Safety Policy',
+    generationPrompt: `You are a UK health and safety compliance specialist creating a Health and Safety Policy for a sole trader contractor or tradesperson.
+
+Create a comprehensive Health and Safety Policy.
+
+This policy must comply with the Health and Safety at Work etc. Act 1974 (HSWA), the Management of Health and Safety at Work Regulations 1999 (MHSWR), and applicable HSE guidance for small businesses and sole traders in the construction and trades sector.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a health and safety policy that:
+
+• States the contractor's commitment to health and safety
+• Defines responsibilities for the sole trader, employees, and subcontractors
+• Covers hazard identification and risk management
+• Addresses specific trades-related risks (working at height, electrical, manual handling)
+• Covers provision of PPE and equipment safety
+• Addresses welfare facilities and first aid provision
+• Covers accident reporting and RIDDOR obligations
+• Complies with HSE requirements for small businesses
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Statement of intent (health and safety commitment)
+2. Organisation and responsibilities (sole trader, employees, subcontractors, visitors)
+3. Arrangements for health and safety:
+   a. Risk assessment process
+   b. Hazard identification and control
+   c. Safe systems of work
+   d. Provision and use of PPE
+   e. Equipment safety and maintenance (PUWER)
+   f. Working at height procedures
+   g. Manual handling
+   h. Electrical safety
+   i. COSHH and hazardous substances
+   j. Fire safety and emergency procedures
+   k. First aid provision
+   l. Welfare facilities
+   m. Accident reporting (RIDDOR)
+   n. Information, instruction, and training
+   o. Consultation with workers
+4. Specific trade-related hazards and controls
+5. Review and revision arrangements
+6. Signed and dated by the responsible person
+
+Use the client's brief to populate: trade type, work environments, workforce structure, height working, hazardous substances, plant and equipment, existing H&S documentation, and insurance coverage.
+
+Return only the completed health and safety policy.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'risk_assessment_template',
+    document_label: 'Risk Assessment Template',
+    generationPrompt: `You are a UK health and safety compliance specialist creating a risk assessment template for a sole trader contractor or tradesperson.
+
+Create a comprehensive Risk Assessment Template.
+
+This template must comply with the Management of Health and Safety at Work Regulations 1999 and HSE guidance on risk assessment for small construction and trades businesses.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a risk assessment template that:
+
+• Provides a systematic approach to identifying workplace hazards
+• Enables evaluation of risk severity and likelihood
+• Supports the specification of control measures
+• Covers trades-specific hazards (falls from height, electrical, asbestos, manual handling)
+• Tracks implementation of control measures
+• Supports regular review and updating
+• Complies with HSE five-step risk assessment approach
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Assessment details (date, assessor, location, activity)
+2. Hazard identification (systematic listing by category)
+3. Who might be harmed and how
+4. Risk evaluation (likelihood x severity = risk rating matrix)
+5. Existing control measures
+6. Additional control measures required
+7. Action plan with responsibility and completion dates
+8. Risk rating after controls (residual risk)
+9. Review schedule and review date
+10. Sign-off by competent person
+
+Hazard categories to include:
+- Working at height
+- Slips, trips, and falls
+- Manual handling
+- Hazardous substances (COSHH)
+- Electrical safety
+- Use of tools and equipment
+- Moving vehicles and plant
+- Noise and vibration
+- Dust and fumes
+- Asbestos
+- Temperature and weather exposure
+- Lone working
+
+Use the client's brief to populate: trade type, work environments, height working, hazardous substances, plant and equipment, and specific hazards.
+
+Return only the completed risk assessment template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'method_statement',
+    document_label: 'Method Statement',
+    generationPrompt: `You are a UK health and safety compliance specialist creating a method statement template for a sole trader contractor or tradesperson.
+
+Create a comprehensive Method Statement Template.
+
+This template must provide a structured format for documenting the safe method of work for specific construction or trade activities, complying with HSE guidance and CDM Regulations 2015 where applicable.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a method statement that:
+
+• Defines the task and its scope with precision
+• Identifies hazards specific to the task
+• Details the step-by-step safe method of work
+• Specifies PPE and equipment requirements
+• Addresses emergency procedures for the task
+• Covers environmental considerations and waste management
+• Provides for supervision and monitoring
+• Supports client and principal contractor review
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Project and task details
+2. Site location and access arrangements
+3. Task description and scope
+4. Hazards identified (linked to risk assessment)
+5. Personnel requirements (competence, certifications)
+6. Equipment and materials required
+7. PPE requirements (specific to the task)
+8. Step-by-step method of work (sequential)
+9. Environmental controls (waste, spillage, noise, dust)
+10. Emergency procedures (specific to the task)
+11. Supervision and monitoring arrangements
+12. Quality control checks
+13. Permits required (hot work, confined space, excavation)
+14. Communication and briefing arrangements
+15. Sign-off and acceptance
+
+Use the client's brief to populate: trade type, work environments, height working, hazardous substances, plant and equipment, and specific hazards.
+
+Return only the completed method statement template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'coshh_assessment',
+    document_label: 'COSHH Assessment',
+    generationPrompt: `You are a UK health and safety compliance specialist creating a COSHH assessment template for a sole trader contractor or tradesperson.
+
+Create a comprehensive COSHH Assessment Template.
+
+This template must comply with the Control of Substances Hazardous to Health Regulations 2002 (COSHH) and HSE guidance on COSHH assessment for construction and trades businesses.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a COSHH assessment that:
+
+• Identifies all hazardous substances used in the trade
+• Assesses the health risks from exposure
+• Specifies control measures to prevent or reduce exposure
+• Covers safe handling, storage, and disposal procedures
+• Addresses personal protective equipment requirements
+• Covers health surveillance where required
+• Provides for employee information and training
+• Complies with HSE COSHH essentials approach
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Assessment details (date, assessor, activity/work area)
+2. Substance identification (product name, supplier, SDS reference)
+3. Hazard classification (CLP/GHS classification, hazard statements)
+4. Form of the substance and how it is used
+5. Who is exposed and how (routes of entry: inhalation, skin, ingestion)
+6. Duration and frequency of exposure
+7. Health effects (acute and chronic)
+8. Workplace exposure limits (WELs) where applicable
+9. Control measures (elimination, substitution, engineering controls, PPE hierarchy)
+10. Safe handling and storage procedures
+11. Spillage and decontamination procedures
+12. Waste disposal requirements
+13. Health surveillance requirements
+14. Information and training requirements
+15. Emergency first aid measures
+16. Review date
+
+Common trade substances to reference:
+- Cement and concrete (silica dust, skin irritation)
+- Solvents and adhesives (VOCs, neurotoxic effects)
+- Wood dust (carcinogenic classification)
+- Lead paint (in older properties)
+- Asbestos (if encountered)
+- Chemical treatments (preservatives, pesticides)
+- Welding fumes (metal fume fever)
+
+Use the client's brief to populate: trade type, hazardous substances, work environments, and specific hazards.
+
+Return only the completed COSHH assessment template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'construction_phase_plan',
+    document_label: 'Construction Phase Plan',
+    generationPrompt: `You are a UK CDM compliance specialist creating a construction phase plan template for a sole trader contractor.
+
+Create a comprehensive Construction Phase Plan Template.
+
+This plan must comply with the Construction (Design and Management) Regulations 2015 (CDM 2015) and HSE guidance on construction phase plans for small projects.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a construction phase plan that:
+
+• Describes the project and its health and safety risks
+• Identifies significant risks and how they will be managed
+• Covers the coordination of work activities
+• Addresses welfare facilities on site
+• Covers site rules and induction requirements
+• Provides for monitoring and review of health and safety
+• Complies with CDM 2015 Regulation 12 requirements
+• Is proportionate to the scale and risk of the project
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Project description (scope, location, client, duration)
+2. Client and principal designer/contractor details
+3. Key health and safety risks and hazards
+4. Risk management measures (linked to risk assessments)
+5. Construction work sequence and phasing
+6. Site layout and logistics
+7. Welfare facilities provision
+8. Site rules and induction requirements
+9. Emergency procedures (fire, first aid, rescue)
+10. Coordination and communication arrangements
+11. Monitoring and review arrangements
+12. Information for pre-construction phase (design risk information)
+13. Arrangements for controlling significant risks:
+    - Working at height
+    - Structural stability and demolition
+    - Asbestos management
+    - Underground and overhead services
+    - Vehicle and plant movements
+    - Hazardous substances (COSHH)
+    - Noise, vibration, and dust
+14. Training and competence verification
+15. Review and update schedule
+
+Use the client's brief to populate: trade type, CDM exposure, work environments, height working, hazardous substances, plant and equipment, and specific hazards.
+
+Return only the completed construction phase plan template.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'subcontractor_agreement',
+    document_label: 'Subcontractor Agreement',
+    generationPrompt: `You are a UK construction contract specialist creating a subcontractor agreement for a sole trader contractor.
+
+Create a comprehensive Subcontractor Agreement.
+
+This agreement must govern the engagement of subcontractors by a UK-based sole trader contractor, complying with UK contract law, the Construction (Design and Management) Regulations 2015 (CDM 2015), and the Health and Safety at Work etc. Act 1974.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a subcontractor agreement that:
+
+• Defines the subcontracted scope of work clearly
+• Establishes health and safety obligations (CDM compliance)
+• Covers insurance requirements (public liability, employer's liability)
+• Addresses CIS tax and payment terms
+• Covers CDM 2015 coordination and communication duties
+• Handles intellectual property in designs and specifications
+• Covers provision of tools, equipment, and materials
+• Addresses substitution and labour supply restrictions
+• Includes data protection provisions
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Parties and definitions
+2. Scope of subcontracted work
+3. Health and safety obligations (CDM 2015 compliance)
+4. Insurance requirements (minimum cover levels)
+5. CDM 2015 duties and coordination
+6. Payment terms (CIS deduction, invoicing schedule)
+7. Programme and timeline obligations
+8. Quality standards and defect rectification
+9. Materials, tools, and equipment provision
+10. Substitution and labour supply restrictions
+11. Indemnification and liability
+12. Termination provisions
+13. Confidentiality and data protection
+14. Dispute resolution (Adjudication under Housing Grants Act)
+15. Governing law (UK jurisdiction)
+
+Use the client's brief to populate: trade type, workforce structure, CDM exposure, work environments, and insurance coverage.
+
+Return only the completed subcontractor agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'site_induction_checklist',
+    document_label: 'Site Induction Checklist',
+    generationPrompt: `You are a UK health and safety compliance specialist creating a site induction checklist for a sole trader contractor.
+
+Create a comprehensive Site Induction Checklist.
+
+This checklist must ensure all workers, visitors, and subcontractors receive adequate site-specific health and safety induction before starting work, complying with CDM 2015 and HSE guidance.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an induction checklist that:
+
+• Covers site-specific hazards and rules
+• Ensures workers understand emergency procedures
+• Verifies competence and certification requirements
+• Addresses welfare facilities and first aid arrangements
+• Covers PPE requirements specific to the site
+• Documents induction attendance and understanding
+• Supports CDM 2015 information provision duties
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Site details (project name, location, principal contractor)
+2. Inductee details (name, role, employer, trade)
+3. Site overview and current work activities
+4. Site-specific hazards and controls
+5. Emergency procedures (fire, first aid, evacuation, rescue)
+6. Site rules (PPE, access restrictions, prohibited areas)
+7. Welfare facilities location (toilets, washing, rest area, drinking water)
+8. First aid arrangements (first aider, first aid box location)
+9. Accident and incident reporting procedures
+10. Permit-to-work requirements (if applicable)
+11. Environmental rules (waste, spillage, noise hours)
+12. Certification and competence verification:
+    - CSCS or equivalent card
+    - Trade-specific certifications
+    - Asbestos awareness training
+    - Working at height training
+    - First aid training
+13. Information acknowledged and understood
+14. Inductee signature and date
+15. Inductor signature and date
+
+Use the client's brief to populate: trade type, work environments, height working, hazardous substances, plant and equipment, and specific hazards.
+
+Return only the completed site induction checklist.
+
+Ready for PDF and DOCX.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'defect_liability_template',
+    document_label: 'Defect Liability Template',
+    generationPrompt: `You are a UK construction contract specialist creating a defect liability template for a sole trader contractor.
+
+Create a comprehensive Defect Liability Template.
+
+This template must govern the rectification of defects following completion of construction work, complying with UK construction law and the Housing Grants, Construction and Regeneration Act 1996.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a defect liability template that:
+
+• Defines the defect liability period and its scope
+• Establishes procedures for reporting defects
+• Covers the contractor's obligations to rectify defects
+• Addresses the distinction between defects and fair wear and tear
+• Handles the client's rights if defects are not rectified
+• Covers costs and payment for defect rectification
+• Addresses latent defects and longer-term liability
+• Provides for third-party inspection and dispute resolution
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+1. Parties and project details
+2. Defect liability period (start date, duration)
+3. Scope of defect liability (what is covered)
+4. Exclusions (fair wear and tear, client misuse, third-party damage, maintenance items)
+5. Defect reporting procedure (notification requirements, timeline)
+6. Contractor's rectification obligations (response time, rectification method)
+7. Client's rights on non-rectification (self-remedy, cost recovery)
+8. Inspection and verification procedures
+9. Cost allocation for defect rectification
+10. Latent defects provisions
+11. Insurance during defect liability period
+12. Dispute resolution (adjudication, mediation)
+13. Completion certificate and final sign-off
+14. Governing law
+
+Use the client's brief to populate: trade type, defect liability period, work environments, and insurance coverage.
+
+Return only the completed defect liability template.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
 ];
 
 // ─── Social Media Generation Prompt ─────────────────────────────────────────

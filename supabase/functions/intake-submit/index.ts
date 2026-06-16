@@ -75,13 +75,23 @@ async function adminQuery(table: string, select: string, filter: Record<string, 
 }
 
 async function regenerateBriefsOnResubmission(userId: string): Promise<string[]> {
-  const existingBriefs = await adminQuery("client_briefs", "id,service_id,version", { client_id: userId });
-  if (!Array.isArray(existingBriefs) || existingBriefs.length === 0) {
-    return [];
-  }
+  const existingBriefs = await adminQuery("client_briefs", "id,service_id,version,status", { client_id: userId });
+  const briefsArray = Array.isArray(existingBriefs) ? existingBriefs : [];
+
+  const existingServiceIds = new Set(
+    briefsArray.map((b: any) => b.service_id || "comprehensive")
+  );
+
+  // Fetch purchased service IDs to also generate briefs for newly purchased services
+  const intakeRows = await adminQuery("intake_responses", "purchased_service_ids", { user_id: userId });
+  const purchasedServiceIds: string[] = Array.isArray(intakeRows) && intakeRows.length > 0
+    ? (intakeRows[0].purchased_service_ids || [])
+    : [];
 
   const regeneratedServices: string[] = [];
-  const briefsToRegenerate = existingBriefs.filter((b: any) => b.status !== "generating");
+
+  // Reset existing briefs that are not currently generating
+  const briefsToRegenerate = briefsArray.filter((b: any) => b.status !== "generating");
 
   for (let i = 0; i < briefsToRegenerate.length; i++) {
     const brief = briefsToRegenerate[i];
@@ -99,6 +109,18 @@ async function regenerateBriefsOnResubmission(userId: string): Promise<string[]>
     if (i < briefsToRegenerate.length - 1) {
       await new Promise(resolve => setTimeout(resolve, 60000));
     }
+  }
+
+  // Also generate briefs for newly purchased services that don't have briefs yet
+  for (const serviceId of purchasedServiceIds) {
+    if (!existingServiceIds.has(serviceId)) {
+      regeneratedServices.push(serviceId);
+    }
+  }
+
+  // Always regenerate the comprehensive brief (null service_id) if it doesn't exist
+  if (!existingServiceIds.has("comprehensive")) {
+    regeneratedServices.push("comprehensive");
   }
 
   for (const serviceId of regeneratedServices) {
