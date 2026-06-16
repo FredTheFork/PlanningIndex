@@ -2,6 +2,41 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import Stripe from "https://esm.sh/stripe@14.14.0";
 
+// Local service tier/industry metadata — mirrors SERVICE_META from stripe-webhook
+// and service-catalog.ts for use in edge function
+interface ServiceTierMeta {
+  tier: 'foundation' | 'operations' | 'industry';
+  industry: 'coach' | 'photographer' | 'consultant' | 'contractor' | null;
+}
+
+const SERVICE_TIER_META: Record<string, ServiceTierMeta> = {
+  business_foundations_pack: { tier: 'foundation', industry: null },
+  website_copy_pack: { tier: 'foundation', industry: null },
+  social_media_pack: { tier: 'foundation', industry: null },
+  monthly_care_plan: { tier: 'foundation', industry: null },
+  quarterly_refresh: { tier: 'foundation', industry: null },
+  client_onboarding_pack: { tier: 'operations', industry: null },
+  payment_protection_pack: { tier: 'operations', industry: null },
+  copyright_licensing_pack: { tier: 'operations', industry: null },
+  gdpr_deep_pack: { tier: 'operations', industry: null },
+  coach_industry_pack: { tier: 'industry', industry: 'coach' },
+  photographer_industry_pack: { tier: 'industry', industry: 'photographer' },
+  consultant_industry_pack: { tier: 'industry', industry: 'consultant' },
+  contractor_industry_pack: { tier: 'industry', industry: 'contractor' },
+};
+
+function getHighestTier(serviceIds: string[]): 'foundation' | 'operations' | 'industry' {
+  const tiers = serviceIds.map(id => SERVICE_TIER_META[id]?.tier).filter(Boolean);
+  if (tiers.includes('industry')) return 'industry';
+  if (tiers.includes('operations')) return 'operations';
+  return 'foundation';
+}
+
+function getPrimaryIndustry(serviceIds: string[]): string | null {
+  const industryService = serviceIds.find(id => SERVICE_TIER_META[id]?.industry);
+  return industryService ? SERVICE_TIER_META[industryService].industry : null;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -344,9 +379,14 @@ Deno.serve(async (req: Request) => {
     // Calculate bundle discount — use group discount if provided, otherwise count-based
     const discountPercentage = getBundleDiscountPercentage(service_ids.length, group_discount_percent);
 
+    // Compute tier and industry for metadata
+    const highestTier = getHighestTier(validatedServiceIds);
+    const primaryIndustry = getPrimaryIndustry(validatedServiceIds);
+
     // Build metadata with social media post count and website pages if applicable
     const metadata: Record<string, string> = {
       service_ids: validatedServiceIds.join(","),
+      tier: highestTier,
     };
     if (social_media_post_count) {
       metadata.social_media_post_count = social_media_post_count.toString();
@@ -359,6 +399,9 @@ Deno.serve(async (req: Request) => {
     }
     if (group_id) {
       metadata.group_id = group_id;
+    }
+    if (primaryIndustry) {
+      metadata.industry = primaryIndustry;
     }
     if (discountPercentage > 0) {
       metadata.bundle_discount_percent = discountPercentage.toString();
@@ -450,6 +493,9 @@ async function handleGetSession(req: Request): Promise<Response> {
     const socialMediaPostCount = session.metadata?.social_media_post_count
       ? parseInt(session.metadata.social_media_post_count, 10)
       : null;
+    const groupId = session.metadata?.group_id || null;
+    const tier = session.metadata?.tier || 'foundation';
+    const industry = session.metadata?.industry || null;
 
     return new Response(
       JSON.stringify({
@@ -462,6 +508,9 @@ async function handleGetSession(req: Request): Promise<Response> {
         website_pages_selected: websitePagesSelected,
         website_page_count: websitePageCount,
         social_media_post_count: socialMediaPostCount,
+        group_id: groupId,
+        tier,
+        industry,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
