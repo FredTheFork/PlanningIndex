@@ -158,7 +158,11 @@ export const allFormSections: FormSection[] = [
       { id: 'q12_social_links', questionNumber: 'Q12', label: 'Please paste the links to any active social media profiles', type: 'long_text', required: false, placeholder: 'One per line', conditionalOn: { field: 'q11_social_platforms', value: 'None yet', notEqual: true } },
       { id: 'business_identity_notes', questionNumber: 'Q12b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details or clarifications you want to share about your business identity...', helpText: 'Optional — add any extra context that didn\'t fit in the questions above.' },
     ],
-    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    serviceTags: [
+      'business_foundations_pack', 'website_copy_pack', 'social_media_pack',
+      'client_onboarding_pack', 'payment_protection_pack', 'copyright_licensing_pack', 'gdpr_deep_pack',
+      'coach_industry_pack', 'photographer_industry_pack', 'consultant_industry_pack', 'contractor_industry_pack',
+    ],
     sortOrder: 10,
   },
 
@@ -177,7 +181,11 @@ export const allFormSections: FormSection[] = [
       { id: 'q18_sends_proposal', questionNumber: 'Q18', label: 'Do you typically send a proposal or quote before a client formally engages you?', type: 'single_choice', required: true, options: ['Yes — I always send a proposal first', 'Sometimes — depends on the project', 'No — we agree verbally and get started'] },
       { id: 'services_notes', questionNumber: 'Q18b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your services that didn\'t fit above...', helpText: 'Optional — add any extra context about what you offer.' },
     ],
-    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    serviceTags: [
+      'business_foundations_pack', 'website_copy_pack', 'social_media_pack',
+      'client_onboarding_pack', 'payment_protection_pack', 'copyright_licensing_pack',
+      'coach_industry_pack', 'photographer_industry_pack', 'consultant_industry_pack', 'contractor_industry_pack',
+    ],
     sortOrder: 20,
   },
 
@@ -196,7 +204,11 @@ export const allFormSections: FormSection[] = [
       { id: 'q24_client_concerns', questionNumber: 'Q24', label: 'What are your biggest concerns or worries when working with clients?', type: 'long_text', required: false, placeholder: 'e.g. Clients not taking the work seriously, projects dragging on past the agreed timeline, being asked to do things outside the original brief.' },
       { id: 'clients_notes', questionNumber: 'Q24b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your clients that didn\'t fit above...', helpText: 'Optional — add any extra context about your client relationships.' },
     ],
-    serviceTags: ['business_foundations_pack', 'website_copy_pack'],
+    serviceTags: [
+      'business_foundations_pack', 'website_copy_pack',
+      'client_onboarding_pack',
+      'coach_industry_pack', 'photographer_industry_pack', 'consultant_industry_pack', 'contractor_industry_pack',
+    ],
     sortOrder: 30,
   },
 
@@ -220,7 +232,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q35_vat_number', questionNumber: 'Q35', label: 'What is your VAT number?', type: 'short_text', required: false, placeholder: 'e.g. GB123456789', conditionalOn: { field: 'q34_vat_registered', value: 'Yes' } },
       { id: 'pricing_notes', questionNumber: 'Q35b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your pricing and payment terms...', helpText: 'Optional — add any extra context about how you handle payments.' },
     ],
-    serviceTags: ['business_foundations_pack'],
+    serviceTags: ['business_foundations_pack', 'payment_protection_pack', 'client_onboarding_pack'],
     sortOrder: 40,
   },
 
@@ -246,7 +258,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q48_tracking_tools', questionNumber: 'Q48', label: 'Which tracking tools do you use?', type: 'multi_select', required: false, options: ['Google Analytics', 'Meta (Facebook) Pixel', 'TikTok Pixel', 'Hotjar or Microsoft Clarity', 'Cookie consent banner tool', 'Other'], conditionalOn: { field: 'q47_uses_cookies', value: 'Yes' }, hasOtherOption: true },
       { id: 'gdpr_notes', questionNumber: 'Q48b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your data protection practices...', helpText: 'Optional — add any extra context about how you handle client data.' },
     ],
-    serviceTags: ['business_foundations_pack'],
+    serviceTags: ['business_foundations_pack', 'gdpr_deep_pack'],
     sortOrder: 50,
   },
 
@@ -292,7 +304,10 @@ export const allFormSections: FormSection[] = [
       { id: 'q68_visual_style', questionNumber: 'Q68', label: 'How do you want your documents to feel visually?', type: 'single_choice', required: true, options: ['Clean and modern / minimal', 'Corporate and formal', 'Warm and friendly', 'Premium and luxury', 'Simple — I just want it to work'] },
       { id: 'brand_notes', questionNumber: 'Q68b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your brand and voice...', helpText: 'Optional — add any extra context about how you want to come across.' },
     ],
-    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    serviceTags: [
+      'business_foundations_pack', 'website_copy_pack', 'social_media_pack',
+      'coach_industry_pack', 'photographer_industry_pack', 'consultant_industry_pack', 'contractor_industry_pack',
+    ],
     sortOrder: 70,
     // q67_brand_colours is only needed by website-copy (for colour scheme choices).
     // For documents-only purchases, it's not essential for document generation.

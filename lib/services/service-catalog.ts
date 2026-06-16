@@ -446,7 +446,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     ],
     requiresIntake: true,
     intakeSections: [
-      'intro', 'business_identity', 'services', 'clients', 'client_onboarding', 'final',
+      'intro', 'business_identity', 'services', 'clients', 'pricing', 'client_onboarding', 'final',
     ],
     isStandalone: true,
     sortOrder: 10,

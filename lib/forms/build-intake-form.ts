@@ -3,7 +3,9 @@
 
 import { allFormSections, FormSection, FormField } from './intake-definition';
 import { getSectionSchema } from './validations';
+import { getServicesByTier } from '../services/service-catalog';
 import type { z } from 'zod';
+import type { ServiceTier } from '../services/service-catalog';
 
 interface IntakeFormResult {
   sections: FormSection[];
@@ -243,6 +245,38 @@ function getPrefillSuggestions(
   }
 
   return suggestions;
+}
+
+/**
+ * Get all distinct intake form sections needed for a given service tier.
+ * Assembles the union of all sections across every service in the tier,
+ * sorted and de-duplicated, so the admin and UI can preview a complete
+ * tier's question set.
+ */
+export function getSectionsForTier(tier: ServiceTier): FormSection[] {
+  const services = getServicesByTier(tier);
+  const serviceIds = services.map((s) => s.id);
+  return buildIntakeForm(serviceIds);
+}
+
+/**
+ * Estimate completion time for a set of purchased service IDs.
+ * Counts visible sections (excluding intro/final) and uses a per-section
+ * average of 3-4 minutes to produce a human-readable range string.
+ * Returned string is suitable for display in the intake wizard intro.
+ */
+export function getEstimatedCompletionTime(purchasedServiceIds: string[]): string {
+  const sections = buildIntakeForm(purchasedServiceIds);
+  const fillableSections = sections.filter((s) => s.id !== 'intro' && s.id !== 'final');
+  const count = fillableSections.length;
+
+  if (count === 0) return '5-10 minutes';
+
+  // Each section averages 3 minutes at minimum pace, 4 minutes at thorough pace
+  const minMinutes = Math.round(count * 3);
+  const maxMinutes = Math.round(count * 4);
+
+  return `${minMinutes}-${maxMinutes} minutes`;
 }
 
 /**
