@@ -133,7 +133,7 @@ export const allFormSections: FormSection[] = [
     description: 'This questionnaire is the only information we will use to build your deliverables. Please answer every question as fully and honestly as you can — the more detail you give us, the more tailored and precise your documents will be.\n\nEstimated time: 20-30 minutes.\n\nThere are no wrong answers. Write the way you speak. We will turn it into something professional.\n\nYour deliverables will be ready within 24 hours of submission.',
     usedIn: '',
     fields: [],
-    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack', 'client_onboarding_pack', 'payment_protection_pack', 'copyright_licensing_pack', 'gdpr_deep_pack', 'coach_industry_pack', 'photographer_industry_pack', 'consultant_industry_pack', 'contractor_industry_pack'],
     sortOrder: 0,
   },
 
@@ -351,7 +351,7 @@ export const allFormSections: FormSection[] = [
       { id: 'q82_consent_not_legal', questionNumber: 'Q82', label: 'I understand that Foundationary provides document drafting support only and not legal advice. I will seek independent legal advice before relying on these documents in any dispute or legal proceeding.', type: 'checkbox', required: true },
       { id: 'q83_consent_accuracy', questionNumber: 'Q83', label: 'I confirm that all information I have provided in this form is accurate and complete to the best of my knowledge.', type: 'checkbox', required: true },
     ],
-    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack'],
+    serviceTags: ['business_foundations_pack', 'website_copy_pack', 'social_media_pack', 'client_onboarding_pack', 'payment_protection_pack', 'copyright_licensing_pack', 'gdpr_deep_pack', 'coach_industry_pack', 'photographer_industry_pack', 'consultant_industry_pack', 'contractor_industry_pack'],
     sortOrder: 200,
   },
 
@@ -524,7 +524,7 @@ export const allFormSections: FormSection[] = [
       { id: 'client_onboarding_notes', questionNumber: 'CO10b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your client onboarding process...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['client_onboarding_pack'],
-    sortOrder: 130,
+    sortOrder: 85,
   },
 
   // ── SECTION 14 — PAYMENT PROTECTION ──
@@ -547,7 +547,7 @@ export const allFormSections: FormSection[] = [
       { id: 'payment_protection_notes', questionNumber: 'PP10b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your payment situation...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['payment_protection_pack'],
-    sortOrder: 140,
+    sortOrder: 86,
   },
 
   // ── SECTION 15 — COPYRIGHT & LICENSING ──
@@ -571,7 +571,7 @@ export const allFormSections: FormSection[] = [
       { id: 'copyright_licensing_notes', questionNumber: 'CL11b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your intellectual property situation...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['copyright_licensing_pack'],
-    sortOrder: 150,
+    sortOrder: 87,
   },
 
   // ── SECTION 16 — GDPR DEEP ──
@@ -594,7 +594,7 @@ export const allFormSections: FormSection[] = [
       { id: 'gdpr_deep_notes', questionNumber: 'GD10b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your data protection situation...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['gdpr_deep_pack'],
-    sortOrder: 160,
+    sortOrder: 88,
   },
 
   // ── SECTION 17 — COACH INDUSTRY ──
@@ -618,7 +618,7 @@ export const allFormSections: FormSection[] = [
       { id: 'industry_coach_notes', questionNumber: 'IC11b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your coaching practice...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['coach_industry_pack'],
-    sortOrder: 170,
+    sortOrder: 130,
   },
 
   // ── SECTION 18 — PHOTOGRAPHER INDUSTRY ──
@@ -642,7 +642,7 @@ export const allFormSections: FormSection[] = [
       { id: 'industry_photographer_notes', questionNumber: 'IP11b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your photography business...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['photographer_industry_pack'],
-    sortOrder: 180,
+    sortOrder: 131,
   },
 
   // ── SECTION 19 — CONSULTANT INDUSTRY ──
@@ -665,7 +665,7 @@ export const allFormSections: FormSection[] = [
       { id: 'industry_consultant_notes', questionNumber: 'CON10b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your consulting practice...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['consultant_industry_pack'],
-    sortOrder: 190,
+    sortOrder: 132,
   },
 
   // ── SECTION 20 — CONTRACTOR INDUSTRY ──
@@ -689,7 +689,7 @@ export const allFormSections: FormSection[] = [
       { id: 'industry_contractor_notes', questionNumber: 'CT11b', label: 'Additional notes for this section', type: 'long_text', required: false, placeholder: 'Any additional details about your trade or contracting business...', helpText: 'Optional — add any extra context.' },
     ],
     serviceTags: ['contractor_industry_pack'],
-    sortOrder: 195,
+    sortOrder: 133,
   },
 ];
 
