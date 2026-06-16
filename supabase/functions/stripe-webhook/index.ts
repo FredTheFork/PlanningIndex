@@ -8,6 +8,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey, Stripe-Signature",
 };
 
+// Local service metadata map — mirrors service-catalog.ts for use in the edge function
+interface ServiceMeta {
+  tier: 'foundation' | 'operations' | 'industry';
+  industry: 'coach' | 'photographer' | 'consultant' | 'contractor' | 'general' | null;
+}
+
+const SERVICE_META: Record<string, ServiceMeta> = {
+  business_foundations_pack: { tier: 'foundation', industry: null },
+  website_copy_pack: { tier: 'foundation', industry: null },
+  social_media_pack: { tier: 'foundation', industry: null },
+  monthly_care_plan: { tier: 'foundation', industry: null },
+  quarterly_refresh: { tier: 'foundation', industry: null },
+  client_onboarding_pack: { tier: 'operations', industry: null },
+  payment_protection_pack: { tier: 'operations', industry: null },
+  copyright_licensing_pack: { tier: 'operations', industry: null },
+  gdpr_deep_pack: { tier: 'operations', industry: null },
+  coach_industry_pack: { tier: 'industry', industry: 'coach' },
+  photographer_industry_pack: { tier: 'industry', industry: 'photographer' },
+  consultant_industry_pack: { tier: 'industry', industry: 'consultant' },
+  contractor_industry_pack: { tier: 'industry', industry: 'contractor' },
+};
+
+function getHighestTier(serviceIds: string[]): 'foundation' | 'operations' | 'industry' {
+  const tiers = serviceIds.map(id => SERVICE_META[id]?.tier).filter(Boolean);
+  if (tiers.includes('industry')) return 'industry';
+  if (tiers.includes('operations')) return 'operations';
+  return 'foundation';
+}
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -122,6 +151,11 @@ async function handleCheckoutCompleted(
   const websitePagesSelected = session.metadata?.website_pages_selected
     ? session.metadata.website_pages_selected.split(",").filter(Boolean)
     : undefined;
+  const groupId = session.metadata?.group_id || null;
+  const isBundle = session.metadata?.is_bundle === 'true';
+  const bundleDiscountPercent = session.metadata?.bundle_discount_percent
+    ? parseInt(session.metadata.bundle_discount_percent, 10)
+    : null;
 
   console.log(`Checkout completed: customer=${customerId}, services=${serviceIds.join(",")}, mode=${session.mode}`);
 
@@ -171,6 +205,8 @@ async function handleCheckoutCompleted(
           status: "completed",
           payment_status: session.payment_status,
           payment_intent_id: paymentIntentId || null,
+          is_bundle: isBundle,
+          bundle_discount_percent: bundleDiscountPercent,
         })
         .eq("id", existingOrder.id);
     } else {
@@ -186,6 +222,8 @@ async function handleCheckoutCompleted(
           payment_status: session.payment_status,
           status: "completed",
           service_ids: serviceIds,
+          is_bundle: isBundle,
+          bundle_discount_percent: bundleDiscountPercent,
         });
     }
   }
@@ -209,6 +247,7 @@ async function handleCheckoutCompleted(
         .maybeSingle();
 
       if (!existing) {
+        const meta = SERVICE_META[serviceId];
         await supabase
           .from("services_purchased")
           .insert({
@@ -221,6 +260,9 @@ async function handleCheckoutCompleted(
             website_pages_selected: serviceId === 'website_copy_pack' && websitePagesSelected ? websitePagesSelected : null,
             website_page_count: serviceId === 'website_copy_pack' && websitePageCount ? websitePageCount : null,
             social_media_post_count: serviceId === 'social_media_pack' && socialMediaPostCount ? socialMediaPostCount : null,
+            tier: meta?.tier || 'foundation',
+            industry: meta?.industry || null,
+            service_group: groupId || null,
           });
       } else {
         // Backfill page/post data if the record exists but lacks it
@@ -250,6 +292,21 @@ async function handleCheckoutCompleted(
         }
       }
     }
+  }
+
+  // Update client_profiles with highest tier and primary industry
+  if (userId && serviceIds.length > 0) {
+    const highestTier = getHighestTier(serviceIds);
+    const industryService = serviceIds.find(id => SERVICE_META[id]?.industry);
+    const primaryIndustry = industryService ? SERVICE_META[industryService]?.industry : null;
+
+    const profileUpdate: Record<string, any> = { purchased_tier: highestTier };
+    if (primaryIndustry) profileUpdate.industry = primaryIndustry;
+
+    await supabase
+      .from("client_profiles")
+      .update(profileUpdate)
+      .eq("user_id", userId);
   }
 
   console.log(`Checkout processed: ${serviceIds.length} services recorded for user ${userId}`);

@@ -77,6 +77,87 @@ const SERVICES: ServiceConfig[] = [
     },
     mode: 'subscription',
   },
+  {
+    id: 'monthly_care_plan',
+    name: 'Monthly Care Plan',
+    priceIds: {
+      test: 'price_1TgSI7GfxcDbzGRtm9vf0YRM',
+      live: '',
+    },
+    mode: 'subscription',
+  },
+  {
+    id: 'client_onboarding_pack',
+    name: 'Client Onboarding & Scope Control Pack',
+    priceIds: {
+      test: 'price_test_client_onboarding_pack',
+      live: 'price_live_client_onboarding_pack',
+    },
+    mode: 'payment',
+  },
+  {
+    id: 'payment_protection_pack',
+    name: 'Payment Protection Pack',
+    priceIds: {
+      test: 'price_test_payment_protection_pack',
+      live: 'price_live_payment_protection_pack',
+    },
+    mode: 'payment',
+  },
+  {
+    id: 'copyright_licensing_pack',
+    name: 'Copyright & Licensing Pack',
+    priceIds: {
+      test: 'price_test_copyright_licensing_pack',
+      live: 'price_live_copyright_licensing_pack',
+    },
+    mode: 'payment',
+  },
+  {
+    id: 'gdpr_deep_pack',
+    name: 'GDPR & Data Retention Deep Pack',
+    priceIds: {
+      test: 'price_test_gdpr_deep_pack',
+      live: 'price_live_gdpr_deep_pack',
+    },
+    mode: 'payment',
+  },
+  {
+    id: 'coach_industry_pack',
+    name: 'Coach Industry Pack',
+    priceIds: {
+      test: 'price_test_coach_industry_pack',
+      live: 'price_live_coach_industry_pack',
+    },
+    mode: 'payment',
+  },
+  {
+    id: 'photographer_industry_pack',
+    name: 'Photographer Industry Pack',
+    priceIds: {
+      test: 'price_test_photographer_industry_pack',
+      live: 'price_live_photographer_industry_pack',
+    },
+    mode: 'payment',
+  },
+  {
+    id: 'consultant_industry_pack',
+    name: 'Consultant Industry Pack',
+    priceIds: {
+      test: 'price_test_consultant_industry_pack',
+      live: 'price_live_consultant_industry_pack',
+    },
+    mode: 'payment',
+  },
+  {
+    id: 'contractor_industry_pack',
+    name: 'Contractor Industry Pack',
+    priceIds: {
+      test: 'price_test_contractor_industry_pack',
+      live: 'price_live_contractor_industry_pack',
+    },
+    mode: 'payment',
+  },
 ];
 
 function getServiceConfig(serviceId: string): ServiceConfig | undefined {
@@ -95,10 +176,10 @@ function getWebsiteCopyPriceId(pageCount: number, mode: 'test' | 'live'): string
   return tier[mode];
 }
 
-function getBundleDiscountPercentage(serviceCount: number): number {
-  if (serviceCount >= 3) return 15;
-  if (serviceCount >= 2) return 10;
-  return 0;
+function getBundleDiscountPercentage(serviceCount: number, groupDiscountPercent?: number): number {
+  const countBased = serviceCount >= 3 ? 15 : serviceCount >= 2 ? 10 : 0;
+  if (groupDiscountPercent !== undefined) return Math.max(countBased, groupDiscountPercent);
+  return countBased;
 }
 
 // Cache for coupon IDs to avoid recreating
@@ -187,7 +268,9 @@ Deno.serve(async (req: Request) => {
       cancel_url,
       social_media_post_count,
       website_page_count,
-      website_pages_selected
+      website_pages_selected,
+      group_id,
+      group_discount_percent,
     } = body;
 
     if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
@@ -258,8 +341,8 @@ Deno.serve(async (req: Request) => {
     // Determine checkout mode - subscription mode if any subscription item is present
     const checkoutMode: 'payment' | 'subscription' = hasSubscription ? 'subscription' : 'payment';
 
-    // Calculate bundle discount
-    const discountPercentage = getBundleDiscountPercentage(service_ids.length);
+    // Calculate bundle discount — use group discount if provided, otherwise count-based
+    const discountPercentage = getBundleDiscountPercentage(service_ids.length, group_discount_percent);
 
     // Build metadata with social media post count and website pages if applicable
     const metadata: Record<string, string> = {
@@ -273,6 +356,13 @@ Deno.serve(async (req: Request) => {
     }
     if (website_pages_selected && Array.isArray(website_pages_selected)) {
       metadata.website_pages_selected = website_pages_selected.join(",");
+    }
+    if (group_id) {
+      metadata.group_id = group_id;
+    }
+    if (discountPercentage > 0) {
+      metadata.bundle_discount_percent = discountPercentage.toString();
+      metadata.is_bundle = (service_ids.length > 1).toString();
     }
 
     // Create checkout session

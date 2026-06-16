@@ -8,7 +8,7 @@ import {
   ArrowLeft, User, FileText, Clock, Save, AlertCircle, FileCheck,
   MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
   Download, Eye, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-  ChevronRight, FileDown, Send, Loader, Package, Share2, Globe
+  ChevronRight, FileDown, Send, Loader, Package, Share2, Globe, Briefcase, Building2
 } from 'lucide-react';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
@@ -22,6 +22,9 @@ import MessagingTab from './tabs/MessagingTab';
 import SubscriptionTab from './tabs/SubscriptionTab';
 import SocialMediaTab from './tabs/SocialMediaTab';
 import WebsiteCopyTab from './tabs/WebsiteCopyTab';
+import OperationsTab from './tabs/OperationsTab';
+import IndustryTab from './tabs/IndustryTab';
+import { isOperationsService, isIndustryService } from '@/lib/services/document-service-map';
 
 interface ClientData {
   profile: {
@@ -70,6 +73,8 @@ interface TabConfig {
   label: string;
   icon: React.ElementType;
   requiredService?: string;
+  /** Show this tab only when any purchased service matches this predicate */
+  requiredServicePredicate?: (serviceId: string) => boolean;
   activeColor?: string;
   activeBg?: string;
 }
@@ -80,6 +85,8 @@ const ALL_TABS: TabConfig[] = [
   { id: 'documents', label: 'Documents', icon: FileText, requiredService: 'business_foundations_pack', activeColor: 'text-emerald-700', activeBg: 'bg-emerald-50' },
   { id: 'social_media', label: 'Social Posts', icon: Share2, requiredService: 'social_media_pack', activeColor: 'text-sky-700', activeBg: 'bg-sky-50' },
   { id: 'website_copy', label: 'Website Copy', icon: Globe, requiredService: 'website_copy_pack', activeColor: 'text-violet-700', activeBg: 'bg-violet-50' },
+  { id: 'operations', label: 'Operations', icon: Briefcase, requiredServicePredicate: isOperationsService, activeColor: 'text-amber-700', activeBg: 'bg-amber-50' },
+  { id: 'industry', label: 'Industry', icon: Building2, requiredServicePredicate: isIndustryService, activeColor: 'text-teal-700', activeBg: 'bg-teal-50' },
   { id: 'intake', label: 'Intake Form', icon: FileCheck },
   { id: 'messaging', label: 'Messaging', icon: Send },
   { id: 'subscription', label: 'Subscription', icon: RefreshCw },
@@ -160,9 +167,12 @@ export default function AdminClientDetail({ params }: { params: { userId: string
   // Derive visible tabs based on purchased services
   const visibleTabs = useMemo(() => {
     const purchasedServiceIds = new Set(data.purchasedServices.map((s: any) => s.service_id));
+    const purchasedServiceIdList: string[] = data.purchasedServices.map((s: any) => s.service_id);
     return ALL_TABS.filter(tab => {
-      if (!tab.requiredService) return true;
-      return purchasedServiceIds.has(tab.requiredService);
+      if (!tab.requiredService && !tab.requiredServicePredicate) return true;
+      if (tab.requiredService) return purchasedServiceIds.has(tab.requiredService);
+      if (tab.requiredServicePredicate) return purchasedServiceIdList.some(tab.requiredServicePredicate);
+      return true;
     });
   }, [data.purchasedServices]);
 
@@ -324,6 +334,12 @@ export default function AdminClientDetail({ params }: { params: { userId: string
           )}
           {activeTab === 'subscription' && (
             <SubscriptionTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'operations' && (
+            <OperationsTab userId={userId} data={data} refreshData={refreshData} />
+          )}
+          {activeTab === 'industry' && (
+            <IndustryTab userId={userId} data={data} refreshData={refreshData} />
           )}
         </div>
       </div>

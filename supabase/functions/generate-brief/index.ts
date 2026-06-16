@@ -577,6 +577,290 @@ Confidence Level: ${r.q80_confidence_level || 'Not provided'}
 Generate the brief now. Be thorough, specific, and use the client's actual information. Where information is missing, note it clearly rather than making assumptions.`;
 }
 
+function buildClientOnboardingBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the CLIENT ONBOARDING & SCOPE CONTROL PACK.
+
+This brief will be used to generate 8 documents: Client Onboarding Questionnaire, Scope of Work Document, Project Brief Template, Change Request Form, Onboarding Checklist, Client Communication Protocols, Welcome Packet Guide, and Feedback & Closing Questionnaire.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+Business Type: ${r.q3_business_registered || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Email: ${r.q7_document_email || 'Not provided'}
+
+SERVICES OFFERED
+=================
+What They Do: ${r.q13_what_you_do || 'Not provided'}
+Flagship Service: ${r.q14_flagship_service || 'Not provided'}
+
+CLIENT ONBOARDING DETAILS
+==========================
+Onboarding Style: ${r.co1_onboarding_style || 'Not provided'}
+Pain Points: ${r.co2_onboarding_pain_points || 'Not provided'}
+Scope Creep Experience: ${r.co3_scope_creep_experience || 'Not provided'}
+${r.co4_scope_creep_detail ? `Scope Creep Detail: ${r.co4_scope_creep_detail}` : ''}
+Communication Channels: ${Array.isArray(r.co5_communication_channels) ? r.co5_communication_channels.join(', ') : 'Not provided'}
+Response Time Commitment: ${r.co6_response_time_expectation || 'Not provided'}
+Client Must Provide: ${r.co7_client_provides || 'Not provided'}
+Kick-Off Format: ${r.co8_kickoff_format || 'Not provided'}
+Revision Policy: ${r.co9_revision_policy || 'Not provided'}
+Closing Process: ${r.co10_closing_process || 'Not provided'}
+${r.client_onboarding_notes ? `Additional Notes: ${r.client_onboarding_notes}` : ''}
+
+Generate a thorough brief covering onboarding workflow, scope protection strategies, communication standards, and closing procedures. Flag any gaps with [NOT PROVIDED].`;
+}
+
+function buildPaymentProtectionBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the PAYMENT PROTECTION PACK.
+
+This brief will be used to generate 8 documents: Invoice Terms & Conditions, Late Payment Policy, Payment Schedule Template, Refund & Cancellation Policy, Deposit & Cancellation Terms, Payment Tracking Template, Chasing Payment Scripts (x5), and Chargeback Response Templates.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Business Type: ${r.q3_business_registered || 'Not provided'}
+Email: ${r.q7_document_email || 'Not provided'}
+
+PRICING & PAYMENT (Foundation)
+================================
+Pricing Model: ${Array.isArray(r.q25_pricing_model) ? r.q25_pricing_model.join(', ') : 'Not provided'}
+Payment Terms: ${r.q26_payment_terms || 'Not provided'}
+Requires Deposit: ${r.q28_requires_deposit || 'Not provided'}
+${r.q29_deposit_detail ? `Deposit Detail: ${r.q29_deposit_detail}` : ''}
+Payment Methods: ${Array.isArray(r.q30_payment_methods) ? r.q30_payment_methods.join(', ') : 'Not provided'}
+Refund Policy: ${r.q31_refund_policy || 'Not provided'}
+${r.q32_refund_detail ? `Refund Detail: ${r.q32_refund_detail}` : ''}
+Late Payment Interest: ${r.q33_late_payment_interest || 'Not provided'}
+VAT Registered: ${r.q34_vat_registered || 'Not provided'}
+
+PAYMENT PROTECTION DETAILS
+============================
+Late Payment Experience: ${r.pp1_late_payment_experience || 'Not provided'}
+${r.pp2_late_payment_detail ? `Late Payment Detail: ${r.pp2_late_payment_detail}` : ''}
+Deposit Percentage: ${r.pp3_deposit_percentage || 'Not provided'}
+Deposit Refundable: ${r.pp4_deposit_non_refundable || 'Not provided'}
+Invoice Due Days: ${r.pp5_invoice_due_days || 'Not provided'}
+${r.pp6_invoice_due_custom ? `Custom Terms: ${r.pp6_invoice_due_custom}` : ''}
+Late Payment Interest Preference: ${r.pp7_late_payment_interest || 'Not provided'}
+Chargeback Experience: ${r.pp8_chargeback_experience || 'Not provided'}
+${r.pp9_chargeback_detail ? `Chargeback Detail: ${r.pp9_chargeback_detail}` : ''}
+Work Stoppage Policy: ${r.pp10_work_stoppage_policy || 'Not provided'}
+${r.payment_protection_notes ? `Additional Notes: ${r.payment_protection_notes}` : ''}
+
+Generate a thorough brief covering payment protection strategy, risk areas based on their history, and specific clauses needed. Flag any gaps with [NOT PROVIDED].`;
+}
+
+function buildCopyrightLicensingBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the COPYRIGHT & LICENSING PACK.
+
+This brief will be used to generate 8 documents: Copyright Notice & IP Policy, Content Licensing Agreement, Image & Media Usage Rights, Work-for-Hire Agreement, Brand Usage Guidelines, Non-Disclosure Agreement (NDA), IP Assignment Agreement, and Cease & Desist Template.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Business Type: ${r.q3_business_registered || 'Not provided'}
+
+SERVICES OFFERED
+=================
+What They Do: ${r.q13_what_you_do || 'Not provided'}
+Flagship Service: ${r.q14_flagship_service || 'Not provided'}
+
+COPYRIGHT & LICENSING DETAILS
+===============================
+Deliverable Types: ${Array.isArray(r.cl1_deliverable_types) ? r.cl1_deliverable_types.join(', ') : 'Not provided'}
+IP Ownership Preference: ${r.cl2_ip_ownership_preference || 'Not provided'}
+${r.cl3_ip_ownership_detail ? `IP Ownership Detail: ${r.cl3_ip_ownership_detail}` : ''}
+Licence Scope: ${Array.isArray(r.cl4_licence_scope) ? r.cl4_licence_scope.join(', ') : 'Not provided'}
+Uses Third-Party Content: ${r.cl5_uses_third_party_content || 'Not provided'}
+${r.cl6_third_party_detail ? `Third-Party Detail: ${r.cl6_third_party_detail}` : ''}
+NDA Needed: ${r.cl7_nda_needed || 'Not provided'}
+${r.cl8_nda_type ? `NDA Type: ${r.cl8_nda_type}` : ''}
+Portfolio Right: ${r.cl9_portfolio_right || 'Not provided'}
+IP Infringement Experience: ${r.cl10_ip_infringement_experience || 'Not provided'}
+${r.cl11_infringement_detail ? `Infringement Detail: ${r.cl11_infringement_detail}` : ''}
+${r.copyright_licensing_notes ? `Additional Notes: ${r.copyright_licensing_notes}` : ''}
+
+Generate a thorough brief covering IP ownership strategy, licensing structure, NDA requirements, and brand protection needs. Flag any gaps with [NOT PROVIDED].`;
+}
+
+function buildGdprDeepBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the GDPR & DATA RETENTION DEEP PACK.
+
+This brief will be used to generate 9 documents: Comprehensive Privacy Policy, Data Retention Schedule, Data Processing Agreement (DPA), Cookie Consent Implementation Guide, Subject Access Request Template, Data Breach Notification Template, Data Protection Impact Assessment (DPIA), Marketing Consent Management Procedures, and Third-Party Data Sharing Agreement.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Email: ${r.q7_document_email || 'Not provided'}
+Website: ${r.q10_website_url || 'Not provided'}
+
+STANDARD GDPR (Foundation)
+============================
+Data Collected: ${Array.isArray(r.q36_data_collected) ? r.q36_data_collected.join(', ') : 'Not provided'}
+Collection Method: ${Array.isArray(r.q37_data_collection_method) ? r.q37_data_collection_method.join(', ') : 'Not provided'}
+Purpose: ${r.q38_data_purpose || 'Not provided'}
+Storage: ${Array.isArray(r.q39_data_storage) ? r.q39_data_storage.join(', ') : 'Not provided'}
+Retention: ${r.q40_data_retention || 'Not provided'}
+Third-Party Tools: ${r.q41_uses_third_party_tools || 'Not provided'}
+${r.q42_third_party_tools ? `Tools Detail: ${r.q42_third_party_tools}` : ''}
+Shares Data: ${r.q43_shares_data || 'Not provided'}
+${r.q44_data_sharing_detail ? `Sharing Detail: ${r.q44_data_sharing_detail}` : ''}
+Sends Marketing: ${r.q45_sends_marketing || 'Not provided'}
+Uses Cookies: ${r.q47_uses_cookies || 'Not provided'}
+${r.q48_tracking_tools ? `Tracking Tools: ${Array.isArray(r.q48_tracking_tools) ? r.q48_tracking_tools.join(', ') : r.q48_tracking_tools}` : ''}
+
+GDPR DEEP DETAILS
+==================
+Lawful Basis: ${Array.isArray(r.gd1_lawful_basis) ? r.gd1_lawful_basis.join(', ') : 'Not provided'}
+Uses Data Processors: ${r.gd2_data_processor_relationships || 'Not provided'}
+${r.gd3_processor_list ? `Processor List: ${r.gd3_processor_list}` : ''}
+International Transfers: ${r.gd4_international_transfers || 'Not provided'}
+${r.gd5_international_transfer_detail ? `Transfer Detail: ${r.gd5_international_transfer_detail}` : ''}
+SAR Procedure: ${r.gd6_sar_procedure || 'Not provided'}
+Breach Procedure: ${r.gd7_breach_procedure || 'Not provided'}
+High-Risk Processing: ${Array.isArray(r.gd8_high_risk_processing) ? r.gd8_high_risk_processing.join(', ') : 'Not provided'}
+Consent Management: ${r.gd9_consent_management || 'Not provided'}
+Retention Clarity: ${r.gd10_retention_clarity || 'Not provided'}
+${r.gdpr_deep_notes ? `Additional Notes: ${r.gdpr_deep_notes}` : ''}
+
+Generate a thorough brief covering all GDPR compliance gaps, risk areas, and document requirements. Flag any gaps with [NOT PROVIDED].`;
+}
+
+function buildCoachBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the COACH INDUSTRY PACK.
+
+This brief will be used to generate 7 industry-specific documents: Coaching Agreement, Session Terms & Cancellation Policy, Supervision Policy, CPD Tracker Template, Coaching Code of Ethics, Client Progress Tracker, and Testimonial Request Template.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+First Name: ${r.q55_first_name || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Email: ${r.q7_document_email || 'Not provided'}
+
+BRAND & POSITIONING
+====================
+Business Story: ${r.q56_business_story || 'Not provided'}
+Experience: ${r.q57_experience || 'Not provided'}
+Differentiator: ${r.q61_differentiator || 'Not provided'}
+Tone of Voice: ${Array.isArray(r.q62_tone_of_voice) ? r.q62_tone_of_voice.join(', ') : 'Not provided'}
+
+COACHING PRACTICE DETAILS
+===========================
+Coaching Modality: ${Array.isArray(r.ic1_coaching_modality) ? r.ic1_coaching_modality.join(', ') : 'Not provided'}
+Accreditation: ${Array.isArray(r.ic2_accreditation) ? r.ic2_accreditation.join(', ') : 'Not provided'}
+Session Format: ${Array.isArray(r.ic3_session_format) ? r.ic3_session_format.join(', ') : 'Not provided'}
+Session Length: ${r.ic4_session_length || 'Not provided'}
+Programme Structure: ${r.ic5_programme_structure || 'Not provided'}
+Programme Detail: ${r.ic6_programme_detail || 'Not provided'}
+Supervision: ${r.ic7_supervision_arrangement || 'Not provided'}
+Cancellation Notice: ${r.ic8_cancellation_policy || 'Not provided'}
+Late Cancellation Fee: ${r.ic9_late_cancellation_fee || 'Not provided'}
+Confidentiality Exceptions: ${r.ic10_confidentiality_exceptions || 'Not provided'}
+${r.ic11_cpd_hours ? `CPD Hours: ${r.ic11_cpd_hours}` : ''}
+${r.industry_coach_notes ? `Additional Notes: ${r.industry_coach_notes}` : ''}
+
+Generate a thorough brief covering coaching practice specifics, ethical standards, supervision, and cancellation policies. Flag any gaps with [NOT PROVIDED].`;
+}
+
+function buildPhotographerBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the PHOTOGRAPHER INDUSTRY PACK.
+
+This brief will be used to generate 7 industry-specific documents: Photography Licensing Agreement, Model Release Form, Shot List Template, Delivery Terms & Timeline Policy, Editing Brief Template, Print Release Form, and Event Photography Terms.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Email: ${r.q7_document_email || 'Not provided'}
+
+PHOTOGRAPHY PRACTICE DETAILS
+==============================
+Specialism: ${Array.isArray(r.ip1_photography_specialism) ? r.ip1_photography_specialism.join(', ') : 'Not provided'}
+Client Types: ${Array.isArray(r.ip2_client_type) ? r.ip2_client_type.join(', ') : 'Not provided'}
+Licensing Intent: ${r.ip3_licensing_intent || 'Not provided'}
+Commercial Use: ${r.ip4_commercial_use || 'Not provided'}
+Model Releases Needed: ${r.ip5_model_releases_needed || 'Not provided'}
+Location Releases: ${r.ip6_location_releases || 'Not provided'}
+Delivery Format: ${Array.isArray(r.ip7_delivery_format) ? r.ip7_delivery_format.join(', ') : 'Not provided'}
+Delivery Timeline: ${r.ip8_delivery_timeline || 'Not provided'}
+Editing Rounds: ${r.ip9_editing_rounds || 'Not provided'}
+Event Cancellation Policy: ${r.ip10_event_cancellation || 'Not provided'}
+Portfolio Usage: ${r.ip11_portfolio_usage || 'Not provided'}
+${r.industry_photographer_notes ? `Additional Notes: ${r.industry_photographer_notes}` : ''}
+
+Generate a thorough brief covering licensing structure, release requirements, delivery terms, and event-specific policies. Flag any gaps with [NOT PROVIDED].`;
+}
+
+function buildConsultantBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the CONSULTANT INDUSTRY PACK.
+
+This brief will be used to generate 7 industry-specific documents: Consulting Agreement, Consultant NDA, Deliverables Specification, Milestone Tracking Template, Knowledge Transfer Protocol, Consultant Code of Conduct, and Engagement Closure Report.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Email: ${r.q7_document_email || 'Not provided'}
+
+CONSULTING PRACTICE DETAILS
+=============================
+Specialism: ${Array.isArray(r.con1_consulting_specialism) ? r.con1_consulting_specialism.join(', ') : 'Not provided'}
+Engagement Model: ${r.con2_engagement_model || 'Not provided'}
+Deliverable Types: ${Array.isArray(r.con3_deliverable_types) ? r.con3_deliverable_types.join(', ') : 'Not provided'}
+Proprietary Methodology: ${r.con4_methodology || 'Not provided'}
+${r.con5_methodology_detail ? `Methodology Detail: ${r.con5_methodology_detail}` : ''}
+Knowledge Transfer: ${r.con6_knowledge_transfer || 'Not provided'}
+Conflicts of Interest: ${r.con7_conflicts_of_interest || 'Not provided'}
+Milestone Payments: ${r.con8_milestones || 'Not provided'}
+Reporting Frequency: ${r.con9_reporting_frequency || 'Not provided'}
+Acceptance Criteria: ${r.con10_acceptance_criteria || 'Not provided'}
+${r.industry_consultant_notes ? `Additional Notes: ${r.industry_consultant_notes}` : ''}
+
+Generate a thorough brief covering engagement structure, IP protection, milestone tracking, and knowledge handover. Flag any gaps with [NOT PROVIDED].`;
+}
+
+function buildContractorBriefPrompt(r: Record<string, any>): string {
+  return `You are a professional business analyst creating a client brief for the CONTRACTOR INDUSTRY PACK.
+
+This brief will be used to generate 8 industry-specific documents: Health & Safety Policy, Risk Assessment Template, Method Statement, COSHH Assessment, Construction Phase Plan, Subcontractor Agreement, Site Induction Checklist, and Defect Liability Template.
+
+BUSINESS IDENTITY
+==================
+Business Name: ${r.q2_business_name || 'Not provided'}
+Legal Name: ${r.q1_legal_name || 'Not provided'}
+Jurisdiction: ${r.q5_jurisdiction || 'Not provided'}
+Email: ${r.q7_document_email || 'Not provided'}
+
+CONTRACTOR / TRADE DETAILS
+============================
+Trade Type: ${Array.isArray(r.ct1_trade_type) ? r.ct1_trade_type.join(', ') : 'Not provided'}
+Work Environments: ${Array.isArray(r.ct2_work_environment) ? r.ct2_work_environment.join(', ') : 'Not provided'}
+Workforce Structure: ${r.ct3_employees_subcontractors || 'Not provided'}
+CDM Exposure: ${r.ct4_cdm_exposure || 'Not provided'}
+Hazardous Substances: ${Array.isArray(r.ct5_hazardous_substances) ? r.ct5_hazardous_substances.join(', ') : 'Not provided'}
+Height Working: ${r.ct6_height_working || 'Not provided'}
+Plant & Equipment: ${Array.isArray(r.ct7_plant_equipment) ? r.ct7_plant_equipment.join(', ') : 'Not provided'}
+Existing H&S Documentation: ${r.ct8_existing_hs_documentation || 'Not provided'}
+Insurance: ${Array.isArray(r.ct9_insurance) ? r.ct9_insurance.join(', ') : 'Not provided'}
+Defect Liability Period: ${r.ct10_defect_liability_period || 'Not provided'}
+${r.ct11_specific_hazards ? `Specific Hazards: ${r.ct11_specific_hazards}` : ''}
+${r.industry_contractor_notes ? `Additional Notes: ${r.industry_contractor_notes}` : ''}
+
+Generate a thorough brief covering H&S compliance requirements, specific site hazards, CDM obligations, and subcontractor management. Flag any gaps with [NOT PROVIDED].`;
+}
+
 function buildBriefPrompt(responses: Record<string, any>, serviceId: string | null, websitePages: string[]): string {
   const r = responses || {};
   if (serviceId === 'business_foundations_pack') {
@@ -585,6 +869,22 @@ function buildBriefPrompt(responses: Record<string, any>, serviceId: string | nu
     return buildSocialMediaBriefPrompt(r);
   } else if (serviceId === 'website_copy_pack') {
     return buildWebsiteBriefPrompt(r, websitePages);
+  } else if (serviceId === 'client_onboarding_pack') {
+    return buildClientOnboardingBriefPrompt(r);
+  } else if (serviceId === 'payment_protection_pack') {
+    return buildPaymentProtectionBriefPrompt(r);
+  } else if (serviceId === 'copyright_licensing_pack') {
+    return buildCopyrightLicensingBriefPrompt(r);
+  } else if (serviceId === 'gdpr_deep_pack') {
+    return buildGdprDeepBriefPrompt(r);
+  } else if (serviceId === 'coach_industry_pack') {
+    return buildCoachBriefPrompt(r);
+  } else if (serviceId === 'photographer_industry_pack') {
+    return buildPhotographerBriefPrompt(r);
+  } else if (serviceId === 'consultant_industry_pack') {
+    return buildConsultantBriefPrompt(r);
+  } else if (serviceId === 'contractor_industry_pack') {
+    return buildContractorBriefPrompt(r);
   } else {
     return buildComprehensiveBriefPrompt(r, websitePages);
   }

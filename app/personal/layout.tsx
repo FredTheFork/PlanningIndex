@@ -9,7 +9,8 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { isServiceDocumentService } from '@/lib/services/document-service-map';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw, Settings, Globe, Share2 } from 'lucide-react';
+import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw, Settings, Globe, Share2, Briefcase, Building2 } from 'lucide-react';
+import { isOperationsService, isIndustryService } from '@/lib/services/document-service-map';
 import ChatBubble from '@/components/ui/ChatBubble';
 
 const adminNavItems = [
@@ -64,6 +65,18 @@ export default function PersonalLayout({
     const hasSocialMedia = safePurchasedServiceIds.includes('social_media_pack');
     if (hasSocialMedia) {
       items.push({ label: 'Posts', href: '/personal/posts', icon: Share2 });
+    }
+
+    // Show Operations tab if user has any operations-tier service
+    const hasOperations = safePurchasedServiceIds.some(isOperationsService);
+    if (hasOperations) {
+      items.push({ label: 'Operations', href: '/personal/operations', icon: Briefcase });
+    }
+
+    // Show Industry tab if user has any industry-tier service
+    const hasIndustry = safePurchasedServiceIds.some(isIndustryService);
+    if (hasIndustry) {
+      items.push({ label: 'Industry', href: '/personal/industry', icon: Building2 });
     }
 
     // Add Settings at the end
@@ -182,7 +195,7 @@ export default function PersonalLayout({
             )}
 
             {/* Cross-sell link for clients who don't own all services */}
-            {!isAdmin && profile && safePurchasedServiceIds.length < 4 && (
+            {!isAdmin && profile && safePurchasedServiceIds.length < 13 && (
               <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
                 <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
                   Expand Your Package

@@ -320,6 +320,138 @@ function getSocialMediaSchema(): z.ZodObject<any> {
   });
 }
 
+function getClientOnboardingSchema(): z.ZodObject<any> {
+  return z.object({
+    co1_onboarding_style: nonEmptyString,
+    co2_onboarding_pain_points: nonEmptyString,
+    co3_scope_creep_experience: singleChoice(['Yes — frequently', 'Yes — occasionally', 'Rarely', 'Never'], true),
+    co4_scope_creep_detail: optionalString,
+    co5_communication_channels: multiSelect(['Email', 'WhatsApp / SMS', 'Phone calls', 'Video calls (Zoom / Teams / Meet)', 'Project management tool (e.g. Trello, Asana, ClickUp)', 'Client portal', 'Slack'], true),
+    co6_response_time_expectation: singleChoice(['Same business day', 'Within 24 hours', 'Within 48 hours', 'Within 3 business days', 'By end of working week'], true),
+    co7_client_provides: nonEmptyString,
+    co8_kickoff_format: singleChoice(['Yes — always', 'Yes — for larger projects', 'No — I start from the brief only'], true),
+    co9_revision_policy: nonEmptyString,
+    co10_closing_process: optionalString,
+    client_onboarding_notes: optionalString,
+  });
+}
+
+function getPaymentProtectionSchema(): z.ZodObject<any> {
+  return z.object({
+    pp1_late_payment_experience: singleChoice(['Yes — more than once', 'Yes — once', "Not yet, but I'm worried about it", 'No, never'], true),
+    pp2_late_payment_detail: optionalString,
+    pp3_deposit_percentage: singleChoice(['100% upfront', '50% upfront', '33% upfront', '25% upfront', 'No deposit — I invoice on completion', 'It varies by project'], true),
+    pp4_deposit_non_refundable: singleChoice(['Yes — fully non-refundable', 'Partially refundable depending on notice given', 'Fully refundable if cancelled before work starts', "Not sure — I'd like guidance"], true),
+    pp5_invoice_due_days: singleChoice(['Due on receipt', '7 days', '14 days', '30 days', "Custom — I'll explain below"], true),
+    pp6_invoice_due_custom: optionalString,
+    pp7_late_payment_interest: singleChoice(['Yes — include 8% above Bank of England base rate', 'No — I prefer a flat daily charge', "No — I don't want to charge interest"], true),
+    pp8_chargeback_experience: singleChoice(['Yes', 'No'], true),
+    pp9_chargeback_detail: optionalString,
+    pp10_work_stoppage_policy: singleChoice(['Yes — I want clear rights to pause work', 'Yes — and the right to terminate the contract', 'No — I prefer to continue and chase separately'], true),
+    payment_protection_notes: optionalString,
+  });
+}
+
+function getCopyrightLicensingSchema(): z.ZodObject<any> {
+  return z.object({
+    cl1_deliverable_types: multiSelect(['Written content (copy, articles, reports)', 'Graphic design or visual assets', 'Photographs or video', 'Software or code', 'Presentations or slide decks', 'Strategic frameworks or methodologies', 'Training materials or courses', 'Audio content or podcasts', 'Social media content'], true),
+    cl2_ip_ownership_preference: singleChoice(['I retain copyright — I licence the work to the client for agreed uses', 'The client owns all rights on full payment', 'I retain copyright until paid in full, then transfer', "It depends on the type of work — I'll explain below"], true),
+    cl3_ip_ownership_detail: optionalString,
+    cl4_licence_scope: multiSelect(["Use on client's own website", "Use in client's printed materials", "Use in client's social media", 'Resale or sublicensing to third parties', 'Use in advertising campaigns', 'Use in publications or broadcast media', 'Internal business use only'], true),
+    cl5_uses_third_party_content: singleChoice(['Yes — regularly', 'Yes — occasionally', 'No'], true),
+    cl6_third_party_detail: optionalString,
+    cl7_nda_needed: singleChoice(['Yes — regularly', 'Yes — for sensitive projects', 'Occasionally', 'No'], true),
+    cl8_nda_type: singleChoice(["Mutual — both parties agree to protect each other's information", "One-way — client protects my information only", "One-way — I protect client's information only", 'Not sure'], false),
+    cl9_portfolio_right: singleChoice(['Yes — always', 'Yes — with client approval first', 'No — I prefer to keep client work confidential'], true),
+    cl10_ip_infringement_experience: singleChoice(['Yes', 'No'], true),
+    cl11_infringement_detail: optionalString,
+    copyright_licensing_notes: optionalString,
+  });
+}
+
+function getGdprDeepSchema(): z.ZodObject<any> {
+  return z.object({
+    gd1_lawful_basis: multiSelect(['Contractual necessity — processing is necessary to perform a contract', "Legitimate interests — you have a genuine business reason that doesn't override individual rights", 'Consent — individuals have actively opted in', 'Legal obligation — you must process data to comply with a law', 'Vital interests — in rare emergency situations', 'Public task — not usually applicable to sole traders'], true),
+    gd2_data_processor_relationships: singleChoice(['Yes', 'No'], true),
+    gd3_processor_list: optionalString,
+    gd4_international_transfers: singleChoice(['Yes', 'No', 'Not sure'], true),
+    gd5_international_transfer_detail: optionalString,
+    gd6_sar_procedure: singleChoice(['Yes — a defined process', "Loosely — I'd figure it out when it happens", 'No — I need one'], true),
+    gd7_breach_procedure: singleChoice(['Yes — I know the 72-hour ICO notification rule', "Partially — I know I'd need to report it", 'No — I need clear guidance'], true),
+    gd8_high_risk_processing: multiSelect(['Systematic profiling of individuals', 'Processing special category data (health, biometric, religion, etc.)', 'Large-scale processing of personal data', "Processing children's data", "Monitoring individuals' behaviour", 'None of the above'], true),
+    gd9_consent_management: singleChoice(['Opt-in tick box on a form', 'Double opt-in email confirmation', 'Verbal consent noted in CRM', "I don't have a formal consent process", "I don't do marketing emails"], true),
+    gd10_retention_clarity: singleChoice(['Yes — financial records kept longer than general correspondence', 'No — I keep everything the same amount of time', "Not sure — I'd like guidance"], true),
+    gdpr_deep_notes: optionalString,
+  });
+}
+
+function getCoachIndustrySchema(): z.ZodObject<any> {
+  return z.object({
+    ic1_coaching_modality: multiSelect(['Life coaching', 'Business coaching', 'Executive / leadership coaching', 'Career coaching', 'Health / wellness coaching', 'Mindset coaching', 'Parenting / relationship coaching', 'NLP practitioner', 'Hypnotherapy'], true),
+    ic2_accreditation: multiSelect(['ICF (International Coaching Federation)', 'EMCC (European Mentoring & Coaching Council)', 'AC (Association for Coaching)', 'CIPD', 'NCFE / Ofqual-accredited qualification', 'None — self-taught / non-accredited', 'Other'], true),
+    ic3_session_format: multiSelect(['One-to-one via video call', 'One-to-one in person', 'Group coaching (online)', 'Group coaching (in person)', 'Hybrid', 'Asynchronous (voice notes / messaging only)'], true),
+    ic4_session_length: singleChoice(['30 minutes', '45 minutes', '60 minutes', '90 minutes', '120 minutes', 'Varies by programme'], true),
+    ic5_programme_structure: singleChoice(['Individual sessions only', 'Fixed programme (e.g. 6-week, 3-month)', 'Both individual and programme options', 'Retainer — ongoing monthly sessions'], true),
+    ic6_programme_detail: nonEmptyString,
+    ic7_supervision_arrangement: singleChoice(['Yes — monthly or more frequently', 'Yes — quarterly', 'Yes — annually', 'No — I plan to arrange this', 'No — not required in my modality'], true),
+    ic8_cancellation_policy: singleChoice(['24 hours', '48 hours', '72 hours / 3 days', '5 business days', '7 days'], true),
+    ic9_late_cancellation_fee: singleChoice(['Full session fee charged', '50% of session fee charged', 'Session forfeited from programme', "No charge — I'm flexible", 'Depends on the situation'], true),
+    ic10_confidentiality_exceptions: nonEmptyString,
+    ic11_cpd_hours: optionalString,
+    industry_coach_notes: optionalString,
+  });
+}
+
+function getPhotographerIndustrySchema(): z.ZodObject<any> {
+  return z.object({
+    ip1_photography_specialism: multiSelect(['Wedding photography', 'Portrait photography', 'Commercial / product photography', 'Brand photography', 'Event photography', 'Family / newborn photography', 'Architectural / property photography', 'Fashion photography', 'Headshots'], true),
+    ip2_client_type: multiSelect(['Individuals / consumers', 'Small businesses', 'Agencies', 'Corporate clients', 'Charities / non-profits', 'Wedding couples / families'], true),
+    ip3_licensing_intent: singleChoice(['I retain copyright and licence images for agreed uses', 'I transfer full copyright to the client on payment', 'I retain copyright but grant unlimited personal use', 'It depends on the project type'], true),
+    ip4_commercial_use: singleChoice(['Yes — primarily commercial use (advertising, marketing, product sales)', 'Mostly personal use with some commercial use', 'No — personal use only (family, portraits, events)'], true),
+    ip5_model_releases_needed: singleChoice(['Yes — models, actors, brand ambassadors', "Yes — clients' staff and team members", 'Yes — members of the public at events', 'No — my work primarily features products or environments'], true),
+    ip6_location_releases: singleChoice(['Yes — regularly', 'Occasionally', 'No — I primarily shoot in my studio or public spaces'], true),
+    ip7_delivery_format: multiSelect(['High-resolution JPEG', 'High-resolution TIFF', 'RAW files', 'Web-optimised JPEG', 'PNG', 'PDF contact sheets', 'Video files'], true),
+    ip8_delivery_timeline: singleChoice(['Within 48 hours', 'Within 1 week', 'Within 2 weeks', 'Within 3-4 weeks', 'Within 6-8 weeks (e.g. weddings)', 'Varies by project type'], true),
+    ip9_editing_rounds: singleChoice(['1 round — final images delivered', '2 rounds — proofs then finals', '3 rounds included', 'Unlimited revisions within agreed scope'], true),
+    ip10_event_cancellation: nonEmptyString,
+    ip11_portfolio_usage: singleChoice(['Yes — always, without approval needed', 'Yes — with client approval first', 'No — my work is confidential'], true),
+    industry_photographer_notes: optionalString,
+  });
+}
+
+function getConsultantIndustrySchema(): z.ZodObject<any> {
+  return z.object({
+    con1_consulting_specialism: multiSelect(['Management consulting', 'Strategy consulting', 'Operations consulting', 'IT / technology consulting', 'HR / people consulting', 'Finance / accounting consulting', 'Marketing consulting', 'Sales consulting', 'Change management', 'Compliance / regulatory consulting'], true),
+    con2_engagement_model: singleChoice(['Fixed-scope project with defined deliverables', 'Time and materials — billed hourly or daily', 'Retained advisor — ongoing monthly fee', 'Diagnostic phase then implementation phase', 'Mixed — depends on the client'], true),
+    con3_deliverable_types: multiSelect(['Written reports and recommendations', 'Presentations and slide decks', 'Process documentation', 'Strategic frameworks or models', 'Training and workshops', 'Implementation support', 'Templates and toolkits', 'Systems and technology solutions'], true),
+    con4_methodology: singleChoice(['Yes — I have a named methodology or framework', "Yes — I have an approach I've developed but it's not formally named", 'No — I use standard consulting approaches'], true),
+    con5_methodology_detail: optionalString,
+    con6_knowledge_transfer: nonEmptyString,
+    con7_conflicts_of_interest: singleChoice(['Yes — I need a clear conflict policy', "Sometimes — I'd like guidance on how to handle this", 'No — I only work with one client per sector at a time'], true),
+    con8_milestones: singleChoice(['Yes — always', 'Yes — for larger projects', 'No — I invoice on a time basis'], true),
+    con9_reporting_frequency: singleChoice(['Weekly status updates', 'Fortnightly updates', 'Monthly reports', 'At milestone completion only', 'Ad hoc as needed'], true),
+    con10_acceptance_criteria: singleChoice(['Written sign-off via email', 'Formal acceptance form', 'Sign-off meeting then invoice', 'Payment is treated as acceptance', "I don't currently have a formal process"], true),
+    industry_consultant_notes: optionalString,
+  });
+}
+
+function getContractorIndustrySchema(): z.ZodObject<any> {
+  return z.object({
+    ct1_trade_type: multiSelect(['General builder / construction', 'Electrician', 'Plumber / gas engineer', 'Carpenter / joiner', 'Painter / decorator', 'Plasterer', 'Roofer', 'Landscaper / groundworker', 'HVAC engineer', 'Specialist installer (e.g. flooring, kitchens)'], true),
+    ct2_work_environment: multiSelect(['Private residential properties', 'Commercial properties', 'Industrial sites', 'Outdoor / open sites', 'Refurbishment projects', 'New build construction', 'Rooftop / at height working', 'Confined spaces', 'Heritage / listed buildings'], true),
+    ct3_employees_subcontractors: singleChoice(['Sole operator — I work alone', 'I use subcontractors on larger jobs', 'I have direct employees', 'Mix of employees and subcontractors'], true),
+    ct4_cdm_exposure: singleChoice(['Yes — I work on notifiable construction projects', 'Sometimes — for projects over 30 working days or 500 person-days', 'Rarely — most of my work is smaller domestic jobs', "I'm not sure — I'd like guidance"], true),
+    ct5_hazardous_substances: multiSelect(['Cement / concrete (silica dust)', 'Solvents and adhesives', 'Wood dust (fine or coarse)', 'Lead paint (in older properties)', 'Asbestos (inspection / removal work)', 'Chemical treatments (wood preservatives, pesticides)', 'Welding fumes', 'None of the above'], true),
+    ct6_height_working: singleChoice(['Yes — regularly (roofing, scaffolding, ladders)', 'Yes — occasionally', 'No — my work is at ground level only'], true),
+    ct7_plant_equipment: multiSelect(['Scaffolding', 'Lifting equipment (LOLER-regulated)', 'Power tools (PUWER-regulated)', 'Mini digger or plant machinery', 'Cherry picker / MEWP', 'Pressure washing equipment', 'None of the above'], true),
+    ct8_existing_hs_documentation: singleChoice(['Yes — a written H&S policy', 'Yes — some risk assessments', 'Yes — method statements for specific jobs', "No — I don't have any formal documentation", 'Partially — some documentation but gaps'], true),
+    ct9_insurance: multiSelect(['Public liability insurance', "Employer's liability insurance", 'Professional indemnity insurance', 'Plant and equipment insurance', 'Contract works insurance', 'None currently'], true),
+    ct10_defect_liability_period: singleChoice(['6 months', '12 months', '2 years', 'As required by contract', 'No defect liability period currently offered'], true),
+    ct11_specific_hazards: optionalString,
+    industry_contractor_notes: optionalString,
+  });
+}
+
 // ── Schema registry by section ID ──
 
 const sectionSchemas: Record<string, () => z.ZodObject<any>> = {
@@ -335,6 +467,14 @@ const sectionSchemas: Record<string, () => z.ZodObject<any>> = {
   final: getFinalSchema,
   website_copy: getWebsiteCopySchema,
   social_media: getSocialMediaSchema,
+  client_onboarding: getClientOnboardingSchema,
+  payment_protection: getPaymentProtectionSchema,
+  copyright_licensing: getCopyrightLicensingSchema,
+  gdpr_deep: getGdprDeepSchema,
+  industry_coach: getCoachIndustrySchema,
+  industry_photographer: getPhotographerIndustrySchema,
+  industry_consultant: getConsultantIndustrySchema,
+  industry_contractor: getContractorIndustrySchema,
 };
 
 /**

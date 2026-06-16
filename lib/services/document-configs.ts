@@ -308,6 +308,215 @@ const GDPR_DEEP: DocumentConfig[] = [
   },
 ];
 
+// ─── Coach Industry Pack (7 documents) ────────────────────────────────────────
+
+const COACH_INDUSTRY: DocumentConfig[] = [
+  {
+    document_type: 'coaching_agreement',
+    service_id: 'coach_industry_pack',
+    document_label: 'Coaching Agreement',
+    description: 'Comprehensive coaching agreement covering scope, session format, methodology, and client responsibilities',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'session_terms_cancellation_policy',
+    service_id: 'coach_industry_pack',
+    document_label: 'Session Terms & Cancellation Policy',
+    description: 'Session booking terms, cancellation windows, late cancellation fees, and rescheduling procedures',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'supervision_policy',
+    service_id: 'coach_industry_pack',
+    document_label: 'Supervision Policy',
+    description: 'Policy documenting supervision arrangements, professional accountability, and ethical oversight commitments',
+  },
+  {
+    document_type: 'cpd_tracker_template',
+    service_id: 'coach_industry_pack',
+    document_label: 'CPD Tracker Template',
+    description: 'Template for tracking Continuing Professional Development hours, activities, and reflections',
+  },
+  {
+    document_type: 'coaching_code_of_ethics',
+    service_id: 'coach_industry_pack',
+    document_label: 'Coaching Code of Ethics',
+    description: 'Professional code of ethics aligned with ICF or EMCC standards, covering confidentiality and professional boundaries',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'client_progress_tracker',
+    service_id: 'coach_industry_pack',
+    document_label: 'Client Progress Tracker',
+    description: 'Session-by-session progress tracking template capturing goals, actions, and outcomes',
+  },
+  {
+    document_type: 'testimonial_request_template',
+    service_id: 'coach_industry_pack',
+    document_label: 'Testimonial Request Template',
+    description: 'Professional testimonial request email and guidance form for capturing client results and feedback',
+  },
+];
+
+// ─── Photographer Industry Pack (7 documents) ─────────────────────────────────
+
+const PHOTOGRAPHER_INDUSTRY: DocumentConfig[] = [
+  {
+    document_type: 'photography_licensing_agreement',
+    service_id: 'photographer_industry_pack',
+    document_label: 'Photography Licensing Agreement',
+    description: 'Licensing agreement specifying permitted uses, exclusivity, duration, and territory for delivered photographs',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'model_release_form',
+    service_id: 'photographer_industry_pack',
+    document_label: 'Model Release Form',
+    description: 'Model release authorising commercial and editorial use of photographs featuring identifiable individuals',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'shot_list_template',
+    service_id: 'photographer_industry_pack',
+    document_label: 'Shot List Template',
+    description: 'Structured shot list template for capturing client requirements, scene details, and technical specifications',
+  },
+  {
+    document_type: 'delivery_terms_timeline_policy',
+    service_id: 'photographer_industry_pack',
+    document_label: 'Delivery Terms & Timeline Policy',
+    description: 'Policy governing image delivery timelines, editing rounds, file formats, and revision procedures',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'editing_brief_template',
+    service_id: 'photographer_industry_pack',
+    document_label: 'Editing Brief Template',
+    description: 'Client-facing editing brief capturing style preferences, colour grading, retouching level, and output requirements',
+  },
+  {
+    document_type: 'print_release_form',
+    service_id: 'photographer_industry_pack',
+    document_label: 'Print Release Form',
+    description: 'Print release authorising clients to reproduce photographs for personal or commercial print use',
+  },
+  {
+    document_type: 'event_photography_terms',
+    service_id: 'photographer_industry_pack',
+    document_label: 'Event Photography Terms',
+    description: 'Specialised terms for event photography covering access requirements, liability, exclusivity, and force majeure',
+    supportsRefresh: true,
+  },
+];
+
+// ─── Consultant Industry Pack (7 documents) ────────────────────────────────────
+
+const CONSULTANT_INDUSTRY: DocumentConfig[] = [
+  {
+    document_type: 'consulting_agreement',
+    service_id: 'consultant_industry_pack',
+    document_label: 'Consulting Agreement',
+    description: 'Comprehensive consulting agreement covering scope, deliverables, fees, IP ownership, and engagement terms',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'consultant_nda',
+    service_id: 'consultant_industry_pack',
+    document_label: 'Consultant NDA',
+    description: 'Mutual non-disclosure agreement tailored for consulting engagements protecting client confidential information',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'deliverables_specification',
+    service_id: 'consultant_industry_pack',
+    document_label: 'Deliverables Specification',
+    description: 'Formal specification document defining all deliverables, acceptance criteria, and quality standards',
+  },
+  {
+    document_type: 'milestone_tracking_template',
+    service_id: 'consultant_industry_pack',
+    document_label: 'Milestone Tracking Template',
+    description: 'Engagement milestone tracker linking deliverables to payment triggers, timelines, and sign-off requirements',
+  },
+  {
+    document_type: 'knowledge_transfer_protocol',
+    service_id: 'consultant_industry_pack',
+    document_label: 'Knowledge Transfer Protocol',
+    description: 'Structured protocol for transferring knowledge, documentation, and systems to the client at engagement end',
+  },
+  {
+    document_type: 'consultant_code_of_conduct',
+    service_id: 'consultant_industry_pack',
+    document_label: 'Consultant Code of Conduct',
+    description: 'Professional code of conduct covering conflicts of interest, confidentiality, and professional standards',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'engagement_closure_report',
+    service_id: 'consultant_industry_pack',
+    document_label: 'Engagement Closure Report',
+    description: 'Formal engagement closure document summarising outcomes, recommendations, and handover status',
+  },
+];
+
+// ─── Contractor Industry Pack (8 documents) ────────────────────────────────────
+
+const CONTRACTOR_INDUSTRY: DocumentConfig[] = [
+  {
+    document_type: 'health_safety_policy',
+    service_id: 'contractor_industry_pack',
+    document_label: 'Health & Safety Policy',
+    description: 'UK-compliant Health & Safety policy covering risk management, responsibilities, and legal obligations',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'risk_assessment_template',
+    service_id: 'contractor_industry_pack',
+    document_label: 'Risk Assessment Template',
+    description: 'RAMS-aligned risk assessment template for site-specific hazard identification, likelihood scoring, and control measures',
+  },
+  {
+    document_type: 'method_statement',
+    service_id: 'contractor_industry_pack',
+    document_label: 'Method Statement',
+    description: 'Method statement template outlining safe working procedures for specific construction or trade activities',
+  },
+  {
+    document_type: 'coshh_assessment',
+    service_id: 'contractor_industry_pack',
+    document_label: 'COSHH Assessment',
+    description: 'COSHH assessment template for identifying hazardous substances, exposure risks, and control measures',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'construction_phase_plan',
+    service_id: 'contractor_industry_pack',
+    document_label: 'Construction Phase Plan',
+    description: 'CDM 2015-compliant Construction Phase Plan template covering site management, welfare, and emergency procedures',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'subcontractor_agreement',
+    service_id: 'contractor_industry_pack',
+    document_label: 'Subcontractor Agreement',
+    description: 'Subcontractor agreement covering scope, payment terms, liability, insurance requirements, and H&S responsibilities',
+    supportsRefresh: true,
+  },
+  {
+    document_type: 'site_induction_checklist',
+    service_id: 'contractor_industry_pack',
+    document_label: 'Site Induction Checklist',
+    description: 'Comprehensive site induction checklist ensuring all workers understand site rules, hazards, and emergency procedures',
+  },
+  {
+    document_type: 'defect_liability_template',
+    service_id: 'contractor_industry_pack',
+    document_label: 'Defect Liability Template',
+    description: 'Defect liability and remediation template defining defect periods, notification procedures, and contractor obligations',
+    supportsRefresh: true,
+  },
+];
+
 // ─── Combined exports ────────────────────────────────────────────────────────
 
 const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
@@ -316,6 +525,10 @@ const ALL_DOCUMENT_CONFIGS: DocumentConfig[] = [
   ...PAYMENT_PROTECTION,
   ...COPYRIGHT_LICENSING,
   ...GDPR_DEEP,
+  ...COACH_INDUSTRY,
+  ...PHOTOGRAPHER_INDUSTRY,
+  ...CONSULTANT_INDUSTRY,
+  ...CONTRACTOR_INDUSTRY,
 ];
 
 const CONFIG_MAP = new Map(ALL_DOCUMENT_CONFIGS.map(c => [c.document_type, c]));
