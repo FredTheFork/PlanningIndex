@@ -4,9 +4,10 @@
 import {
   serviceCatalog,
   getServiceById,
+  getServicesByTier,
   stripeMode,
 } from '@/lib/services/service-catalog';
-import type { ServiceCatalogEntry } from '@/lib/services/service-catalog';
+import type { ServiceCatalogEntry, ServiceTier, IndustryCategory } from '@/lib/services/service-catalog';
 
 export { stripeMode };
 
@@ -52,3 +53,19 @@ function getProductById(id: string): StripeProduct | undefined {
 function getCoreProduct(): StripeProduct {
   return stripeProducts.find((p) => p.id === 'business_foundations_pack')!;
 }
+
+/** Get all Stripe products for a given tier. */
+function getProductsByTier(tier: ServiceTier): StripeProduct[] {
+  const tierServiceIds = new Set(getServicesByTier(tier).map((s) => s.id));
+  return stripeProducts.filter((p) => tierServiceIds.has(p.id));
+}
+
+/** Get all Stripe products for a given industry. */
+function getProductsByIndustry(industry: IndustryCategory): StripeProduct[] {
+  return stripeProducts.filter((p) => {
+    const service = getServiceById(p.id);
+    return service?.industry === industry;
+  });
+}
+
+export { stripeProducts, getProductByPriceId, getProductById, getCoreProduct, getProductsByTier, getProductsByIndustry };

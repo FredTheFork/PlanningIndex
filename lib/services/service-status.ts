@@ -1,7 +1,7 @@
 // Per-service status derivation — computes intake, delivery, and next-step
 // information for each purchased service without requiring a DB migration.
 
-import { getServiceById } from './service-catalog';
+import { getServiceById, isSubscriptionService } from './service-catalog';
 import { getDocumentTypesForService } from './document-service-map';
 import type { LucideIcon } from 'lucide-react';
 import { FileText, Clock, FolderOpen, RefreshCw } from 'lucide-react';
@@ -46,7 +46,7 @@ export function getServiceDeliveryStatuses(params: {
     const documentsTotal = expectedDocTypes.length;
 
     // Intake completeness for this specific service
-    // Services with no intake sections (quarterly_refresh) are always complete
+    // Services with no intake sections (subscriptions) are always complete
     const intakeComplete =
       !service?.requiresIntake || completedSet.has(serviceId);
 
@@ -61,7 +61,7 @@ export function getServiceDeliveryStatuses(params: {
     if (!intakeComplete) {
       deliveryStatus = 'not_started';
     } else if (documentsTotal === 0) {
-      // Non-document service (e.g. quarterly_refresh)
+      // Non-document service (e.g. monthly_care_plan, quarterly_refresh)
       deliveryStatus = overallDeliveryStatus as ServiceDeliveryStatus['deliveryStatus'];
     } else if (documentsReady === documentsTotal && documentsTotal > 0) {
       deliveryStatus = 'delivered';
@@ -84,13 +84,16 @@ export function getServiceDeliveryStatuses(params: {
 
 export function getNextStepForService(status: ServiceDeliveryStatus): ServiceNextStep {
   const name = status.serviceName;
+  const service = getServiceById(status.serviceId);
 
-  // Quarterly refresh — always active, no intake/delivery cycle
-  if (status.serviceId === 'quarterly_refresh') {
+  // Subscription services — always active, no intake/delivery cycle
+  if (isSubscriptionService(status.serviceId)) {
+    const isMonthly = status.serviceId === 'monthly_care_plan';
     return {
-      title: 'Quarterly Document Refresh is active',
-      description:
-        'Your documents can be refreshed each quarter as your business evolves. Contact us when you need updates.',
+      title: isMonthly ? 'Monthly Care Plan is active' : 'Quarterly Document Refresh is active',
+      description: isMonthly
+        ? 'Your documents can be updated monthly as your business evolves. Contact us when you need updates.'
+        : 'Your documents can be refreshed each quarter as your business evolves. Contact us when you need updates.',
       action: 'View Status',
       link: '/personal/status',
       icon: RefreshCw,
@@ -98,10 +101,15 @@ export function getNextStepForService(status: ServiceDeliveryStatus): ServiceNex
     };
   }
 
+  // Tier-aware label for deliverables
+  const tierLabel = service?.tier === 'operations' ? 'operations documents'
+    : service?.tier === 'industry' ? 'industry documents'
+    : 'deliverables';
+
   if (!status.intakeComplete) {
     return {
       title: `Complete intake for ${name}`,
-      description: `Tell us about your business so we can prepare your ${name} deliverables.`,
+      description: `Tell us about your business so we can prepare your ${tierLabel}.`,
       action: 'Complete Intake',
       link: '/personal/intake',
       icon: FileText,
@@ -112,7 +120,7 @@ export function getNextStepForService(status: ServiceDeliveryStatus): ServiceNex
   if (status.deliveryStatus === 'not_started') {
     return {
       title: `Your ${name} is being prepared`,
-      description: `We'll begin preparing your ${name} deliverables now that your intake is complete.`,
+      description: `We'll begin preparing your ${tierLabel} now that your intake is complete.`,
       action: 'View Status',
       link: '/personal/status',
       icon: Clock,
@@ -161,8 +169,8 @@ export function sortNextSteps(steps: ServiceNextStep[]): ServiceNextStep[] {
 export function getUnifiedNextStep(
   serviceStatuses: ServiceDeliveryStatus[]
 ): { type: 'intake' | 'preparing' | 'ready'; servicesNeedingIntake: string[]; allDelivered: boolean } | null {
-  // Filter out quarterly_refresh - it doesn't follow the normal intake/delivery flow
-  const regularServices = serviceStatuses.filter((s) => s.serviceId !== 'quarterly_refresh');
+  // Filter out subscription services — they don't follow the normal intake/delivery flow
+  const regularServices = serviceStatuses.filter((s) => !isSubscriptionService(s.serviceId));
 
   if (regularServices.length === 0) {
     return null;
@@ -208,11 +216,12 @@ export function getUnifiedNextStep(
 
 /**
  * Check whether a user is eligible for document refreshes.
- * Returns false if the quarterly_refresh subscription is cancelled/expired.
- * Used to block refresh requests for inactive subscriptions.
+ * Returns false if the subscription is cancelled/expired.
  */
 function isRefreshEligible(purchasedServices: { service_id: string; status: string }[]): boolean {
-  const refresh = purchasedServices.find((s) => s.service_id === 'quarterly_refresh');
-  if (!refresh) return false;
-  return refresh.status === 'active';
+  const sub = purchasedServices.find(
+    (s) => s.service_id === 'monthly_care_plan' || s.service_id === 'quarterly_refresh'
+  );
+  if (!sub) return false;
+  return sub.status === 'active';
 }
