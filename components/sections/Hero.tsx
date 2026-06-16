@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle, FileText, Globe, Share2, RefreshCw } from 'lucide-react';
+import { CheckCircle, Star, Briefcase, Crown } from 'lucide-react';
 import { useCountUp } from '@/hooks/useCountUp';
 
 const avatars = [
@@ -107,7 +107,7 @@ export default function Hero() {
               animationDelay: '80ms',
             }}
           >
-            Your Business,<br />Properly Founded.
+            Your Entire Business Infrastructure.<br />Built For You.
           </h1>
 
           <p
@@ -119,7 +119,7 @@ export default function Hero() {
               animationDelay: '160ms',
             }}
           >
-            Professional documents, website copy, and social media posts — built entirely around your UK sole trader business. Done for you. Delivered within 5 days.
+            Foundation to start. Operations to protect. Industry packs to dominate. 13 packs. 70+ documents. All done for you, delivered within days.
           </p>
 
           {/* Avatar row + animated count */}
@@ -158,14 +158,14 @@ export default function Hero() {
               className="font-inter font-semibold text-white bg-navy rounded-lg hover:bg-medium-blue hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(27,63,122,0.25)] transition-all duration-200"
               style={{ padding: '16px 32px', fontSize: '1rem', minHeight: 48 }}
             >
-              See All Services
+              See All 13 Packs
             </Link>
             <Link
-              href="/checkout"
+              href="/checkout?services=business_foundations_pack"
               className="font-inter font-semibold text-navy border-2 border-navy rounded-lg hover:bg-off-white transition-colors duration-200"
               style={{ padding: '14px 28px', fontSize: '1rem', minHeight: 48 }}
             >
-              Start with Documents — £79
+              Start with Foundation - 79
             </Link>
           </div>
 
@@ -173,7 +173,7 @@ export default function Hero() {
             className="flex flex-wrap gap-6 mt-8"
             style={{ animation: 'fadeInUp 0.65s ease-out both', animationDelay: '400ms' }}
           >
-            {['UK Law Compliant', 'Done For You', 'One-Time Payments Available'].map((badge) => (
+            {['UK Law Compliant', '70+ Documents Available', 'Three Tiers Available'].map((badge) => (
               <div key={badge} className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-success shrink-0" />
                 <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.875rem' }}>
@@ -184,7 +184,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Right column — floating animated cards */}
+        {/* Right column — floating animated tier cards */}
         <div className="hidden lg:flex flex-1 justify-center items-center">
           <div className="relative" style={{ width: 420, height: 500 }}>
             {/* Back glow */}
@@ -202,12 +202,12 @@ export default function Hero() {
               }}
             />
 
-            {/* Document card */}
+            {/* Foundation Tier card */}
             <div
               className="absolute bg-white rounded-2xl overflow-hidden"
               style={{
                 width: 300,
-                height: 220,
+                height: 180,
                 top: 0,
                 left: 10,
                 boxShadow: '0 24px 64px rgba(27,63,122,0.18), 0 2px 8px rgba(27,63,122,0.06)',
@@ -220,35 +220,36 @@ export default function Hero() {
                 style={{ height: 44, background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)', borderRadius: '16px 16px 0 0' }}
               >
                 <div className="flex items-center gap-2">
-                  <FileText size={16} className="text-white/90" />
-                  <span className="font-inter font-semibold text-white" style={{ fontSize: '0.8rem' }}>CLIENT CONTRACT</span>
+                  <Star size={14} className="text-white/90" />
+                  <span className="font-inter font-semibold text-white" style={{ fontSize: '0.75rem' }}>FOUNDATION</span>
                 </div>
-                <span className="font-inter font-medium text-white/60" style={{ fontSize: '0.7rem' }}>01/10</span>
+                <span className="font-inter font-medium text-white/60" style={{ fontSize: '0.7rem' }}>From 79</span>
               </div>
-              <div className="p-5 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <div style={{ width: '25%', height: 8, background: '#1B3F7A', borderRadius: 4 }} />
-                  <div className="flex-1" style={{ height: 8, background: '#E2E8F0', borderRadius: 4 }} />
+              <div className="p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.8rem' }}>Business Foundations Pack</span>
                 </div>
-                <div style={{ width: '90%', height: 8, background: '#F0F4FF', borderRadius: 4 }} />
-                <div style={{ width: '72%', height: 8, background: '#F0F4FF', borderRadius: 4 }} />
-                <div style={{ width: '85%', height: 8, background: '#F0F4FF', borderRadius: 4 }} />
+                <div className="flex items-center gap-2">
+                  <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.75rem' }}>Website Copy</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.75rem' }}>Social Media Pack</span>
+                </div>
                 <div className="flex gap-2 mt-1">
-                  <div style={{ width: 60, height: 24, background: '#38A169', borderRadius: 6 }} />
-                  <div style={{ width: 80, height: 24, background: '#EBF2FF', borderRadius: 6 }} />
+                  <span className="font-inter font-semibold text-medium-blue" style={{ fontSize: '0.7rem' }}>+ Monthly Care Plan</span>
                 </div>
               </div>
             </div>
 
-            {/* Website Copy card */}
+            {/* Operations Tier card */}
             <div
               className="absolute bg-white rounded-2xl overflow-hidden"
               style={{
                 width: 185,
-                height: 135,
-                top: 168,
+                height: 155,
+                top: 148,
                 right: 0,
-                boxShadow: '0 20px 48px rgba(27,63,122,0.14), 0 2px 6px rgba(27,63,122,0.05)',
+                boxShadow: '0 20px 48px rgba(44,104,196,0.16), 0 2px 6px rgba(27,63,122,0.05)',
                 zIndex: 4,
                 animation: 'float-b 8s ease-in-out infinite',
                 animationDelay: '1s',
@@ -258,29 +259,28 @@ export default function Hero() {
                 className="flex items-center gap-2 px-3"
                 style={{ height: 36, background: 'linear-gradient(135deg, #2C68C4, #4A90E2)', borderRadius: '16px 16px 0 0' }}
               >
-                <Globe size={14} className="text-white/90" />
-                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.7rem' }}>WEBSITE COPY</span>
+                <Briefcase size={14} className="text-white/90" />
+                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.7rem' }}>OPERATIONS</span>
               </div>
-              <div className="p-3 flex flex-col gap-2">
-                <div style={{ width: '60%', height: 6, background: '#1B3F7A', borderRadius: 3 }} />
-                <div style={{ width: '80%', height: 5, background: '#E2E8F0', borderRadius: 3 }} />
-                <div style={{ width: '45%', height: 5, background: '#E2E8F0', borderRadius: 3 }} />
-                <div className="flex gap-1.5 mt-1">
-                  <div style={{ width: 28, height: 16, background: '#F0F4FF', borderRadius: 4 }} />
-                  <div style={{ width: 28, height: 16, background: '#F0F4FF', borderRadius: 4 }} />
+              <div className="p-3 flex flex-col gap-1.5">
+                <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.7rem' }}>Client Onboarding</span>
+                <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>Payment Protection</span>
+                <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>GDPR Deep Pack</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="font-inter font-bold text-navy" style={{ fontSize: '0.75rem' }}>From 149</span>
                 </div>
               </div>
             </div>
 
-            {/* Social Posts card */}
+            {/* Industry Tier card */}
             <div
               className="absolute bg-white rounded-2xl overflow-hidden"
               style={{
                 width: 174,
-                height: 145,
+                height: 165,
                 bottom: 50,
                 right: 22,
-                boxShadow: '0 20px 48px rgba(27,63,122,0.14), 0 2px 6px rgba(27,63,122,0.05)',
+                boxShadow: '0 20px 48px rgba(245,158,11,0.16), 0 2px 6px rgba(27,63,122,0.05)',
                 zIndex: 5,
                 animation: 'float-c 9s ease-in-out infinite',
                 animationDelay: '2s',
@@ -288,51 +288,23 @@ export default function Hero() {
             >
               <div
                 className="flex items-center gap-2 px-3"
-                style={{ height: 36, background: 'linear-gradient(135deg, #38A169, #48BB78)', borderRadius: '16px 16px 0 0' }}
+                style={{ height: 36, background: 'linear-gradient(135deg, #F59E0B, #FBBF24)', borderRadius: '16px 16px 0 0' }}
               >
-                <Share2 size={14} className="text-white/90" />
-                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.7rem' }}>SOCIAL POSTS</span>
+                <Crown size={14} className="text-white/90" />
+                <span className="font-inter font-semibold text-white" style={{ fontSize: '0.7rem' }}>INDUSTRY</span>
               </div>
-              <div className="p-3 flex flex-col gap-2">
-                {[{ color: '#4A90E2', w: '70%' }, { color: '#38A169', w: '55%' }, { color: '#2C68C4', w: '65%' }].map((post, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div style={{ width: 16, height: 16, borderRadius: 4, background: post.color, flexShrink: 0 }} />
-                    <div className="flex-1" style={{ height: 5, background: '#E2E8F0', borderRadius: 3, maxWidth: post.w }} />
-                  </div>
-                ))}
-                <div className="flex gap-1 mt-1">
-                  <span className="font-inter text-[0.55rem] text-secondary-text">#freelancer</span>
-                  <span className="font-inter text-[0.55rem] text-secondary-text">#ukbusiness</span>
+              <div className="p-3 flex flex-col gap-1.5">
+                <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.7rem' }}>Coach Pack</span>
+                <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>Photographer Pack</span>
+                <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>Consultant Pack</span>
+                <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>Contractor Pack</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="font-inter font-bold text-amber-600" style={{ fontSize: '0.75rem' }}>From 199</span>
                 </div>
               </div>
             </div>
 
-            {/* Quarterly Refresh badge */}
-            <div
-              className="absolute bg-white rounded-2xl flex items-center gap-3"
-              style={{
-                bottom: 8,
-                left: 16,
-                padding: '12px 18px',
-                boxShadow: '0 12px 32px rgba(27,63,122,0.12)',
-                zIndex: 6,
-                animation: 'float-a 11s ease-in-out infinite',
-                animationDelay: '3s',
-              }}
-            >
-              <div
-                className="flex items-center justify-center shrink-0"
-                style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #1B3F7A, #2C68C4)' }}
-              >
-                <RefreshCw size={18} className="text-white" />
-              </div>
-              <div>
-                <div className="font-inter font-semibold text-dark-text" style={{ fontSize: '0.75rem' }}>Quarterly Refresh</div>
-                <div className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>£29 every 4 months</div>
-              </div>
-            </div>
-
-            {/* 4 Services badge */}
+            {/* 3 Tiers badge */}
             <div
               className="absolute bg-navy rounded-full flex items-center gap-2"
               style={{
@@ -345,8 +317,26 @@ export default function Hero() {
                 animationDelay: '0.5s',
               }}
             >
-              <span className="text-success font-bold" style={{ fontSize: '0.85rem' }}>✓</span>
-              <span className="font-inter font-semibold text-white" style={{ fontSize: '0.8rem' }}>4 Services</span>
+              <span className="text-success font-bold" style={{ fontSize: '0.85rem' }}>&#10003;</span>
+              <span className="font-inter font-semibold text-white" style={{ fontSize: '0.8rem' }}>3 Tiers. 13 Packs.</span>
+            </div>
+
+            {/* Save up to 25% badge */}
+            <div
+              className="absolute rounded-full flex items-center gap-2"
+              style={{
+                bottom: 8,
+                left: 16,
+                padding: '10px 18px',
+                zIndex: 6,
+                background: 'linear-gradient(135deg, #38A169, #48BB78)',
+                boxShadow: '0 12px 32px rgba(56,161,105,0.25)',
+                animation: 'float-a 11s ease-in-out infinite',
+                animationDelay: '3s',
+              }}
+            >
+              <span className="font-inter font-bold text-white" style={{ fontSize: '0.85rem' }}>Save up to 25%</span>
+              <span className="font-inter font-normal text-white" style={{ fontSize: '0.7rem' }}>with bundles</span>
             </div>
           </div>
         </div>

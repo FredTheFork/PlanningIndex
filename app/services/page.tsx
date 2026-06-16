@@ -4,12 +4,12 @@ import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib
 import ServicesClient from './ServicesClient';
 
 export const metadata: Metadata = {
-  title: 'Services | Foundationary',
-  description: 'Professional documents, website copy, social media posts, and ongoing maintenance for UK sole traders. Buy any service alone or bundle and save.',
-  keywords: 'sole trader services UK, business documents, website copy, social media management, UK freelancer, sole trader packages',
+  title: 'Services | Complete Business Infrastructure for UK Sole Traders | Foundationary',
+  description: 'Three tiers of business infrastructure. Foundation: documents, website, social. Operations: onboarding, payments, GDPR, IP. Industry: coach, photographer, consultant, contractor packs. 13 packs. Bundle and save up to 25%.',
+  keywords: 'sole trader services UK, business infrastructure, foundation tier, operations tier, industry tier, client onboarding UK, payment protection, GDPR compliance, coach documents, photographer contract, consultant agreements, contractor H&S, business documents, website copy, social media, UK sole trader',
   openGraph: {
-    title: 'Foundationary Services | Business Documents, Website Copy & Social Media',
-    description: 'Professional documents, website copy, social media posts, and ongoing maintenance for UK sole traders. Buy any service alone or bundle and save.',
+    title: 'Foundationary Services | Three Tiers of Business Infrastructure',
+    description: 'Foundation to start. Operations to protect. Industry to dominate. 13 packs. 70+ documents. Bundle and save up to 25%.',
     url: `${SITE_URL}/services`,
     images: [{ url: `${SITE_URL}/og/services.png`, width: 1200, height: 630 }],
   },
@@ -29,8 +29,8 @@ export default function ServicesPage() {
   ]);
 
   const webPage = generateWebPageSchema({
-    name: 'Services — Business Documents, Website Copy & Social Media',
-    description: 'Professional documents, website copy, social media posts, and ongoing maintenance for UK sole traders.',
+    name: 'Services — Complete Business Infrastructure for UK Sole Traders',
+    description: 'Three tiers of business infrastructure: Foundation, Operations, and Industry. 13 packs. 70+ documents. Bundle and save up to 25%.',
     path: '/services',
   });
 

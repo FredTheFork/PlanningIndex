@@ -11,23 +11,23 @@ import { JsonLd } from '@/components/seo';
 import { generateProductSchema, generateWebPageSchema, SITE_URL } from '@/lib/seo';
 
 export const metadata = {
-  title: 'Foundationary | Business Documents, Website Copy & Social Media for UK Sole Traders',
-  description: 'Professional business documents, website copy, and social media posts for UK sole traders. Client contracts, GDPR privacy policies, website content, social posts — UK law compliant, done for you. From £79.',
-  keywords: 'sole trader UK, business documents, client contract UK, GDPR privacy policy, website copy UK, social media posts UK, sole trader business setup, freelancer documents UK',
+  title: 'Foundationary | Complete Business Infrastructure for UK Sole Traders',
+  description: 'Complete business infrastructure for UK sole traders. Three tiers: Foundation (documents, website, social), Operations (onboarding, payments, GDPR), Industry (coach, photographer, consultant, contractor packs). 13 packs. 70+ documents. Up to 25% off with bundles.',
+  keywords: 'sole trader UK, business infrastructure, business documents UK, client contract UK, GDPR compliance, client onboarding, payment protection, operations pack, industry pack, coach documents, photographer contract, consultant agreements, contractor H&S, website copy UK, social media posts UK',
   openGraph: {
-    title: 'Foundationary | Professional Content for UK Sole Traders',
-    description: 'Get professional documents, website copy, and social media posts for your UK sole trader business. Client contracts, GDPR privacy policy, website content, social posts & more. From £79.',
+    title: 'Foundationary | Complete Business Infrastructure for UK Sole Traders',
+    description: 'Three tiers. 13 packs. 70+ documents. Foundation to start, Operations to protect, Industry to dominate. UK law compliant, done for you. From £79.',
     url: SITE_URL,
     siteName: 'Foundationary',
     locale: 'en_GB',
     type: 'website',
-    images: [{ url: `${SITE_URL}/api/og?title=${encodeURIComponent('Business Documents, Website Copy & Social Media for UK Sole Traders')}&description=${encodeURIComponent('Professional documents, UK law compliant, done for you. From £79.')}`, width: 1200, height: 630, alt: 'Foundationary | Professional Content for UK Sole Traders' }],
+    images: [{ url: `${SITE_URL}/api/og?title=${encodeURIComponent('Complete Business Infrastructure for UK Sole Traders')}&description=${encodeURIComponent('Three tiers. 13 packs. 70+ documents. From £79.')}`, width: 1200, height: 630, alt: 'Foundationary | Complete Business Infrastructure for UK Sole Traders' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Foundationary | Professional Content for UK Sole Traders',
-    description: 'Get professional documents, website copy, and social media posts for your UK sole trader business. From £79.',
-    images: [`${SITE_URL}/api/og?title=${encodeURIComponent('Business Documents, Website Copy & Social Media for UK Sole Traders')}&description=${encodeURIComponent('Professional documents, UK law compliant, done for you. From £79.')}`],
+    title: 'Foundationary | Complete Business Infrastructure for UK Sole Traders',
+    description: 'Three tiers. 13 packs. 70+ documents. Foundation to start, Operations to protect, Industry to dominate. From £79.',
+    images: [`${SITE_URL}/api/og?title=${encodeURIComponent('Complete Business Infrastructure for UK Sole Traders')}&description=${encodeURIComponent('Three tiers. 13 packs. 70+ documents. From £79.')}`],
     creator: '@Foundationary',
     site: '@Foundationary',
   },
@@ -42,8 +42,8 @@ export const metadata = {
 
 export default function HomePage() {
   const webPage = generateWebPageSchema({
-    name: 'Foundationary | Business Documents, Website Copy & Social Media for UK Sole Traders',
-    description: 'Professional business documents, website copy, and social media posts for UK sole traders. UK law compliant, done for you. From £79.',
+    name: 'Foundationary | Complete Business Infrastructure for UK Sole Traders',
+    description: 'Complete business infrastructure for UK sole traders. Three tiers: Foundation, Operations, Industry. 13 packs. 70+ documents. UK law compliant, done for you. From £79.',
     path: '',
   });
 
