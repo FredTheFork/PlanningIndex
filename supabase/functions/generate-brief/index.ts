@@ -569,12 +569,128 @@ ${r.sm11_existing_accounts ? `Existing Accounts: ${r.sm11_existing_accounts}` : 
 Content Calendar: ${r.sm12_content_calendar || 'Not provided'}
 ${r.sm13_upcoming_launches ? `Upcoming Launches: ${r.sm13_upcoming_launches}` : ''}
 
+CLIENT ONBOARDING
+==================
+Onboarding Style: ${r.co1_onboarding_style || 'Not provided'}
+Pain Points: ${r.co2_onboarding_pain_points || 'Not provided'}
+Scope Creep Experience: ${r.co3_scope_creep_experience || 'Not provided'}
+${r.co4_scope_creep_detail ? `Scope Creep Detail: ${r.co4_scope_creep_detail}` : ''}
+Communication Channels: ${Array.isArray(r.co5_communication_channels) ? r.co5_communication_channels.join(', ') : 'Not provided'}
+Response Time Commitment: ${r.co6_response_time_expectation || 'Not provided'}
+Client Must Provide: ${r.co7_client_provides || 'Not provided'}
+Kick-Off Format: ${r.co8_kickoff_format || 'Not provided'}
+Revision Policy: ${r.co9_revision_policy || 'Not provided'}
+Closing Process: ${r.co10_closing_process || 'Not provided'}
+${r.client_onboarding_notes ? `Additional Notes: ${r.client_onboarding_notes}` : ''}
+
+PAYMENT PROTECTION
+===================
+Late Payment Experience: ${r.pp1_late_payment_experience || 'Not provided'}
+${r.pp2_late_payment_detail ? `Late Payment Detail: ${r.pp2_late_payment_detail}` : ''}
+Deposit Percentage: ${r.pp3_deposit_percentage || 'Not provided'}
+Deposit Refundable: ${r.pp4_deposit_non_refundable || 'Not provided'}
+Invoice Due Days: ${r.pp5_invoice_due_days || 'Not provided'}
+${r.pp6_invoice_due_custom ? `Custom Terms: ${r.pp6_invoice_due_custom}` : ''}
+Late Payment Interest Preference: ${r.pp7_late_payment_interest || 'Not provided'}
+Chargeback Experience: ${r.pp8_chargeback_experience || 'Not provided'}
+${r.pp9_chargeback_detail ? `Chargeback Detail: ${r.pp9_chargeback_detail}` : ''}
+Work Stoppage Policy: ${r.pp10_work_stoppage_policy || 'Not provided'}
+${r.payment_protection_notes ? `Additional Notes: ${r.payment_protection_notes}` : ''}
+
+COPYRIGHT & LICENSING
+======================
+Deliverable Types: ${Array.isArray(r.cl1_deliverable_types) ? r.cl1_deliverable_types.join(', ') : 'Not provided'}
+IP Ownership Preference: ${r.cl2_ip_ownership_preference || 'Not provided'}
+${r.cl3_ip_ownership_detail ? `IP Ownership Detail: ${r.cl3_ip_ownership_detail}` : ''}
+Licence Scope: ${Array.isArray(r.cl4_licence_scope) ? r.cl4_licence_scope.join(', ') : 'Not provided'}
+Uses Third-Party Content: ${r.cl5_uses_third_party_content || 'Not provided'}
+${r.cl6_third_party_detail ? `Third-Party Detail: ${r.cl6_third_party_detail}` : ''}
+NDA Needed: ${r.cl7_nda_needed || 'Not provided'}
+${r.cl8_nda_type ? `NDA Type: ${r.cl8_nda_type}` : ''}
+Portfolio Right: ${r.cl9_portfolio_right || 'Not provided'}
+IP Infringement Experience: ${r.cl10_ip_infringement_experience || 'Not provided'}
+${r.cl11_infringement_detail ? `Infringement Detail: ${r.cl11_infringement_detail}` : ''}
+${r.copyright_licensing_notes ? `Additional Notes: ${r.copyright_licensing_notes}` : ''}
+
+GDPR DEEP COMPLIANCE
+=====================
+Lawful Basis: ${Array.isArray(r.gd1_lawful_basis) ? r.gd1_lawful_basis.join(', ') : 'Not provided'}
+Uses Data Processors: ${r.gd2_data_processor_relationships || 'Not provided'}
+${r.gd3_processor_list ? `Processor List: ${r.gd3_processor_list}` : ''}
+International Transfers: ${r.gd4_international_transfers || 'Not provided'}
+${r.gd5_international_transfer_detail ? `Transfer Detail: ${r.gd5_international_transfer_detail}` : ''}
+SAR Procedure: ${r.gd6_sar_procedure || 'Not provided'}
+Breach Procedure: ${r.gd7_breach_procedure || 'Not provided'}
+High-Risk Processing: ${Array.isArray(r.gd8_high_risk_processing) ? r.gd8_high_risk_processing.join(', ') : 'Not provided'}
+Consent Management: ${r.gd9_consent_management || 'Not provided'}
+Retention Clarity: ${r.gd10_retention_clarity || 'Not provided'}
+${r.gdpr_deep_notes ? `Additional Notes: ${r.gdpr_deep_notes}` : ''}
+
+COACHING PRACTICE
+==================
+Coaching Modality: ${Array.isArray(r.ic1_coaching_modality) ? r.ic1_coaching_modality.join(', ') : 'Not provided'}
+Accreditation: ${Array.isArray(r.ic2_accreditation) ? r.ic2_accreditation.join(', ') : 'Not provided'}
+Session Format: ${Array.isArray(r.ic3_session_format) ? r.ic3_session_format.join(', ') : 'Not provided'}
+Session Length: ${r.ic4_session_length || 'Not provided'}
+Programme Structure: ${r.ic5_programme_structure || 'Not provided'}
+Programme Detail: ${r.ic6_programme_detail || 'Not provided'}
+Supervision: ${r.ic7_supervision_arrangement || 'Not provided'}
+Cancellation Notice: ${r.ic8_cancellation_policy || 'Not provided'}
+Late Cancellation Fee: ${r.ic9_late_cancellation_fee || 'Not provided'}
+Confidentiality Exceptions: ${r.ic10_confidentiality_exceptions || 'Not provided'}
+${r.ic11_cpd_hours ? `CPD Hours: ${r.ic11_cpd_hours}` : ''}
+${r.industry_coach_notes ? `Additional Notes: ${r.industry_coach_notes}` : ''}
+
+PHOTOGRAPHY PRACTICE
+====================
+Specialism: ${Array.isArray(r.ip1_photography_specialism) ? r.ip1_photography_specialism.join(', ') : 'Not provided'}
+Client Types: ${Array.isArray(r.ip2_client_type) ? r.ip2_client_type.join(', ') : 'Not provided'}
+Licensing Intent: ${r.ip3_licensing_intent || 'Not provided'}
+Commercial Use: ${r.ip4_commercial_use || 'Not provided'}
+Model Releases Needed: ${r.ip5_model_releases_needed || 'Not provided'}
+Location Releases: ${r.ip6_location_releases || 'Not provided'}
+Delivery Format: ${Array.isArray(r.ip7_delivery_format) ? r.ip7_delivery_format.join(', ') : 'Not provided'}
+Delivery Timeline: ${r.ip8_delivery_timeline || 'Not provided'}
+Editing Rounds: ${r.ip9_editing_rounds || 'Not provided'}
+Event Cancellation Policy: ${r.ip10_event_cancellation || 'Not provided'}
+Portfolio Usage: ${r.ip11_portfolio_usage || 'Not provided'}
+${r.industry_photographer_notes ? `Additional Notes: ${r.industry_photographer_notes}` : ''}
+
+CONSULTING PRACTICE
+====================
+Specialism: ${Array.isArray(r.con1_consulting_specialism) ? r.con1_consulting_specialism.join(', ') : 'Not provided'}
+Engagement Model: ${r.con2_engagement_model || 'Not provided'}
+Deliverable Types: ${Array.isArray(r.con3_deliverable_types) ? r.con3_deliverable_types.join(', ') : 'Not provided'}
+Proprietary Methodology: ${r.con4_methodology || 'Not provided'}
+${r.con5_methodology_detail ? `Methodology Detail: ${r.con5_methodology_detail}` : ''}
+Knowledge Transfer: ${r.con6_knowledge_transfer || 'Not provided'}
+Conflicts of Interest: ${r.con7_conflicts_of_interest || 'Not provided'}
+Milestone Payments: ${r.con8_milestones || 'Not provided'}
+Reporting Frequency: ${r.con9_reporting_frequency || 'Not provided'}
+Acceptance Criteria: ${r.con10_acceptance_criteria || 'Not provided'}
+${r.industry_consultant_notes ? `Additional Notes: ${r.industry_consultant_notes}` : ''}
+
+CONTRACTING PRACTICE
+====================
+Trade Type: ${Array.isArray(r.ct1_trade_type) ? r.ct1_trade_type.join(', ') : 'Not provided'}
+Work Environments: ${Array.isArray(r.ct2_work_environment) ? r.ct2_work_environment.join(', ') : 'Not provided'}
+Workforce Structure: ${r.ct3_employees_subcontractors || 'Not provided'}
+CDM Exposure: ${r.ct4_cdm_exposure || 'Not provided'}
+Hazardous Substances: ${Array.isArray(r.ct5_hazardous_substances) ? r.ct5_hazardous_substances.join(', ') : 'Not provided'}
+Height Working: ${r.ct6_height_working || 'Not provided'}
+Plant & Equipment: ${Array.isArray(r.ct7_plant_equipment) ? r.ct7_plant_equipment.join(', ') : 'Not provided'}
+Existing H&S Documentation: ${r.ct8_existing_hs_documentation || 'Not provided'}
+Insurance: ${Array.isArray(r.ct9_insurance) ? r.ct9_insurance.join(', ') : 'Not provided'}
+Defect Liability Period: ${r.ct10_defect_liability_period || 'Not provided'}
+${r.ct11_specific_hazards ? `Specific Hazards: ${r.ct11_specific_hazards}` : ''}
+${r.industry_contractor_notes ? `Additional Notes: ${r.industry_contractor_notes}` : ''}
+
 ADDITIONAL INFORMATION
 =======================
 ${r.q78_anything_else ? `Anything Else: ${r.q78_anything_else}` : ''}
 Confidence Level: ${r.q80_confidence_level || 'Not provided'}
 
-Generate the brief now. Be thorough, specific, and use the client's actual information. Where information is missing, note it clearly rather than making assumptions.`;
+Generate the brief now. This brief covers Foundation, Operations, and Industry tier data. Be thorough, specific, and use the client's actual information. Where information is missing, note it clearly rather than making assumptions. Omit any section entirely if the client has no relevant data for it.`;
 }
 
 function buildClientOnboardingBriefPrompt(r: Record<string, any>): string {
@@ -1000,7 +1116,17 @@ Deno.serve(async (req: Request) => {
       debugInfo.websitePages = websitePages;
     }
 
-    const maxTokens = service_id === 'business_foundations_pack' ? 16384 : 8192;
+    const INDUSTRY_SERVICE_IDS = [
+      'coach_industry_pack',
+      'photographer_industry_pack',
+      'consultant_industry_pack',
+      'contractor_industry_pack',
+    ];
+    const maxTokens = service_id === 'business_foundations_pack'
+      ? 16384
+      : INDUSTRY_SERVICE_IDS.includes(service_id || '')
+        ? 12288
+        : 8192;
     let briefContent: string;
     let usedModel: string;
     try {
