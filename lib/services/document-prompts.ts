@@ -1954,6 +1954,3197 @@ Produce consultant-grade sales collateral suitable for real commercial use.
 `,
     agentInstructions: SHARED_AGENT_INSTRUCTIONS,
   },
+
+  // ─── Client Onboarding & Scope Control Pack ────────────────────────────────
+
+  {
+    document_type: 'client_onboarding_questionnaire',
+    document_label: 'Client Onboarding Questionnaire',
+    generationPrompt: `You are a senior client experience consultant and business operations strategist.
+
+Create a comprehensive Client Onboarding Questionnaire.
+
+This document will be completed by new clients before work begins.
+
+It must collect every piece of information the business needs to deliver excellent service, prevent misunderstandings, and protect the business owner from scope creep and disputes.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a questionnaire that:
+
+• Gathers complete client context before work starts
+• Identifies potential red flags early
+• Establishes decision-making authority
+• Captures communication preferences
+• Records success criteria in the client's own words
+• Protects the business legally by documenting agreements in advance
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Client & Business Information
+
+Contact Details
+
+Business Background
+
+Project Goals & Objectives
+
+Success Criteria
+
+Scope & Priorities
+
+Budget & Timeline
+
+Decision-Making Authority
+
+Communication Preferences
+
+Previous Experience
+
+Risk & Challenges
+
+Final Confirmation & Sign-Off
+
+────────────────────────
+DESIGN REQUIREMENTS
+────────────────────────
+
+Create a branded professional document.
+
+Use the client's:
+
+• Business name and colours
+• Brand personality
+• Professional positioning
+• Industry style
+
+The questionnaire should feel custom built for this specific business.
+
+Not a generic agency onboarding form.
+
+Not a generic template.
+
+────────────────────────
+ADVANCED INTELLIGENCE
+────────────────────────
+
+Review the client brief.
+
+Add industry-specific questions relevant to their business.
+
+Identify potential client red flags and include questions designed to surface them early.
+
+Examples:
+
+• Unrealistic expectations
+• Unclear decision-making
+• Prior bad experiences
+• Budget misalignment
+• Scope ambiguity
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed questionnaire.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'scope_of_work_document',
+    document_label: 'Scope of Work Document',
+    generationPrompt: `You are a senior UK commercial solicitor and project management consultant specialising in scope definition and dispute prevention.
+
+Create a comprehensive Scope of Work Document.
+
+This document must prevent scope creep, protect the business's time, and be legally enforceable under England & Wales law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a scope document that:
+
+• Defines exactly what is included
+• Defines exactly what is excluded
+• Establishes change request procedures
+• Protects the business from unlimited revisions
+• Creates a clear legal record of agreed deliverables
+• Reduces client disputes
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Project Overview
+
+Parties
+
+Scope of Services
+
+Detailed Deliverables
+
+Explicitly Excluded Items
+
+Assumptions & Dependencies
+
+Client Responsibilities
+
+Revision & Amendment Policy
+
+Change Request Procedure
+
+Timeline & Milestones
+
+Acceptance Criteria
+
+Sign-Off Requirements
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Draft using clear, enforceable language.
+
+Include change request procedures with:
+
+• Written change request requirement
+• Impact assessment (time and cost)
+• Written approval before proceeding
+
+Include revision limits appropriate to the service type.
+
+Include consequences for scope expansion without approval.
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt the scope structure to the specific services offered.
+
+Identify and address the most likely scope creep risks for this business type.
+
+Create bespoke exclusions based on the industry and service type.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed scope of work document.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'project_brief_template',
+    document_label: 'Project Brief Template',
+    generationPrompt: `You are a senior project management consultant and business operations strategist.
+
+Create a reusable Project Brief Template.
+
+This template will be completed for each new client engagement.
+
+It must capture everything needed to plan, execute, and deliver a project successfully.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a project brief that:
+
+• Aligns expectations before work begins
+• Documents agreed objectives and deliverables
+• Establishes milestones and timelines
+• Records sign-off requirements
+• Prevents misunderstandings
+• Creates a professional starting point for every engagement
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Project Title & Reference Number
+
+Project Overview
+
+Business Objectives
+
+Target Audience / End Users
+
+Deliverables
+
+Project Milestones
+
+Timeline
+
+Budget Allocation
+
+Resources & Dependencies
+
+Risks & Constraints
+
+Communication Plan
+
+Sign-Off & Approval Section
+
+────────────────────────
+DESIGN REQUIREMENTS
+────────────────────────
+
+Create a branded, professional template.
+
+Use the client's business identity.
+
+Every completed brief should feel like a premium business document.
+
+────────────────────────
+USABILITY REQUIREMENTS
+────────────────────────
+
+The template must be:
+
+• Easy to complete quickly
+• Clear and unambiguous
+• Suitable for sharing with clients
+• Professional enough to build confidence
+
+Include completion guidance for each section.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed project brief template.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'change_request_form',
+    document_label: 'Change Request Form',
+    generationPrompt: `You are a senior project management consultant and UK commercial solicitor specialising in scope management and dispute prevention.
+
+Create a professional Change Request Form.
+
+This form must create a clear, auditable trail for every scope modification and protect the business from unpaid work.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a change request process that:
+
+• Documents every requested change formally
+• Assesses time and cost impact before approval
+• Requires written client approval before work proceeds
+• Creates a legal record of agreed changes
+• Protects the business from disputes about additional work
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Change Request Reference Number
+
+Date of Request
+
+Project Reference
+
+Requested By
+
+Description of Change
+
+Reason for Change
+
+Impact Assessment:
+  — Additional Time Required
+  — Additional Cost
+  — Impact on Timeline
+  — Impact on Deliverables
+
+Recommendation
+
+Business Decision
+
+Authorised By
+
+Signature & Date
+
+Status Tracking
+
+────────────────────────
+PROCESS DESIGN
+────────────────────────
+
+Include clear instructions for use.
+
+Define the change request process:
+
+• How to submit
+• Response timescales
+• Approval requirements
+• What happens if change proceeds without approval
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Include wording that:
+
+• Work will not commence until written approval is received
+• Verbal approvals are not binding
+• Changes affect original delivery timelines
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed change request form.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'onboarding_checklist',
+    document_label: 'Onboarding Checklist',
+    generationPrompt: `You are a senior business operations consultant and client experience specialist.
+
+Create a comprehensive New Client Onboarding Checklist.
+
+This checklist will be used by the business owner every time they onboard a new client.
+
+It must be thorough, practical, and ensure nothing is missed.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a checklist that:
+
+• Ensures consistent onboarding every time
+• Protects the business legally and administratively
+• Creates a professional client experience
+• Prevents common onboarding failures
+• Builds client confidence from day one
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Pre-Engagement (Before Work Starts)
+
+Administrative Setup
+
+Legal & Documentation
+
+Communication Setup
+
+Project Setup
+
+Client Welcome
+
+Work Commencement
+
+Post-Onboarding Review
+
+────────────────────────
+CHECKLIST ITEMS
+────────────────────────
+
+For each section include specific, actionable checklist items.
+
+Examples:
+
+• Contract signed and returned
+• Deposit received and reconciled
+• Onboarding questionnaire completed
+• Communication channels confirmed
+• Access credentials received
+• Project brief agreed
+• Kick-off meeting scheduled
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Add industry-specific checklist items.
+
+Identify onboarding steps unique to this type of business.
+
+────────────────────────
+DESIGN REQUIREMENTS
+────────────────────────
+
+Create a professional branded checklist.
+
+Format for practical daily use.
+
+Include space for notes and dates against each item.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed onboarding checklist.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'client_communication_protocols',
+    document_label: 'Client Communication Protocols',
+    generationPrompt: `You are a senior business operations consultant and client experience strategist.
+
+Create a comprehensive Client Communication Protocols document.
+
+This document will set clear expectations for how the business and its clients communicate — reducing misunderstandings, managing response time expectations, and protecting the business from communication overload.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create communication protocols that:
+
+• Set clear channel preferences
+• Define response time expectations
+• Establish escalation procedures
+• Protect the business from out-of-hours demands
+• Reduce communication friction
+• Maintain professional standards
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Preferred Communication Channels
+
+Expected Response Times
+
+Out-of-Hours Policy
+
+Emergency Contact Procedure
+
+Meeting & Call Protocols
+
+Document Sharing & Approval
+
+Feedback Timelines
+
+Escalation Procedure
+
+Communication Dos and Don'ts
+
+Breach of Communication Standards
+
+────────────────────────
+PROFESSIONAL STANDARDS
+────────────────────────
+
+Review the client brief.
+
+Identify communication challenges specific to this business.
+
+Create protocols that address the most common communication problems in this industry.
+
+────────────────────────
+TONE & PRESENTATION
+────────────────────────
+
+The document must be:
+
+• Professional but approachable
+• Clear and specific
+• Not aggressive
+• Branded to the business
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed communication protocols document.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'welcome_packet_guide',
+    document_label: 'Welcome Packet Guide',
+    generationPrompt: `You are a senior client experience consultant, brand strategist, and business operations specialist.
+
+Create a professional New Client Welcome Packet.
+
+This is not a simple welcome letter.
+
+This is a comprehensive first impression — the first tangible experience a new client has with this business.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a welcome packet that:
+
+• Builds immediate confidence in the decision to hire
+• Demonstrates professionalism and organisation
+• Sets clear expectations before work begins
+• Reduces anxiety and uncertainty
+• Creates a premium client experience
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Personal Welcome Message
+
+About the Business
+
+How We Work
+
+What Happens Next
+
+Your Onboarding Timeline
+
+Key Contacts & Communication Details
+
+What We Need From You
+
+Important Documents Enclosed
+
+Frequently Asked Questions
+
+Our Promise to You
+
+────────────────────────
+DESIGN REQUIREMENTS
+────────────────────────
+
+Create a document that feels premium.
+
+Use the client's:
+
+• Brand colours
+• Brand tone
+• Professional identity
+• Industry positioning
+
+The welcome packet must feel custom created for this business.
+
+Not generic.
+
+Not templated.
+
+────────────────────────
+PSYCHOLOGY REQUIREMENTS
+────────────────────────
+
+Throughout the packet:
+
+Reinforce the client's buying decision.
+
+Create confidence.
+
+Reduce buyer's remorse.
+
+Establish authority and professionalism.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed welcome packet.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'feedback_closing_questionnaire',
+    document_label: 'Feedback & Closing Questionnaire',
+    generationPrompt: `You are a senior client experience consultant and business development specialist.
+
+Create a professional Feedback & Closing Questionnaire.
+
+This document will be sent to clients at the end of each engagement.
+
+It must gather actionable feedback, capture testimonial opportunities, and support ongoing business development.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a closing questionnaire that:
+
+• Captures genuine client satisfaction data
+• Identifies improvement opportunities
+• Gathers testimonials and reviews
+• Assesses referral likelihood
+• Identifies potential ongoing work
+• Creates a professional end to every engagement
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Overall Satisfaction
+
+Service Quality Assessment
+
+Communication & Responsiveness
+
+Value for Money
+
+Outcome Achievement
+
+What Worked Well
+
+What Could Be Improved
+
+Testimonial Consent & Capture
+
+Referral Likelihood (Net Promoter Style)
+
+Future Work Interest
+
+Permission to Use Feedback
+
+────────────────────────
+DESIGN REQUIREMENTS
+────────────────────────
+
+Create a branded, professional document.
+
+Use a rating scale format where appropriate.
+
+Include space for written responses.
+
+Easy to complete in under ten minutes.
+
+────────────────────────
+BUSINESS DEVELOPMENT INTELLIGENCE
+────────────────────────
+
+Review the client brief.
+
+Add questions specific to the services delivered.
+
+Identify opportunities to ask about adjacent services or future needs.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed feedback and closing questionnaire.
+
+Ready for PDF, DOCX, and digital form formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+
+  // ─── Payment Protection Pack ────────────────────────────────────────────────
+
+  {
+    document_type: 'invoice_terms_conditions',
+    document_label: 'Invoice Terms & Conditions',
+    generationPrompt: `You are a senior UK commercial solicitor and credit control specialist.
+
+Create comprehensive Invoice Terms & Conditions.
+
+These terms will appear on every invoice issued by the business.
+
+They must be legally enforceable under England & Wales law and protect the business's revenue.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create invoice terms that:
+
+• Establish unambiguous payment obligations
+• Define late payment consequences clearly
+• Protect the business's right to charge interest
+• Enable debt recovery cost recovery
+• Deter chargeback attempts
+• Reduce late payment incidents
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Payment Due Date
+
+Accepted Payment Methods
+
+Late Payment Interest
+
+Statutory Interest Rights
+
+Debt Recovery Costs
+
+Disputed Invoice Procedure
+
+Suspension of Services for Non-Payment
+
+Chargeback Policy
+
+Ownership Retention Until Full Payment
+
+Governing Law
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Late Payment of Commercial Debts (Interest) Act 1998.
+
+Include:
+
+• Statutory interest rate (currently 8% above Bank of England base rate)
+• Right to claim £40–£100 fixed debt recovery cost depending on invoice value
+• Right to claim reasonable debt recovery costs beyond the fixed fee
+
+Ensure compliance with England & Wales law.
+
+Do not include misleading legal claims.
+
+Do not overstate rights.
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Tailor the payment terms to the specific pricing model and service type.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed invoice terms and conditions.
+
+Formatted for inclusion on invoices and standalone use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'late_payment_policy',
+    document_label: 'Late Payment Policy',
+    generationPrompt: `You are a senior UK commercial solicitor, credit control specialist, and debt recovery expert.
+
+Create a comprehensive Late Payment Policy.
+
+This policy must protect the business's cash flow, be legally enforceable, and be suitable for publication on the business website and inclusion in client contracts.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a policy that:
+
+• Defines what constitutes late payment
+• Establishes escalation stages clearly
+• Protects the business's right to charge interest and costs
+• Enables suspension of services for non-payment
+• Supports legal recovery action if required
+• Deters late payment before it occurs
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Policy Statement
+
+Scope
+
+Payment Due Dates
+
+Grace Period (if any)
+
+Late Payment Definition
+
+Escalation Stage 1 — Reminder
+Escalation Stage 2 — Formal Notice
+Escalation Stage 3 — Final Demand
+Escalation Stage 4 — Legal Proceedings
+
+Late Payment Interest
+
+Debt Recovery Costs
+
+Suspension of Services
+
+Account Reinstatement
+
+Legal Proceedings
+
+Policy Review
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Late Payment of Commercial Debts (Interest) Act 1998.
+
+Include:
+
+• Statutory interest rate (8% above Bank of England base rate for business-to-business transactions)
+• Fixed debt recovery compensation (£40 for debts under £1,000; £70 for £1,000–£9,999; £100 for debts of £10,000 or more)
+• Right to reasonable additional recovery costs
+
+Ensure compliance with England & Wales law.
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adjust escalation timelines to the business's typical invoice values and client profile.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed late payment policy.
+
+Ready for PDF, DOCX, and website publication.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'payment_schedule_template',
+    document_label: 'Payment Schedule Template',
+    generationPrompt: `You are a senior commercial finance consultant and project billing specialist.
+
+Create a professional Payment Schedule Template.
+
+This template will be used for every client engagement where payment is structured across multiple milestones.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a payment schedule that:
+
+• Structures payments clearly across project phases
+• Protects cash flow throughout the engagement
+• Defines trigger conditions for each payment stage
+• Reduces payment disputes
+• Aligns with the project timeline
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Project Reference
+
+Client Details
+
+Total Engagement Value
+
+Deposit — Amount, Due Date, Conditions
+
+Progress Payment(s) — Amount, Due Date, Milestone Trigger
+
+Final Payment — Amount, Due Date, Delivery Conditions
+
+VAT Treatment
+
+Payment Method Details
+
+Late Payment Conditions
+
+Schedule Agreement & Sign-Off
+
+────────────────────────
+TEMPLATES TO INCLUDE
+────────────────────────
+
+Create three versions:
+
+1. Two-stage schedule (deposit + final payment)
+
+2. Three-stage schedule (deposit + midpoint + final payment)
+
+3. Monthly/recurring schedule template
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Include wording that:
+
+• Progress payments are due regardless of project status
+• Final payment is due before final delivery of work
+• Late payment interest applies as per invoice terms
+• Non-payment suspends further delivery
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return all three payment schedule templates.
+
+Ready for PDF and DOCX formatting.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'refund_policy_document',
+    document_label: 'Refund & Cancellation Policy',
+    generationPrompt: `You are a senior UK commercial solicitor specialising in consumer rights, digital services, and bespoke professional service contracts.
+
+Create a comprehensive Refund & Cancellation Policy.
+
+This policy must protect the business's revenue while remaining fair and compliant with UK consumer and commercial law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a policy that:
+
+• Protects revenue on bespoke and time-invested work
+• Addresses cancellation at different project stages
+• Handles digital services appropriately
+• Reduces chargeback risk
+• Remains commercially fair and legally defensible
+• Complies with the Consumer Rights Act 2015 where applicable
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Policy Overview
+
+Services Covered
+
+Right to Cancel (Consumer Rights Act 2015)
+
+Cancellation by Client — Pre-Commencement
+
+Cancellation by Client — Mid-Project
+
+Cancellation by Client — Near or Post-Completion
+
+Cancellation by the Business
+
+Bespoke Work Provisions
+
+Digital Services Provisions
+
+Deposit Refund Policy
+
+Partial Refund Framework
+
+Refund Process & Timescales
+
+Disputes
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Address the Consumer Rights Act 2015 clearly.
+
+Where relevant include:
+
+• Right to cancel within 14 days for distance selling (and how the business handles this for bespoke digital work)
+• Loss of cancellation right once work has commenced with consumer consent
+• Treatment of deposits as consideration for time reserved
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt the refund structure to the specific services and pricing model.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed refund and cancellation policy.
+
+Ready for PDF, DOCX, and website publication.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'deposit_cancellation_terms',
+    document_label: 'Deposit & Cancellation Terms',
+    generationPrompt: `You are a senior UK commercial solicitor specialising in service contracts and deposit protection.
+
+Create comprehensive Deposit & Cancellation Terms.
+
+These terms must protect the business's revenue when clients cancel and ensure deposits are legally retained.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create terms that:
+
+• Clearly establish non-refundable deposit status
+• Define cancellation windows with appropriate outcomes
+• Protect the business against client abandonment
+• Are legally enforceable under England & Wales law
+• Remain commercially fair
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Deposit Requirement
+
+Deposit Amount and Conditions
+
+Non-Refundable Status
+
+What the Deposit Secures
+
+Cancellation Windows:
+  — 14+ days before start
+  — 7–13 days before start
+  — Less than 7 days before start
+  — After work has commenced
+
+Client Abandonment Clause
+
+Rescheduling Policy
+
+Business Cancellation
+
+Consequences of Cancellation
+
+Payment of Outstanding Balance on Cancellation
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Establish the deposit as genuine consideration for time reserved.
+
+Address the Consumer Rights Act 2015 fairly.
+
+Include client abandonment provisions for situations where:
+
+• Client stops responding
+• Client fails to provide required information
+• Client delays project indefinitely
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt deposit percentages and cancellation windows to the business's typical project values and timescales.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed deposit and cancellation terms.
+
+Ready for PDF, DOCX, and contract inclusion.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'payment_tracking_template',
+    document_label: 'Payment Tracking Template',
+    generationPrompt: `You are a senior finance operations consultant and credit control specialist.
+
+Create a professional Payment Tracking Template.
+
+This template will be used by the business owner to track all outstanding invoices, monitor payment status, and manage credit control efficiently.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a tracking system that:
+
+• Gives instant visibility of all outstanding payments
+• Tracks invoice status from issue to receipt
+• Flags overdue invoices immediately
+• Supports escalation decisions
+• Maintains a clear payment history
+
+────────────────────────
+REQUIRED COLUMNS
+────────────────────────
+
+Invoice Reference Number
+
+Client Name
+
+Invoice Date
+
+Due Date
+
+Invoice Amount
+
+VAT Amount
+
+Total Due
+
+Payment Method
+
+Date Paid
+
+Amount Received
+
+Outstanding Balance
+
+Days Overdue
+
+Follow-Up Action
+
+Follow-Up Date
+
+Notes
+
+Status (Paid / Outstanding / Overdue / Disputed / Written Off)
+
+────────────────────────
+ADDITIONAL DELIVERABLES
+────────────────────────
+
+Include a summary dashboard section with:
+
+• Total invoiced (this month / this year)
+• Total received
+• Total outstanding
+• Total overdue
+• Count of outstanding invoices
+
+Include guidance notes on how to use the template.
+
+Include colour coding guidance for status categories.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return the complete payment tracking template with all sections.
+
+Ready for spreadsheet (Excel/Google Sheets) implementation.
+
+Include clear instructions for daily use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'chasing_payment_scripts',
+    document_label: 'Chasing Payment Scripts',
+    generationPrompt: `You are a senior UK commercial debt recovery solicitor, credit control specialist, and business communications consultant.
+
+Create a complete Chasing Payment Scripts Package — five professionally escalating scripts for recovering outstanding invoices.
+
+This package must balance professionalism with firmness, maximise payment recovery rates, and protect the business's legal position throughout.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a five-stage payment recovery sequence that:
+
+• Progressively increases pressure
+• Maintains professionalism throughout
+• Creates a strong legal paper trail
+• Maximises voluntary payment
+• Protects the right to pursue legal recovery if required
+
+────────────────────────
+SCRIPT 1 — FRIENDLY REMINDER
+────────────────────────
+
+Tone: Helpful, assuming oversight
+
+Purpose: First contact after due date passes
+
+Include:
+• Email subject line
+• Letter version
+• Email version
+
+Psychology: Assume non-payment is an error.
+
+────────────────────────
+SCRIPT 2 — FORMAL PAYMENT NOTICE
+────────────────────────
+
+Tone: Firm, professional
+
+Purpose: Escalate after no response to Script 1
+
+Include:
+• Email subject line
+• Letter version
+• Email version
+
+Reference:
+• Original invoice
+• Previous reminder
+• Payment terms
+• Consequences of continued non-payment
+
+────────────────────────
+SCRIPT 3 — FINAL PAYMENT DEMAND
+────────────────────────
+
+Tone: Direct, serious
+
+Purpose: Final attempt before formal action
+
+Include:
+• Email subject line
+• Letter version
+• Email version
+
+Reference:
+• All prior communications
+• Late payment interest accruing
+• Debt recovery costs
+• Clear final deadline
+
+────────────────────────
+SCRIPT 4 — LETTER BEFORE ACTION
+────────────────────────
+
+Tone: Formal legal tone
+
+Purpose: Final step before legal proceedings
+
+This must be a proper Letter Before Action (LBA) suitable for use before County Court proceedings.
+
+Include:
+• Full formal letter
+
+Reference:
+• Late Payment of Commercial Debts (Interest) Act 1998
+• Specific amount owed including interest
+• Final payment deadline
+• County Court proceedings warning
+• Debt recovery costs warning
+
+────────────────────────
+SCRIPT 5 — CLIENT GHOSTING / ABANDONED DEBT
+────────────────────────
+
+Tone: Firm, factual
+
+Purpose: For situations where client has stopped responding
+
+Include:
+• Email version
+• Letter version
+
+Reference:
+• Work completed
+• Multiple unanswered contact attempts
+• Final opportunity before formal escalation
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Late Payment of Commercial Debts (Interest) Act 1998 in Scripts 3 and 4.
+
+Do NOT make threats that cannot be carried out.
+
+Do NOT overstate legal rights.
+
+Do NOT use aggressive or intimidating language.
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Ensure the tone and language match the business's brand voice.
+
+Adapt the scripts to the typical client profile and invoice values.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return all five scripts fully written.
+
+Ready for immediate use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'chargeback_response_templates',
+    document_label: 'Chargeback Response Templates',
+    generationPrompt: `You are a senior commercial solicitor, disputes specialist, and payment fraud consultant.
+
+Create a comprehensive Chargeback Response Templates Package.
+
+These templates will be used by the business to dispute card payment chargebacks and protect revenue from fraudulent or unfair disputes.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create response templates that:
+
+• Present the strongest possible defence against chargebacks
+• Structure evidence clearly and professionally
+• Demonstrate contract compliance and service delivery
+• Increase chargeback dispute success rates
+• Protect the business's payment processing standing
+
+────────────────────────
+TEMPLATE 1 — STRIPE DISPUTE RESPONSE
+────────────────────────
+
+Structured for Stripe's dispute submission format.
+
+Include:
+• Introduction statement
+• Contract summary section
+• Service delivery evidence section
+• Timeline of events
+• Evidence checklist
+• Closing statement
+
+────────────────────────
+TEMPLATE 2 — CARD SCHEME DISPUTE RESPONSE
+────────────────────────
+
+Suitable for Visa and Mastercard disputes via the card issuer.
+
+Include:
+• Formal response letter
+• Contract terms summary
+• Proof of delivery section
+• Client communications summary
+• Supporting evidence list
+
+────────────────────────
+TEMPLATE 3 — PAYPAL DISPUTE RESPONSE
+────────────────────────
+
+Structured for PayPal's dispute and claim process.
+
+Include:
+• Case summary
+• Evidence narrative
+• Timeline section
+• Supporting documents list
+
+────────────────────────
+EVIDENCE GUIDANCE
+────────────────────────
+
+Include a standalone Evidence Guidance Section covering:
+
+• What evidence to gather for each dispute type
+• How to present evidence effectively
+• Common chargeback reasons and how to counter each
+
+────────────────────────
+LEGAL & COMPLIANCE REQUIREMENTS
+────────────────────────
+
+All templates must:
+
+• Be factual and professional
+• Reference the signed contract
+• Reference proof of delivery
+• Not contain exaggerations or false claims
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return all three templates and the evidence guidance section.
+
+Ready for immediate use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+
+  // ─── Copyright & Licensing Pack ─────────────────────────────────────────────
+
+  {
+    document_type: 'copyright_notice_ip_policy',
+    document_label: 'Copyright Notice & IP Policy',
+    generationPrompt: `You are a senior UK intellectual property solicitor specialising in copyright, creative industries, and digital content.
+
+Create a comprehensive Copyright Notice & Intellectual Property Policy.
+
+This document must protect the business's creative output and be legally enforceable under England & Wales law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an IP policy that:
+
+• Asserts copyright ownership clearly and unambiguously
+• Defines permitted and prohibited uses of deliverables
+• Establishes consequences for unauthorised use
+• Protects the business's commercial interests
+• Applies to all work produced by or for the business
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Copyright Ownership Statement
+
+Works Covered by This Policy
+
+Permitted Uses
+
+Prohibited Uses
+
+Licence Grant (upon full payment)
+
+Conditions of Licence
+
+Third-Party Assets
+
+Moral Rights
+
+Breach of Copyright
+
+Reporting Infringement
+
+Consequences & Remedies
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Copyright, Designs and Patents Act 1988 (CDPA 1988).
+
+Address:
+
+• Automatic copyright in original creative works
+• Duration of copyright protection
+• Moral rights of the creator
+• Consequences of infringement
+• Licences vs assignment distinction
+
+Ensure compliance with England & Wales law.
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt the policy to the specific types of work produced by this business.
+
+Address the most relevant IP risks for this industry.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed copyright notice and IP policy.
+
+Ready for PDF, DOCX, and website publication.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'content_licensing_agreement',
+    document_label: 'Content Licensing Agreement',
+    generationPrompt: `You are a senior UK intellectual property solicitor specialising in content licensing and creative industry agreements.
+
+Create a comprehensive Content Licensing Agreement.
+
+This agreement will govern how clients may use content and deliverables produced by the business.
+
+It must be legally enforceable under England & Wales law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a licensing agreement that:
+
+• Clearly defines what is being licensed
+• Specifies the scope, territory, and duration of the licence
+• Lists permitted and prohibited uses
+• Protects the business's underlying IP rights
+• Establishes payment conditions for the licence
+• Defines consequences for breach
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Definitions
+
+Licence Grant
+
+Scope of Licence:
+  — Permitted Territory
+  — Permitted Duration
+  — Permitted Media & Channels
+  — Permitted Uses
+
+Restrictions & Prohibited Uses
+
+Moral Rights
+
+Attribution Requirements
+
+Payment Conditions
+
+Modifications & Derivative Works
+
+Sub-licensing
+
+Termination
+
+Consequences of Breach
+
+Surviving Obligations
+
+Governing Law
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Copyright, Designs and Patents Act 1988.
+
+Distinguish clearly between a licence (permission to use) and an assignment (transfer of ownership).
+
+Address moral rights and whether the creator has asserted them.
+
+Ensure compliance with England & Wales law.
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt the licensing scope to the specific types of content produced.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed content licensing agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'image_media_usage_rights',
+    document_label: 'Image & Media Usage Rights',
+    generationPrompt: `You are a senior UK intellectual property solicitor and media licensing specialist.
+
+Create a comprehensive Image & Media Usage Rights document.
+
+This document will govern how clients and third parties may use images, videos, audio, and other media created or supplied by the business.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a usage rights document that:
+
+• Defines precisely what can and cannot be done with media assets
+• Protects the creator's copyright
+• Distinguishes between personal and commercial use
+• Addresses digital and print permissions separately
+• Covers social media usage specifically
+• Prevents unauthorised distribution
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Media Covered by This Agreement
+
+Personal Use Licence
+
+Commercial Use Licence
+
+Print Usage Rights
+
+Digital & Online Usage Rights
+
+Social Media Usage Rights
+
+Editorial Usage
+
+Advertising & Promotional Use
+
+Broadcast Rights
+
+Modifications & Editing
+
+Model Release & Property Release Status
+
+Third-Party Licensing Restrictions
+
+Duration of Rights
+
+Geographic Territory
+
+Expiry & Renewal
+
+Breach & Consequences
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Copyright, Designs and Patents Act 1988.
+
+Address:
+
+• Model releases where relevant
+• Property releases where relevant
+• Stock image licensing distinctions
+• Reverse engineering or AI training restrictions (where applicable)
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt to the specific types of media produced by this business (photography, video, graphic design, etc.).
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed image and media usage rights document.
+
+Ready for PDF, DOCX, and delivery to clients.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'work_for_hire_agreement',
+    document_label: 'Work-for-Hire Agreement',
+    generationPrompt: `You are a senior UK intellectual property solicitor specialising in commissioned work and copyright assignment.
+
+Create a comprehensive Work-for-Hire Agreement.
+
+This agreement must clearly establish IP ownership when the business creates commissioned work for clients.
+
+It must be legally enforceable under England & Wales law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an agreement that:
+
+• Clarifies who owns the intellectual property in commissioned work
+• Documents the consideration (payment) for any IP transfer
+• Addresses moral rights appropriately
+• Protects the business's portfolio rights
+• Prevents future IP ownership disputes
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Definitions
+
+Parties
+
+Description of Work
+
+IP Ownership (pre and post delivery)
+
+Assignment of Rights (if applicable):
+  — What is being assigned
+  — Consideration
+  — Warranty of ownership
+
+Retained Rights of the Creator
+
+Portfolio Rights
+
+Moral Rights
+
+Source Files & Working Materials
+
+Delivery Conditions
+
+Payment Conditions
+
+Representations & Warranties
+
+Consequences of Breach
+
+Governing Law
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Copyright, Designs and Patents Act 1988.
+
+Address:
+
+• Default copyright position in the UK (creator owns unless assigned)
+• Assignment requires written agreement and consideration
+• Moral rights (right of attribution, right of integrity)
+• Distinction between employee and contractor positions
+
+Do NOT assign moral rights as these cannot be assigned under UK law — only waived.
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt to the specific creative services provided.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed work-for-hire agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'brand_usage_guidelines',
+    document_label: 'Brand Usage Guidelines',
+    generationPrompt: `You are a senior brand strategist, intellectual property consultant, and business communications specialist.
+
+Create comprehensive Brand Usage Guidelines.
+
+These guidelines will govern how third parties — clients, partners, affiliates, press, and the public — may use the business's brand assets.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create guidelines that:
+
+• Protect the business's brand integrity
+• Define exactly what third parties may and may not do
+• Cover all brand asset types (logo, colours, typography, imagery, tone)
+• Establish approval processes for brand usage
+• Prevent unauthorised or damaging use of the brand
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Brand Overview
+
+Brand Assets Covered:
+  — Primary Logo
+  — Secondary Logo Variations
+  — Brand Colours (with hex codes)
+  — Typography
+  — Photography Style
+  — Tone of Voice
+
+Permitted Uses
+
+Prohibited Uses
+
+Logo Usage Rules:
+  — Minimum size
+  — Clear space
+  — Permitted backgrounds
+  — Colour variants
+  — Do's and Don'ts
+
+Co-Branding Rules
+
+Press & Media Usage
+
+Social Media Tagging Policy
+
+Approval Process for Third-Party Use
+
+Breach & Consequences
+
+Brand Asset Request Process
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Use the actual brand colours, fonts, and visual identity described.
+
+Create guidelines that feel genuinely specific to this business.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed brand usage guidelines.
+
+Ready for PDF, DOCX, and website publication.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'nda_agreement',
+    document_label: 'Non-Disclosure Agreement (NDA)',
+    generationPrompt: `You are a senior UK commercial solicitor specialising in confidentiality agreements and business contracts.
+
+Create a comprehensive Non-Disclosure Agreement (NDA).
+
+This agreement must protect confidential business information and be legally enforceable under England & Wales law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an NDA that:
+
+• Clearly defines confidential information
+• Establishes binding confidentiality obligations
+• Permits necessary disclosures only
+• Survives termination of the relationship
+• Enables legal remedies for breach
+• Is suitable for use with clients, suppliers, and partners
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Parties
+
+Recitals
+
+Definitions:
+  — Confidential Information
+  — Permitted Purpose
+  — Recipient
+  — Disclosing Party
+
+Confidentiality Obligations
+
+Permitted Disclosures (e.g. legal requirements, professional advisers)
+
+Excluded Information
+
+Duration of Obligations
+
+Permitted Use
+
+Return & Destruction of Materials
+
+Remedies for Breach
+
+No Licence Granted
+
+Independent Contractor Status
+
+Entire Agreement
+
+Governing Law
+
+Signature Blocks
+
+────────────────────────
+VERSIONS TO INCLUDE
+────────────────────────
+
+Create two versions:
+
+1. Mutual NDA (both parties share and receive confidential information)
+
+2. One-Way NDA (disclosing party to recipient only)
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Draft in accordance with England & Wales law.
+
+Ensure consideration is present (reference to the business relationship).
+
+Include injunctive relief as a remedy, acknowledging damages may be inadequate.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return both NDA versions fully drafted.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'ip_assignment_agreement',
+    document_label: 'IP Assignment Agreement',
+    generationPrompt: `You are a senior UK intellectual property solicitor specialising in copyright assignment and creative industry transactions.
+
+Create a comprehensive IP Assignment Agreement.
+
+This agreement will formally transfer intellectual property rights from the creator to the client upon specified conditions.
+
+It must be legally enforceable under England & Wales law.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create an assignment agreement that:
+
+• Formally transfers agreed IP rights to the client
+• Documents appropriate consideration for the assignment
+• Clearly limits what is and is not being assigned
+• Retains portfolio rights for the creator where appropriate
+• Addresses moral rights appropriately
+• Is legally valid under UK copyright law
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Parties
+
+Background & Recitals
+
+Definitions
+
+Assigned Works
+
+IP Rights Being Assigned
+
+Excluded Rights
+
+Consideration
+
+Warranties of Ownership & Originality
+
+Third-Party Content
+
+Moral Rights (Waiver where applicable)
+
+Portfolio & Attribution Rights
+
+Delivery Conditions
+
+Payment Conditions
+
+Indemnity
+
+Governing Law
+
+Execution & Signatures
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Copyright, Designs and Patents Act 1988.
+
+Include:
+
+• Assignment must be in writing and signed to be valid under UK law (s.90 CDPA 1988)
+• Future copyright can be assigned if sufficiently defined
+• Moral rights cannot be assigned but can be waived (s.87 CDPA 1988)
+• Consideration is required for a binding assignment
+
+────────────────────────
+BUSINESS-SPECIFIC CUSTOMISATION
+────────────────────────
+
+Review the client brief.
+
+Adapt to the specific creative services and IP types relevant to this business.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed IP assignment agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'cease_desist_template',
+    document_label: 'Cease & Desist Template',
+    generationPrompt: `You are a senior UK intellectual property solicitor specialising in copyright infringement, brand protection, and enforcement letters.
+
+Create a professional Cease & Desist Letter Template for IP infringement situations.
+
+This template must be legally robust, professionally drafted, and effective in stopping infringing activity.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a cease and desist template that:
+
+• Clearly identifies the infringing act
+• States the legal basis for the claim
+• Makes specific, achievable demands
+• Sets a firm but reasonable deadline
+• Reserves all legal rights
+• Deters further infringement without unnecessary escalation
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Without Prejudice Header (where appropriate)
+
+Addressee Details
+
+Introduction & Identification of Sender
+
+Identification of Infringing Work or Act
+
+Legal Basis for the Claim
+
+Demands:
+  — Immediate cessation of infringement
+  — Removal of infringing content
+  — Destruction of infringing copies
+  — Account of profits (where appropriate)
+  — Written confirmation of compliance
+
+Deadline for Compliance
+
+Reservation of Rights
+
+Consequences of Non-Compliance
+
+────────────────────────
+VERSIONS TO INCLUDE
+────────────────────────
+
+Create three versions:
+
+1. Copyright infringement (use of creative work without licence)
+
+2. Brand / trademark infringement (unauthorised use of business name, logo, brand)
+
+3. Confidentiality / NDA breach
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Copyright, Designs and Patents Act 1988 for copyright claims.
+
+Do NOT make threats that cannot be carried out.
+
+Do NOT include false statements.
+
+The letter must be:
+
+• Factual
+• Specific
+• Professional
+• Measured
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return all three versions of the cease and desist template.
+
+Ready for PDF and DOCX use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+
+  // ─── GDPR & Data Retention Deep Pack ────────────────────────────────────────
+
+  {
+    document_type: 'comprehensive_privacy_policy',
+    document_label: 'Comprehensive Privacy Policy',
+    generationPrompt: `You are a UK GDPR expert, ICO compliance specialist, and data protection solicitor.
+
+Create a comprehensive, ICO-aligned Privacy Policy that goes significantly beyond the standard foundation-level policy.
+
+This document must meet the full requirements of UK GDPR Articles 13 and 14 and be suitable for sophisticated regulatory scrutiny.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a comprehensive privacy policy that:
+
+• Meets every UK GDPR Article 13/14 requirement
+• Covers all lawful bases for processing in detail
+• Addresses legitimate interests with proper assessment
+• Covers automated decision-making and profiling
+• Addresses international data transfers post-Brexit
+• Is suitable for ICO audit and professional due diligence
+• Goes beyond the basic privacy policy included in the Business Foundations Pack
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Data Controller Identity & Contact Details
+
+DPO Contact (or explanation of why not required)
+
+Categories of Personal Data Collected
+
+Special Category Data
+
+How Data is Collected
+
+All Lawful Bases for Processing (with specific justifications)
+
+Legitimate Interests Assessments Summary
+
+Purposes of Processing
+
+Automated Decision-Making & Profiling
+
+Data Sharing:
+  — Processors
+  — Third Parties
+  — Legal Obligations
+
+International Transfers (UK Adequacy Decisions)
+
+Data Retention Periods by Category
+
+Data Security Measures
+
+Individual Rights (all 8 rights under UK GDPR)
+
+Complaints to the ICO
+
+Cookies & Tracking Technologies
+
+Analytics & Advertising
+
+Children's Data Policy
+
+Marketing Communications & Consent
+
+Updates to This Policy
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR and Data Protection Act 2018.
+
+Do NOT reference EU GDPR as the primary legislation (UK GDPR applies post-Brexit).
+
+Reference ICO guidance where relevant.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed comprehensive privacy policy.
+
+Ready for PDF, DOCX, and website publication.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'data_retention_schedule',
+    document_label: 'Data Retention Schedule',
+    generationPrompt: `You are a UK GDPR specialist and data governance consultant.
+
+Create a comprehensive Data Retention Schedule.
+
+This document must define how long each category of personal data is retained, the justification for each period, how data is deleted, and when the schedule is reviewed.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a retention schedule that:
+
+• Covers all categories of personal data processed by the business
+• Justifies each retention period with a lawful basis
+• Defines deletion procedures for each category
+• Meets the UK GDPR data minimisation and storage limitation principles
+• Supports ICO audit readiness
+• Is practical for a sole trader or small business to maintain
+
+────────────────────────
+REQUIRED COLUMNS
+────────────────────────
+
+Data Category
+
+Description of Data
+
+Purpose of Processing
+
+Lawful Basis
+
+Retention Period
+
+Justification for Period
+
+Trigger for Deletion
+
+Deletion Method
+
+Responsible Party
+
+Review Date
+
+────────────────────────
+DATA CATEGORIES TO COVER
+────────────────────────
+
+Include retention schedules for:
+
+• Client contact and identity data
+• Contract and engagement records
+• Financial and invoicing records (HMRC requirements)
+• Bank and payment records
+• Marketing and email lists
+• Website analytics
+• Cookies and tracking data
+• Employee / contractor records (if applicable)
+• Enquiry and prospect data
+• Website contact form submissions
+• Social media interactions
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR Article 5(1)(e) — storage limitation principle.
+
+Reference relevant non-GDPR legal retention requirements:
+
+• Companies Act 2006 (accounting records — 6 years)
+• HMRC requirements (tax records — 5-6 years)
+• Contracts Act limitation periods (6 years for simple contracts; 12 years for deeds)
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return the completed data retention schedule.
+
+Ready for PDF, DOCX, and spreadsheet implementation.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'data_processing_agreement',
+    document_label: 'Data Processing Agreement (DPA)',
+    generationPrompt: `You are a UK GDPR solicitor and data protection specialist.
+
+Create a comprehensive Data Processing Agreement (DPA).
+
+This agreement must comply fully with UK GDPR Article 28 and be suitable for use where the business processes personal data on behalf of a controller, or engages processors to process data on its behalf.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a DPA that:
+
+• Meets every UK GDPR Article 28 requirement
+• Covers both directions (as processor and as controller)
+• Provides clear processing instructions
+• Establishes security and breach notification obligations
+• Governs sub-processor relationships
+• Supports ICO audit readiness
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Parties & Recitals
+
+Definitions
+
+Subject Matter of Processing
+
+Duration of Processing
+
+Nature of Processing
+
+Purpose of Processing
+
+Type of Personal Data
+
+Categories of Data Subjects
+
+Controller's Obligations
+
+Processor's Obligations:
+  — Process only on written instructions
+  — Confidentiality obligations on staff
+  — Appropriate technical and organisational security measures
+  — Sub-processor restrictions
+  — Data subject rights assistance
+  — Deletion / return at end of relationship
+  — Audit assistance
+
+Sub-Processors:
+  — Current approved list
+  — Prior authorisation requirement for new sub-processors
+  — Sub-processor DPA requirement
+
+Data Subject Rights Assistance
+
+Data Breach Notification (72 hours to controller)
+
+Data Protection Impact Assessments
+
+International Transfers
+
+Audit Rights
+
+Liability
+
+Term & Termination
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR Article 28 throughout.
+
+Reference Data Protection Act 2018 where appropriate.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed data processing agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'cookie_consent_implementation',
+    document_label: 'Cookie Consent Implementation Guide',
+    generationPrompt: `You are a UK GDPR compliance specialist, PECR expert, and web privacy consultant.
+
+Create a comprehensive Cookie Consent Implementation Guide.
+
+This document must give the business a practical, step-by-step guide for implementing compliant cookie consent on their website.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a guide that:
+
+• Explains PECR requirements clearly
+• Categorises cookies accurately
+• Provides a compliant consent mechanism
+• Gives practical implementation steps
+• Includes a ready-to-use cookie policy
+• Is achievable for a non-technical business owner
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+What Are Cookies & Why They Matter
+
+UK Legal Requirements (PECR + UK GDPR)
+
+Cookie Categorisation:
+  — Strictly Necessary Cookies (no consent required)
+  — Functional / Preference Cookies
+  — Analytics Cookies
+  — Marketing / Advertising Cookies
+
+Consent Requirements Per Category
+
+What Valid Consent Looks Like
+
+What Consent Banners Must NOT Do (dark patterns)
+
+Implementation Steps for Common Platforms:
+  — WordPress / WooCommerce
+  — Squarespace
+  — Wix
+  — Custom-built websites
+
+Cookie Audit Process
+
+Cookie Policy Template
+
+Consent Record-Keeping
+
+When to Review Your Cookie Implementation
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference the Privacy and Electronic Communications Regulations 2003 (PECR) as amended.
+
+Reference UK GDPR where processing of personal data is involved.
+
+Reference ICO guidance on cookies.
+
+Address the common misconception that consent banners alone are sufficient — the consent mechanism itself must also be compliant.
+
+────────────────────────
+INCLUDED COOKIE POLICY
+────────────────────────
+
+Include a ready-to-use Cookie Policy document as an appendix.
+
+Tailored to the client's specific website and cookie types.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return the complete cookie consent implementation guide and cookie policy.
+
+Ready for PDF and DOCX format.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'subject_access_request_template',
+    document_label: 'Subject Access Request Template',
+    generationPrompt: `You are a UK GDPR compliance specialist and data rights consultant.
+
+Create a comprehensive Subject Access Request (SAR) Response Template Package.
+
+This package must give the business everything needed to respond to SARs correctly, within statutory timescales, and in a way that satisfies ICO requirements.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a SAR package that:
+
+• Meets all UK GDPR Article 15 requirements
+• Includes an acknowledgement letter
+• Covers identity verification procedures
+• Provides a response letter template
+• Addresses exemptions appropriately
+• Includes a timeline tracking tool
+• Protects the business from ICO complaints
+
+────────────────────────
+REQUIRED DOCUMENTS
+────────────────────────
+
+DOCUMENT 1 — SAR ACKNOWLEDGEMENT LETTER
+
+Sent immediately upon receiving a SAR.
+
+Include:
+• Confirmation of receipt
+• Identity verification request (if needed)
+• 30-day response timeline
+• Contact details for queries
+
+────────────────────────
+
+DOCUMENT 2 — IDENTITY VERIFICATION PROCESS
+
+Step-by-step guide for verifying the requester's identity.
+
+Include:
+• What documents to request
+• How to handle refusal to verify
+• Timeline implications of verification delay
+
+────────────────────────
+
+DOCUMENT 3 — SAR RESPONSE LETTER TEMPLATE
+
+Full response to the SAR once information is compiled.
+
+Include:
+• Introduction and legal basis
+• Data categories provided
+• Why certain data may not be provided (with exemptions)
+• How data is used
+• Retention periods
+• Third parties data is shared with
+• Rights of the data subject
+• Right to complain to the ICO
+
+────────────────────────
+
+DOCUMENT 4 — SAR TIMELINE TRACKER
+
+Simple tracking document for managing multiple SARs.
+
+Include columns for:
+• Date received
+• Requester identity
+• Verification status
+• Response deadline
+• Extensions (if applicable)
+• Status
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR Article 15.
+
+Address:
+• 30 calendar day response deadline
+• Extension to 3 months for complex requests (with notice within first month)
+• Right to request reasonable fee for manifestly unfounded or excessive requests
+• Exemptions under Schedule 2 of the Data Protection Act 2018
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return all four documents.
+
+Ready for PDF, DOCX, and immediate use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'data_breach_notification_template',
+    document_label: 'Data Breach Notification Template',
+    generationPrompt: `You are a UK GDPR compliance specialist and data incident response consultant.
+
+Create a comprehensive Data Breach Notification Template Package.
+
+This package must enable the business to respond to personal data breaches correctly, notify the ICO within 72 hours where required, and communicate with affected individuals appropriately.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a breach notification package that:
+
+• Enables fast, structured breach assessment
+• Supports ICO notification within 72 hours where required
+• Provides individual notification templates
+• Creates an auditable breach record
+• Protects the business from ICO enforcement action
+• Meets all UK GDPR Articles 33 and 34 requirements
+
+────────────────────────
+REQUIRED DOCUMENTS
+────────────────────────
+
+DOCUMENT 1 — BREACH ASSESSMENT CHECKLIST
+
+For use immediately when a potential breach is identified.
+
+Include:
+• What constitutes a reportable breach
+• Assessment questions (type, cause, data involved, individuals affected)
+• Risk scoring framework
+• Decision tree: report to ICO? Yes/No/Maybe
+
+────────────────────────
+
+DOCUMENT 2 — ICO NOTIFICATION TEMPLATE
+
+For reportable breaches (72-hour deadline from awareness).
+
+Include all mandatory fields:
+• Nature of the breach
+• Categories of data involved
+• Approximate number of individuals affected
+• Likely consequences
+• Measures taken or proposed
+
+────────────────────────
+
+DOCUMENT 3 — INDIVIDUAL NOTIFICATION LETTER TEMPLATE
+
+For breaches likely to result in high risk to individuals.
+
+Include:
+• Clear description of the breach
+• Likely consequences
+• Measures taken
+• Steps individuals can take to protect themselves
+• Contact details for further information
+• ICO complaint rights
+
+────────────────────────
+
+DOCUMENT 4 — BREACH LOG TEMPLATE
+
+For recording all breaches (reportable and non-reportable).
+
+Mandatory under UK GDPR Article 33(5).
+
+Include columns for:
+• Date of breach
+• Nature of breach
+• Data categories affected
+• Individuals affected
+• Risk assessment outcome
+• ICO notified? (Y/N)
+• Individuals notified? (Y/N)
+• Remedial action
+• Lessons learned
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR Articles 33 and 34.
+
+Reference Data Protection Act 2018.
+
+Address:
+• 72-hour notification deadline to ICO
+• "Without undue delay" notification to individuals for high-risk breaches
+• Obligation to maintain a breach log regardless of whether ICO notification is required
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return all four documents.
+
+Ready for PDF, DOCX, and immediate use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'dpia_template',
+    document_label: 'Data Protection Impact Assessment (DPIA)',
+    generationPrompt: `You are a UK GDPR compliance specialist and data protection consultant.
+
+Create a comprehensive Data Protection Impact Assessment (DPIA) Template.
+
+This template must meet the requirements of UK GDPR Article 35 and ICO DPIA guidance.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a DPIA template that:
+
+• Meets every UK GDPR Article 35 requirement
+• Is practical for a sole trader or small business to complete
+• Identifies high-risk processing activities
+• Assesses and mitigates privacy risks systematically
+• Supports DPO consultation where required
+• Creates an auditable record of privacy risk management
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+PART 1 — PROJECT / PROCESSING DESCRIPTION
+
+Purpose of the processing
+
+Description of the processing operation
+
+Scope and context
+
+Data categories and volumes
+
+Legal basis and necessity
+
+Proportionality assessment
+
+────────────────────────
+
+PART 2 — NECESSITY & PROPORTIONALITY
+
+Processing purpose and necessity
+
+Minimum data necessary
+
+Lawful basis
+
+Balancing test (for legitimate interests)
+
+────────────────────────
+
+PART 3 — RISK IDENTIFICATION
+
+Risk identification matrix
+
+For each risk:
+  — Description
+  — Likelihood (1-5)
+  — Severity (1-5)
+  — Risk Score
+  — Existing Controls
+  — Residual Risk
+
+────────────────────────
+
+PART 4 — RISK MITIGATION MEASURES
+
+Proposed measures for each identified risk
+
+Responsibility
+
+Implementation timeline
+
+Residual risk after mitigation
+
+Acceptance decision
+
+────────────────────────
+
+PART 5 — SIGN-OFF
+
+Data controller sign-off
+
+DPO advice (if applicable)
+
+Outcome: Proceed / Proceed with mitigations / Do not proceed
+
+Review date
+
+────────────────────────
+
+APPENDIX — WHEN IS A DPIA REQUIRED?
+
+Practical guide covering:
+
+• List of processing types requiring mandatory DPIA under ICO guidance
+• Voluntary DPIA assessment checklist for lower-risk processing
+• Common DPIA triggers for small businesses
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR Article 35.
+
+Reference ICO DPIA guidance.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return the complete DPIA template and appendix.
+
+Ready for PDF, DOCX, and practical use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'marketing_consent_management',
+    document_label: 'Marketing Consent Management Procedures',
+    generationPrompt: `You are a UK GDPR compliance specialist, direct marketing expert, and PECR consultant.
+
+Create comprehensive Marketing Consent Management Procedures.
+
+These procedures must enable the business to obtain, record, and manage marketing consent lawfully — and comply with both UK GDPR and PECR requirements for electronic marketing.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create procedures that:
+
+• Define what constitutes valid marketing consent under UK GDPR and PECR
+• Provide practical consent collection mechanisms
+• Establish consent record-keeping procedures
+• Define withdrawal processes
+• Address soft opt-in for existing customers
+• Protect the business from ICO enforcement action for marketing violations
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+What is Marketing Consent?
+
+UK GDPR vs PECR Requirements
+
+When is Consent Required?
+
+The Soft Opt-In Rule for Existing Customers
+
+What Valid Marketing Consent Looks Like:
+  — Freely given
+  — Specific
+  — Informed
+  — Unambiguous
+
+Consent Collection Methods:
+  — Website forms
+  — In-person collection
+  — Telephone
+  — Physical forms
+
+Consent Wording Templates (ready to use)
+
+Consent Record-Keeping Requirements
+
+The Consent Register Template
+
+Withdrawal of Consent:
+  — Unsubscribe mechanism
+  — Processing withdrawal requests
+  — Timescales
+  — Suppression lists
+
+Preference Management
+
+Marketing Channel-Specific Rules:
+  — Email marketing
+  — SMS marketing
+  — Post
+  — Telephone (TPS / CTPS considerations)
+  — Social media retargeting
+
+Review & Audit Schedule
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR Article 7 (conditions for consent).
+
+Reference PECR Regulation 22 (electronic mail marketing).
+
+Reference the Telephone Preference Service (TPS) and Corporate Telephone Preference Service (CTPS) rules.
+
+Reference ICO direct marketing guidance.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return the complete marketing consent management procedures.
+
+Ready for PDF, DOCX, and internal policy use.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
+  {
+    document_type: 'third_party_data_sharing_agreement',
+    document_label: 'Third-Party Data Sharing Agreement',
+    generationPrompt: `You are a UK GDPR solicitor and data governance specialist.
+
+Create a comprehensive Third-Party Data Sharing Agreement.
+
+This agreement must govern the lawful sharing of personal data with third parties and comply fully with UK GDPR and the ICO's Data Sharing Code of Practice.
+
+────────────────────────
+PRIMARY OBJECTIVE
+────────────────────────
+
+Create a data sharing agreement that:
+
+• Establishes a lawful basis for the data share
+• Defines the purpose and limits of sharing
+• Protects individuals' privacy rights
+• Establishes security expectations
+• Allocates breach responsibility clearly
+• Meets ICO Data Sharing Code of Practice requirements
+
+────────────────────────
+REQUIRED SECTIONS
+────────────────────────
+
+Parties
+
+Background & Purpose
+
+Definitions
+
+Personal Data Being Shared:
+  — Categories of data
+  — Data subjects covered
+  — Volumes
+
+Lawful Basis for Sharing
+
+Purpose Limitation
+
+Data Minimisation
+
+Recipient's Use of Data
+
+Restrictions on Further Sharing
+
+Data Retention by Recipient
+
+Security Requirements
+
+Data Subject Rights Obligations
+
+Breach Notification Obligations
+
+Audit Rights
+
+Liability & Indemnity
+
+Term & Termination
+
+Return / Destruction of Data
+
+Governing Law
+
+────────────────────────
+LEGAL REQUIREMENTS
+────────────────────────
+
+Reference UK GDPR — specifically:
+
+• Article 5 (principles)
+• Article 6 (lawful basis)
+• Article 28 (where the recipient acts as processor)
+• Articles 44-49 (international transfers, if applicable)
+
+Reference the ICO Data Sharing Code of Practice.
+
+Address the distinction between controller-to-controller sharing and controller-to-processor sharing.
+
+────────────────────────
+OUTPUT
+────────────────────────
+
+Return only the completed third-party data sharing agreement.
+
+Ready for PDF, DOCX, and digital signature.
+
+No explanations.
+
+No notes.
+
+No placeholders.
+`,
+    agentInstructions: SHARED_AGENT_INSTRUCTIONS,
+  },
 ];
 
 // ─── Social Media Generation Prompt ─────────────────────────────────────────

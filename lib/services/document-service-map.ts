@@ -135,6 +135,12 @@ export function getServiceTier(serviceId: string): ServiceTier | null {
   return getServiceById(serviceId)?.tier ?? null;
 }
 
+/** Whether a service is in the operations tier. */
+export { isOperationsService };
+
+/** Whether a service is in the industry tier. */
+export { isIndustryService };
+
 /** Group an array of documents by their owning service. */
 function groupDocumentsByService<T extends { document_type: string }>(
   documents: T[],
