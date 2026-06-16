@@ -1,7 +1,7 @@
 // Per-service status derivation — computes intake, delivery, and next-step
 // information for each purchased service without requiring a DB migration.
 
-import { getServiceById, isSubscriptionService } from './service-catalog';
+import { getServiceById, isSubscriptionService, type ServiceTier } from './service-catalog';
 import { getDocumentTypesForService } from './document-service-map';
 import type { LucideIcon } from 'lucide-react';
 import { FileText, Clock, FolderOpen, RefreshCw } from 'lucide-react';
@@ -9,6 +9,7 @@ import { FileText, Clock, FolderOpen, RefreshCw } from 'lucide-react';
 export interface ServiceDeliveryStatus {
   serviceId: string;
   serviceName: string;
+  tier: ServiceTier | null;
   intakeComplete: boolean;
   deliveryStatus: 'not_started' | 'in_progress' | 'delivered';
   documentsReady: number;
@@ -74,6 +75,7 @@ export function getServiceDeliveryStatuses(params: {
     return {
       serviceId,
       serviceName,
+      tier: service?.tier ?? null,
       intakeComplete,
       deliveryStatus,
       documentsReady,
@@ -104,7 +106,14 @@ export function getNextStepForService(status: ServiceDeliveryStatus): ServiceNex
   // Tier-aware label for deliverables
   const tierLabel = service?.tier === 'operations' ? 'operations documents'
     : service?.tier === 'industry' ? 'industry documents'
+    : service?.tier === 'foundation' ? 'Foundation documents'
     : 'deliverables';
+
+  // Capitalize tier name for display
+  const tierDisplayName = service?.tier === 'foundation' ? 'Foundation'
+    : service?.tier === 'operations' ? 'Operations'
+    : service?.tier === 'industry' ? 'Industry'
+    : '';
 
   if (!status.intakeComplete) {
     return {
@@ -119,7 +128,7 @@ export function getNextStepForService(status: ServiceDeliveryStatus): ServiceNex
 
   if (status.deliveryStatus === 'not_started') {
     return {
-      title: `Your ${name} is being prepared`,
+      title: tierDisplayName ? `Your ${tierDisplayName} ${name} is being prepared` : `Your ${name} is being prepared`,
       description: `We'll begin preparing your ${tierLabel} now that your intake is complete.`,
       action: 'View Status',
       link: '/personal/status',
@@ -130,10 +139,10 @@ export function getNextStepForService(status: ServiceDeliveryStatus): ServiceNex
 
   if (status.deliveryStatus === 'in_progress') {
     return {
-      title: `Your ${name} documents are being prepared`,
+      title: tierDisplayName ? `Your ${tierDisplayName} documents are being prepared` : `Your ${name} documents are being prepared`,
       description:
         status.documentsTotal > 0
-          ? `${status.documentsReady} of ${status.documentsTotal} documents ready.`
+          ? `${status.documentsReady} of ${status.documentsTotal} ${tierLabel} ready.`
           : 'We are working on your deliverables.',
       action: 'View Status',
       link: '/personal/status',
@@ -144,10 +153,10 @@ export function getNextStepForService(status: ServiceDeliveryStatus): ServiceNex
 
   // delivered
   return {
-    title: `Your ${name} documents are ready`,
+    title: tierDisplayName ? `Your ${tierDisplayName} documents are ready` : `Your ${name} documents are ready`,
     description:
       status.documentsTotal > 0
-        ? `All ${status.documentsTotal} documents have been delivered and are ready for download.`
+        ? `All ${status.documentsTotal} ${tierLabel} have been delivered and are ready for download.`
         : 'Your deliverables are ready.',
     action: 'View Documents',
     link: '/personal/documents',

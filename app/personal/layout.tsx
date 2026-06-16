@@ -169,19 +169,25 @@ export default function PersonalLayout({
                 </p>
                 <DeliveryStatusBadge status={profile.delivery_status} />
 
-                {/* Service badges */}
+                {/* Service badges with tier colors */}
                 {safePurchasedServiceIds.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
                     {safePurchasedServiceIds.map((sid) => {
                       const service = getServiceById(sid);
-                      const isRefresh = sid === 'quarterly_refresh';
+                      const isRefresh = sid === 'quarterly_refresh' || sid === 'monthly_care_plan';
+                      const tier = service?.tier;
+                      const tierColors = {
+                        foundation: 'bg-[#1B3F7A]/5 text-[#1B3F7A]',
+                        operations: 'bg-[#2C68C4]/5 text-[#2C68C4]',
+                        industry: 'bg-[#F59E0B]/5 text-[#F59E0B]',
+                      };
                       return (
                         <span
                           key={sid}
                           className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${
                             isRefresh
                               ? 'bg-teal-50 text-teal-700'
-                              : 'bg-[#1B3F7A]/5 text-[#1B3F7A]'
+                              : tier ? tierColors[tier] : 'bg-gray-100 text-gray-700'
                           }`}
                         >
                           {isRefresh ? <RefreshCw size={9} /> : <Package size={9} />}
@@ -198,17 +204,17 @@ export default function PersonalLayout({
             {!isAdmin && profile && safePurchasedServiceIds.length < 13 && (
               <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
                 <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
-                  Expand Your Package
+                  Expand Your Infrastructure
                 </p>
                 <Link
                   href="/services"
                   className="font-inter font-medium text-[#2C68C4] hover:underline text-sm flex items-center gap-1.5"
                 >
                   <Package size={14} />
-                  Add website copy or social posts
+                  Add more packs
                 </Link>
                 <p className="font-inter text-xs text-gray-500 mt-1.5">
-                  Bundle discount applies automatically.
+                  Operations, Industry, or bundles. Up to 25% off.
                 </p>
               </div>
             )}
