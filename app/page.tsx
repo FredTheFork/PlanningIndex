@@ -1,10 +1,8 @@
 import Hero from '@/components/sections/Hero';
 import SocialProof from '@/components/sections/SocialProof';
 import Problem from '@/components/sections/Problem';
-import WhatYouGet from '@/components/sections/WhatYouGet';
-import HowItWorks from '@/components/sections/HowItWorks';
+import IndustryNavigator from '@/components/sections/IndustryNavigator';
 import Testimonials from '@/components/sections/Testimonials';
-import Pricing from '@/components/sections/Pricing';
 import GuaranteeBlock from '@/components/sections/GuaranteeBlock';
 import CTABanner from '@/components/sections/CTABanner';
 import { JsonLd } from '@/components/seo';
@@ -53,10 +51,8 @@ export default function HomePage() {
       <Hero />
       <SocialProof />
       <Problem />
-      <WhatYouGet />
-      <HowItWorks />
+      <IndustryNavigator />
       <Testimonials />
-      <Pricing />
       <GuaranteeBlock />
       <CTABanner />
     </>

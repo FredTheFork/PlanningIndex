@@ -10,13 +10,24 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const navLinks = [
   {
+    label: "Who It's For",
+    href: '/services',
+    sub: [
+      { label: 'For Photographers', href: '/for/photographers' },
+      { label: 'For Coaches', href: '/for/coaches' },
+      { label: 'For Consultants', href: '/for/consultants' },
+      { label: 'For Contractors', href: '/for/contractors' },
+      { label: 'All Services', href: '/services' },
+    ],
+  },
+  {
     label: 'Services',
     href: '/services',
     sub: [
-      { label: "What's Included (10 Documents)", href: '/whats-included' },
-      { label: 'Website Copy Starter Pack', href: '/services/website-copy' },
-      { label: 'Social Media Starter Pack', href: '/services/social-media' },
-      { label: 'Quarterly Document Refresh', href: '/services/quarterly-refresh' },
+      { label: 'Business Documents Pack', href: '/services/documents' },
+      { label: 'Website Copy', href: '/services/website-copy' },
+      { label: 'Social Media', href: '/services/social-media' },
+      { label: 'View Bundles', href: '/services#bundles' },
     ],
   },
   { label: 'How It Works', href: '/how-it-works' },
