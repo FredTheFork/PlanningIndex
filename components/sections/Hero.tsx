@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle, Star, Briefcase, Crown } from 'lucide-react';
+import { CheckCircle, Star, Briefcase, Crown, Zap, Shield, Clock, FileText } from 'lucide-react';
 import { useCountUp } from '@/hooks/useCountUp';
+import { useInView } from '@/hooks/useInView';
 
 const avatars = [
   { initials: 'SM' },
@@ -11,6 +12,114 @@ const avatars = [
   { initials: 'MT' },
   { initials: 'PK' },
 ];
+
+// Document flow animation component
+function DocumentFlowVisual() {
+  return (
+    <div className="relative w-full max-w-[200px]" style={{ height: 160 }}>
+      {/* Document pages flying into folder */}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="absolute bg-white rounded-lg shadow-lg border border-slate-200"
+          style={{
+            width: 80,
+            height: 100,
+            right: 20 + i * 8,
+            top: 10 + i * 5,
+            zIndex: 5 - i,
+            animation: `docFly-${i} 3s ease-in-out infinite`,
+            animationDelay: `${i * 0.3}s`,
+          }}
+        >
+          <div className="h-6 bg-gradient-to-r from-navy/90 to-medium-blue/90 rounded-t-lg flex items-center justify-center">
+            <FileText size={12} className="text-white" />
+          </div>
+          <div className="p-2 space-y-1">
+            <div className="h-1.5 bg-slate-200 rounded w-3/4" />
+            <div className="h-1 bg-slate-100 rounded w-full" />
+            <div className="h-1 bg-slate-100 rounded w-2/3" />
+          </div>
+        </div>
+      ))}
+
+      <style>{`
+        @keyframes docFly-0 {
+          0%, 100% { transform: translateX(0) rotate(-2deg); opacity: 1; }
+          50% { transform: translateX(10px) rotate(2deg); opacity: 0.8; }
+        }
+        @keyframes docFly-1 {
+          0%, 100% { transform: translateX(0) rotate(1deg); opacity: 1; }
+          50% { transform: translateX(8px) rotate(-1deg); opacity: 0.8; }
+        }
+        @keyframes docFly-2 {
+          0%, 100% { transform: translateX(0) rotate(-1deg); opacity: 1; }
+          50% { transform: translateX(6px) rotate(1deg); opacity: 0.8; }
+        }
+        @keyframes docFly-3 {
+          0%, 100% { transform: translateX(0) rotate(2deg); opacity: 1; }
+          50% { transform: translateX(4px) rotate(-2deg); opacity: 0.8; }
+        }
+        @keyframes docFly-4 {
+          0%, 100% { transform: translateX(0) rotate(-1deg); opacity: 1; }
+          50% { transform: translateX(2px) rotate(1deg); opacity: 0.8; }
+        }
+      `}</style>
+
+      {/* Glow effect */}
+      <div
+        className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-40 h-8 bg-navy/20 rounded-full blur-xl"
+        style={{ zIndex: 0 }}
+      />
+    </div>
+  );
+}
+
+// Trust metrics row
+function HeroTrustMetrics() {
+  const [ref, inView] = useInView(0.2);
+  const docsCount = useCountUp(70, 1200, inView);
+  const hoursCount = useCountUp(24, 1000, inView);
+  const clientsCount = useCountUp(200, 1400, inView);
+
+  return (
+    <div ref={ref} className="flex items-center justify-center gap-6 md:gap-10 mt-5 py-4">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-navy/10 flex items-center justify-center">
+          <FileText size={16} className="text-navy" />
+        </div>
+        <div>
+          <span className="font-inter font-bold text-navy text-lg">{docsCount}+</span>
+          <span className="font-inter text-secondary-text text-xs block">Documents</span>
+        </div>
+      </div>
+
+      <div className="w-px h-10 bg-slate-200" />
+
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+          <Clock size={16} className="text-success" />
+        </div>
+        <div>
+          <span className="font-inter font-bold text-success text-lg">{hoursCount}hr</span>
+          <span className="font-inter text-secondary-text text-xs block">Delivery</span>
+        </div>
+      </div>
+
+      <div className="w-px h-10 bg-slate-200" />
+
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-medium-blue/10 flex items-center justify-center">
+          <Shield size={16} className="text-medium-blue" />
+        </div>
+        <div>
+          <span className="font-inter font-bold text-medium-blue text-lg">{clientsCount}+</span>
+          <span className="font-inter text-secondary-text text-xs block">Protected</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Hero() {
   const count = useCountUp(200, 1800, true);
@@ -181,6 +290,11 @@ export default function Hero() {
                 </span>
               </div>
             ))}
+          </div>
+
+          {/* Trust metrics bar */}
+          <div style={{ animation: 'fadeInUp 0.65s ease-out both', animationDelay: '500ms' }}>
+            <HeroTrustMetrics />
           </div>
         </div>
 

@@ -36,6 +36,9 @@ import { getDocumentConfigsForService } from '@/lib/services/document-configs';
 import { buildIntakeForm } from '@/lib/forms/build-intake-form';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { SavingsCalculator, ROICalculator, SavingsVisual } from '@/components/ui/SavingsCalculator';
+import { GapAnalysis } from '@/components/ui/GapAnalysis';
+import { AnimatedBarChart, AnimatedStatsGrid } from '@/components/ui/AnimatedGraphs';
 
 /* ─── Tier Configuration ─── */
 
@@ -896,6 +899,14 @@ function CellContent({ value }: { value: string }) {
 function ComparisonSection() {
   const headers = ['What you get', 'Foundationary', 'Solicitor', 'DIY', 'Generic AI'];
 
+  // Animated stats for comparison
+  const comparisonStats = [
+    { value: 79, suffix: '', prefix: '£', label: 'Starting price', icon: <Tag size={18} /> },
+    { value: 70, suffix: '+', label: 'Documents available', icon: <Package size={18} /> },
+    { value: 72, suffix: 'hr', label: 'Delivery time', icon: <Clock size={18} /> },
+    { value: 100, suffix: '%', label: 'Custom to you', icon: <ShieldCheck size={18} /> },
+  ];
+
   return (
     <section className="bg-off-white py-24 px-6">
       <div className="mx-auto" style={{ maxWidth: 1100 }}>
@@ -910,8 +921,43 @@ function ComparisonSection() {
           className="font-inter font-normal text-secondary-text mt-3 leading-[1.7]"
           style={{ fontSize: '0.95rem', maxWidth: 580 }}
         >
-          Every alternative either costs dramatically more, requires you to do the work yourself, or produces something generic that doesn't reflect your business.
+          Every alternative either costs dramatically more, requires you to do the work yourself, or produces something generic that doesn&apos;t reflect your business.
         </p>
+
+        {/* Animated stats grid */}
+        <div className="mt-10">
+          <AnimatedStatsGrid stats={comparisonStats} columns={4} />
+        </div>
+
+        {/* Cost comparison visualization */}
+        <div className="mt-10 grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-inter font-bold text-navy text-lg mb-4">Cost Comparison</h3>
+            <AnimatedBarChart
+              data={[
+                { label: 'Foundationary', value: 79, color: '#1B3F7A' },
+                { label: 'DIY Templates', value: 150, color: '#94A3B8' },
+                { label: 'Generic AI', value: 200, color: '#CBD5E1' },
+                { label: 'Solicitor', value: 2000, color: '#DC2626' },
+              ]}
+              title="Average cost for documents"
+              subtitle="Foundationary offers the best value"
+            />
+          </div>
+          <div>
+            <h3 className="font-inter font-bold text-navy text-lg mb-4">Time Investment</h3>
+            <AnimatedBarChart
+              data={[
+                { label: 'Foundationary', value: 20, suffix: ' min', color: '#1B3F7A' },
+                { label: 'DIY Templates', value: 480, suffix: ' min', color: '#94A3B8' },
+                { label: 'Generic AI', value: 120, suffix: ' min', color: '#CBD5E1' },
+                { label: 'Solicitor', value: 360, suffix: ' min', color: '#DC2626' },
+              ]}
+              title="Your time to complete"
+              subtitle="Fill intake, receive documents"
+            />
+          </div>
+        </div>
 
         {/* Desktop table */}
         <div
@@ -1357,6 +1403,39 @@ export default function PricingPage() {
 
       {/* Interactive bundle builder */}
       <BuildYourBundleSection purchasedServiceIds={purchasedServiceIds} />
+
+      {/* Savings Calculator */}
+      <section className="py-20 px-6 bg-white">
+        <div className="mx-auto" style={{ maxWidth: 1100 }}>
+          <SectionLabel>SEE YOUR SAVINGS</SectionLabel>
+          <h2
+            className="font-inter font-bold text-dark-text"
+            style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}
+          >
+            Calculate your bundle discount
+          </h2>
+          <p
+            className="font-inter font-normal text-secondary-text mt-2 leading-relaxed"
+            style={{ fontSize: '1rem', maxWidth: 600 }}
+          >
+            The more you bundle, the more you save. See exactly how much you&apos;ll save with our automatic discounts.
+          </p>
+          <div className="mt-10">
+            <SavingsCalculator
+              services={serviceCatalog
+                .filter(s => s.mode !== 'subscription')
+                .map(s => ({ id: s.id, name: s.name, price: s.price }))}
+              bundleDiscounts={[
+                { count: 2, percent: 10 },
+                { count: 3, percent: 15 },
+                { count: 4, percent: 15 },
+                { count: 5, percent: 20 },
+                { count: 6, percent: 25 },
+              ]}
+            />
+          </div>
+        </div>
+      </section>
 
       {/* Comparison table */}
       <ComparisonSection />
