@@ -348,7 +348,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'subscription',
     stripePriceIds: {
-      test: 'price_1TgSI7GfxcDbzGRtm9vf0YRM',
+      test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo',
       live: '',
     },
     stripeProductIds: {
@@ -387,7 +387,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'subscription',
     stripePriceIds: {
-      test: 'price_1TgSI7GfxcDbzGRtm9vf0YRM',
+      test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo',
       live: '',
     },
     stripeProductIds: {
@@ -427,12 +427,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_client_onboarding_pack',
-      live: 'price_live_client_onboarding_pack',
+      test: 'price_1TjIeAGfxcDbzGRtAdPjogwV',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_client_onboarding_pack',
-      live: 'prod_live_client_onboarding_pack',
+      test: 'prod_1TjIeAGfxcDbzGRtAdPjogwV',
+      live: '',
     },
     includes: [
       'Client Onboarding Questionnaire',
@@ -469,12 +469,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_payment_protection_pack',
-      live: 'price_live_payment_protection_pack',
+      test: 'price_1TjIf6GfxcDbzGRtv843ka5P',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_payment_protection_pack',
-      live: 'prod_live_payment_protection_pack',
+      test: 'prod_1TjIf6GfxcDbzGRtv843ka5P',
+      live: '',
     },
     includes: [
       'Invoice Terms & Conditions',
@@ -511,12 +511,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_copyright_licensing_pack',
-      live: 'price_live_copyright_licensing_pack',
+      test: 'price_1TjIfpGfxcDbzGRt1rBiLXqC',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_copyright_licensing_pack',
-      live: 'prod_live_copyright_licensing_pack',
+      test: 'prod_1TjIfpGfxcDbzGRt1rBiLXqC',
+      live: '',
     },
     includes: [
       'Copyright Notice & IP Policy',
@@ -553,12 +553,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_gdpr_deep_pack',
-      live: 'price_live_gdpr_deep_pack',
+      test: 'price_1TjIgyGfxcDbzGRt3O0f8wmM',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_gdpr_deep_pack',
-      live: 'prod_live_gdpr_deep_pack',
+      test: 'prod_1TjIgyGfxcDbzGRt3O0f8wmM',
+      live: '',
     },
     includes: [
       'Comprehensive Privacy Policy',
@@ -599,12 +599,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_coach_industry_pack',
-      live: 'price_live_coach_industry_pack',
+      test: 'price_1TjIhfGfxcDbzGRtWDo6RyZ6',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_coach_industry_pack',
-      live: 'prod_live_coach_industry_pack',
+      test: 'prod_1TjIhfGfxcDbzGRtWDo6RyZ6',
+      live: '',
     },
     includes: [
       'Coaching Agreement',
@@ -640,12 +640,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_photographer_industry_pack',
-      live: 'price_live_photographer_industry_pack',
+      test: 'price_1TjIiFGfxcDbzGRt74btRoIa',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_photographer_industry_pack',
-      live: 'prod_live_photographer_industry_pack',
+      test: 'prod_1TjIiFGfxcDbzGRt74btRoIa',
+      live: '',
     },
     includes: [
       'Photography Licensing Agreement',
@@ -681,12 +681,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_consultant_industry_pack',
-      live: 'price_live_consultant_industry_pack',
+      test: 'price_1TjIj6GfxcDbzGRtazMtGvDM',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_consultant_industry_pack',
-      live: 'prod_live_consultant_industry_pack',
+      test: 'prod_1TjIj6GfxcDbzGRtazMtGvDM',
+      live: '',
     },
     includes: [
       'Consulting Agreement',
@@ -722,12 +722,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_test_contractor_industry_pack',
-      live: 'price_live_contractor_industry_pack',
+      test: 'price_1TjIjmGfxcDbzGRtDlS8hipL',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_test_contractor_industry_pack',
-      live: 'prod_live_contractor_industry_pack',
+      test: 'prod_1TjIjmGfxcDbzGRtDlS8hipL',
+      live: '',
     },
     includes: [
       'Health & Safety Policy',
