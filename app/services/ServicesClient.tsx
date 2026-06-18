@@ -52,13 +52,31 @@ export default function ServicesClient() {
     <>
       {/* Hero */}
       <section
-        className="text-center px-6"
-        style={{
-          padding: '80px 0 72px',
-          background: 'linear-gradient(135deg, #1B3F7A 0%, #2C68C4 100%)',
-        }}
+        className="relative text-center px-6"
+        style={{ padding: '80px 0 72px', minHeight: '320px' }}
       >
-        <div className="mx-auto" style={{ maxWidth: 800 }}>
+        {/* Background image */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'url(/images/hero/services-hero.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            zIndex: 0,
+          }}
+        />
+        {/* Overlay */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(135deg, rgba(15,30,61,0.82) 0%, rgba(27,63,122,0.78) 100%)',
+            zIndex: 1,
+          }}
+        />
+        <div className="mx-auto relative" style={{ maxWidth: 800, zIndex: 2 }}>
           <span
             className="font-inter font-semibold uppercase block"
             style={{

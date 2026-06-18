@@ -85,36 +85,36 @@ function HeroTrustMetrics() {
   return (
     <div ref={ref} className="flex items-center justify-center gap-6 md:gap-10 mt-5 py-4">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-navy/10 flex items-center justify-center">
-          <FileText size={16} className="text-navy" />
+        <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
+          <FileText size={16} className="text-white" />
         </div>
         <div>
-          <span className="font-inter font-bold text-navy text-lg">{docsCount}+</span>
-          <span className="font-inter text-secondary-text text-xs block">Documents</span>
+          <span className="font-inter font-bold text-white text-lg">{docsCount}+</span>
+          <span className="font-inter text-white/70 text-xs block">Documents</span>
         </div>
       </div>
 
-      <div className="w-px h-10 bg-slate-200" />
+      <div className="w-px h-10 bg-white/20" />
 
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-          <Clock size={16} className="text-success" />
+        <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
+          <Clock size={16} className="text-white" />
         </div>
         <div>
-          <span className="font-inter font-bold text-success text-lg">{hoursCount}hr</span>
-          <span className="font-inter text-secondary-text text-xs block">Delivery</span>
+          <span className="font-inter font-bold text-white text-lg">{hoursCount}hr</span>
+          <span className="font-inter text-white/70 text-xs block">Delivery</span>
         </div>
       </div>
 
-      <div className="w-px h-10 bg-slate-200" />
+      <div className="w-px h-10 bg-white/20" />
 
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-medium-blue/10 flex items-center justify-center">
-          <Shield size={16} className="text-medium-blue" />
+        <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
+          <Shield size={16} className="text-white" />
         </div>
         <div>
-          <span className="font-inter font-bold text-medium-blue text-lg">{clientsCount}+</span>
-          <span className="font-inter text-secondary-text text-xs block">Protected</span>
+          <span className="font-inter font-bold text-white text-lg">{clientsCount}+</span>
+          <span className="font-inter text-white/70 text-xs block">Protected</span>
         </div>
       </div>
     </div>
@@ -127,67 +127,29 @@ export default function Hero() {
   return (
     <section
       className="relative overflow-hidden pt-[100px] pb-20 md:pt-[120px] md:pb-20 px-6"
-      style={{ background: '#f8faff' }}
+      style={{ background: '#0F1E3D' }}
     >
-      {/* Swirl blobs behind content */}
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: '-80px',
-            left: 'calc(50% - 80px)',
-            width: 560,
-            height: 560,
-            borderRadius: '50%',
-            background: '#1B3F7A',
-            filter: 'blur(110px)',
-            opacity: 0.13,
-            animation: 'swirl-1 18s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '80px',
-            left: 'calc(50% + 60px)',
-            width: 400,
-            height: 400,
-            borderRadius: '50%',
-            background: '#2C68C4',
-            filter: 'blur(90px)',
-            opacity: 0.16,
-            animation: 'swirl-2 14s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '220px',
-            left: 'calc(50% + 30px)',
-            width: 280,
-            height: 280,
-            borderRadius: '50%',
-            background: '#0EA5E9',
-            filter: 'blur(80px)',
-            opacity: 0.12,
-            animation: 'swirl-3 22s ease-in-out infinite',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '-40px',
-            left: 'calc(50% - 30px)',
-            width: 340,
-            height: 340,
-            borderRadius: '50%',
-            background: '#0F2557',
-            filter: 'blur(100px)',
-            opacity: 0.09,
-            animation: 'swirl-2 26s ease-in-out infinite reverse',
-          }}
-        />
-      </div>
+      {/* Background image */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'url(/images/hero/hero-bg.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          zIndex: 0,
+        }}
+      />
+      {/* Dark overlay for readability */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(135deg, rgba(15,30,61,0.88) 0%, rgba(27,63,122,0.82) 50%, rgba(15,30,61,0.88) 100%)',
+          zIndex: 1,
+        }}
+      />
 
       <div
         className="max-w-[1200px] mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16"
@@ -199,9 +161,9 @@ export default function Hero() {
             className="flex items-center gap-3 mb-5"
             style={{ animation: 'fadeInUp 0.6s ease-out both', animationDelay: '0ms' }}
           >
-            <span className="w-8 h-0.5 bg-medium-blue" />
+            <span className="w-8 h-0.5 bg-white/50" />
             <span
-              className="font-inter font-semibold text-medium-blue uppercase"
+              className="font-inter font-semibold text-white/80 uppercase"
               style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}
             >
               For UK Sole Traders
@@ -209,7 +171,7 @@ export default function Hero() {
           </div>
 
           <h1
-            className="font-inter font-extrabold text-dark-text leading-[1.15]"
+            className="font-inter font-extrabold text-white leading-[1.15]"
             style={{
               fontSize: 'clamp(2.4rem, 5vw, 3.6rem)',
               animation: 'fadeInUp 0.65s ease-out both',
@@ -220,7 +182,7 @@ export default function Hero() {
           </h1>
 
           <p
-            className="font-inter font-normal text-secondary-text mt-5 leading-[1.7]"
+            className="font-inter font-normal text-white/85 mt-5 leading-[1.7]"
             style={{
               fontSize: '1.1rem',
               maxWidth: 480,
@@ -253,8 +215,8 @@ export default function Hero() {
                 </div>
               ))}
             </div>
-            <span className="font-inter font-medium text-dark-text" style={{ fontSize: '0.9rem' }}>
-              <span className="font-bold text-navy">{count}+</span> UK sole traders — properly founded
+            <span className="font-inter font-medium text-white/90" style={{ fontSize: '0.9rem' }}>
+              <span className="font-bold text-white">{count}+</span> UK sole traders — properly founded
             </span>
           </div>
 
@@ -264,14 +226,14 @@ export default function Hero() {
           >
             <Link
               href="/services"
-              className="font-inter font-semibold text-white bg-navy rounded-lg hover:bg-medium-blue hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(27,63,122,0.25)] transition-all duration-200"
+              className="font-inter font-semibold text-white bg-white/20 hover:bg-white/30 rounded-lg hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(255,255,255,0.15)] transition-all duration-200 backdrop-blur-sm border border-white/30"
               style={{ padding: '16px 32px', fontSize: '1rem', minHeight: 48 }}
             >
               See All 13 Packs
             </Link>
             <Link
               href="/checkout?services=business_foundations_pack"
-              className="font-inter font-semibold text-navy border-2 border-navy rounded-lg hover:bg-off-white transition-colors duration-200"
+              className="font-inter font-semibold text-white border-2 border-white/30 rounded-lg hover:bg-white/10 transition-colors duration-200"
               style={{ padding: '14px 28px', fontSize: '1rem', minHeight: 48 }}
             >
               Start with Foundation - 79
@@ -284,8 +246,8 @@ export default function Hero() {
           >
             {['UK Law Compliant', '70+ Documents Available', 'Three Tiers Available'].map((badge) => (
               <div key={badge} className="flex items-center gap-2">
-                <CheckCircle size={16} className="text-success shrink-0" />
-                <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.875rem' }}>
+                <CheckCircle size={16} className="text-white/80 shrink-0" />
+                <span className="font-inter font-medium text-white/85" style={{ fontSize: '0.875rem' }}>
                   {badge}
                 </span>
               </div>
