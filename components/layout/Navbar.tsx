@@ -9,7 +9,7 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 // Pages where the hero is a dark photo background — navbar starts transparent
-const HERO_PATHS = new Set(['/', '/services', '/for/photographers', '/for/coaches', '/for/consultants', '/for/contractors']);
+const HERO_PATHS = new Set(['/', '/services', '/for/photographers', '/for/coaches', '/for/consultants', '/for/contractors', '/services/documents', '/services/website-copy', '/services/social-media', '/services/foundation', '/services/operations', '/services/industry', '/services/bundles', '/services/quarterly-refresh']);
 
 const navLinks = [
   {
@@ -184,7 +184,7 @@ export default function Navbar() {
               className={`font-inter font-semibold transition-colors duration-300 ${
                 transparent ? 'text-white/60' : 'text-secondary-text'
               }`}
-              style={{ fontSize: '0.65rem', letterSpacing: '0.12em', lineHeight: 1.2 }}
+              style={{ fontSize: '0.65rem', letterSpacing: '0.12em', lineHeight: 1.2, marginTop: '2px' }}
             >
               BUSINESS FOUNDATIONS. FAST.
             </span>

@@ -103,10 +103,14 @@ function ThreeStepProcess() {
         </p>
 
         <div className="relative mt-14">
-          {/* Connection line */}
+          {/* Connection line between step circles */}
           <div
-            className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-medium-blue/20 hidden md:block"
-            style={{ transform: 'translateX(-50%)' }}
+            className="absolute top-8 bottom-8 hidden md:block"
+            style={{
+              left: '32px',
+              width: '0px',
+              borderLeft: '2px dashed rgba(44, 104, 196, 0.25)',
+            }}
           />
 
           <div className="flex flex-col gap-12">

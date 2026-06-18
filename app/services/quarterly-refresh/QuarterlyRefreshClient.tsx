@@ -20,36 +20,56 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function Hero() {
   return (
     <section
-      className="text-center px-6"
-      style={{
-        padding: '152px 0 64px',
-        background: 'linear-gradient(135deg, #1B3F7A 0%, #2C68C4 100%)',
-      }}
+      className="relative text-center px-6"
+      style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px' }}
     >
-      <div className="mx-auto" style={{ maxWidth: 800 }}>
-        <h1
-          className="font-inter font-extrabold text-white"
-          style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
-        >
-          Your documents, kept current. One update per quarter. Cancel anytime.
-        </h1>
-        <p
-          className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
-          style={{
-            fontSize: '1.05rem',
-            color: 'rgba(255,255,255,0.85)',
-            maxWidth: 600,
-          }}
-        >
-          Your business changes. So should your documents. Keep your contracts, pricing, terms, and GDPR policy aligned with reality.
-        </p>
-        <Link
-          href="/checkout?services=business_foundations_pack,quarterly_refresh"
-          className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] transition-colors duration-200 mt-9"
-          style={{ padding: '16px 36px', fontSize: '1rem', minHeight: 48 }}
-        >
-          Get Started — £29/Quarter
-        </Link>
+      {/* Background image */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'url(/images/hero/quarterly-refresh-hero.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          zIndex: 0,
+        }}
+      />
+      {/* Overlay */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(135deg, rgba(15,30,61,0.82) 0%, rgba(27,63,122,0.78) 100%)',
+          zIndex: 1,
+        }}
+      />
+      <div className="mx-auto relative" style={{ maxWidth: 800, zIndex: 2 }}>
+        <div style={{ paddingTop: 'clamp(100px, 13vw, 128px)' }}>
+          <h1
+            className="font-inter font-extrabold text-white"
+            style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
+          >
+            Your documents, kept current. One update per quarter. Cancel anytime.
+          </h1>
+          <p
+            className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
+            style={{
+              fontSize: '1.05rem',
+              color: 'rgba(255,255,255,0.85)',
+              maxWidth: 600,
+            }}
+          >
+            Your business changes. So should your documents. Keep your contracts, pricing, terms, and GDPR policy aligned with reality.
+          </p>
+          <Link
+            href="/checkout?services=business_foundations_pack,quarterly_refresh"
+            className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] transition-colors duration-200 mt-9"
+            style={{ padding: '16px 36px', fontSize: '1rem', minHeight: 48 }}
+          >
+            Get Started — £29/Quarter
+          </Link>
+        </div>
       </div>
     </section>
   );
