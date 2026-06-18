@@ -126,8 +126,8 @@ export default function Hero() {
 
   return (
     <section
-      className="relative overflow-hidden pt-[100px] pb-20 md:pt-[120px] md:pb-20 px-6"
-      style={{ background: '#0F1E3D' }}
+      className="relative overflow-hidden px-6"
+      style={{ background: '#0F1E3D', paddingTop: 'clamp(120px, 14vw, 148px)', paddingBottom: '5rem', minHeight: '90vh' }}
     >
       {/* Background image */}
       <div

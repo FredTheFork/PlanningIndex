@@ -54,7 +54,7 @@ export default function ForConsultantsPage() {
       {/* Hero */}
       <section
         className="relative text-center px-6"
-        style={{ padding: '80px 0 72px', minHeight: '320px' }}
+        style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px' }}
       >
         {/* Background image */}
         <div
@@ -78,7 +78,7 @@ export default function ForConsultantsPage() {
           }}
         />
         <div className="mx-auto relative" style={{ maxWidth: 800, zIndex: 2 }}>
-          <div className="flex items-center justify-center gap-2 mb-4" style={{ paddingTop: '72px' }}>
+          <div className="flex items-center justify-center gap-2 mb-4" style={{ paddingTop: 'clamp(100px, 13vw, 128px)' }}>
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center"
               style={{ background: 'rgba(255,255,255,0.15)' }}

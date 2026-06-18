@@ -1,56 +1,49 @@
 'use client';
 
-import { FileX, ShieldOff, Receipt, Globe, PenLine, RefreshCw, Users, CreditCard, TrendingUp } from 'lucide-react';
+import { FileX, ShieldOff, Receipt, Globe, PenLine, RefreshCw, Users, CreditCard } from 'lucide-react';
 import { useInView } from '@/hooks/useInView';
+import Link from 'next/link';
 
 const problems = [
   {
     icon: FileX,
     title: 'No Client Contract',
-    desc: "When a client disputes scope, delays payment, or simply disappears — without a signed contract, you have zero legal protection. None.",
-    tier: 'foundation',
+    sub: 'Zero legal protection if clients disappear',
   },
   {
     icon: ShieldOff,
-    title: 'No GDPR Privacy Policy',
-    desc: "The moment you collect a client's email address, you legally need one. The ICO can fine you for not having it. Most sole traders don't.",
-    tier: 'foundation',
+    title: 'No GDPR Policy',
+    sub: 'ICO fines start the day you take an email',
   },
   {
     icon: Receipt,
-    title: 'Invoices Without Legal Teeth',
-    desc: "Missing the right statutory wording means clients know — consciously or not — that late payment carries no real consequence.",
-    tier: 'foundation',
+    title: 'Invoices Without Teeth',
+    sub: 'Late payment has no real consequence',
   },
   {
     icon: Globe,
-    title: 'No Professional Website Copy',
-    desc: "Your website reads like a draft. Clients judge you in seconds, before they ever get in touch. Generic copy means missed business.",
-    tier: 'foundation',
+    title: 'No Professional Website',
+    sub: 'Clients judge you before making contact',
   },
   {
     icon: PenLine,
-    title: 'No Social Media Presence',
-    desc: "Your LinkedIn is bare, your Instagram untouched. You know you should post but don't know what to say or how often. Every day you're invisible.",
-    tier: 'foundation',
+    title: 'No Social Presence',
+    sub: 'Every day offline is business lost',
   },
   {
     icon: RefreshCw,
-    title: 'Documents That Go Out of Date',
-    desc: "Your contract was written two years ago. Your prices, services, and GDPR tools have all changed since. Your paperwork hasn't.",
-    tier: 'foundation',
+    title: 'Outdated Documents',
+    sub: 'Your paperwork no longer matches your business',
   },
   {
     icon: Users,
-    title: 'No Client Onboarding System',
-    desc: "Every new client starts with confusion. No clear scope boundaries. No project brief. Scope creep starts from day one — and you pay for it.",
-    tier: 'operations',
+    title: 'No Onboarding System',
+    sub: 'Scope creep starts from day one',
   },
   {
     icon: CreditCard,
     title: 'No Payment Protection',
-    desc: "Unpaid invoices, chargeback disputes, clients who cancel mid-project. Without proper terms, you're exposed every time you send work.",
-    tier: 'operations',
+    sub: 'Unpaid invoices with no recourse',
   },
 ];
 
@@ -70,72 +63,64 @@ export default function Problem() {
           className="font-inter font-bold text-dark-text leading-snug"
           style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', maxWidth: 700 }}
         >
-          What operating without business infrastructure actually looks like.
+          What operating without business infrastructure looks like.
         </h2>
         <p
           className="font-inter font-normal text-secondary-text mt-4 leading-[1.7]"
-          style={{ fontSize: '1.05rem', maxWidth: 650 }}
+          style={{ fontSize: '1.05rem', maxWidth: 580 }}
         >
-          Most UK sole traders are legally exposed, professionally underselling themselves, and financially unprotected — not because they are bad at their work, but because nobody ever helped them build the infrastructure their business needs.
+          Most UK sole traders are legally exposed and professionally underselling — not because they are bad at their work, but because nobody ever helped them build the infrastructure their business needs.
         </p>
 
         <div
           ref={ref}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-14"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12"
         >
           {problems.map((p, i) => {
             const Icon = p.icon;
-            const isOperations = p.tier === 'operations';
             return (
               <div
                 key={p.title}
-                className="bg-off-white rounded-xl p-7 border-l-4 hover:shadow-md transition-all duration-300"
+                className="group bg-off-white rounded-xl p-6 border border-transparent hover:border-medium-blue/30 hover:shadow-md transition-all duration-300 flex flex-col gap-3"
                 style={{
-                  borderLeftColor: isOperations ? '#2C68C4' : '#1B3F7A',
                   opacity: inView ? 1 : 0,
-                  transform: inView ? 'translateY(0)' : 'translateY(28px)',
-                  transition: `opacity 0.55s ease ${i * 70}ms, transform 0.55s ease ${i * 70}ms`,
+                  transform: inView ? 'translateY(0)' : 'translateY(24px)',
+                  transition: `opacity 0.5s ease ${i * 60}ms, transform 0.5s ease ${i * 60}ms, box-shadow 0.2s, border-color 0.2s`,
                 }}
               >
-                <div className="flex items-center gap-2 mb-4">
-                  <Icon size={24} className={isOperations ? 'text-medium-blue' : 'text-navy'} />
-                  {isOperations && (
-                    <span
-                      className="font-inter font-semibold text-medium-blue uppercase"
-                      style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}
-                    >
-                      Operations tier risk
-                    </span>
-                  )}
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200 group-hover:bg-navy/10"
+                  style={{ background: 'rgba(27,63,122,0.08)' }}
+                >
+                  <Icon size={20} className="text-navy" />
                 </div>
-                <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                  {p.title}
-                </h3>
-                <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                  {p.desc}
-                </p>
+                <div>
+                  <h3 className="font-inter font-semibold text-dark-text leading-snug" style={{ fontSize: '0.95rem' }}>
+                    {p.title}
+                  </h3>
+                  <p className="font-inter font-normal text-secondary-text mt-1 leading-[1.5]" style={{ fontSize: '0.8rem' }}>
+                    {p.sub}
+                  </p>
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* Industry-specific callout */}
-        <div
-          className="mt-12 rounded-xl p-6"
-          style={{
-            background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-            border: '2px solid #F59E0B',
-          }}
+        {/* Industry callout — clean banner */}
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl px-6 py-5"
+          style={{ background: 'linear-gradient(135deg, #0F1E3D 0%, #1B3F7A 100%)' }}
         >
-          <div className="flex items-center gap-3 mb-4">
-            <TrendingUp size={24} className="text-amber-500" />
-            <h3 className="font-inter font-bold text-dark-text" style={{ fontSize: '1.1rem' }}>
-              Industry-specific exposure
-            </h3>
-          </div>
-          <p className="font-inter font-normal text-secondary-text leading-[1.6]" style={{ fontSize: '0.95rem' }}>
-            Beyond these general risks, each profession has unique vulnerabilities. Coaches face scope creep around &quot;extra sessions.&quot; Photographers deal with image licensing disputes. Consultants battle unclear deliverables. Contractors navigate complex health and safety requirements. Our Industry tier addresses every profession specifically.
+          <p className="font-inter font-medium text-white" style={{ fontSize: '0.95rem' }}>
+            Each profession has unique risks — coaches, photographers, consultants, and contractors all face specific vulnerabilities.
           </p>
+          <Link
+            href="/services"
+            className="font-inter font-semibold text-navy bg-white rounded-lg whitespace-nowrap hover:bg-off-white transition-colors"
+            style={{ padding: '10px 22px', fontSize: '0.875rem' }}
+          >
+            See Industry Packs
+          </Link>
         </div>
       </div>
     </section>

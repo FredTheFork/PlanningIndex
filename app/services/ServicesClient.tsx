@@ -53,7 +53,7 @@ export default function ServicesClient() {
       {/* Hero */}
       <section
         className="relative text-center px-6"
-        style={{ padding: '80px 0 72px', minHeight: '320px' }}
+        style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px' }}
       >
         {/* Background image */}
         <div
@@ -83,7 +83,7 @@ export default function ServicesClient() {
               fontSize: '0.75rem',
               letterSpacing: '0.15em',
               color: 'rgba(255,255,255,0.7)',
-              marginTop: '72px',
+              marginTop: 'clamp(100px, 13vw, 128px)',
             }}
           >
             YOUR BUSINESS INFRASTRUCTURE

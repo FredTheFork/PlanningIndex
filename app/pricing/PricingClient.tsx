@@ -578,7 +578,15 @@ function TierPricingSection({ tier, purchasedServiceIds, onSelectBundle }: TierP
         )}
 
         {/* Individual services grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 ${
+          availableServices.length === 4
+            ? 'lg:grid-cols-4'
+            : availableServices.length === 3
+            ? 'lg:grid-cols-3'
+            : availableServices.length === 2
+            ? 'lg:grid-cols-2'
+            : 'lg:grid-cols-3'
+        }`}>
           {availableServices.map((service) => (
             <ServiceCard
               key={service.id}
