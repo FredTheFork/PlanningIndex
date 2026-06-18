@@ -250,14 +250,14 @@ export default function ForContractorsPage() {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <span className="font-inter text-secondary-text line-through" style={{ fontSize: '1rem' }}>
-                    {bundlePrice.toFixed(0)}
+                    £{bundlePrice.toFixed(0)}
                   </span>
                   <span className="font-inter font-bold text-success" style={{ fontSize: '1.4rem' }}>
-                    {discountedPrice.toFixed(0)}
+                    £{discountedPrice.toFixed(0)}
                   </span>
                 </div>
                 <span className="font-inter font-semibold text-navy bg-green-100 rounded-full px-3 py-1" style={{ fontSize: '0.8rem' }}>
-                  {contractorBundle.discountPercent}% off - save {(bundlePrice - discountedPrice).toFixed(0)}
+                  {contractorBundle.discountPercent}% off - save £{(bundlePrice - discountedPrice).toFixed(0)}
                 </span>
               </div>
               <Link
