@@ -53,7 +53,7 @@ export default function ServicesClient() {
       {/* Hero */}
       <section
         className="relative text-center px-6"
-        style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px', background: '#0F1E3D' }}
+        style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px' }}
       >
         {/* Background image */}
         <div
@@ -77,13 +77,13 @@ export default function ServicesClient() {
           }}
         />
         <div className="mx-auto relative" style={{ maxWidth: 800, zIndex: 2 }}>
+          <div style={{ paddingTop: 'clamp(100px, 13vw, 128px)' }}>
           <span
             className="font-inter font-semibold uppercase block"
             style={{
               fontSize: '0.75rem',
               letterSpacing: '0.15em',
               color: 'rgba(255,255,255,0.7)',
-              marginTop: 'clamp(100px, 13vw, 128px)',
             }}
           >
             YOUR BUSINESS INFRASTRUCTURE
@@ -104,6 +104,7 @@ export default function ServicesClient() {
           >
             Three tiers. 13 packs. 70+ documents. Start with Foundation, protect with Operations, dominate with Industry.
           </p>
+          </div>
         </div>
       </section>
 
