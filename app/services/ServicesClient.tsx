@@ -53,7 +53,7 @@ export default function ServicesClient() {
       {/* Hero */}
       <section
         className="relative text-center px-6"
-        style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px' }}
+        style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px', background: '#0F1E3D' }}
       >
         {/* Background image */}
         <div

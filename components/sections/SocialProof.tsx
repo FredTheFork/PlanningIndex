@@ -22,12 +22,12 @@ function CountStat({ target, suffix, label, icon }: { target: number; suffix?: s
           {icon}
         </div>
       )}
-      <div className="font-inter font-bold text-white" style={{ fontSize: '1.9rem' }}>
+      <div className="font-inter font-bold text-navy" style={{ fontSize: '1.9rem' }}>
         {count}{suffix ?? ''}
       </div>
       <div
         className="font-inter font-normal"
-        style={{ fontSize: '0.825rem', color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em', marginTop: 4 }}
+        style={{ fontSize: '0.825rem', color: '#4A5568', letterSpacing: '0.05em', marginTop: 4 }}
       >
         {label}
       </div>
@@ -43,10 +43,10 @@ function TextStat({ value, label, icon }: { value: string; label: string; icon?:
           {icon}
         </div>
       )}
-      <div className="font-inter font-bold text-white" style={{ fontSize: '1.9rem' }}>{value}</div>
+      <div className="font-inter font-bold text-navy" style={{ fontSize: '1.9rem' }}>{value}</div>
       <div
         className="font-inter font-normal"
-        style={{ fontSize: '0.825rem', color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em', marginTop: 4 }}
+        style={{ fontSize: '0.825rem', color: '#4A5568', letterSpacing: '0.05em', marginTop: 4 }}
       >
         {label}
       </div>
@@ -55,7 +55,7 @@ function TextStat({ value, label, icon }: { value: string; label: string; icon?:
 }
 
 const Divider = () => (
-  <div className="hidden sm:block h-12" style={{ width: 1, background: 'rgba(255,255,255,0.18)' }} />
+  <div className="hidden sm:block h-12" style={{ width: 1, background: '#E2E8F0' }} />
 );
 
 // Icon mapping for activity types
@@ -166,7 +166,7 @@ function LiveActivityTicker() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 mb-4">
-      <div className="flex items-center justify-center gap-3 bg-white/10 rounded-full px-4 py-2 overflow-hidden">
+      <div className="flex items-center justify-center gap-3 bg-slate-50 border border-slate-200 rounded-full px-4 py-2 overflow-hidden">
         {/* Live indicator */}
         <div className="relative shrink-0">
           <div className="w-2 h-2 rounded-full bg-success" />
@@ -189,14 +189,14 @@ function LiveActivityTicker() {
           >
             {activityIcons[currentActivity.type]}
           </div>
-          <span className="font-inter text-white/90 text-sm truncate">
+          <span className="font-inter text-dark-text text-sm truncate">
             <span
               className={`inline-block transition-all duration-250 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}
             >
               {currentActivity.message}
             </span>
             <span
-              className={`text-white/50 text-xs ml-2 inline-block transition-all duration-250 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+              className={`text-secondary-text text-xs ml-2 inline-block transition-all duration-250 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
             >
               {currentActivity.displayTime}
             </span>
@@ -208,7 +208,7 @@ function LiveActivityTicker() {
           {Array.from({ length: Math.min(activities.length, 5) }).map((_, i) => (
             <div
               key={i}
-              className={`rounded-full transition-all duration-300 ${i === currentActivityIndex ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/30'}`}
+              className={`rounded-full transition-all duration-300 ${i === currentActivityIndex ? 'w-4 h-1.5 bg-navy' : 'w-1.5 h-1.5 bg-slate-300'}`}
             />
           ))}
         </div>
@@ -219,19 +219,19 @@ function LiveActivityTicker() {
 
 export default function SocialProof() {
   return (
-    <section className="bg-navy py-6">
+    <section className="bg-white py-8 border-b border-slate-100">
       {/* Live activity ticker */}
       <LiveActivityTicker />
 
       {/* Stats row */}
       <div className="max-w-[1200px] mx-auto px-6 flex flex-wrap justify-center gap-x-12 gap-y-6">
-        <CountStat target={200} suffix="+" label="Sole traders served" icon={<Users size={18} className="text-white" />} />
+        <CountStat target={200} suffix="+" label="Sole traders served" icon={<Users size={18} className="text-navy" />} />
         <Divider />
-        <TextStat value="3-5 days" label="From payment to delivery" icon={<Clock size={18} className="text-white" />} />
+        <TextStat value="3-5 days" label="From payment to delivery" icon={<Clock size={18} className="text-navy" />} />
         <Divider />
-        <CountStat target={10} label="Documents per pack" icon={<FileText size={18} className="text-white" />} />
+        <CountStat target={10} label="Documents per pack" icon={<FileText size={18} className="text-navy" />} />
         <Divider />
-        <TextStat value="5.0 star" label="Client satisfaction" icon={<Star size={18} className="text-yellow-400" />} />
+        <TextStat value="5.0 star" label="Client satisfaction" icon={<Star size={18} className="text-amber-500" />} />
       </div>
 
       {/* Trust badges row */}
@@ -243,10 +243,10 @@ export default function SocialProof() {
         ].map((badge) => (
           <div
             key={badge.label}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/20 bg-white/5"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-200 bg-slate-50"
           >
-            <div className="text-white/70">{badge.icon}</div>
-            <span className="font-inter font-medium text-white/80 text-xs">{badge.label}</span>
+            <div className="text-navy/60">{badge.icon}</div>
+            <span className="font-inter font-medium text-secondary-text text-xs">{badge.label}</span>
           </div>
         ))}
       </div>
