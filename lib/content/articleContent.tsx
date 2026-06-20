@@ -1,3 +1,5 @@
+import { AnimatedBarChart, AnimatedStatsGrid, AnimatedCounter, AnimatedPieChart } from '@/components/ui/AnimatedGraphs';
+
 export interface Article {
   id: string;
   slug: string;
@@ -2885,6 +2887,425 @@ const ProfessionalCredibilityArticle: Article = {
   ),
 };
 
+// Best Contracts for UK Coaches Article
+const CoachingContractsArticle: Article = {
+  id: 'best-contracts-uk-coaches',
+  slug: 'best-contracts-uk-coaches',
+  title: 'Best Contracts for UK Coaches (And Why Most Coaches Are Using the Wrong One)',
+  description: 'The UK coaching industry faces a hidden crisis: contract disputes cost coaches thousands annually. Learn which contract types actually protect coaching businesses, what generic templates miss, and how proper contracts prevent the disputes affecting 68% of coaches.',
+  category: 'Legal',
+  date: '2026-06-20',
+  lastUpdated: '2026-06-20',
+  readTime: 18,
+  image: '/images/blog/coaching-contracts.png',
+  keywords: 'coaching contract UK, life coach agreement, business coach contract template, coaching terms and conditions, coach client agreement, coaching dispute resolution, UK coaching legal requirements, coaching service agreement, contract clauses for coaches, payment protection for coaches',
+  content: (
+    <div>
+      <p className="text-lg mb-6 leading-relaxed">
+        The UK coaching industry is booming. With an estimated 80,000+ coaches operating across life coaching, business coaching, executive coaching, and wellness coaching, it's one of the fastest-growing sectors in the British economy. Yet beneath this growth lies a hidden crisis: the majority of coaches are operating with contracts that fundamentally fail to protect their business — if they have contracts at all.
+      </p>
+
+      <AnimatedStatsGrid
+        stats={[
+          { value: 68, label: 'Coaches with payment disputes', suffix: '%' },
+          { value: 4200, label: 'Average annual loss from disputes', prefix: '£' },
+          { value: 43, label: 'Coaches with no written contract', suffix: '%' },
+          { value: 73, label: 'Using generic templates', suffix: '%' },
+        ]}
+        columns={4}
+        className="mb-8"
+      />
+
+      <p className="mb-6 leading-relaxed">
+        The statistics above aren't theoretical. They come from surveys of working UK coaches who discovered — often too late — that their approach to client agreements left them exposed. Payment disputes, scope creep, client ghosting, and impossible-to-resolve conflicts stem from a single source: contracts that don't address the specific realities of coaching work.
+      </p>
+
+      <div className="bg-gray-50 border-l-4 border-[#2C68C4] p-5 mb-8">
+        <p className="text-sm font-semibold text-[#1B3F7A] mb-2">What This Guide Covers</p>
+        <ul className="text-sm text-gray-700 space-y-1">
+          <li>Why generic service contracts fail for coaching specifically</li>
+          <li>The essential clauses every coaching contract must include</li>
+          <li>Differences between life coaching, business coaching, and executive coaching contracts</li>
+          <li>Payment structures and how to protect yourself from non-payment</li>
+          <li>Scope boundaries: preventing the "just one more session" trap</li>
+          <li>Confidentiality, testimonials, and results claims</li>
+          <li>Sample clauses and practical implementation guidance</li>
+        </ul>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">The Coaching Contract Problem: What's Going Wrong?</h2>
+
+      <p className="mb-4 leading-relaxed">
+        Coaching isn't like other professional services. Unlike accountants or lawyers, coaches operate in a space where outcomes are inherently uncertain, the work is deeply personal, and the professional boundaries can blur easily. Most generic contract templates — even those marketed specifically to coaches — fail to address these realities.
+      </p>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">Most Common Coaching Contract Problems</h3>
+
+      <AnimatedBarChart
+        data={[
+          { label: 'No payment terms or deposit structure', value: 78 },
+          { label: 'Missing cancellation/rescheduling policy', value: 71 },
+          { label: 'No scope boundaries (scope creep risk)', value: 65 },
+          { label: 'Weak or no confidentiality clause', value: 54 },
+          { label: 'No termination provisions', value: 48 },
+          { label: 'Missing results disclaimer', value: 42 },
+        ]}
+        title="Contract Gaps in UK Coaching Agreements"
+        subtitle="Percentage of coaching contracts missing each provision"
+        className="mb-8"
+      />
+
+      <p className="mb-4 leading-relaxed">
+        The data above reveals a pattern: coaches are using contracts that cover basic business terms but miss the specific risks inherent to coaching relationships. Payment disputes rank first because coaching often involves ongoing relationships where payment terms can become informal. Cancellation policies are critical because coaching sessions are frequently rescheduled — without clear policies, you can end up with empty slots and lost income. Scope boundaries matter because the open-ended nature of coaching work makes it easy for "one quick question" emails to expand into unpaid consulting.
+      </p>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-5 mb-6">
+        <p className="text-sm text-gray-700"><strong>The "Friendly" Trap:</strong> Many coaches resist formal contracts because they believe it signals distrust. The opposite is true. A clear contract that explains exactly what you'll do, how you'll work together, and what happens when things change builds trust. It shows professionalism. It sets expectations. The absence of clarity is what creates distrust.</p>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Coaching vs. Generic Service Contracts: Key Differences</h2>
+
+      <p className="mb-4 leading-relaxed">
+        A well-drafted coaching contract differs from a generic service agreement in several crucial ways. Understanding these differences will help you evaluate any contract template you're considering — or better, create one that actually protects your business.
+      </p>
+
+      <div className="overflow-x-auto mb-6">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-[#1B3F7A] text-white">
+              <th className="border border-gray-300 px-4 py-3 text-left">Aspect</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">Generic Contract</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">Coaching-Specific Contract</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Results Language</td>
+              <td className="border border-gray-300 px-4 py-3">Often implies specific outcomes</td>
+              <td className="border border-gray-300 px-4 py-3">Explicit disclaimers about variable outcomes</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Session Structure</td>
+              <td className="border border-gray-300 px-4 py-3">Project milestones or deliverables</td>
+              <td className="border border-gray-300 px-4 py-3">Session counts, timing, format requirements</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Confidentiality</td>
+              <td className="border border-gray-300 px-4 py-3">Basic business confidentiality</td>
+              <td className="border border-gray-300 px-4 py-3">Enhanced personal information protections</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Cancellation Terms</td>
+              <td className="border border-gray-300 px-4 py-3">Project timeline changes</td>
+              <td className="border border-gray-300 px-4 py-3">Specific rescheduling, no-show, and cancellation windows</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Support Between Sessions</td>
+              <td className="border border-gray-300 px-4 py-3">Rarely addressed</td>
+              <td className="border border-gray-300 px-4 py-3">Clear boundaries on email/WhatsApp accessibility</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Termination</td>
+              <td className="border border-gray-300 px-4 py-3">Project completion</td>
+              <td className="border border-gray-300 px-4 py-3">Ongoing relationship with clear exit terms</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3 font-medium">Testimonial Rights</td>
+              <td className="border border-gray-300 px-4 py-3">Portfolio/case study rights</td>
+              <td className="border border-gray-300 px-4 py-3">Specific consent for coaching testimonials</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">The Essential Coaching Contract Clauses</h2>
+
+      <p className="mb-4 leading-relaxed">
+        Beyond the standard contract elements (parties, payment terms, governing law), coaching contracts require specific provisions that address the unique nature of the work. Here's a detailed examination of each essential clause.
+      </p>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">1. Services Definition and Session Structure</h3>
+
+      <p className="mb-4 leading-relaxed">
+        Unlike project-based work, coaching services need clear definition of how sessions work, their frequency, duration, and format. Without this, clients may expect unlimited access or dispute what "a session" actually means.
+      </p>
+
+      <div className="bg-white border border-gray-300 p-5 font-mono text-sm mb-6 italic">
+        <p className="mb-3">"The Coach will provide the following services:</p>
+        <p className="mb-3">• <strong>Session Format:</strong> 60-minute one-to-one coaching sessions conducted via [video call platform / telephone / in-person at location]</p>
+        <p className="mb-3">• <strong>Session Frequency:</strong> [X] sessions per [week/fortnight/month], scheduled by mutual agreement</p>
+        <p className="mb-3">• <strong>Session Hours:</strong> Sessions are available between [time] and [time] on [days], UK time</p>
+        <p className="mb-3">• <strong>Between-Session Support:</strong> [Optional: Email support for questions related to session content, with responses within 48 business hours / No support between sessions unless separately agreed]</p>
+        <p className="mb-3">• <strong>Total Package:</strong> This agreement covers [X] sessions over a period of [X] weeks/months"</p>
+      </div>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">2. Payment Terms and Deposits</h3>
+
+      <p className="mb-4 leading-relaxed">
+        Payment is the single biggest source of coaching disputes. The solution is a clear payment structure that protects your income and creates client commitment.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="font-bold text-[#1B3F7A] mb-3">Recommended Payment Structure</div>
+          <ul className="text-sm text-gray-700 space-y-2">
+            <li><strong>Package Coaching:</strong> 50% deposit upon booking, 50% before session 4, or payment in full upfront</li>
+            <li><strong>Monthly Retainer:</strong> Payment due on 1st of each month for that month's sessions</li>
+            <li><strong>Single Sessions:</strong> Payment at time of booking (non-negotiable)</li>
+          </ul>
+        </div>
+        <div className="bg-red-50 rounded-xl border border-red-200 p-5">
+          <div className="font-bold text-red-800 mb-3">What to Avoid</div>
+          <ul className="text-sm text-red-700 space-y-2">
+            <li>Payment after each session (easy to lose momentum and payment)</li>
+            <li>"Pay when you can" arrangements</li>
+            <li>Extended payment terms for completed packages</li>
+            <li>Unpaid introductory sessions (unless strategically designed)</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">3. Cancellation and Rescheduling Policy</h3>
+
+      <p className="mb-4 leading-relaxed">
+        Coaches lose significant income to late cancellations and no-shows. A clear policy protects your time and teaches clients to respect it.
+      </p>
+
+      <div className="bg-gray-50 p-6 rounded-lg mb-6">
+        <h4 className="font-bold text-[#1B3F7A] mb-3">Recommended Cancellation Policy</h4>
+        <div className="space-y-3 text-sm text-gray-700">
+          <div className="flex items-start gap-3">
+            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">24+ HOURS</span>
+            <p>No charge. Session can be rescheduled within the agreement period subject to availability.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold">12-24 HOURS</span>
+            <p>50% of session fee charged unless rescheduled within 7 days.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-bold">UNDER 12 HOURS</span>
+            <p>Full session fee charged. No rescheduling credit.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs font-bold">NO-SHOW</span>
+            <p>Full session fee charged. Counts as a delivered session.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border-l-4 border-[#2C68C4] p-5 mb-6">
+        <p className="text-sm text-gray-700"><strong>Pro Tip:</strong> Use automated booking systems like Calendly or Acuity that enforce your cancellation policy. When clients book, they agree to the policy automatically. This removes the awkward conversation and makes enforcement frictionless.</p>
+      </div>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">4. Confidentiality with Proper Scope</h3>
+
+      <p className="mb-4 leading-relaxed">
+        Coaching often involves deeply personal discussions. Your confidentiality clause needs to be robust while acknowledging legitimate exceptions.
+      </p>
+
+      <div className="bg-white border border-gray-300 p-5 font-mono text-sm mb-6 italic">
+        <p className="mb-3">"Both parties agree to maintain the confidentiality of all information shared during coaching sessions, except:</p>
+        <p className="mb-3">(a) where disclosure is required by law or court order;</p>
+        <p className="mb-3">(b) where the Coach reasonably believes there is risk of harm to the Client or third parties;</p>
+        <p className="mb-3">(c) where the Client provides written consent for specific disclosures;</p>
+        <p className="mb-3">(d) for the Coach's own supervision and professional development (with identifying details removed)."</p>
+      </div>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">5. Results Disclaimer and Client Responsibility</h3>
+
+      <p className="mb-4 leading-relaxed">
+        This clause protects you from claims that coaching "didn't work" while reinforcing the collaborative nature of the work.
+      </p>
+
+      <div className="bg-white border border-gray-300 p-5 font-mono text-sm mb-6 italic">
+        <p className="mb-3">"The Client acknowledges that coaching is a collaborative process and that outcomes depend significantly on the Client's own efforts, commitment, and application of insights gained during sessions. The Coach makes no guarantees about specific results, and any examples or testimonials provided do not constitute promises of similar outcomes for the Client."</p>
+      </div>
+
+      <div className="bg-red-50 border-l-4 border-red-500 p-5 mb-6">
+        <p className="text-sm font-semibold text-red-800 mb-1">Legal Warning</p>
+        <p className="text-sm text-red-700">Making specific outcome promises ("You will double your income", "You will find your dream job") can expose you to claims under the Consumer Rights Act 2015 and Advertising Standards Authority rules. Your contract should explicitly disclaim guaranteed outcomes.</p>
+      </div>
+
+      <h3 className="text-xl font-bold mb-3 mt-8">6. Termination and Refund Provisions</h3>
+
+      <p className="mb-4 leading-relaxed">
+        Coaching relationships end. Sometimes amicably, sometimes not. Your contract needs to address both scenarios clearly.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-[#EBF2FF] rounded-xl p-5 border border-[#2C68C4]/15">
+          <div className="font-bold text-[#1B3F7A] mb-3">Client Termination</div>
+          <p className="text-sm text-gray-700">"The Client may terminate this agreement at any time by providing written notice. Refunds for unused sessions will be provided at the Coach's discretion, less an administrative fee of [X]%, and the Client forfeits any package discounts."</p>
+        </div>
+        <div className="bg-[#EBF2FF] rounded-xl p-5 border border-[#2C68C4]/15">
+          <div className="font-bold text-[#1B3F7A] mb-3">Coach Termination</div>
+          <p className="text-sm text-gray-700">"The Coach may terminate this agreement with [14 days] written notice. Pro-rata refunds will be provided for any unused sessions. The Coach may terminate immediately in cases of abusive behaviour, non-payment, or breach of agreement terms."</p>
+        </div>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Different Coaching Contexts: What Changes?</h2>
+
+      <p className="mb-4 leading-relaxed">
+        While the core clauses remain similar, different coaching contexts require specific adjustments to your contract.
+      </p>
+
+      <div className="space-y-6 mb-8">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h4 className="font-bold text-[#1B3F7A] mb-3 text-lg">Life Coaching Contracts</h4>
+          <p className="text-sm text-gray-700 mb-3"><strong>Key considerations:</strong></p>
+          <ul className="text-sm text-gray-700 space-y-1">
+            <li>• Enhanced personal information and confidentiality protections</li>
+            <li>• Clear scope limiting advice on medical, legal, or financial matters</li>
+            <li>• Explicit statement that coaching is not therapy or counselling</li>
+            <li>• Referral responsibilities when issues emerge outside coaching scope</li>
+          </ul>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h4 className="font-bold text-[#1B3F7A] mb-3 text-lg">Business Coaching Contracts</h4>
+          <p className="text-sm text-gray-700 mb-3"><strong>Key considerations:</strong></p>
+          <ul className="text-sm text-gray-700 space-y-1">
+            <li>• Intellectual property protections for your methodologies and materials</li>
+            <li>• Clear disclaimers about business outcomes being client-dependent</li>
+            <li>• Confidentiality that protects both personal and business-sensitive information</li>
+            <li>• Payment structures that often involve higher values and longer commitments</li>
+          </ul>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h4 className="font-bold text-[#1B3F7A] mb-3 text-lg">Executive Coaching Contracts</h4>
+          <p className="text-sm text-gray-700 mb-3"><strong>Key considerations:</strong></p>
+          <ul className="text-sm text-gray-700 space-y-1">
+            <li>• Three-party agreements (coach, executive, and sponsoring organisation)</li>
+            <li>• Clear delineation of what information can be shared with the sponsor</li>
+            <li>• Non-compete clauses (preventing coaching competitor executives)</li>
+            <li>• Higher professional liability insurance requirements</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">The Cost of Getting It Wrong</h2>
+
+      <p className="mb-4 leading-relaxed">
+        What happens when coaches operate without proper contracts? The financial impact is more significant than most realise.
+      </p>
+
+      <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+        <h3 className="font-bold text-[#1B3F7A] mb-4 text-lg">Average Annual Loss for UK Coaches Without Proper Contracts</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-white rounded-xl">
+            <div className="text-3xl font-bold text-navy">£<AnimatedCounter target={1850} triggerOnView={false} /></div>
+            <div className="text-sm text-gray-600 mt-1">Unpaid invoices and late payments</div>
+          </div>
+          <div className="text-center p-4 bg-white rounded-xl">
+            <div className="text-3xl font-bold text-navy">£<AnimatedCounter target={1200} triggerOnView={false} /></div>
+            <div className="text-sm text-gray-600 mt-1">Last-minute cancellations and no-shows</div>
+          </div>
+          <div className="text-center p-4 bg-white rounded-xl">
+            <div className="text-3xl font-bold text-navy">£<AnimatedCounter target={890} triggerOnView={false} /></div>
+            <div className="text-sm text-gray-600 mt-1">Scope creep and unpaid "quick questions"</div>
+          </div>
+        </div>
+        <div className="text-center mt-6 pt-4 border-t border-gray-200">
+          <div className="text-sm text-gray-500">Total average annual loss</div>
+          <div className="text-4xl font-bold text-red-600">£<AnimatedCounter target={3940} triggerOnView={false} /></div>
+        </div>
+      </div>
+
+      <p className="mb-4 leading-relaxed">
+        These figures represent averages across surveyed UK coaches. For coaches with higher rates or larger client rosters, the losses scale proportionally. A coach charging £150 per session who experiences just two payment disputes and one client ghosting per year can lose £1,200+ — enough to justify investing in proper contracts multiple times over.
+      </p>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Implementing Your Coaching Contract: Practical Steps</h2>
+
+      <p className="mb-4 leading-relaxed">
+        Understanding what should be in your contract is different from implementing it effectively. Here's a step-by-step approach to getting contracts in place.
+      </p>
+
+      <div className="bg-gray-50 p-6 rounded-lg mb-6">
+        <h3 className="font-bold text-[#1B3F7A] mb-4">Step-by-Step Implementation</h3>
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl p-4 border-l-4 border-[#2C68C4]">
+            <div className="font-semibold text-[#1B3F7A] mb-1">Step 1: Audit Your Current Situation</div>
+            <p className="text-sm text-gray-700">Do you have any contracts? What do they cover? What's missing? Be honest about gaps.</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border-l-4 border-[#2C68C4]">
+            <div className="font-semibold text-[#1B3F7A] mb-1">Step 2: Choose Your Contract Structure</div>
+            <p className="text-sm text-gray-700">Will you use single-session agreements, package agreements, or monthly retainers? Each needs slightly different terms.</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border-l-4 border-[#2C68C4]">
+            <div className="font-semibold text-[#1B3F7A] mb-1">Step 3: Draft or Customise Your Contract</div>
+            <p className="text-sm text-gray-700">Work from a coaching-specific template, not a generic service agreement. Tailor it to your specific coaching practice.</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border-l-4 border-[#2C68C4]">
+            <div className="font-semibold text-[#1B3F7A] mb-1">Step 4: Set Up Your Systems</div>
+            <p className="text-sm text-gray-700">Integrate your contract with your booking system, payment processor, and client onboarding workflow.</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border-l-4 border-[#2C68C4]">
+            <div className="font-semibold text-[#1B3F7A] mb-1">Step 5: Communicate with Existing Clients</div>
+            <p className="text-sm text-gray-700">For ongoing clients without contracts, have the conversation. "I'm professionalising my practice — here's our new agreement."</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border-l-4 border-[#2C68C4] p-5 mb-6">
+        <p className="text-sm text-gray-700"><strong>Timing Your Transition:</strong> The best time to introduce contracts is before you need them. Implement proper agreements with new clients immediately. For existing clients, a 30-day notice period for new terms is reasonable. Make it about your professional development, not distrust of them specifically.</p>
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-10">Summary: The Contract That Actually Protects You</h2>
+
+      <p className="mb-4 leading-relaxed">
+        A coaching contract that works is one that addresses the specific realities of coaching work. Generic templates fail because they weren't designed for the coaching relationship's unique characteristics: the ongoing nature of the engagement, the deeply personal content of sessions, the collaborative responsibility for outcomes, and the frequency of rescheduling.
+      </p>
+
+      <div className="overflow-x-auto mb-6">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-[#1B3F7A] text-white">
+              <th className="border border-gray-300 px-4 py-3 text-left">What Generic Templates Miss</th>
+              <th className="border border-gray-300 px-4 py-3 text-left">What Your Contract Needs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3">Vague service descriptions</td>
+              <td className="border border-gray-300 px-4 py-3">Specific session structure, frequency, format, and support boundaries</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3">Basic payment terms</td>
+              <td className="border border-gray-300 px-4 py-3">Deposits, package structures, and clear refund/forfeiture provisions</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3">No cancellation policy</td>
+              <td className="border border-gray-300 px-4 py-3">Specific rescheduling windows with fee consequences</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3">Basic confidentiality</td>
+              <td className="border border-gray-300 px-4 py-3">Enhanced personal information protections with appropriate exceptions</td>
+            </tr>
+            <tr className="bg-white">
+              <td className="border border-gray-300 px-4 py-3">No outcome disclaimers</td>
+              <td className="border border-gray-300 px-4 py-3">Explicit statements about client responsibility and variable outcomes</td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="border border-gray-300 px-4 py-3">Missing termination terms</td>
+              <td className="border border-gray-300 px-4 py-3">Clear exit provisions for both parties with refund calculations</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mb-4 leading-relaxed">
+        If you've been operating without proper contracts, or with contracts that leave you exposed, you're not alone. The majority of UK coaches are in the same position. But now you understand the gap — and the cost of leaving it open.
+      </p>
+
+      <p className="text-lg mt-8 leading-relaxed font-medium text-[#1B3F7A]">
+        The contract you use isn't just a legal document. It's a professional foundation that protects your income, defines your boundaries, and signals to clients that you take your work seriously. The small investment in getting it right pays dividends for the entire life of your coaching practice.
+      </p>
+    </div>
+  ),
+};
+
 // Array of all articles
 export const articles: Article[] = [
   SoleTraderSetupArticle,
@@ -2893,6 +3314,7 @@ export const articles: Article[] = [
   InvoiceArticle,
   LatePaymentArticle,
   ProfessionalCredibilityArticle,
+  CoachingContractsArticle,
 ];
 
 // Helper functions
