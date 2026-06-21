@@ -103,12 +103,6 @@ function ThreeStepProcess() {
         </p>
 
         <div className="relative mt-14">
-          {/* Connection line */}
-          <div
-            className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-medium-blue/20 hidden md:block"
-            style={{ transform: 'translateX(-50%)' }}
-          />
-
           <div className="flex flex-col gap-12">
             {steps.map((step, i) => (
               <div

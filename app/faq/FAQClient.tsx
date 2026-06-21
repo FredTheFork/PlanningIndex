@@ -89,8 +89,8 @@ function FAQAccordion({ faqs }: FAQAccordionProps) {
 
             <div className="flex flex-col gap-3">
               {faqs.filter(faq => faq.category === category).map(faq => {
-                const isExpanded = expanded[faq.id] !== false; // Default to expanded (true)
-                
+                const isExpanded = !!expanded[faq.id];
+
                 return (
                   <div
                     key={faq.id}
@@ -116,16 +116,16 @@ function FAQAccordion({ faqs }: FAQAccordionProps) {
                       />
                     </button>
 
-                    {/* CRITICAL: Answer content is ALWAYS in the HTML for SEO/AI visibility */}
-                    {/* No CSS hiding - content is fully visible to search engines and AI agents */}
-                    <div className="px-6 pb-6 border-t border-border">
-                      <p
-                        className="font-inter text-secondary-text leading-[1.7] pt-6"
-                        style={{ fontSize: '0.95rem' }}
-                      >
-                        {faq.answer}
-                      </p>
-                    </div>
+                    {isExpanded && (
+                      <div className="px-6 pb-6 border-t border-border">
+                        <p
+                          className="font-inter text-secondary-text leading-[1.7] pt-6"
+                          style={{ fontSize: '0.95rem' }}
+                        >
+                          {faq.answer}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
