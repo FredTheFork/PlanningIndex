@@ -200,11 +200,11 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     mode: 'payment',
     stripePriceIds: {
       test: 'price_1TZc9UGfxcDbzGRtniOLIJLE',
-      live: 'price_1TX34AGfxcDbzGRtxVtQN95g',
+      live: '',
     },
     stripeProductIds: {
-      test: 'prod_UdvhNsQZM3C2RL',
-      live: 'prod_UdvhNsQZM3C2RL',
+      test: 'prod_UWOFFYAhQGQ1YM',
+      live: '',
     },
     includes: [
       'Bespoke Client Contract',
@@ -249,7 +249,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     },
     stripeProductIds: {
       test: 'prod_UfnqtTGEWkoXYK',
-      live: 'prod_UfnqtTGEWkoXYK',
+      live: '',
     },
     includes: [
       'Homepage (hero, benefits, CTA)',
@@ -300,12 +300,12 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     currencySymbol: '£',
     mode: 'payment',
     stripePriceIds: {
-      test: 'price_1Tfo0mGfxcDbzGRtHqF3MmVv',
+      test: 'price_1TgTD4GfxcDbzGRtwfjjKSc9',
       live: '',
     },
     stripeProductIds: {
       test: 'prod_Ufnsr70N1uRKfN',
-      live: 'prod_Ufnsr70N1uRKfN',
+      live: '',
     },
     includes: [
       'Educational posts',
@@ -353,7 +353,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     },
     stripeProductIds: {
       test: 'prod_UfntRYA1SkzyAD',
-      live: 'prod_UfntRYA1SkzyAD',
+      live: '',
     },
     includes: [
       'Monthly document updates',
@@ -392,7 +392,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     },
     stripeProductIds: {
       test: 'prod_UfntRYA1SkzyAD',
-      live: 'prod_UfntRYA1SkzyAD',
+      live: '',
     },
     includes: [
       'One document update per quarter',
@@ -431,7 +431,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIeAGfxcDbzGRtAdPjogwV',
+      test: 'prod_Uik8MyUKPcf5cB',
       live: '',
     },
     includes: [
@@ -473,7 +473,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIf6GfxcDbzGRtv843ka5P',
+      test: 'prod_Uik9rl1K2wu6yf',
       live: '',
     },
     includes: [
@@ -515,7 +515,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIfpGfxcDbzGRt1rBiLXqC',
+      test: 'prod_UikA7BHcffvw7C',
       live: '',
     },
     includes: [
@@ -557,7 +557,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIgyGfxcDbzGRt3O0f8wmM',
+      test: 'prod_UikBCrjnKNO4G3',
       live: '',
     },
     includes: [
@@ -603,7 +603,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIhfGfxcDbzGRtWDo6RyZ6',
+      test: 'prod_UikCoQ27voUDgH',
       live: '',
     },
     includes: [
@@ -644,7 +644,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIiFGfxcDbzGRt74btRoIa',
+      test: 'prod_UikC8e74WJiQmR',
       live: '',
     },
     includes: [
@@ -685,7 +685,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIj6GfxcDbzGRtazMtGvDM',
+      test: 'prod_UikD7l5dus5Mps',
       live: '',
     },
     includes: [
@@ -726,7 +726,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       live: '',
     },
     stripeProductIds: {
-      test: 'prod_1TjIjmGfxcDbzGRtDlS8hipL',
+      test: 'prod_UikEWm8W32KbVv',
       live: '',
     },
     includes: [
