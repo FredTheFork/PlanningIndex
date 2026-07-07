@@ -13,6 +13,76 @@ export interface PricingTier {
   stripePriceId: { test: string; live: string };
 }
 
+export interface CarePlanTier {
+  id: 'essentials' | 'standard' | 'complete';
+  name: string;
+  price: number;
+  priceLabel: string;
+  tagline: string;
+  includes: string[];
+  stripePriceId: { test: string; live: string };
+}
+
+export const CARE_PLAN_TIERS: CarePlanTier[] = [
+  {
+    id: 'essentials',
+    name: 'Essentials',
+    price: 19,
+    priceLabel: '£19/month',
+    tagline: 'Core document maintenance',
+    includes: [
+      'Monthly document updates',
+      'Pricing and service changes',
+      'GDPR regulation updates',
+    ],
+    // STRIPE: Replace with your Essentials price ID from the Stripe dashboard
+    stripePriceId: { test: 'REPLACE_WITH_ESSENTIALS_PRICE_ID', live: '' },
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    price: 29,
+    priceLabel: '£29/month',
+    tagline: 'Full support and priority access',
+    includes: [
+      'Monthly document updates',
+      'Pricing and service changes',
+      'GDPR regulation updates',
+      'Priority support',
+      'New document additions',
+    ],
+    // STRIPE: Replace with your Standard price ID (existing monthly care plan price)
+    stripePriceId: { test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo', live: '' },
+  },
+  {
+    id: 'complete',
+    name: 'Complete',
+    price: 49,
+    priceLabel: '£49/month',
+    tagline: 'Full business infrastructure maintenance',
+    includes: [
+      'Monthly document updates',
+      'Pricing and service changes',
+      'GDPR regulation updates',
+      'Priority support',
+      'New document additions',
+      'Social media content refresh',
+      'Website copy updates',
+    ],
+    // STRIPE: Replace with your Complete price ID from the Stripe dashboard
+    stripePriceId: { test: 'REPLACE_WITH_COMPLETE_PRICE_ID', live: '' },
+  },
+];
+
+export function getCarePlanTierById(id: string): CarePlanTier | undefined {
+  return CARE_PLAN_TIERS.find(t => t.id === id);
+}
+
+export function getCarePlanPriceId(tierId: string, mode: 'test' | 'live'): string | undefined {
+  const tier = getCarePlanTierById(tierId);
+  return tier?.stripePriceId[mode];
+}
+
 export interface ServiceCatalogEntry {
   id: string;
   name: string;
@@ -58,6 +128,8 @@ export interface ServiceCatalogEntry {
   relatedServiceIds: string[];
   /** Display badge (e.g. "Best Seller", "New", "Most Popular"). */
   badge: string | null;
+  /** If true, hidden from the checkout UI (legacy/alias entries). */
+  hiddenFromCheckout?: boolean;
 }
 
 // ── Service Groups (Bundles) ──
@@ -341,12 +413,13 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     id: 'monthly_care_plan',
     name: 'Monthly Care Plan',
     description:
-      'Keep your documents accurate as your business evolves. Monthly updates, ongoing support, and priority access.',
-    shortDescription: 'Monthly document updates and ongoing business support.',
-    price: 29.0,
+      'Keep your documents accurate as your business evolves. Choose your level of support — from core updates to full business infrastructure maintenance.',
+    shortDescription: 'Modular monthly support — pick the plan that fits your business.',
+    price: 19.0,
     currency: 'gbp',
     currencySymbol: '£',
     mode: 'subscription',
+    // Base price ID (Essentials tier) — overridden by care plan tier selection at checkout
     stripePriceIds: {
       test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo',
       live: '',
@@ -359,8 +432,9 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
       'Monthly document updates',
       'Pricing and service changes',
       'GDPR regulation updates',
-      'Priority support',
-      'New document additions as your business grows',
+      'Priority support (Standard+)',
+      'New document additions (Standard+)',
+      'Social media & website refresh (Complete)',
     ],
     requiresIntake: false,
     intakeSections: [],
@@ -368,7 +442,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     sortOrder: 50,
     isCore: false,
     subscriptionInterval: 'month',
-    priceLabel: '£29/month — cancel anytime',
+    priceLabel: 'From £19/month — cancel anytime',
     tier: 'foundation',
     industry: null,
     serviceGroup: null,
@@ -412,6 +486,7 @@ export const serviceCatalog: ServiceCatalogEntry[] = [
     serviceGroup: null,
     relatedServiceIds: ['business_foundations_pack', 'monthly_care_plan'],
     badge: null,
+    hiddenFromCheckout: true,
   },
 
   // ── OPERATIONS TIER ──

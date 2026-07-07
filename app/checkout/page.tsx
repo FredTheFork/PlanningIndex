@@ -30,6 +30,8 @@ import {
   getServicesByTier,
   getServiceGroupById,
   getHighestTier,
+  CARE_PLAN_TIERS,
+  getCarePlanTierById,
   type ServiceCatalogEntry,
   type ServiceTier,
   type ServiceGroup,
@@ -123,6 +125,7 @@ function CheckoutPageInner() {
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [socialMediaPostCount, setSocialMediaPostCount] = useState(5);
   const [selectedWebsitePages, setSelectedWebsitePages] = useState<string[]>(['Homepage']);
+  const [carePlanTierId, setCarePlanTierId] = useState<'essentials' | 'standard' | 'complete'>('standard');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
@@ -259,8 +262,12 @@ function CheckoutPageInner() {
     (s) => !purchasedServices.includes(s.id)
   );
   const subscriptionServices = serviceCatalog.filter(
-    (s) => s.mode === 'subscription' && !purchasedServices.includes(s.id)
+    (s) => s.mode === 'subscription' && !purchasedServices.includes(s.id) && !s.hiddenFromCheckout
   );
+
+  const selectedCarePlanTier = selectedServiceIds.includes('monthly_care_plan')
+    ? getCarePlanTierById(carePlanTierId)
+    : null;
 
   // Current tier from selection
   const currentTier = getHighestTier(selectedServiceIds);
@@ -338,6 +345,10 @@ function CheckoutPageInner() {
       if (selectedServiceIds.includes('website_copy_pack')) {
         requestBody.website_page_count = websitePageCount;
         requestBody.website_pages_selected = selectedWebsitePages;
+      }
+
+      if (selectedServiceIds.includes('monthly_care_plan')) {
+        requestBody.care_plan_tier_id = carePlanTierId;
       }
 
       // Pass group_id if a bundle is completed
@@ -572,7 +583,12 @@ function CheckoutPageInner() {
     .reduce((sum, sp) => sum + sp.discountedPrice, 0);
   const monthlyTotal = servicePrices
     .filter(sp => getServiceById(sp.id)?.mode === 'subscription')
-    .reduce((sum, sp) => sum + sp.discountedPrice, 0);
+    .reduce((sum, sp) => {
+      if (sp.id === 'monthly_care_plan' && selectedCarePlanTier) {
+        return sum + selectedCarePlanTier.price;
+      }
+      return sum + sp.discountedPrice;
+    }, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20 pb-16">
@@ -645,69 +661,111 @@ function CheckoutPageInner() {
                     </h2>
                   </div>
                   <p className="font-inter text-indigo-700 text-xs mt-1">
-                    Monthly updates and priority support for your documents
+                    Monthly updates and priority support — choose your level
                   </p>
                 </div>
                 <div className="p-4 space-y-2">
                   {subscriptionServices.map((service) => {
                     const isSelected = selectedServiceIds.includes(service.id);
                     const isDisabled = purchasedServices.includes(service.id);
+                    const isCarePlan = service.id === 'monthly_care_plan';
+                    const displayPrice = isCarePlan && isSelected
+                      ? getCarePlanTierById(carePlanTierId)?.price ?? service.price
+                      : service.price;
 
                     return (
-                      <div
-                        key={service.id}
-                        onClick={() => !isDisabled && toggleService(service.id)}
-                        className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                          isDisabled
-                            ? 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
-                            : isSelected
-                              ? 'border-indigo-500 bg-indigo-50'
-                              : 'border-indigo-200 bg-white hover:border-indigo-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center ${
-                              isSelected ? 'bg-indigo-500' : 'border-2 border-indigo-300 bg-white'
-                            }`}>
-                              {isSelected && <Check size={12} className="text-white" />}
+                      <div key={service.id}>
+                        <div
+                          onClick={() => !isDisabled && toggleService(service.id)}
+                          className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                            isDisabled
+                              ? 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
+                              : isSelected
+                                ? 'border-indigo-500 bg-indigo-50'
+                                : 'border-indigo-200 bg-white hover:border-indigo-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center ${
+                                isSelected ? 'bg-indigo-500' : 'border-2 border-indigo-300 bg-white'
+                              }`}>
+                                {isSelected && <Check size={12} className="text-white" />}
+                              </div>
+                              <div>
+                                <h3 className="font-inter font-semibold text-dark-text text-sm">
+                                  {service.name}
+                                </h3>
+                                <p className="font-inter text-secondary-text text-xs mt-0.5">
+                                  {service.shortDescription}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-inter font-semibold text-dark-text text-sm">
-                                {service.name}
-                              </h3>
-                              <p className="font-inter text-secondary-text text-xs mt-0.5">
-                                {service.shortDescription}
-                              </p>
+                            <div className="text-right">
+                              <span className="font-inter font-bold text-indigo-700 text-sm">
+                                {isCarePlan ? 'From £19' : `£${displayPrice.toFixed(2)}`}
+                              </span>
+                              <span className="font-inter text-indigo-600 text-xs block">
+                                /month
+                              </span>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-inter font-bold text-indigo-700 text-sm">
-                              £{service.price.toFixed(2)}
-                            </span>
-                            <span className="font-inter text-indigo-600 text-xs block">
-                              /month
-                            </span>
                           </div>
                         </div>
-                        {isSelected && service.includes.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-indigo-200">
-                            <div className="flex flex-wrap gap-1">
-                              {service.includes.slice(0, 3).map((item) => (
-                                <span
-                                  key={item}
-                                  className="inline-flex items-center gap-1 bg-white rounded-full px-2 py-0.5"
-                                >
-                                  <span className="font-inter text-xs text-indigo-700">{item}</span>
-                                </span>
-                              ))}
-                              {service.includes.length > 3 && (
-                                <span className="inline-flex items-center bg-indigo-100 rounded-full px-2 py-0.5">
-                                  <span className="font-inter text-xs text-indigo-700 font-medium">
-                                    +{service.includes.length - 3} more
-                                  </span>
-                                </span>
-                              )}
+
+                        {/* Care plan tier selector */}
+                        {isCarePlan && isSelected && !isDisabled && (
+                          <div className="mt-2 p-4 bg-white rounded-xl border border-indigo-200">
+                            <p className="font-inter font-medium text-dark-text text-xs mb-3">
+                              Choose your plan
+                            </p>
+                            <div className="space-y-2">
+                              {CARE_PLAN_TIERS.map((tier) => {
+                                const isActiveTier = carePlanTierId === tier.id;
+                                return (
+                                  <button
+                                    key={tier.id}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCarePlanTierId(tier.id);
+                                    }}
+                                    className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+                                      isActiveTier
+                                        ? 'border-indigo-500 bg-indigo-50'
+                                        : 'border-slate-200 bg-white hover:border-indigo-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                          isActiveTier ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300'
+                                        }`}>
+                                          {isActiveTier && <div className="w-2 h-2 rounded-full bg-white" />}
+                                        </div>
+                                        <div>
+                                          <span className="font-inter font-semibold text-dark-text text-sm">
+                                            {tier.name}
+                                          </span>
+                                          <span className="font-inter text-secondary-text text-xs ml-2">
+                                            — {tier.tagline}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <span className="font-inter font-bold text-indigo-700 text-sm shrink-0">
+                                        {tier.priceLabel}
+                                      </span>
+                                    </div>
+                                    <ul className="mt-2 ml-6 space-y-0.5">
+                                      {tier.includes.map((item) => (
+                                        <li key={item} className="flex items-center gap-1.5">
+                                          <Check size={11} className="text-indigo-500 shrink-0" />
+                                          <span className="font-inter text-xs text-secondary-text">{item}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -864,10 +922,19 @@ function CheckoutPageInner() {
                                   {websitePageCount} page{websitePageCount !== 1 ? 's' : ''}
                                 </span>
                               )}
+                              {sp.id === 'monthly_care_plan' && selectedCarePlanTier && (
+                                <span className="font-inter text-secondary-text text-xs">
+                                  {selectedCarePlanTier.name} plan
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
-                            {hasDiscount ? (
+                            {sp.id === 'monthly_care_plan' && selectedCarePlanTier ? (
+                              <span className="font-inter font-semibold text-navy text-sm">
+                                £{selectedCarePlanTier.price.toFixed(2)}/mo
+                              </span>
+                            ) : hasDiscount ? (
                               <div>
                                 <span className="font-inter text-secondary-text line-through text-xs">
                                   £{sp.originalPrice.toFixed(2)}

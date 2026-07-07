@@ -43,6 +43,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+// Modular care plan pricing tiers
+// STRIPE: After creating prices in the Stripe dashboard, replace the placeholder IDs below
+const CARE_PLAN_PRICING_TIERS: Record<string, { test: string; live: string }> = {
+  essentials: { test: 'REPLACE_WITH_ESSENTIALS_PRICE_ID', live: '' },
+  standard: { test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo', live: '' },
+  complete: { test: 'REPLACE_WITH_COMPLETE_PRICE_ID', live: '' },
+};
+
+function getCarePlanPriceId(tierId: string, mode: 'test' | 'live'): string | undefined {
+  const tier = CARE_PLAN_PRICING_TIERS[tierId];
+  if (!tier) return undefined;
+  return tier[mode];
+}
+
 // Pricing tiers for social media pack
 const SOCIAL_MEDIA_PRICING_TIERS: Record<number, { test: string; live: string }> = {
   5: { test: 'price_1TgTD4GfxcDbzGRtwfjjKSc9', live: '' },
@@ -81,7 +95,7 @@ const SERVICES: ServiceConfig[] = [
     name: 'Business Foundations Pack',
     priceIds: {
       test: 'price_1TZc9UGfxcDbzGRtniOLIJLE',
-      live: 'price_1TX34AGfxcDbzGRtxVtQN95g',
+      live: '',
     },
     mode: 'payment',
   },
@@ -306,6 +320,7 @@ Deno.serve(async (req: Request) => {
       website_pages_selected,
       group_id,
       group_discount_percent,
+      care_plan_tier_id,
     } = body;
 
     if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
@@ -346,6 +361,16 @@ Deno.serve(async (req: Request) => {
         if (!priceId) {
           return new Response(
             JSON.stringify({ error: `Website copy pack with ${website_page_count} pages is not yet available. Please contact support.` }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else if (serviceId === 'monthly_care_plan') {
+        // Handle modular care plan tier pricing
+        const tierId = care_plan_tier_id || 'standard';
+        priceId = getCarePlanPriceId(tierId, mode || 'test');
+        if (!priceId || priceId.startsWith('REPLACE_WITH')) {
+          return new Response(
+            JSON.stringify({ error: `Care plan tier "${tierId}" is not yet configured. Please contact support.` }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -399,6 +424,9 @@ Deno.serve(async (req: Request) => {
     }
     if (group_id) {
       metadata.group_id = group_id;
+    }
+    if (care_plan_tier_id && service_ids.includes('monthly_care_plan')) {
+      metadata.care_plan_tier_id = care_plan_tier_id;
     }
     if (primaryIndustry) {
       metadata.industry = primaryIndustry;
