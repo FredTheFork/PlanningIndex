@@ -9,7 +9,21 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 // Pages where the hero is a dark photo background — navbar starts transparent
-const HERO_PATHS = new Set(['/', '/services', '/for/photographers', '/for/coaches', '/for/consultants', '/for/contractors']);
+const HERO_PATHS = new Set([
+  '/',
+  '/services',
+  '/for/photographers',
+  '/for/coaches',
+  '/for/consultants',
+  '/for/contractors',
+  '/services/documents',
+  '/services/website-copy',
+  '/services/social-media',
+  '/services/quarterly-refresh',
+  '/services/foundation',
+  '/services/operations',
+  '/services/industry',
+]);
 
 const navLinks = [
   {
