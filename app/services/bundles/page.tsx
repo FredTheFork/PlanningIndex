@@ -18,41 +18,43 @@ export default function BundlesPage() {
         }}
       >
         <div className="mx-auto" style={{ maxWidth: 800 }}>
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(255,255,255,0.2)' }}
-            >
-              <Package size={24} className="text-white" />
+          <div style={{ paddingTop: 'clamp(80px, 10vw, 128px)' }}>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(255,255,255,0.2)' }}
+              >
+                <Package size={24} className="text-white" />
+              </div>
             </div>
+            <span
+              className="font-inter font-semibold uppercase block"
+              style={{
+                fontSize: '0.75rem',
+                letterSpacing: '0.15em',
+                color: 'rgba(255,255,255,0.8)',
+                marginTop: '12px',
+              }}
+            >
+              BUNDLE & SAVE
+            </span>
+            <h1
+              className="font-inter font-extrabold text-white mt-3"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
+            >
+              Pre-built bundles. Up to 25% off.
+            </h1>
+            <p
+              className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
+              style={{
+                fontSize: '1.05rem',
+                color: 'rgba(255,255,255,0.9)',
+                maxWidth: 550,
+              }}
+            >
+              Get everything you need in one click. Our most popular combinations, pre-built for you.
+            </p>
           </div>
-          <span
-            className="font-inter font-semibold uppercase block"
-            style={{
-              fontSize: '0.75rem',
-              letterSpacing: '0.15em',
-              color: 'rgba(255,255,255,0.8)',
-              marginTop: '12px',
-            }}
-          >
-            BUNDLE & SAVE
-          </span>
-          <h1
-            className="font-inter font-extrabold text-white mt-3"
-            style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
-          >
-            Pre-built bundles. Up to 25% off.
-          </h1>
-          <p
-            className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
-            style={{
-              fontSize: '1.05rem',
-              color: 'rgba(255,255,255,0.9)',
-              maxWidth: 550,
-            }}
-          >
-            Get everything you need in one click. Our most popular combinations, pre-built for you.
-          </p>
         </div>
       </section>
 
