@@ -46,9 +46,9 @@ const corsHeaders = {
 // Modular care plan pricing tiers
 // STRIPE: After creating prices in the Stripe dashboard, replace the placeholder IDs below
 const CARE_PLAN_PRICING_TIERS: Record<string, { test: string; live: string }> = {
-  essentials: { test: 'REPLACE_WITH_ESSENTIALS_PRICE_ID', live: '' },
+  essentials: { test: 'price_1TqbeiGfxcDbzGRtlwAhDA7i', live: '' },
   standard: { test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo', live: '' },
-  complete: { test: 'REPLACE_WITH_COMPLETE_PRICE_ID', live: '' },
+  complete: { test: 'price_1TqbeiGfxcDbzGRt3pvHkD4h', live: '' },
 };
 
 function getCarePlanPriceId(tierId: string, mode: 'test' | 'live'): string | undefined {

@@ -35,8 +35,7 @@ export const CARE_PLAN_TIERS: CarePlanTier[] = [
       'Pricing and service changes',
       'GDPR regulation updates',
     ],
-    // STRIPE: Replace with your Essentials price ID from the Stripe dashboard
-    stripePriceId: { test: 'REPLACE_WITH_ESSENTIALS_PRICE_ID', live: '' },
+    stripePriceId: { test: 'price_1TqbeiGfxcDbzGRtlwAhDA7i', live: '' },
   },
   {
     id: 'standard',
@@ -69,8 +68,7 @@ export const CARE_PLAN_TIERS: CarePlanTier[] = [
       'Social media content refresh',
       'Website copy updates',
     ],
-    // STRIPE: Replace with your Complete price ID from the Stripe dashboard
-    stripePriceId: { test: 'REPLACE_WITH_COMPLETE_PRICE_ID', live: '' },
+    stripePriceId: { test: 'price_1TqbeiGfxcDbzGRt3pvHkD4h', live: '' },
   },
 ];
 
