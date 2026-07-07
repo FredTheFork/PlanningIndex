@@ -43,8 +43,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Modular care plan pricing tiers
-// STRIPE: After creating prices in the Stripe dashboard, replace the placeholder IDs below
+// Modular care plan pricing tiers (v2 - updated 2026-07-07)
+// Essentials: £19/mo | Standard: £29/mo | Complete: £49/mo
 const CARE_PLAN_PRICING_TIERS: Record<string, { test: string; live: string }> = {
   essentials: { test: 'price_1TqbeiGfxcDbzGRtlwAhDA7i', live: '' },
   standard: { test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo', live: '' },
@@ -368,6 +368,8 @@ Deno.serve(async (req: Request) => {
         // Handle modular care plan tier pricing
         const tierId = care_plan_tier_id || 'standard';
         priceId = getCarePlanPriceId(tierId, mode || 'test');
+        console.log(`[DEBUG] Care plan tier: ${tierId}, mode: ${mode}, priceId: ${priceId}`);
+        console.log(`[DEBUG] CARE_PLAN_PRICING_TIERS:`, JSON.stringify(CARE_PLAN_PRICING_TIERS));
         if (!priceId || priceId.startsWith('REPLACE_WITH')) {
           return new Response(
             JSON.stringify({ error: `Care plan tier "${tierId}" is not yet configured. Please contact support.` }),
