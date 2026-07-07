@@ -2,6 +2,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import Stripe from "https://esm.sh/stripe@14.14.0";
 
+// VERSION: v3-care-plan-fix-2026-07-07T15:45:00Z
+console.log('[INIT] stripe-checkout edge function loaded - v3-care-plan-fix');
+
 // Local service tier/industry metadata — mirrors SERVICE_META from stripe-webhook
 // and service-catalog.ts for use in edge function
 interface ServiceTierMeta {
@@ -43,8 +46,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Modular care plan pricing tiers (v2 - updated 2026-07-07)
+// Modular care plan pricing tiers (v3 - deployed 2026-07-07T15:30:00Z)
 // Essentials: £19/mo | Standard: £29/mo | Complete: £49/mo
+// Product: prod_UfntRYA1SkzyAD
 const CARE_PLAN_PRICING_TIERS: Record<string, { test: string; live: string }> = {
   essentials: { test: 'price_1TqbeiGfxcDbzGRtlwAhDA7i', live: '' },
   standard: { test: 'price_1TjIl9GfxcDbzGRtgZxMzBWo', live: '' },
@@ -310,6 +314,7 @@ Deno.serve(async (req: Request) => {
 
     // Parse request body
     const body = await req.json();
+    console.log('[DEBUG] Received request body:', JSON.stringify(body));
     const {
       service_ids,
       mode,
@@ -322,6 +327,7 @@ Deno.serve(async (req: Request) => {
       group_discount_percent,
       care_plan_tier_id,
     } = body;
+    console.log(`[DEBUG] Parsed care_plan_tier_id: ${care_plan_tier_id}, mode: ${mode}`);
 
     if (!service_ids || !Array.isArray(service_ids) || service_ids.length === 0) {
       return new Response(
