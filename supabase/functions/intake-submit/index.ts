@@ -265,15 +265,14 @@ Deno.serve(async (req: Request) => {
       intake_complete_for_services: newlyCompleteFor,
     }, { user_id: userId });
 
-    // If this was a resubmission, trigger brief auto-regeneration
-    if (hadEditAccess) {
-      console.log(`Resubmission #${newSubmissionCount} for ${userId} — triggering brief auto-regeneration`);
-      regenerateBriefsOnResubmission(userId).then((services) => {
-        console.log(`Auto-regeneration queued for services: ${services.join(", ")}`);
-      }).catch((err) => {
-        console.error(`Auto-regeneration failed for ${userId}:`, err);
-      });
-    }
+    // Trigger brief generation/regeneration on ALL submissions (first-time and resubmissions)
+    const submissionType = hadEditAccess ? `Resubmission #${newSubmissionCount}` : 'First submission';
+    console.log(`${submissionType} for ${userId} — triggering brief generation`);
+    regenerateBriefsOnResubmission(userId).then((services) => {
+      console.log(`Brief generation queued for services: ${services.join(", ")}`);
+    }).catch((err) => {
+      console.error(`Brief generation failed for ${userId}:`, err);
+    });
 
     return new Response(JSON.stringify({
       submitted_at: now,

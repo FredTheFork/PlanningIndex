@@ -423,6 +423,27 @@ export default function BriefTab({ userId, data, refreshData }: BriefTabProps) {
                   <span className="font-inter text-gray-900">{selectedBrief.model_used}</span>
                 </div>
               )}
+              {selectedBrief.provider && (
+                <div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-inter font-medium ${
+                    selectedBrief.provider === 'chatz'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {selectedBrief.provider === 'chatz' ? 'chat.z.ai' : 'Gemini (fallback)'}
+                  </span>
+                </div>
+              )}
+              {selectedBrief.generation_duration_ms && (
+                <div>
+                  <span className="font-inter text-gray-600">Duration: </span>
+                  <span className="font-inter text-gray-900">
+                    {selectedBrief.generation_duration_ms < 1000
+                      ? `${selectedBrief.generation_duration_ms}ms`
+                      : `${(selectedBrief.generation_duration_ms / 1000).toFixed(1)}s`}
+                  </span>
+                </div>
+              )}
               {selectedBrief.risk_level && (
                 <div>
                   <span className="font-inter text-gray-600">Risk Level: </span>
