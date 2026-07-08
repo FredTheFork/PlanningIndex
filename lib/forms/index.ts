@@ -1,7 +1,26 @@
-// Zod validation schemas for intake form sections.
-// Re-exported from the schemas directory for backward compatibility.
-// All schemas are now organized by domain: foundation, marketing, operations, industry.
+// Forms module barrel export
 
+// FormBuilder - assembles forms based on purchased services
+export {
+  buildIntakeForm,
+  isIntakeFullyComplete,
+  getSectionsForTier,
+  getEstimatedCompletionTime,
+} from './build-intake-form';
+
+// Conditional logic - field visibility rules
+export {
+  isFieldConditionallyVisible,
+  getVisibleFields,
+  validateSection,
+  isSectionComplete,
+} from './conditional-logic';
+
+// Intake definition - form sections and fields
+export type { FieldType, FormField, FormSection } from './intake-definition';
+export { allFormSections } from './intake-definition';
+
+// Validations - Zod schemas per section
 export {
   getSectionSchema,
   validateSectionWithZod,
@@ -26,7 +45,7 @@ export {
   getPhotographerIndustrySchema,
   getConsultantIndustrySchema,
   getContractorIndustrySchema,
-  // Primitives for custom schemas
+  // Primitives
   nonEmptyString,
   optionalString,
   emailSchema,
@@ -40,4 +59,4 @@ export {
   checkbox,
   serviceItemSchema,
   servicesRepeatingSchema,
-} from './schemas';
+} from './validations';
