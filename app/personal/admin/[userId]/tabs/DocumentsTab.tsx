@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import JSZip from 'jszip';
 import { supabase } from '@/lib/supabase/client';
 import {
   FileText, Download, AlertCircle, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Send, X,
-  FileUp, Info, RefreshCw, Copy
+  FileUp, Info, RefreshCw, Copy, AlertTriangle, Package
 } from 'lucide-react';
 import {
   getAllDocumentTypesList, getDocumentLabel
 } from '@/lib/services/document-configs';
 import { getDocumentTypesForService } from '@/lib/services/document-service-map';
 import { buildFullPrompt } from '@/lib/services/document-prompts';
+import { triggerMessageNotification } from '@/app/actions/messaging';
 
 interface DocumentsTabProps {
   userId: string;
@@ -19,18 +21,35 @@ interface DocumentsTabProps {
   refreshData: () => void;
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// Auto-delete urgency helper
+function getAutoDeleteUrgency(autoDeleteAt: string | null): { days: number; level: 'none' | 'warning' | 'urgent' } {
+  if (!autoDeleteAt) return { days: 0, level: 'none' };
+  const diffMs = new Date(autoDeleteAt).getTime() - Date.now();
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (days <= 0) return { days: 0, level: 'urgent' };
+  if (days <= 7) return { days, level: 'urgent' };
+  if (days <= 30) return { days, level: 'warning' };
+  return { days, level: 'none' };
+}
 
+// Main component
 export default function DocumentsTab({ userId, data, refreshData }: DocumentsTabProps) {
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const [briefContent, setBriefContent] = useState<string>('');
   const [briefVersion, setBriefVersion] = useState<number>(1);
+  const [briefGeneratedAt, setBriefGeneratedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
+
+  // Bulk operation states
+  const [bulkCopying, setBulkCopying] = useState(false);
+  const [bulkDelivering, setBulkDelivering] = useState(false);
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [showConfirmBulkDeliver, setShowConfirmBulkDeliver] = useState(false);
 
   // Build document types list based on purchased services
   const purchasedServiceIds: string[] = data.purchasedServices?.map((ps: any) => ps.service_id) || [];
@@ -67,7 +86,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     // Fetch the documents-specific brief first
     const { data: docBriefs } = await supabase
       .from('client_briefs')
-      .select('brief_content, status, service_id, version')
+      .select('brief_content, status, service_id, version, created_at')
       .eq('client_id', userId)
       .eq('service_id', 'business_foundations_pack')
       .eq('status', 'completed')
@@ -77,13 +96,14 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     if (docBriefs && docBriefs.length > 0 && docBriefs[0].brief_content) {
       setBriefContent(docBriefs[0].brief_content);
       setBriefVersion(docBriefs[0].version || 1);
+      setBriefGeneratedAt(docBriefs[0].created_at);
       return;
     }
 
     // Fallback: comprehensive brief (null service_id)
     const { data: compBriefs } = await supabase
       .from('client_briefs')
-      .select('brief_content, status, service_id, version')
+      .select('brief_content, status, service_id, version, created_at')
       .eq('client_id', userId)
       .is('service_id', null)
       .eq('status', 'completed')
@@ -93,13 +113,14 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     if (compBriefs && compBriefs.length > 0 && compBriefs[0].brief_content) {
       setBriefContent(compBriefs[0].brief_content);
       setBriefVersion(compBriefs[0].version || 1);
+      setBriefGeneratedAt(compBriefs[0].created_at);
       return;
     }
 
     // Last resort: any completed brief
     const { data: anyBriefs } = await supabase
       .from('client_briefs')
-      .select('brief_content, status, version')
+      .select('brief_content, status, version, created_at')
       .eq('client_id', userId)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
@@ -108,6 +129,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     if (anyBriefs && anyBriefs.length > 0 && anyBriefs[0].brief_content) {
       setBriefContent(anyBriefs[0].brief_content);
       setBriefVersion(anyBriefs[0].version || 1);
+      setBriefGeneratedAt(anyBriefs[0].created_at);
     }
   };
 
@@ -204,7 +226,71 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     document.body.removeChild(a);
   };
 
-  const handleMarkDelivered = async (docId: string) => {
+  // Check and update delivery_status on client_profiles
+  const checkAndUpdateDeliveryStatus = useCallback(async () => {
+    const { data: docs } = await supabase
+      .from('generated_documents')
+      .select('document_type, delivered_to_client')
+      .eq('client_id', userId);
+
+    const expectedTypes = getDocumentTypesForService('business_foundations_pack');
+    const deliveredTypes = new Set(
+      docs?.filter(d => d.delivered_to_client).map(d => d.document_type) || []
+    );
+
+    const allDelivered = expectedTypes.length > 0 && expectedTypes.every(t => deliveredTypes.has(t));
+    const anyDelivered = expectedTypes.some(t => deliveredTypes.has(t));
+
+    let newStatus: 'not_started' | 'in_progress' | 'delivered' = 'not_started';
+    if (allDelivered) newStatus = 'delivered';
+    else if (anyDelivered) newStatus = 'in_progress';
+
+    await supabase
+      .from('client_profiles')
+      .update({ delivery_status: newStatus })
+      .eq('user_id', userId);
+
+    refreshData();
+  }, [userId, refreshData]);
+
+  // Send delivery notification to client
+  const sendDeliveryNotification = useCallback(async (docLabel: string) => {
+    try {
+      // Get admin user ID
+      const { data: adminRow } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .limit(1)
+        .maybeSingle();
+
+      if (!adminRow?.user_id) return;
+
+      // Build conversation ID
+      const convId = [adminRow.user_id, userId].sort().join('_');
+
+      // Insert message
+      const { data: msg } = await supabase
+        .from('client_messages')
+        .insert({
+          conversation_id: convId,
+          sender_id: adminRow.user_id,
+          recipient_id: userId,
+          message_content: `Your document "${docLabel}" is now available for download in your Documents area.`,
+          message_type: 'document_delivery',
+        })
+        .select('*')
+        .single();
+
+      if (msg) {
+        await triggerMessageNotification(msg);
+      }
+    } catch (err) {
+      console.error('Failed to send delivery notification:', err);
+    }
+  }, [userId]);
+
+  // Handle single document delivery
+  const handleMarkDelivered = async (docId: string, docLabel: string) => {
     const now = new Date();
     const autoDeleteAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
@@ -216,6 +302,12 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
         auto_delete_at: autoDeleteAt.toISOString()
       })
       .eq('id', docId);
+
+    // Send notification to client
+    await sendDeliveryNotification(docLabel);
+
+    // Check and update delivery_status
+    await checkAndUpdateDeliveryStatus();
 
     showMessage('Document marked as delivered', 'success');
     await fetchDocuments();
@@ -244,6 +336,191 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     refreshData();
   };
 
+  // Bulk Copy All Prompts
+  const handleBulkCopyAllPrompts = async () => {
+    if (!briefContent) {
+      showMessage('No brief content available for prompts', 'error');
+      return;
+    }
+
+    setBulkCopying(true);
+    try {
+      const prompts: string[] = [];
+      for (const docType of allDocTypes) {
+        const prompt = buildFullPrompt(docType.id, briefContent);
+        prompts.push(`---\n## ${docType.label}\n\n${prompt}\n\n`);
+      }
+
+      await navigator.clipboard.writeText(prompts.join('\n'));
+      showMessage(`Copied ${allDocTypes.length} prompts to clipboard`, 'success');
+    } catch {
+      showMessage('Failed to copy prompts', 'error');
+    } finally {
+      setBulkCopying(false);
+    }
+  };
+
+  // Bulk Mark All Delivered
+  const handleBulkMarkDelivered = async () => {
+    setBulkDelivering(true);
+    try {
+      // Filter documents that are completed and have at least one file
+      const docsToDeliver = allDocTypes.filter(docType => {
+        const doc = documents[docType.id];
+        return doc?.status === 'completed' && (doc.pdf_path || doc.docx_path) && !doc.delivered_to_client;
+      });
+
+      if (docsToDeliver.length === 0) {
+        showMessage('No documents ready for delivery', 'info');
+        setShowConfirmBulkDeliver(false);
+        setBulkDelivering(false);
+        return;
+      }
+
+      const now = new Date();
+      const autoDeleteAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+      // Update each document
+      for (const docType of docsToDeliver) {
+        const doc = documents[docType.id];
+        await supabase
+          .from('generated_documents')
+          .update({
+            delivered_to_client: true,
+            delivered_at: now.toISOString(),
+            auto_delete_at: autoDeleteAt.toISOString()
+          })
+          .eq('id', doc.id);
+      }
+
+      // Send consolidated notification
+      const docLabels = docsToDeliver.map(d => d.label);
+      let notificationMessage: string;
+      if (docLabels.length <= 3) {
+        notificationMessage = `Your documents are now available for download: ${docLabels.join(', ')}.`;
+      } else {
+        notificationMessage = `Your documents are now available for download: ${docLabels.slice(0, 3).join(', ')}, and ${docLabels.length - 3} more.`;
+      }
+
+      const { data: adminRow } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .limit(1)
+        .maybeSingle();
+
+      if (adminRow?.user_id) {
+        const convId = [adminRow.user_id, userId].sort().join('_');
+        const { data: msg } = await supabase
+          .from('client_messages')
+          .insert({
+            conversation_id: convId,
+            sender_id: adminRow.user_id,
+            recipient_id: userId,
+            message_content: notificationMessage,
+            message_type: 'document_delivery',
+          })
+          .select('*')
+          .single();
+
+        if (msg) {
+          await triggerMessageNotification(msg);
+        }
+      }
+
+      // Check and update delivery_status
+      await checkAndUpdateDeliveryStatus();
+
+      showMessage(`Delivered ${docsToDeliver.length} documents to client`, 'success');
+      setShowConfirmBulkDeliver(false);
+      await fetchDocuments();
+    } catch (err: any) {
+      showMessage(err.message || 'Failed to deliver documents', 'error');
+    } finally {
+      setBulkDelivering(false);
+    }
+  };
+
+  // Bulk Download All as ZIP
+  const handleBulkDownloadZip = async () => {
+    setBulkDownloading(true);
+    try {
+      // Collect all files
+      const files: { path: string; name: string }[] = [];
+      for (const docType of allDocTypes) {
+        const doc = documents[docType.id];
+        if (doc?.pdf_path) {
+          files.push({ path: doc.pdf_path, name: `${docType.label}.pdf` });
+        }
+        if (doc?.docx_path) {
+          files.push({ path: doc.docx_path, name: `${docType.label}.docx` });
+        }
+      }
+
+      if (files.length === 0) {
+        showMessage('No files available to download', 'info');
+        setBulkDownloading(false);
+        return;
+      }
+
+      // Create ZIP
+      const zip = new JSZip();
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const file of files) {
+        try {
+          const { data, error } = await supabase.storage
+            .from('generated-documents')
+            .createSignedUrl(file.path, 3600);
+
+          if (error || !data) {
+            failCount++;
+            continue;
+          }
+
+          const response = await fetch(data.signedUrl);
+          if (!response.ok) {
+            failCount++;
+            continue;
+          }
+
+          const blob = await response.blob();
+          zip.file(file.name, blob);
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+
+      if (successCount === 0) {
+        showMessage('Failed to download any files', 'error');
+        setBulkDownloading(false);
+        return;
+      }
+
+      // Generate and download ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${userId.substring(0, 8)}_documents.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (failCount > 0) {
+        showMessage(`Downloaded ${successCount} files (${failCount} failed)`, 'info');
+      } else {
+        showMessage(`Downloaded ${successCount} files as ZIP`, 'success');
+      }
+    } catch (err: any) {
+      showMessage(err.message || 'Failed to create ZIP', 'error');
+    } finally {
+      setBulkDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -252,8 +529,29 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     );
   }
 
+  // Calculate progress
   const completedCount = Object.values(documents).filter((d: any) => d.status === 'completed').length;
   const deliveredCount = Object.values(documents).filter((d: any) => d.delivered_to_client).length;
+  const pendingCount = allDocTypes.length - completedCount;
+  const deliveryPercentage = allDocTypes.length > 0 ? Math.round((deliveredCount / allDocTypes.length) * 100) : 0;
+
+  // Determine progress bar color
+  let progressColor = 'bg-gray-300';
+  if (deliveryPercentage >= 80) progressColor = 'bg-green-500';
+  else if (deliveryPercentage >= 40) progressColor = 'bg-amber-500';
+  else if (deliveryPercentage > 0) progressColor = 'bg-red-500';
+
+  // Documents ready for bulk delivery
+  const docsReadyForDelivery = allDocTypes.filter(docType => {
+    const doc = documents[docType.id];
+    return doc?.status === 'completed' && (doc.pdf_path || doc.docx_path) && !doc.delivered_to_client;
+  });
+
+  // Files uploaded count
+  const filesUploaded = allDocTypes.filter(docType => {
+    const doc = documents[docType.id];
+    return doc?.pdf_path || doc?.docx_path;
+  }).length;
 
   return (
     <div className="space-y-6">
@@ -271,39 +569,191 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
         </div>
       )}
 
-      {/* Header */}
+      {/* Header Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="font-inter font-bold text-[#1B3F7A] text-xl mb-1">
-              Document Management
+              Business Foundations Pack Documents
             </h3>
             <p className="font-inter text-gray-500 text-sm">
               Copy generation prompts, upload completed files, and track delivery.
             </p>
-            {!briefContent && (
-              <p className="font-inter text-amber-600 text-xs mt-1">
-                No client brief found — prompts will include a placeholder section instead of brief context.
-              </p>
-            )}
-            {briefContent && briefVersion > 1 && (
-              <p className="font-inter text-blue-600 text-xs mt-1">
-                Using brief v{briefVersion} (updated after intake edit)
-              </p>
-            )}
+
+            {/* Brief Version Indicator */}
+            <div className="flex items-center gap-2 mt-2">
+              {briefContent ? (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-inter font-medium">
+                  <Info size={12} />
+                  Brief v{briefVersion}
+                  {briefGeneratedAt && (
+                    <span className="text-blue-500">
+                      {' '}&middot; {new Date(briefGeneratedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-inter font-medium">
+                  <AlertTriangle size={12} />
+                  No brief available - prompts will use placeholder context
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* Stats */}
           <div className="flex items-center gap-6 text-sm shrink-0">
             <div className="text-center">
-              <div className="font-inter font-bold text-2xl text-[#1B3F7A]">{completedCount}</div>
-              <div className="font-inter text-gray-500 text-xs">Complete</div>
+              <div className="font-inter font-bold text-2xl text-green-600">{completedCount}</div>
+              <div className="font-inter text-gray-500 text-xs flex items-center justify-center gap-1">
+                <CheckCircle2 size={10} />
+                Complete
+              </div>
             </div>
             <div className="text-center">
-              <div className="font-inter font-bold text-2xl text-green-600">{deliveredCount}</div>
-              <div className="font-inter text-gray-500 text-xs">Delivered</div>
+              <div className="font-inter font-bold text-2xl text-blue-600">{deliveredCount}</div>
+              <div className="font-inter text-gray-500 text-xs flex items-center justify-center gap-1">
+                <Send size={10} />
+                Delivered
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="font-inter font-bold text-2xl text-gray-500">{pendingCount}</div>
+              <div className="font-inter text-gray-500 text-xs flex items-center justify-center gap-1">
+                <Clock size={10} />
+                Pending
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Progress Bar */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-inter text-xs text-gray-600">Delivery Progress</span>
+            <span className="font-inter text-xs font-medium text-gray-700">
+              {deliveredCount} of {allDocTypes.length} delivered ({deliveryPercentage}%)
+            </span>
+          </div>
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${progressColor} transition-all duration-500 ease-out rounded-full`}
+              style={{ width: `${deliveryPercentage}%` }}
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Bulk Actions Toolbar */}
+      {allDocTypes.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package size={16} className="text-[#1B3F7A]" />
+              <span className="font-inter font-medium text-sm text-gray-700">Bulk Actions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Copy All Prompts */}
+              <button
+                onClick={handleBulkCopyAllPrompts}
+                disabled={bulkCopying || !briefContent}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded text-xs font-inter font-medium transition-colors"
+                title={!briefContent ? 'No brief content available' : ''}
+              >
+                {bulkCopying ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    Copying...
+                  </>
+                ) : (
+                  <>
+                    <Copy size={13} />
+                    Copy All Prompts
+                    <span className="bg-white/20 rounded px-1">{allDocTypes.length}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Mark All Delivered */}
+              <button
+                onClick={() => setShowConfirmBulkDeliver(true)}
+                disabled={bulkDelivering || docsReadyForDelivery.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded text-xs font-inter font-medium transition-colors"
+                title={docsReadyForDelivery.length === 0 ? 'No completed documents with files ready for delivery' : ''}
+              >
+                {bulkDelivering ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    Delivering...
+                  </>
+                ) : (
+                  <>
+                    <Send size={13} />
+                    Mark All Delivered
+                    {docsReadyForDelivery.length > 0 && (
+                      <span className="bg-white/20 rounded px-1">{docsReadyForDelivery.length}</span>
+                    )}
+                  </>
+                )}
+              </button>
+
+              {/* Download All as ZIP */}
+              <button
+                onClick={handleBulkDownloadZip}
+                disabled={bulkDownloading || filesUploaded === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded text-xs font-inter font-medium transition-colors"
+                title={filesUploaded === 0 ? 'No files uploaded' : ''}
+              >
+                {bulkDownloading ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download size={13} />
+                    Download All as ZIP
+                    {filesUploaded > 0 && (
+                      <span className="bg-white/20 rounded px-1">{filesUploaded}</span>
+                    )}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Deliver Confirmation Dialog */}
+      {showConfirmBulkDeliver && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h4 className="font-inter font-bold text-gray-900 text-lg mb-2">
+              Mark All Completed Documents as Delivered?
+            </h4>
+            <p className="font-inter text-gray-600 text-sm mb-4">
+              This will deliver {docsReadyForDelivery.length} completed documents with files to the client.
+              They will receive a single notification listing all delivered documents.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setShowConfirmBulkDeliver(false)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-inter font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkMarkDelivered}
+                disabled={bulkDelivering}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded text-sm font-inter font-medium transition-colors flex items-center gap-2"
+              >
+                {bulkDelivering && <RefreshCw size={14} className="animate-spin" />}
+                Confirm Delivery
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Document cards */}
       <div className="space-y-3">
@@ -326,7 +776,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
               onCopyPrompt={() => handleCopyPrompt(docType.id)}
               onUploadFile={(file, kind) => handleFileUpload(docType.id, file, kind)}
               onDownload={handleDownloadFile}
-              onMarkDelivered={() => handleMarkDelivered(doc?.id)}
+              onMarkDelivered={() => handleMarkDelivered(doc?.id, docType.label)}
               onRemoveFile={(kind) => handleRemoveFile(docType.id, kind)}
             />
           );
@@ -336,8 +786,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
   );
 }
 
-// ─── Document Card ────────────────────────────────────────────────────────────
-
+// Document Card Component
 function DocumentCard({
   docType,
   doc,
@@ -371,8 +820,12 @@ function DocumentCard({
   const status = doc?.status || 'pending';
   const hasPdf = !!doc?.pdf_path;
   const hasDocx = !!doc?.docx_path;
+  const hasFiles = hasPdf || hasDocx;
   const isCompleted = status === 'completed';
   const isCopied = copiedDocId === docType.id;
+
+  // Auto-delete urgency
+  const autoDelete = getAutoDeleteUrgency(doc?.auto_delete_at);
 
   const statusConfig: Record<string, { colour: string; bg: string; label: string; icon: React.ReactNode }> = {
     pending:    { colour: 'text-gray-500',  bg: 'bg-gray-100',  label: 'Pending',     icon: <Clock size={11} /> },
@@ -382,6 +835,9 @@ function DocumentCard({
   };
 
   const s = statusConfig[status] || statusConfig.pending;
+
+  // Can deliver if completed and has at least one file
+  const canDeliver = isCompleted && hasFiles && !doc?.delivered_to_client;
 
   return (
     <div className={`bg-white rounded-lg border overflow-hidden transition-shadow ${isExpanded ? 'border-[#1B3F7A] border-opacity-40 shadow-sm' : 'border-gray-200'}`}>
@@ -400,6 +856,21 @@ function DocumentCard({
                   {s.icon}
                   {s.label}
                 </span>
+
+                {/* Auto-delete warning badge */}
+                {autoDelete.level === 'urgent' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                    <AlertTriangle size={10} />
+                    {autoDelete.days === 0 ? 'Expires today' : `${autoDelete.days} days remaining`}
+                  </span>
+                )}
+                {autoDelete.level === 'warning' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                    <Clock size={10} />
+                    {autoDelete.days} days remaining
+                  </span>
+                )}
+
                 {doc?.delivered_to_client && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
                     <Send size={10} /> Delivered
@@ -474,13 +945,23 @@ function DocumentCard({
           {isCompleted && (
             <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
               {!doc.delivered_to_client ? (
-                <button
-                  onClick={onMarkDelivered}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-inter font-medium transition-colors"
-                >
-                  <Send size={13} />
-                  Deliver to Client
-                </button>
+                canDeliver ? (
+                  <button
+                    onClick={onMarkDelivered}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-inter font-medium transition-colors"
+                  >
+                    <Send size={13} />
+                    Deliver to Client
+                  </button>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-200 text-gray-500 rounded text-xs font-inter font-medium cursor-not-allowed"
+                    title="Upload at least one file before delivering"
+                  >
+                    <Send size={13} />
+                    Upload File First
+                  </span>
+                )
               ) : (
                 <div className="flex items-center gap-1.5 text-xs text-green-600 font-inter font-medium">
                   <CheckCircle2 size={13} />
@@ -496,8 +977,7 @@ function DocumentCard({
   );
 }
 
-// ─── File Upload Zone ─────────────────────────────────────────────────────────
-
+// File Upload Zone Component
 function FileUploadZone({
   label,
   existingPath,
@@ -581,7 +1061,7 @@ function FileUploadZone({
       {isUploading ? (
         <>
           <RefreshCw size={16} className="text-blue-500 animate-spin" />
-          <p className="font-inter text-xs text-blue-600 font-medium">Uploading…</p>
+          <p className="font-inter text-xs text-blue-600 font-medium">Uploading...</p>
         </>
       ) : (
         <>
