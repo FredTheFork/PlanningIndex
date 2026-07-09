@@ -1,4 +1,4 @@
-import { Video as LucideIcon, Star, Briefcase, Crown, RefreshCw, Package } from 'lucide-react';
+import { Star, Briefcase, Crown, RefreshCw, Package, type LucideIcon } from 'lucide-react';
 import { ServiceTier } from './services/service-catalog-types';
 
 export interface TierStyleConfig {

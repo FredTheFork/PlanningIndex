@@ -7328,3 +7328,83 @@ export function buildFullPrompt(documentType: string, clientBriefContent: string
 
   return parts.join('');
 }
+
+/**
+ * Builds a refresh-specific prompt for updating an existing document.
+ *
+ * Structure:
+ * 1. REFRESH header (indicating this is an update, not fresh generation)
+ * 2. Shared agent instructions
+ * 3. Document-specific prompt
+ * 4. Original client brief (for context)
+ * 5. Update instructions (what to change)
+ *
+ * The refresh prompt instructs the AI to preserve existing structure while
+ * incorporating only the requested changes.
+ */
+export function buildRefreshPrompt(
+  documentType: string,
+  briefContent: string,
+  updateInstructions: string
+): string {
+  const template = PROMPT_MAP.get(documentType);
+  if (!template) {
+    return `[Unknown document type: ${documentType}]\n\n${SHARED_AGENT_INSTRUCTIONS}\n\n=== UPDATE INSTRUCTIONS ===\n${updateInstructions}\n\n=== CLIENT BRIEF ===\n${briefContent}`;
+  }
+
+  const parts: string[] = [];
+
+  // Section 1: REFRESH header
+  parts.push(`╔══════════════════════════════════════════════════════════════════════════════╗
+║               DOCUMENT REFRESH REQUEST - UPDATE EXISTING DOCUMENT               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+This is a REFRESH of an existing ${template.document_label} document.
+The client has requested updates to their previously generated document.
+
+CRITICAL INSTRUCTIONS:
+• Preserve the existing document structure and formatting
+• Maintain the same professional quality and brand voice
+• Incorporate ONLY the changes described in the UPDATE INSTRUCTIONS section below
+• Do not regenerate the entire document from scratch
+• Keep all clauses and sections that are not explicitly mentioned for change
+• Ensure changes integrate seamlessly with the existing content
+• Return the complete updated document (not a diff or partial update)
+
+`);
+
+  // Section 2: Shared agent instructions
+  parts.push(`=== AGENT INSTRUCTIONS ===\n`);
+  parts.push(SHARED_AGENT_INSTRUCTIONS);
+
+  // Section 3: Document-specific prompt
+  parts.push(`\n\n=== DOCUMENT TYPE: ${template.document_label.toUpperCase()} ===\n`);
+  parts.push(template.generationPrompt);
+
+  // Section 4: Client brief (original context)
+  if (briefContent) {
+    parts.push(`\n\n=== ORIGINAL CLIENT BRIEF ===\n`);
+    parts.push(briefContent);
+  } else {
+    parts.push(`\n\n=== ORIGINAL CLIENT BRIEF ===\n[No client brief available - proceed with update based on existing document knowledge]`);
+  }
+
+  // Section 5: Update instructions (THE KEY INPUT)
+  parts.push(`\n\n╔══════════════════════════════════════════════════════════════════════════════╗
+║                          UPDATE INSTRUCTIONS (CRITICAL)                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+APPLY THE FOLLOWING CHANGES TO THE EXISTING DOCUMENT:
+
+${updateInstructions}
+
+END OF UPDATE INSTRUCTIONS
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Generate the UPDATED document now, applying the changes above while preserving
+all other content and structure from the previous version.
+`);
+
+  return parts.join('');
+}

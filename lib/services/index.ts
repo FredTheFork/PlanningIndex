@@ -70,3 +70,27 @@ export {
   isBusinessFoundationsService,
   getServiceTier,
 } from './document-service-map';
+
+// Tier detection and capabilities
+export {
+  detectCarePlanTier,
+  detectCarePlanTierFromSubscription,
+  getTierCapabilities,
+  getRefreshableDocumentsForTier,
+  CARE_PLAN_INCLUSIONS,
+  getUpgradeTier,
+} from './tier-helpers';
+export type { TierCapabilities } from './tier-helpers';
+
+// Subscription and refresh job types
+export type {
+  SubscriptionRecord,
+  RefreshJob,
+  RefreshJobPayload,
+  RefreshJobResponse,
+  DetectedTier,
+} from './subscription-types';
+export {
+  SUBSCRIPTION_STATUS_CONFIG,
+  REFRESH_JOB_STATUS_CONFIG,
+} from './subscription-types';
