@@ -4,17 +4,8 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { FAQ } from '@/lib/content/faq-data';
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="font-inter font-semibold text-medium-blue uppercase block mb-3"
-      style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}
-    >
-      {children}
-    </span>
-  );
-}
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
 
 function PageHeader() {
   return (
@@ -51,7 +42,7 @@ function PageHeader() {
             maxWidth: 620,
           }}
         >
-          Get honest answers about what Foundationary does, what it doesn't, and whether it's right for your business.
+          Get honest answers about what Foundationary does, what it doesn&apos;t, and whether it&apos;s right for your business.
         </p>
       </div>
     </section>
@@ -137,46 +128,17 @@ function FAQAccordion({ faqs }: FAQAccordionProps) {
   );
 }
 
-function CTASection() {
-  return (
-    <section
-      className="text-center px-6"
-      style={{
-        padding: '80px 0',
-        background: 'linear-gradient(135deg, #1B3F7A 0%, #2C68C4 100%)',
-      }}
-    >
-      <div className="mx-auto" style={{ maxWidth: 700 }}>
-        <h2
-          className="font-inter font-bold text-white"
-          style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)' }}
-        >
-          Still have questions?
-        </h2>
-        <p
-          className="font-inter font-normal mt-4 leading-[1.7]"
-          style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
-        >
-          Get in touch directly and we'll help you work out whether Foundationary is the right fit for your business.
-        </p>
-        <Link
-          href="/contact"
-          className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
-          style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
-        >
-          Get In Touch
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 export default function FAQPage({ faqs }: { faqs: FAQ[] }) {
   return (
     <>
       <PageHeader />
       <FAQAccordion faqs={faqs} />
-      <CTASection />
+      <DarkCTABanner
+        title="Still have questions?"
+        subtitle="Get in touch directly and we'll help you work out whether Foundationary is the right fit for your business."
+        ctaLabel="Get In Touch"
+        ctaHref="/contact"
+      />
     </>
   );
 }

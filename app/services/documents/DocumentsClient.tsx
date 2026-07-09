@@ -2,20 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, ArrowRight, Package, Clock, Shield, Zap } from 'lucide-react';
-
-/* ─── Sub-components ─── */
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="font-inter font-semibold text-medium-blue uppercase block mb-3"
-      style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}
-    >
-      {children}
-    </span>
-  );
-}
+import { Check, ArrowRight, Package, Clock, Shield } from 'lucide-react';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
+import { documentsList, documentsFaqs, documentsFeatures, documentsBundles } from '@/lib/content';
 
 function Hero() {
   return (
@@ -23,7 +13,6 @@ function Hero() {
       className="relative text-center px-6"
       style={{ paddingTop: 0, paddingBottom: '72px', minHeight: '420px' }}
     >
-      {/* Background image */}
       <div
         aria-hidden="true"
         className="absolute inset-0"
@@ -35,7 +24,6 @@ function Hero() {
           zIndex: 0,
         }}
       />
-      {/* Overlay */}
       <div
         aria-hidden="true"
         className="absolute inset-0"
@@ -76,63 +64,10 @@ function Hero() {
 }
 
 function WhatsIncludedGrid() {
-  const documents = [
-    {
-      num: '01',
-      title: 'Bespoke Client Contract',
-      desc: 'UK law-compliant service agreement covering scope, payment, IP, termination, and dispute resolution',
-    },
-    {
-      num: '02',
-      title: 'Terms & Conditions',
-      desc: 'Complete operating rulebook with Late Payment Act 1998 provisions, refund policy, payment terms',
-    },
-    {
-      num: '03',
-      title: 'GDPR Privacy Policy',
-      desc: 'ICO-compliant, specific to your actual data activities',
-    },
-    {
-      num: '04',
-      title: 'Professional Bio',
-      desc: '150-word website version and 50-word social version',
-    },
-    {
-      num: '05',
-      title: 'Elevator Pitch (3 Versions)',
-      desc: '30-second, 2-minute, and written versions',
-    },
-    {
-      num: '06',
-      title: 'LinkedIn Profile Script',
-      desc: 'Optimized headline, About section, Featured section',
-    },
-    {
-      num: '07',
-      title: 'Professional Invoice Template',
-      desc: 'UK-formatted, VAT-ready, late payment interest notice',
-    },
-    {
-      num: '08',
-      title: 'New Client Welcome Emails (x3)',
-      desc: 'Structured onboarding sequence',
-    },
-    {
-      num: '09',
-      title: 'Late Payment Letters (x3)',
-      desc: 'Friendly reminder, formal demand, Letter Before Action',
-    },
-    {
-      num: '10',
-      title: 'Service Description Sheets',
-      desc: 'One-page breakdown per service',
-    },
-  ];
-
   return (
     <section className="bg-off-white py-24 px-6">
       <div className="mx-auto" style={{ maxWidth: 1000 }}>
-        <SectionLabel>WHAT'S INCLUDED</SectionLabel>
+        <SectionLabel>WHAT&apos;S INCLUDED</SectionLabel>
         <h2
           className="font-inter font-bold text-dark-text mb-12"
           style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)' }}
@@ -141,7 +76,7 @@ function WhatsIncludedGrid() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {documents.map((doc) => (
+          {documentsList.map((doc) => (
             <div
               key={doc.num}
               className="bg-white rounded-lg border border-border p-6 hover:border-medium-blue hover:shadow-[0_4px_16px_rgba(44,104,196,0.1)] transition-all duration-200"
@@ -171,10 +106,10 @@ function WhatsIncludedGrid() {
               <Package size={24} className="text-medium-blue shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                  What you receive
+                  {documentsFeatures[0].title}
                 </h3>
                 <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                  Every file is delivered as both a polished PDF and editable Word document so you can make updates yourself in future.
+                  {documentsFeatures[0].desc}
                 </p>
               </div>
             </div>
@@ -182,10 +117,10 @@ function WhatsIncludedGrid() {
               <Clock size={24} className="text-medium-blue shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                  When you receive it
+                  {documentsFeatures[1].title}
                 </h3>
                 <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                  Within 24 hours of submitting your questionnaire. You fill in the form. We do the rest.
+                  {documentsFeatures[1].desc}
                 </p>
               </div>
             </div>
@@ -193,10 +128,10 @@ function WhatsIncludedGrid() {
               <Shield size={24} className="text-medium-blue shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
-                  How it's personalised
+                  {documentsFeatures[2].title}
                 </h3>
                 <p className="font-inter font-normal text-secondary-text mt-2 leading-[1.6]" style={{ fontSize: '0.9rem' }}>
-                  Every document is generated from your questionnaire answers — your services, your terms, your voice.
+                  {documentsFeatures[2].desc}
                 </p>
               </div>
             </div>
@@ -213,9 +148,7 @@ function PricingCard() {
       <div className="mx-auto" style={{ maxWidth: 600 }}>
         <div
           className="bg-white border-2 border-navy rounded-[20px] p-10 text-center"
-          style={{
-            boxShadow: '0 16px 64px rgba(27,63,122,0.12)',
-          }}
+          style={{ boxShadow: '0 16px 64px rgba(27,63,122,0.12)' }}
         >
           <span
             className="inline-block font-inter font-semibold text-medium-blue uppercase mb-4"
@@ -225,16 +158,10 @@ function PricingCard() {
           </span>
 
           <div>
-            <span
-              className="font-inter font-extrabold text-navy block"
-              style={{ fontSize: '3.5rem', lineHeight: 1 }}
-            >
+            <span className="font-inter font-extrabold text-navy block" style={{ fontSize: '3.5rem', lineHeight: 1 }}>
               £79
             </span>
-            <span
-              className="font-inter font-normal text-secondary-text block mt-2"
-              style={{ fontSize: '1rem' }}
-            >
+            <span className="font-inter font-normal text-secondary-text block mt-2" style={{ fontSize: '1rem' }}>
               Includes all 10 documents
             </span>
           </div>
@@ -242,22 +169,11 @@ function PricingCard() {
           <div className="border-t border-border my-8" />
 
           <div className="flex flex-col gap-3 mb-8">
-            {[
-              'Bespoke Client Contract',
-              'Terms & Conditions',
-              'GDPR Privacy Policy',
-              'Professional Bio',
-              'Elevator Pitch (3 Versions)',
-              'LinkedIn Profile Script',
-              'Professional Invoice Template',
-              'New Client Welcome Emails (x3)',
-              'Late Payment Letters (x3)',
-              'Service Description Sheets',
-            ].map((feature) => (
-              <div key={feature} className="flex items-start gap-3">
+            {documentsList.map((doc) => (
+              <div key={doc.num} className="flex items-start gap-3">
                 <span className="text-success font-bold shrink-0">✓</span>
                 <span className="font-inter font-medium text-dark-text text-left" style={{ fontSize: '0.9rem' }}>
-                  {feature}
+                  {doc.title}
                 </span>
               </div>
             ))}
@@ -283,27 +199,6 @@ function PricingCard() {
 }
 
 function BundleSection() {
-  const bundles = [
-    {
-      name: 'Documents + Website Copy',
-      description: 'Professional documents plus website copy. £79 + £35 = £114, less 10% bundle discount',
-      href: '/checkout?services=business_foundations_pack,website_copy_pack',
-      savings: '£12 saved',
-    },
-    {
-      name: 'Documents + Social Media',
-      description: 'Professional documents plus 5 social posts. £79 + £20 = £99, less 10% bundle discount',
-      href: '/checkout?services=business_foundations_pack,social_media_pack',
-      savings: '£10 saved',
-    },
-    {
-      name: 'All Three Services',
-      description: 'Documents + Website Copy + Social Media. Best value at 15% off.',
-      href: '/checkout?services=business_foundations_pack,website_copy_pack,social_media_pack',
-      savings: '£29 saved',
-    },
-  ];
-
   return (
     <section className="bg-off-white py-24 px-6">
       <div className="mx-auto" style={{ maxWidth: 960 }}>
@@ -316,7 +211,7 @@ function BundleSection() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {bundles.map((bundle) => (
+          {documentsBundles.map((bundle) => (
             <Link
               key={bundle.name}
               href={bundle.href}
@@ -343,37 +238,6 @@ function BundleSection() {
   );
 }
 
-const docFaqs = [
-  {
-    q: 'What documents do I get in the Business Foundations Pack?',
-    a: 'You receive 10 bespoke documents: Client Agreement, Terms & Conditions, GDPR Privacy Policy, Professional Bio, Elevator Pitch, LinkedIn Profile Script, Invoice Template, New Client Welcome Emails, Late Payment Letters, and Service Description Sheets. Each is written specifically for your business.',
-  },
-  {
-    q: 'How is this different from downloading templates?',
-    a: 'Templates are generic and often US-centric. Every Foundationary document is generated from your answers to our structured questionnaire, then reviewed by a human for consistency and UK legal compliance. You receive documents written for your business, not fill-in-the-blank forms.',
-  },
-  {
-    q: 'Is this legal advice?',
-    a: 'No. Foundationary provides professionally drafted documents, not legal advice. If you need guidance specific to your situation, we recommend consulting a solicitor. Our documents are practical, UK-specific, and reviewed for accuracy — but they are not a substitute for legal counsel.',
-  },
-  {
-    q: 'How long does delivery take?',
-    a: 'We deliver your documents within 5 business days of receiving your completed intake questionnaire. Many clients receive them sooner.',
-  },
-  {
-    q: 'What format do I receive the documents in?',
-    a: 'All documents are delivered in both PDF and editable Word format. You can use them immediately or customise them further as your business evolves.',
-  },
-  {
-    q: 'Can I update my documents later?',
-    a: 'Yes. You own all delivered content outright. You can modify it at any time. We also offer a Quarterly Document Refresh (£29 every 4 months) if you want us to keep your documents current as your business changes.',
-  },
-  {
-    q: 'Is the £79 price a subscription?',
-    a: 'No. The Business Foundations Pack is a one-time payment of £79. There are no recurring charges unless you choose to add the Quarterly Document Refresh or other services.',
-  },
-];
-
 function FAQSection() {
   return (
     <section className="bg-off-white py-24 px-6">
@@ -386,7 +250,7 @@ function FAQSection() {
           Common questions
         </h2>
         <div className="flex flex-col gap-5 mt-10">
-          {docFaqs.map((faq, i) => (
+          {documentsFaqs.map((faq, i) => (
             <div key={i} className="bg-white rounded-xl border border-border p-6">
               <h3 className="font-inter font-semibold text-dark-text mb-2" style={{ fontSize: '1rem' }}>
                 {faq.q}
@@ -417,46 +281,6 @@ function Disclaimer() {
   );
 }
 
-function CTABanner() {
-  return (
-    <section
-      className="text-center px-6"
-      style={{
-        padding: '80px 0',
-        background: 'linear-gradient(135deg, #1B3F7A 0%, #2C68C4 100%)',
-      }}
-    >
-      <div className="mx-auto" style={{ maxWidth: 700 }}>
-        <h2
-          className="font-inter font-bold text-white"
-          style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)' }}
-        >
-          All ten documents. Your business. 24 hours.
-        </h2>
-        <p
-          className="font-inter font-normal mt-4 leading-[1.7]"
-          style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)' }}
-        >
-          One questionnaire. One payment. Everything set up properly.
-        </p>
-        <Link
-          href="/checkout?services=business_foundations_pack"
-          className="inline-block font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-10"
-          style={{ padding: '18px 40px', fontSize: '1rem', minHeight: 48 }}
-        >
-          Get My Business Foundations Pack — £79
-        </Link>
-        <p
-          className="font-inter font-normal mt-4"
-          style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}
-        >
-          Includes all 10 documents · PDF + editable Word formats · Delivered within 24 hours
-        </p>
-      </div>
-    </section>
-  );
-}
-
 export default function DocumentsClient() {
   return (
     <>
@@ -466,7 +290,13 @@ export default function DocumentsClient() {
       <BundleSection />
       <FAQSection />
       <Disclaimer />
-      <CTABanner />
+      <DarkCTABanner
+        title="All ten documents. Your business. 24 hours."
+        subtitle="One questionnaire. One payment. Everything set up properly."
+        ctaLabel="Get My Business Foundations Pack — £79"
+        ctaHref="/checkout?services=business_foundations_pack"
+        note="Includes all 10 documents · PDF + editable Word formats · Delivered within 24 hours"
+      />
     </>
   );
 }

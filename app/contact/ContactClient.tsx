@@ -2,17 +2,8 @@
 
 import { useState } from 'react';
 import { Mail, Phone, MessageCircle } from 'lucide-react';
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="font-inter font-semibold text-medium-blue uppercase block mb-3"
-      style={{ fontSize: '0.75rem', letterSpacing: '0.15em' }}
-    >
-      {children}
-    </span>
-  );
-}
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { contactExpectations } from '@/lib/content';
 
 function PageHeader() {
   return (
@@ -39,7 +30,7 @@ function PageHeader() {
           className="font-inter font-extrabold text-white mt-3"
           style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.2 }}
         >
-          Let's talk about your business.
+          Let&apos;s talk about your business.
         </h1>
         <p
           className="font-inter font-normal mx-auto mt-4 leading-[1.7]"
@@ -49,7 +40,7 @@ function PageHeader() {
             maxWidth: 620,
           }}
         >
-          Have questions about Foundationary? Need to discuss your specific situation? We're here to help. Reach out directly and we'll get back to you promptly.
+          Have questions about Foundationary? Need to discuss your specific situation? We&apos;re here to help. Reach out directly and we&apos;ll get back to you promptly.
         </p>
       </div>
     </section>
@@ -62,7 +53,7 @@ interface ContactFormState {
   phone: string;
   subject: string;
   message: string;
-  website?: string; // Honeypot field - hidden from users, bots will fill it
+  website?: string;
 }
 
 function ContactForm() {
@@ -72,7 +63,7 @@ function ContactForm() {
     phone: '',
     subject: '',
     message: '',
-    website: '', // Honeypot field
+    website: '',
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -86,10 +77,9 @@ function ContactForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Honeypot check - if website field is filled, it's likely a bot
     if (form.website && form.website.trim() !== '') {
       console.log('Spam detected: honeypot field filled');
-      setSubmitted(true); // Fake success message
+      setSubmitted(true);
       setForm({ name: '', email: '', phone: '', subject: '', message: '', website: '' });
       return;
     }
@@ -133,7 +123,6 @@ function ContactForm() {
     <section className="bg-white py-24 px-6">
       <div className="mx-auto" style={{ maxWidth: 900 }}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {/* Direct Contact Info */}
           <div className="bg-off-white rounded-2xl p-8">
             <div className="flex items-center gap-3 mb-4">
               <div
@@ -154,7 +143,6 @@ function ContactForm() {
             </p>
           </div>
 
-          {/* Phone */}
           <div className="bg-off-white rounded-2xl p-8">
             <div className="flex items-center gap-3 mb-4">
               <div
@@ -175,7 +163,6 @@ function ContactForm() {
             </p>
           </div>
 
-          {/* Response Time */}
           <div className="bg-off-white rounded-2xl p-8">
             <div className="flex items-center gap-3 mb-4">
               <div
@@ -197,19 +184,18 @@ function ContactForm() {
           </div>
         </div>
 
-        {/* Contact Form */}
         <div className="bg-off-white rounded-3xl p-8 md:p-12">
           <h2 className="font-inter font-bold text-dark-text mb-1" style={{ fontSize: '1.5rem' }}>
             Send us a message
           </h2>
           <p className="font-inter text-secondary-text mb-8" style={{ fontSize: '0.95rem' }}>
-            Fill in the form below and we'll get back to you as soon as possible.
+            Fill in the form below and we&apos;ll get back to you as soon as possible.
           </p>
 
           {submitted && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
               <p className="font-inter text-success font-medium">
-                Thank you! Your message has been sent. We'll be in touch shortly.
+                Thank you! Your message has been sent. We&apos;ll be in touch shortly.
               </p>
             </div>
           )}
@@ -312,7 +298,6 @@ function ContactForm() {
               />
             </div>
 
-            {/* Honeypot field - hidden from users, traps bots */}
             <div className="hidden" aria-hidden="true">
               <label htmlFor="website">Website</label>
               <input
@@ -354,12 +339,7 @@ function Expectations() {
         </h2>
 
         <div className="flex flex-col gap-4 mt-8">
-          {[
-            { title: 'Fast response', desc: 'Most enquiries receive a response within 24 hours.' },
-            { title: 'Honest answers', desc: 'If we can\'t help, we\'ll tell you. If we can, we will.' },
-            { title: 'No spam', desc: 'We won\'t add you to mailing lists or sell your details.' },
-            { title: 'Direct', desc: 'You\'re talking to the team, not a support bot.' },
-          ].map((item) => (
+          {contactExpectations.map((item) => (
             <div key={item.title} className="bg-white rounded-xl p-5 border border-border">
               <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '0.95rem' }}>
                 {item.title}
