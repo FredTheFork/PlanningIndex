@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Video as LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface PageHeroProps {
   eyebrow?: string;

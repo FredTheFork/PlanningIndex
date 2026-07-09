@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Check, ShoppingCart, Package, Shield, Users, Briefcase, HardHat, Camera, Video as LucideIcon } from 'lucide-react';
+import { Check, ShoppingCart, Package, Shield, Users, Briefcase, HardHat, Camera, Video } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
 import { TestimonialCard } from '@/components/ui/TestimonialCard';

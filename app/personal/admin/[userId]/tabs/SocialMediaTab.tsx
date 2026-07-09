@@ -12,6 +12,9 @@ import {
   validateImageDimensions, ALL_PLATFORM_IDS, getPrimaryImageSpec
 } from '@/lib/social-platforms';
 import { buildPlatformPrompt } from '@/lib/services/document-prompts';
+import { buildMasterSocialMediaPrompt, buildCaptionGenerationPrompt } from '@/lib/services/website-page-prompts';
+import JSZip from 'jszip';
+import { LayoutGrid, List, CheckSquare } from 'lucide-react';
 
 // ── Platform icon map ────────────────────────────────────────────────────────
 const PLATFORM_ICON_MAP: Record<PlatformId, React.ElementType> = {
@@ -90,6 +93,12 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
   const [uploadProgress, setUploadProgress] = useState<Record<string, { type: 'image' | 'video' | 'carousel'; progress: number }>>({});
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
+  // View mode and bulk selection
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(new Set());
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [intakeResponses, setIntakeResponses] = useState<Record<string, any> | null>(null);
+
   // Get quantity from purchased services
   const purchasedServices = data?.purchasedServices || [];
   const socialMediaService = purchasedServices.find((ps: any) => ps.service_id === 'social_media_pack');
@@ -110,6 +119,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
   useEffect(() => {
     fetchPosts();
     fetchClientBrief();
+    fetchIntakeResponses();
   }, [userId]);
 
   const fetchPosts = async () => {
@@ -141,6 +151,18 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
       setClientBrief(briefData);
     }
     setLoadingBrief(false);
+  };
+
+  const fetchIntakeResponses = async () => {
+    const { data: intakeData, error } = await supabase
+      .from('intake_responses')
+      .select('responses')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!error && intakeData?.responses) {
+      setIntakeResponses(intakeData.responses);
+    }
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -208,6 +230,54 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
       showMessage('Failed to copy to clipboard', 'error');
     }
   }, [clientBrief, posts]);
+
+  // Master social media prompt for all platforms
+  const handleCopyMasterSocialPrompt = useCallback(async () => {
+    if (!clientBrief?.brief_content && !intakeResponses) {
+      showMessage('No brief or intake data available', 'error');
+      return;
+    }
+
+    try {
+      const masterPrompt = buildMasterSocialMediaPrompt(
+        clientBrief?.brief_content || '',
+        intakeResponses,
+        selectedPlatforms
+      );
+      await navigator.clipboard.writeText(masterPrompt);
+      showMessage('Master social media prompt copied', 'success');
+    } catch {
+      showMessage('Failed to copy prompt', 'error');
+    }
+  }, [clientBrief, intakeResponses, selectedPlatforms]);
+
+  // Bulk caption generation prompt
+  const handleCopyCaptionGenerationPrompt = useCallback(async () => {
+    if (posts.length === 0) {
+      showMessage('No posts created yet', 'error');
+      return;
+    }
+
+    const postStructure = posts.map(p => ({
+      post_number: p.post_number,
+      platform: p.platform,
+      category: p.category,
+      week: p.week,
+      day: p.day,
+    }));
+
+    try {
+      const prompt = buildCaptionGenerationPrompt(
+        postStructure,
+        clientBrief?.brief_content || '',
+        intakeResponses
+      );
+      await navigator.clipboard.writeText(prompt);
+      showMessage('Caption generation prompt copied', 'success');
+    } catch {
+      showMessage('Failed to copy prompt', 'error');
+    }
+  }, [posts, clientBrief, intakeResponses]);
 
   // ── Upload handlers ──────────────────────────────────────────────────────
   const handleAssetUpload = async (post: SocialPost, file: File, assetType: 'image' | 'video') => {
@@ -508,6 +578,175 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
     document.body.removeChild(a);
   };
 
+  // Download all media as ZIP
+  const handleDownloadAllMediaAsZip = async () => {
+    const mediaPosts = posts.filter(p => p.image_path || p.video_path || (p.carousel_paths?.length ?? 0) > 0);
+    if (mediaPosts.length === 0) {
+      showMessage('No media assets to download', 'info');
+      return;
+    }
+
+    setBulkDownloading(true);
+    try {
+      const zip = new JSZip();
+      const imagesFolder = zip.folder('images');
+      const videosFolder = zip.folder('videos');
+      const carouselsFolder = zip.folder('carousels');
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const post of mediaPosts) {
+        // Single image
+        if (post.image_path) {
+          try {
+            const { data, error } = await supabase.storage
+              .from('social-media-images')
+              .createSignedUrl(post.image_path, 3600);
+            if (data && !error) {
+              const response = await fetch(data.signedUrl);
+              const blob = await response.blob();
+              const ext = post.image_path.split('.').pop() || 'png';
+              imagesFolder?.file(`post_${post.post_number}_${post.platform}.${ext}`, blob);
+              successCount++;
+            } else {
+              failCount++;
+            }
+          } catch {
+            failCount++;
+          }
+        }
+
+        // Video
+        if (post.video_path) {
+          try {
+            const { data, error } = await supabase.storage
+              .from('social-media-videos')
+              .createSignedUrl(post.video_path, 3600);
+            if (data && !error) {
+              const response = await fetch(data.signedUrl);
+              const blob = await response.blob();
+              const ext = post.video_path.split('.').pop() || 'mp4';
+              videosFolder?.file(`post_${post.post_number}_${post.platform}.${ext}`, blob);
+              successCount++;
+            } else {
+              failCount++;
+            }
+          } catch {
+            failCount++;
+          }
+        }
+
+        // Carousel
+        if (post.carousel_paths && post.carousel_paths.length > 0) {
+          for (let i = 0; i < post.carousel_paths.length; i++) {
+            const path = post.carousel_paths[i];
+            try {
+              const { data, error } = await supabase.storage
+                .from('social-media-images')
+                .createSignedUrl(path, 3600);
+              if (data && !error) {
+                const response = await fetch(data.signedUrl);
+                const blob = await response.blob();
+                const ext = path.split('.').pop() || 'png';
+                carouselsFolder?.file(`post_${post.post_number}_slide_${i + 1}.${ext}`, blob);
+                successCount++;
+              } else {
+                failCount++;
+              }
+            } catch {
+              failCount++;
+            }
+          }
+        }
+      }
+
+      if (successCount === 0) {
+        showMessage('Failed to download any media', 'error');
+        return;
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data?.profile?.business_name || 'client'}_social_media_assets.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      if (failCount > 0) {
+        showMessage(`Downloaded ${successCount} files (${failCount} failed)`, 'info');
+      } else {
+        showMessage(`Downloaded ${successCount} media files as ZIP`, 'success');
+      }
+    } catch (err: any) {
+      showMessage(err.message || 'Failed to create ZIP', 'error');
+    } finally {
+      setBulkDownloading(false);
+    }
+  };
+
+  // Bulk selection handlers
+  const handleSelectPost = (postId: string) => {
+    const newSet = new Set(selectedPostIds);
+    if (newSet.has(postId)) {
+      newSet.delete(postId);
+    } else {
+      newSet.add(postId);
+    }
+    setSelectedPostIds(newSet);
+  };
+
+  const handleSelectAllVisible = () => {
+    const newSet = new Set(selectedPostIds);
+    visiblePosts.forEach(p => newSet.add(p.id));
+    setSelectedPostIds(newSet);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedPostIds(new Set());
+  };
+
+  const handleBulkDeliverSelected = async () => {
+    const selectedPosts = posts.filter(p => selectedPostIds.has(p.id) && !p.delivered_to_client && p.caption.trim());
+    if (selectedPosts.length === 0) {
+      showMessage('No valid posts selected for delivery', 'error');
+      return;
+    }
+
+    const now = new Date().toISOString();
+    await supabase
+      .from('social_media_posts')
+      .update({ delivered_to_client: true, delivered_at: now, status: 'delivered', updated_at: now })
+      .in('id', selectedPosts.map(p => p.id));
+
+    showMessage(`${selectedPosts.length} posts delivered`, 'success');
+    setSelectedPostIds(new Set());
+    await fetchPosts();
+    refreshData();
+  };
+
+  const handleBulkCopySelectedCaptions = async () => {
+    const selectedPosts = posts.filter(p => selectedPostIds.has(p.id) && p.caption.trim());
+    if (selectedPosts.length === 0) {
+      showMessage('No captions to copy', 'error');
+      return;
+    }
+
+    const captions = selectedPosts
+      .sort((a, b) => a.post_number - b.post_number)
+      .map(p => `---\n### Post ${p.post_number} (${PLATFORM_SPECS[p.platform].label})\n${p.caption}${p.hashtags ? `\n\nHashtags: ${p.hashtags}` : ''}`)
+      .join('\n\n');
+
+    try {
+      await navigator.clipboard.writeText(captions);
+      showMessage(`${selectedPosts.length} captions copied`, 'success');
+    } catch {
+      showMessage('Failed to copy', 'error');
+    }
+  };
+
   // Filter posts by active platform tab
   const visiblePosts = activePlatform === 'all'
     ? posts
@@ -604,9 +843,29 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
 
         {/* Platform-specific Copy Prompt Buttons */}
         <div className="pt-4 border-t border-gray-200">
-          <p className="font-inter text-xs font-medium text-gray-500 mb-2.5">
-            Copy a platform-specific prompt + brief, ready to paste into an AI:
-          </p>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="font-inter text-xs font-medium text-gray-500">
+              Copy a platform-specific prompt + brief, ready to paste into an AI:
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCopyMasterSocialPrompt}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors"
+              >
+                <Copy size={12} />
+                Copy Master Prompt
+              </button>
+              {posts.length > 0 && (
+                <button
+                  onClick={handleCopyCaptionGenerationPrompt}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-inter font-medium transition-colors"
+                >
+                  <ClipboardCopy size={12} />
+                  Caption Gen Prompt
+                </button>
+              )}
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             {selectedPlatforms.map((platform) => {
               const spec = PLATFORM_SPECS[platform];
@@ -711,6 +970,43 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
             </button>
           </div>
           <div className="flex items-center gap-2">
+            {/* View mode toggle */}
+            <div className="flex border border-gray-200 rounded overflow-hidden">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`p-1.5 ${viewMode === 'cards' ? 'bg-[#1B3F7A] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                title="Card view"
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 ${viewMode === 'table' ? 'bg-[#1B3F7A] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                title="Table view"
+              >
+                <List size={14} />
+              </button>
+            </div>
+            {/* Download all media as ZIP */}
+            {(withImageCount > 0 || withVideoCount > 0) && (
+              <button
+                onClick={handleDownloadAllMediaAsZip}
+                disabled={bulkDownloading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-md text-xs font-inter font-medium transition-colors"
+              >
+                {bulkDownloading ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Download size={13} />
+                    Download All Media
+                  </>
+                )}
+              </button>
+            )}
             {activePlatform !== 'all' && (
               <>
                 <button
@@ -800,6 +1096,38 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
         })()}
       </div>
 
+      {/* Bulk Selection Toolbar */}
+      {selectedPostIds.size > 0 && (
+        <div className="bg-[#1B3F7A] rounded-lg p-3 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-2 text-white">
+            <CheckSquare size={16} />
+            <span className="font-inter text-sm font-medium">{selectedPostIds.size} selected</span>
+            <button
+              onClick={handleDeselectAll}
+              className="text-xs text-blue-200 hover:text-white underline"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkCopySelectedCaptions}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-inter font-medium transition-colors"
+            >
+              <Copy size={12} />
+              Copy Captions
+            </button>
+            <button
+              onClick={handleBulkDeliverSelected}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-inter font-medium transition-colors"
+            >
+              <Send size={12} />
+              Deliver Selected
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Posts by Platform Section */}
       {posts.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -875,43 +1203,162 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
             );
           })}
         </div>
+      ) : viewMode === 'table' ? (
+        // Table view
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="w-10 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={visiblePosts.every(p => selectedPostIds.has(p.id))}
+                    ref={(el) => {
+                      if (el) el.indeterminate = visiblePosts.some(p => selectedPostIds.has(p.id)) && !visiblePosts.every(p => selectedPostIds.has(p.id));
+                    }}
+                    onChange={(e) => e.target.checked ? handleSelectAllVisible() : handleDeselectAll()}
+                    className="rounded border-gray-300"
+                  />
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-inter font-medium text-gray-500">#</th>
+                <th className="px-3 py-2 text-left text-xs font-inter font-medium text-gray-500">Platform</th>
+                <th className="px-3 py-2 text-left text-xs font-inter font-medium text-gray-500">Category</th>
+                <th className="px-3 py-2 text-left text-xs font-inter font-medium text-gray-500">Caption</th>
+                <th className="px-3 py-2 text-left text-xs font-inter font-medium text-gray-500">Media</th>
+                <th className="px-3 py-2 text-left text-xs font-inter font-medium text-gray-500">Status</th>
+                <th className="px-3 py-2 text-right text-xs font-inter font-medium text-gray-500">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {visiblePosts.map(post => {
+                const spec = PLATFORM_SPECS[post.platform];
+                const PlatformIcon = PLATFORM_ICON_MAP[post.platform];
+                const categoryStyle = CATEGORY_STYLES[post.category];
+                const hasMedia = post.image_path || post.video_path || (post.carousel_paths?.length ?? 0) > 0;
+
+                return (
+                  <tr key={post.id} className={`hover:bg-gray-50 ${selectedPostIds.has(post.id) ? 'bg-blue-50' : ''}`}>
+                    <td className="w-10 px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedPostIds.has(post.id)}
+                        onChange={() => handleSelectPost(post.id)}
+                        className="rounded border-gray-300"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-sm font-inter font-medium text-gray-900">{post.post_number}</td>
+                    <td className="px-3 py-2">
+                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded ${spec.bgClass}`}>
+                        <PlatformIcon size={12} className={spec.textClass} />
+                        <span className="text-xs font-medium text-gray-700">{spec.label}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${categoryStyle.bg} ${categoryStyle.text}`}>
+                        {categoryStyle.label}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 max-w-xs">
+                      <p className="text-xs font-inter text-gray-700 truncate">{post.caption || <span className="text-gray-400 italic">No caption</span>}</p>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        {post.image_path && <ImageIcon size={12} className="text-purple-600" />}
+                        {post.video_path && <Video size={12} className="text-blue-600" />}
+                        {post.carousel_paths && post.carousel_paths.length > 0 && <Images size={12} className="text-pink-600" />}
+                        {!hasMedia && <span className="text-xs text-gray-400">—</span>}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      {post.delivered_to_client ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-medium">
+                          <Send size={10} /> Delivered
+                        </span>
+                      ) : post.caption.trim() ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-xs font-medium">
+                          Ready
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 text-gray-500 rounded text-xs font-medium">
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => { setExpandedPost(expandedPost === post.id ? null : post.id); }}
+                          className="p-1.5 text-gray-500 hover:text-[#1B3F7A] hover:bg-gray-100 rounded"
+                          title="View details"
+                        >
+                          {expandedPost === post.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                        <button
+                          onClick={() => handleMarkDelivered(post.id)}
+                          disabled={post.delivered_to_client || !post.caption.trim()}
+                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed rounded"
+                          title="Mark delivered"
+                        >
+                          <Send size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        // Single platform view
+        // Single platform view (cards)
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {visiblePosts.map(post => (
-            <PostCard
-              key={post.id}
-              post={post}
-              isExpanded={expandedPost === post.id}
-              isEditing={editingPost === post.id}
-              editForm={editForm}
-              uploadProgress={uploadProgress}
-              copiedPostId={copiedPostId}
-              onToggleExpand={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
-              onStartEdit={() => {
-                setEditingPost(editingPost === post.id ? null : post.id);
-                setEditForm({
-                  caption: post.caption,
-                  hashtags: post.hashtags || '',
-                  image_prompt: post.image_prompt || '',
-                  category: post.category,
-                  platform: post.platform
-                });
-              }}
-              onCancelEdit={() => { setEditingPost(null); setEditForm({}); }}
-              onSaveEdit={() => handleEditPost(post.id)}
-              onEditFormChange={setEditForm}
-              onCopyText={handleCopyText}
-              onAssetUpload={(file, type) => handleAssetUpload(post, file, type)}
-              onRemoveAsset={(type) => handleRemoveAsset(post, type)}
-              onCarouselUpload={(files) => handleCarouselUpload(post, files)}
-              onRemoveCarouselSlide={(index) => handleRemoveCarouselSlide(post, index)}
-              onDownloadAsset={(type) => {
-                const path = type === 'image' ? post.image_path : post.video_path;
-                if (path) handleDownloadAsset(path, post.post_number, type);
-              }}
-              onMarkDelivered={() => handleMarkDelivered(post.id)}
-            />
+            <div key={post.id} className="relative">
+              <div
+                className={`absolute top-2 left-2 z-10 ${selectedPostIds.has(post.id) ? 'block' : 'hidden group-hover:block'}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedPostIds.has(post.id)}
+                  onChange={() => handleSelectPost(post.id)}
+                  className="rounded border-gray-300 bg-white shadow"
+                />
+              </div>
+              <div className="group">
+                <PostCard
+                  post={post}
+                  isExpanded={expandedPost === post.id}
+                  isEditing={editingPost === post.id}
+                  editForm={editForm}
+                  uploadProgress={uploadProgress}
+                  copiedPostId={copiedPostId}
+                  onToggleExpand={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
+                  onStartEdit={() => {
+                    setEditingPost(editingPost === post.id ? null : post.id);
+                    setEditForm({
+                      caption: post.caption,
+                      hashtags: post.hashtags || '',
+                      image_prompt: post.image_prompt || '',
+                      category: post.category,
+                      platform: post.platform
+                    });
+                  }}
+                  onCancelEdit={() => { setEditingPost(null); setEditForm({}); }}
+                  onSaveEdit={() => handleEditPost(post.id)}
+                  onEditFormChange={setEditForm}
+                  onCopyText={handleCopyText}
+                  onAssetUpload={(file, type) => handleAssetUpload(post, file, type)}
+                  onRemoveAsset={(type) => handleRemoveAsset(post, type)}
+                  onCarouselUpload={(files) => handleCarouselUpload(post, files)}
+                  onRemoveCarouselSlide={(index) => handleRemoveCarouselSlide(post, index)}
+                  onDownloadAsset={(type) => {
+                    const path = type === 'image' ? post.image_path : post.video_path;
+                    if (path) handleDownloadAsset(path, post.post_number, type);
+                  }}
+                  onMarkDelivered={() => handleMarkDelivered(post.id)}
+                />
+              </div>
+            </div>
           ))}
         </div>
       )}

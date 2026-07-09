@@ -6,9 +6,11 @@ import {
   Download, AlertCircle, CheckCircle2, Clock, Send, Save, Globe,
   FileArchive, Upload, Link2, Settings, ExternalLink, Code,
   Monitor, Tablet, Smartphone, Maximize2, RefreshCw, AlertTriangle,
-  Copy, Image, FileText, Sparkles, FolderOpen, Palette, Type, File, ClipboardCopy
+  Copy, Image, FileText, Sparkles, FolderOpen, Palette, Type, File, ClipboardCopy,
+  Home, User, Briefcase, Mail, HelpCircle, DollarSign, Quote
 } from 'lucide-react';
 import { buildWebsiteFullPrompt } from '@/lib/services/document-prompts';
+import { buildPagePrompt, buildAllPagePrompts, PAGE_CONFIGS } from '@/lib/services/website-page-prompts';
 
 interface WebsiteCopyTabProps {
   userId: string;
@@ -114,6 +116,10 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   const [loading, setLoading] = useState(true);
   const [loadingBrief, setLoadingBrief] = useState(true);
   const [loadingAssets, setLoadingAssets] = useState(true);
+  const [intakeResponses, setIntakeResponses] = useState<Record<string, any> | null>(null);
+  const [loadingIntake, setLoadingIntake] = useState(true);
+  const [copiedPageId, setCopiedPageId] = useState<string | null>(null);
+  const [bulkCopyingPages, setBulkCopyingPages] = useState(false);
 
   // Read from parent-provided purchasedServices first (reliable under admin RLS)
   useEffect(() => {
@@ -153,6 +159,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
     fetchClientAssets();
     fetchBrandData();
     fetchWebsitePages();
+    fetchIntakeResponses();
   }, [userId]);
 
   const fetchDelivery = async () => {
@@ -242,6 +249,20 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
         setWebsitePageCount(servicesData.website_page_count);
       }
     }
+  };
+
+  const fetchIntakeResponses = async () => {
+    setLoadingIntake(true);
+    const { data: intakeData, error } = await supabase
+      .from('intake_responses')
+      .select('responses')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!error && intakeData?.responses) {
+      setIntakeResponses(intakeData.responses);
+    }
+    setLoadingIntake(false);
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -427,6 +448,50 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       showMessage('Website prompt + brief copied to clipboard', 'success');
     } catch (err) {
       showMessage('Failed to copy to clipboard', 'error');
+    }
+  };
+
+  const handleCopyPagePrompt = async (pageName: string) => {
+    if (!clientBrief?.brief_content && !intakeResponses) {
+      showMessage('No brief or intake data available', 'error');
+      return;
+    }
+
+    try {
+      const pagePrompt = buildPagePrompt(pageName, clientBrief?.brief_content || '', intakeResponses);
+      await navigator.clipboard.writeText(pagePrompt);
+      setCopiedPageId(pageName);
+      setTimeout(() => setCopiedPageId(null), 2000);
+      showMessage(`${pageName} page prompt copied`, 'success');
+    } catch (err) {
+      showMessage('Failed to copy prompt', 'error');
+    }
+  };
+
+  const handleBulkCopyAllPagePrompts = async () => {
+    if (websitePagesSelected.length === 0) {
+      showMessage('No pages selected', 'error');
+      return;
+    }
+
+    if (!clientBrief?.brief_content && !intakeResponses) {
+      showMessage('No brief or intake data available', 'error');
+      return;
+    }
+
+    setBulkCopyingPages(true);
+    try {
+      const allPrompts = buildAllPagePrompts(
+        websitePagesSelected,
+        clientBrief?.brief_content || '',
+        intakeResponses
+      );
+      await navigator.clipboard.writeText(allPrompts);
+      showMessage(`${websitePagesSelected.length} page prompts copied`, 'success');
+    } catch (err) {
+      showMessage('Failed to copy prompts', 'error');
+    } finally {
+      setBulkCopyingPages(false);
     }
   };
 
@@ -942,6 +1007,115 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
               )}
             </div>
           </details>
+
+          {/* Per-Page Copy Prompts */}
+          {websitePagesSelected.length > 0 && (
+            <details className="bg-white rounded-lg border border-gray-200 overflow-hidden" open>
+              <summary className="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <FileText size={16} className="text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-inter font-semibold text-gray-700 text-sm">Per-Page Copy Prompts</h4>
+                  <p className="text-xs text-gray-400">Generate targeted AI prompts for each page the client ordered</p>
+                </div>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{websitePagesSelected.length} pages</span>
+              </summary>
+              <div className="px-6 pb-6 border-t border-gray-100 pt-4">
+                {/* Bulk Copy Button */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-xs text-gray-500">
+                    {loadingIntake ? (
+                      <span className="flex items-center gap-1"><RefreshCw size={12} className="animate-spin" /> Loading intake data...</span>
+                    ) : intakeResponses ? (
+                      <span className="text-green-600 flex items-center gap-1"><CheckCircle2 size={12} /> Intake responses loaded</span>
+                    ) : (
+                      <span className="text-amber-600">No intake responses found</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleBulkCopyAllPagePrompts}
+                    disabled={bulkCopyingPages || !clientBrief?.brief_content}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded text-xs font-inter font-medium transition-colors"
+                  >
+                    {bulkCopyingPages ? (
+                      <>
+                        <RefreshCw size={12} className="animate-spin" />
+                        Copying...
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={12} />
+                        Copy All Page Prompts
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Page Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {websitePagesSelected.map((pageName) => {
+                    const pageConfig = PAGE_CONFIGS[pageName];
+                    const isCopied = copiedPageId === pageName;
+
+                    // Get the icon for this page
+                    const PageIcon = pageName === 'Homepage' ? Home :
+                                     pageName === 'About' ? User :
+                                     pageName === 'Services' ? Briefcase :
+                                     pageName === 'Contact' ? Mail :
+                                     pageName === 'FAQ' ? HelpCircle :
+                                     pageName === 'Blog' ? FileText :
+                                     pageName === 'Portfolio' ? FolderOpen :
+                                     pageName === 'Pricing' ? DollarSign :
+                                     pageName === 'Testimonials' ? Quote : FileText;
+
+                    // Get key intake preview
+                    const intakePreview = pageConfig?.intakeFields
+                      ?.map(f => intakeResponses?.[f])
+                      ?.filter(Boolean)
+                      ?.slice(0, 2)
+                      ?.join(', ') || null;
+
+                    return (
+                      <div
+                        key={pageName}
+                        className="border border-gray-200 rounded-lg p-3 hover:border-[#1B3F7A] hover:border-opacity-30 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="p-1.5 bg-purple-50 rounded">
+                            <PageIcon size={14} className="text-purple-600" />
+                          </div>
+                          <span className="font-inter font-semibold text-gray-800 text-sm">{pageName}</span>
+                        </div>
+
+                        {intakePreview && (
+                          <p className="text-xs text-gray-500 mb-2 line-clamp-2">{intakePreview}</p>
+                        )}
+
+                        <button
+                          onClick={() => handleCopyPagePrompt(pageName)}
+                          disabled={!clientBrief?.brief_content}
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded text-xs font-inter transition-colors"
+                        >
+                          {isCopied ? (
+                            <>
+                              <CheckCircle2 size={12} className="text-green-600" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={12} />
+                              Copy Prompt
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </details>
+          )}
 
           {/* Delivery Settings */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
