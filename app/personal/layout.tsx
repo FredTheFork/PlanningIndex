@@ -7,11 +7,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useDeliveryNotifications } from '@/hooks/useDeliveryNotifications';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { isServiceDocumentService } from '@/lib/services/document-service-map';
-import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, RefreshCw, Settings, Globe, Share2, Briefcase, Building2 } from 'lucide-react';
+import { getTierStyle, getServiceStyleIcon, getServiceStyleClasses } from '@/lib/tier-styles';
+import { LayoutDashboard, FileText, BarChart3, FolderOpen, LogOut, Shield, Package, Settings, Globe, Share2, Briefcase, Building2 } from 'lucide-react';
 import { isOperationsService, isIndustryService } from '@/lib/services/document-service-map';
 import ChatBubble from '@/components/ui/ChatBubble';
+import { DeliveryToast, DeliveryNotificationBadge } from '@/components/ui/DeliveryToast';
 
 const adminNavItems = [
   { label: 'Dashboard', href: '/personal/admin', icon: LayoutDashboard },
@@ -29,6 +32,7 @@ export default function PersonalLayout({
   const safePurchasedServiceIds = Array.isArray(purchasedServiceIds) ? purchasedServiceIds : [];
   const { isAdmin } = useIsAdmin();
   const { unreadCount } = useUnreadMessages();
+  const { unreadCount: deliveryUnreadCount } = useDeliveryNotifications();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -137,6 +141,7 @@ export default function PersonalLayout({
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 const isMessages = item.label === 'Messages';
+                const isDocuments = item.label === 'Documents';
                 return (
                   <Link
                     key={item.label}
@@ -155,6 +160,9 @@ export default function PersonalLayout({
                       <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-medium-blue rounded-full">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
+                    )}
+                    {isDocuments && deliveryUnreadCount > 0 && (
+                      <DeliveryNotificationBadge count={deliveryUnreadCount} />
                     )}
                   </Link>
                 );
@@ -176,21 +184,14 @@ export default function PersonalLayout({
                       const service = getServiceById(sid);
                       const isRefresh = sid === 'quarterly_refresh' || sid === 'monthly_care_plan';
                       const tier = service?.tier;
-                      const tierColors = {
-                        foundation: 'bg-[#1B3F7A]/5 text-[#1B3F7A]',
-                        operations: 'bg-[#2C68C4]/5 text-[#2C68C4]',
-                        industry: 'bg-[#F59E0B]/5 text-[#F59E0B]',
-                      };
+                      const icon = getServiceStyleIcon(isRefresh);
+                      const styleClasses = getServiceStyleClasses(isRefresh, tier);
                       return (
                         <span
                           key={sid}
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${
-                            isRefresh
-                              ? 'bg-teal-50 text-teal-700'
-                              : tier ? tierColors[tier] : 'bg-gray-100 text-gray-700'
-                          }`}
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${styleClasses.bg} ${styleClasses.text}`}
                         >
-                          {isRefresh ? <RefreshCw size={9} /> : <Package size={9} />}
+                          {icon({ size: 9 })}
                           {service?.name?.split(' ')[0] ?? sid}
                         </span>
                       );
@@ -227,6 +228,9 @@ export default function PersonalLayout({
 
       {/* Chat Bubble - Only for clients, not admins */}
       {!isAdmin && <ChatBubble />}
+
+      {/* Delivery Toast Notifications */}
+      {!isAdmin && <DeliveryToast />}
     </div>
   );
 }

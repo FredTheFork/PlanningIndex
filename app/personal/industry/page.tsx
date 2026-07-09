@@ -7,6 +7,8 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { getServiceById } from '@/lib/services/service-catalog';
 import { getDocumentConfigsForService } from '@/lib/services/document-configs';
 import { isIndustryService } from '@/lib/services/document-service-map';
+import { AutoDeleteWarningMultiple, AutoDeleteBadge } from '@/components/ui/AutoDeleteWarning';
+import { ServiceCardSkeleton } from '@/components/ui/skeletons';
 import { Lock, Clock, FileText, Eye, EyeOff, Download, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface DeliveredDoc {
@@ -105,28 +107,21 @@ export default function IndustryPage() {
     }
   };
 
-  const getTimeRemaining = (autoDeleteAt: string): string => {
-    const diffMs = new Date(autoDeleteAt).getTime() - Date.now();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays <= 0) return 'Expires today';
-    if (diffDays === 1) return '1 day remaining';
-    return `${diffDays} days remaining`;
-  };
-
   if (profileLoading || loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+      <div>
+        <div className="mb-8">
+          <div className="h-8 bg-gray-200 rounded w-44 mb-1 animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-56 animate-pulse" />
+        </div>
+        <div className="space-y-8">
+          <ServiceCardSkeleton />
+        </div>
       </div>
     );
   }
 
   if (!profile) return null;
-
-  const earliestAutoDelete = documents
-    .filter((d) => d.auto_delete_at)
-    .map((d) => d.auto_delete_at as string)
-    .sort()[0];
 
   const industryLabels: Record<string, string> = {
     coach_industry_pack: 'Coach',
@@ -163,18 +158,11 @@ export default function IndustryPage() {
         </div>
       )}
 
-      {earliestAutoDelete && documents.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3 mb-6">
-          <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-inter text-amber-800 text-sm font-medium">
-              Documents are available for a limited time
-            </p>
-            <p className="font-inter text-amber-700 text-xs mt-1">
-              {getTimeRemaining(earliestAutoDelete)} — Please download and save copies to your own device.
-            </p>
-          </div>
-        </div>
+      {documents.length > 0 && (
+        <AutoDeleteWarningMultiple
+          autoDeleteDates={documents.map(d => d.auto_delete_at)}
+          className="mb-6"
+        />
       )}
 
       <div className="space-y-8">
@@ -245,11 +233,7 @@ export default function IndustryPage() {
 
                         {doc ? (
                           <div className="flex items-center gap-2 flex-wrap justify-end">
-                            {doc.auto_delete_at && (
-                              <span className="font-inter text-xs text-amber-600 hidden sm:block">
-                                {getTimeRemaining(doc.auto_delete_at)}
-                              </span>
-                            )}
+                            <AutoDeleteBadge autoDeleteAt={doc.auto_delete_at} />
                             <button
                               onClick={() => setViewingDoc(isViewing ? null : doc.id)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-inter text-xs transition-colors"

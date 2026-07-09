@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { AutoDeleteWarningMultiple } from '@/components/ui/AutoDeleteWarning';
+import { PostCardSkeleton } from '@/components/ui/skeletons';
 import {
   Share2, Download, Lock, ChevronDown, ChevronUp,
   Instagram, Linkedin, Facebook, Twitter, Video, Images
@@ -32,6 +34,8 @@ interface SocialPost {
   image_dimensions: string | null;
   week: number;
   day: string;
+  delivered_at?: string | null;
+  auto_delete_at?: string | null;
 }
 
 const CATEGORY_CONFIG = {
@@ -62,7 +66,7 @@ export default function PersonalPostsPage() {
     try {
       const { data, error } = await supabase
         .from('social_media_posts')
-        .select('id, post_number, category, caption, hashtags, platform, image_path, video_path, carousel_paths, image_dimensions, week, day')
+        .select('id, post_number, category, caption, hashtags, platform, image_path, video_path, carousel_paths, image_dimensions, week, day, delivered_at, auto_delete_at')
         .eq('user_id', user!.id)
         .eq('delivered_to_client', true)
         .order('post_number', { ascending: true });
@@ -156,8 +160,22 @@ export default function PersonalPostsPage() {
 
   if (authLoading || profileLoading || loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+      <div>
+        <div className="mb-8">
+          <div className="h-8 bg-gray-200 rounded w-44 mb-1 animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-56 animate-pulse" />
+        </div>
+        <div className="mb-6">
+          <div className="flex gap-2">
+            <div className="h-8 bg-gray-200 rounded w-32 animate-pulse" />
+            <div className="h-8 bg-gray-100 rounded w-24 animate-pulse" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <PostCardSkeleton />
+          <PostCardSkeleton />
+          <PostCardSkeleton />
+        </div>
       </div>
     );
   }
@@ -220,6 +238,15 @@ export default function PersonalPostsPage() {
           {posts.length} posts ready to use across your social platforms.
         </p>
       </div>
+
+      {/* Auto-delete warning for posts */}
+      {posts.some(p => p.auto_delete_at) && (
+        <AutoDeleteWarningMultiple
+          autoDeleteDates={posts.map(p => p.auto_delete_at)}
+          message="Posts are available for a limited time"
+          className="mb-6"
+        />
+      )}
 
       {/* Platform Filter */}
       <div className="mb-6">

@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
-import { Lock, Clock, FileText, Eye, EyeOff, Download } from 'lucide-react';
+import { AutoDeleteWarningMultiple, AutoDeleteBadge } from '@/components/ui/AutoDeleteWarning';
+import { DocumentCardSkeleton } from '@/components/ui/skeletons';
+import { Lock, FileText, Eye, EyeOff, Download } from 'lucide-react';
 
 interface DeliveredDoc {
   id: string;
@@ -89,20 +91,17 @@ export default function PersonalDocuments() {
     }
   };
 
-  const getTimeRemaining = (autoDeleteAt: string): string => {
-    const now = new Date();
-    const deleteDate = new Date(autoDeleteAt);
-    const diffMs = deleteDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays <= 0) return 'Expires today';
-    if (diffDays === 1) return '1 day remaining';
-    return `${diffDays} days remaining`;
-  };
-
   if (profileLoading || loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+      <div>
+        <div className="mb-8">
+          <div className="h-8 bg-gray-200 rounded w-40 mb-1 animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-56 animate-pulse" />
+        </div>
+        <div className="space-y-3">
+          <DocumentCardSkeleton />
+          <DocumentCardSkeleton />
+        </div>
       </div>
     );
   }
@@ -110,12 +109,6 @@ export default function PersonalDocuments() {
   if (!profile) return null;
 
   const hasDocuments = documents.length > 0;
-
-  // Earliest auto-delete among docs
-  const earliestAutoDelete = documents
-    .map((d) => d.auto_delete_at)
-    .filter(Boolean)
-    .sort()[0];
 
   return (
     <div>
@@ -133,19 +126,9 @@ export default function PersonalDocuments() {
       {/* Documents Section */}
       {hasDocuments && (
         <div className="space-y-6">
-          {earliestAutoDelete && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-              <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-inter text-amber-800 text-sm font-medium">
-                  Documents are available for a limited time
-                </p>
-                <p className="font-inter text-amber-700 text-xs mt-1">
-                  {getTimeRemaining(earliestAutoDelete)} — Please download and save copies to your own device.
-                </p>
-              </div>
-            </div>
-          )}
+          <AutoDeleteWarningMultiple
+            autoDeleteDates={documents.map(d => d.auto_delete_at)}
+          />
 
           <div className="flex flex-col gap-3">
             {documents.map(doc => (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { isIntakeFullyComplete } from '@/lib/forms/build-intake-form';
@@ -25,6 +25,8 @@ export function useClientProfile() {
   const [profile, setProfile] = useState<ClientProfile | null>(null);
   const [purchasedServiceIds, setPurchasedServiceIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -36,30 +38,69 @@ export function useClientProfile() {
       return;
     }
 
+    let active = true;
+
     const fetchProfile = async () => {
       try {
-        // Try client_profiles table (may not exist in all environments)
         const { data, error } = await supabase
           .from('client_profiles')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
 
+        if (!active) return;
+
         if (!error && data) {
           setProfile(data);
         }
 
-        // Derive purchased services from live schema
         const purchasedIds = await derivePurchasedServices(user.id);
+        if (!active) return;
         setPurchasedServiceIds(purchasedIds);
       } catch (error) {
         console.error('Error fetching client profile:', error);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     fetchProfile();
+
+    // Realtime subscription for profile changes (delivery_status, etc.)
+    const channel = supabase.channel(`client_profile:${user.id}`);
+    channel
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'client_profiles',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (active && payload.new) {
+          setProfile(payload.new as ClientProfile);
+        }
+      })
+      .subscribe((status) => {
+        console.log('[useClientProfile] Realtime subscription status:', status);
+      });
+
+    channelRef.current = channel;
+
+    // Periodic polling as fallback (60 seconds)
+    pollingRef.current = setInterval(fetchProfile, 60000);
+
+    // Refetch on window focus
+    const onFocus = () => { if (active) fetchProfile(); };
+    const onVisible = () => { if (document.visibilityState === 'visible' && active) fetchProfile(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      active = false;
+      channel.unsubscribe();
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user, authLoading]);
 
   const intakeFullyComplete = useMemo(() => {

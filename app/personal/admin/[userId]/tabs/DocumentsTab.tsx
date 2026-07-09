@@ -13,6 +13,7 @@ import {
 } from '@/lib/services/document-configs';
 import { getDocumentTypesForService } from '@/lib/services/document-service-map';
 import { buildFullPrompt } from '@/lib/services/document-prompts';
+import { updateOverallDeliveryStatus, markDocumentDelivered, bulkMarkDocumentsDelivered } from '@/lib/services/delivery-status';
 import { triggerMessageNotification } from '@/app/actions/messaging';
 
 interface DocumentsTabProps {
@@ -226,33 +227,6 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     document.body.removeChild(a);
   };
 
-  // Check and update delivery_status on client_profiles
-  const checkAndUpdateDeliveryStatus = useCallback(async () => {
-    const { data: docs } = await supabase
-      .from('generated_documents')
-      .select('document_type, delivered_to_client')
-      .eq('client_id', userId);
-
-    const expectedTypes = getDocumentTypesForService('business_foundations_pack');
-    const deliveredTypes = new Set(
-      docs?.filter(d => d.delivered_to_client).map(d => d.document_type) || []
-    );
-
-    const allDelivered = expectedTypes.length > 0 && expectedTypes.every(t => deliveredTypes.has(t));
-    const anyDelivered = expectedTypes.some(t => deliveredTypes.has(t));
-
-    let newStatus: 'not_started' | 'in_progress' | 'delivered' = 'not_started';
-    if (allDelivered) newStatus = 'delivered';
-    else if (anyDelivered) newStatus = 'in_progress';
-
-    await supabase
-      .from('client_profiles')
-      .update({ delivery_status: newStatus })
-      .eq('user_id', userId);
-
-    refreshData();
-  }, [userId, refreshData]);
-
   // Send delivery notification to client
   const sendDeliveryNotification = useCallback(async (docLabel: string) => {
     try {
@@ -291,26 +265,14 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
 
   // Handle single document delivery
   const handleMarkDelivered = async (docId: string, docLabel: string) => {
-    const now = new Date();
-    const autoDeleteAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-    await supabase
-      .from('generated_documents')
-      .update({
-        delivered_to_client: true,
-        delivered_at: now.toISOString(),
-        auto_delete_at: autoDeleteAt.toISOString()
-      })
-      .eq('id', docId);
+    await markDocumentDelivered(docId);
 
     // Send notification to client
     await sendDeliveryNotification(docLabel);
 
-    // Check and update delivery_status
-    await checkAndUpdateDeliveryStatus();
-
     showMessage('Document marked as delivered', 'success');
     await fetchDocuments();
+    refreshData();
   };
 
   const handleRemoveFile = async (docTypeId: string, fileKind: 'pdf' | 'docx') => {
@@ -377,21 +339,9 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
         return;
       }
 
-      const now = new Date();
-      const autoDeleteAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-      // Update each document
-      for (const docType of docsToDeliver) {
-        const doc = documents[docType.id];
-        await supabase
-          .from('generated_documents')
-          .update({
-            delivered_to_client: true,
-            delivered_at: now.toISOString(),
-            auto_delete_at: autoDeleteAt.toISOString()
-          })
-          .eq('id', doc.id);
-      }
+      // Get doc IDs
+      const docIds = docsToDeliver.map(docType => documents[docType.id].id);
+      await bulkMarkDocumentsDelivered(docIds);
 
       // Send consolidated notification
       const docLabels = docsToDeliver.map(d => d.label);
@@ -427,12 +377,10 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
         }
       }
 
-      // Check and update delivery_status
-      await checkAndUpdateDeliveryStatus();
-
       showMessage(`Delivered ${docsToDeliver.length} documents to client`, 'success');
       setShowConfirmBulkDeliver(false);
       await fetchDocuments();
+      refreshData();
     } catch (err: any) {
       showMessage(err.message || 'Failed to deliver documents', 'error');
     } finally {

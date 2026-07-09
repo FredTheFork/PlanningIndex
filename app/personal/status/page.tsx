@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { getServiceById, isSubscriptionService, type ServiceTier } from '@/lib/services/service-catalog';
 import { getServiceDeliveryStatuses, type ServiceDeliveryStatus } from '@/lib/services/service-status';
 import { getDocumentTypesForService, isServiceDocumentService } from '@/lib/services/document-service-map';
+import { TimelineSkeleton } from '@/components/ui/skeletons';
 import { CheckCircle2, Clock, RefreshCw, XCircle, Star, Briefcase, Crown } from 'lucide-react';
 
 interface DocRow {
   document_type: string;
   delivered_to_client: boolean;
   status: string;
+  delivered_at?: string | null;
 }
 
 export default function PersonalStatus() {
@@ -19,22 +21,22 @@ export default function PersonalStatus() {
   const [documents, setDocuments] = useState<DocRow[]>([]);
   const [hasCancelledRefresh, setHasCancelledRefresh] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('');
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!profile?.user_id) return;
+
     const fetchDocs = async () => {
       const { data } = await supabase
         .from('generated_documents')
-        .select('document_type, delivered_to_client, status')
+        .select('document_type, delivered_to_client, status, delivered_at')
         .eq('client_id', profile.user_id);
       setDocuments(data || []);
     };
 
-    // Check for cancelled quarterly refresh subscription
     const checkRefreshStatus = async () => {
       if (!profile?.user_id) return;
       try {
-        // Check services_purchased for cancelled quarterly_refresh
         const { data: sp } = await supabase
           .from('services_purchased')
           .select('status')
@@ -47,7 +49,6 @@ export default function PersonalStatus() {
           return;
         }
 
-        // Also check stripe_subscriptions via stripe_customers
         const { data: customer } = await supabase
           .from('stripe_customers')
           .select('customer_id')
@@ -63,7 +64,6 @@ export default function PersonalStatus() {
           if (subs) {
             for (const sub of subs) {
               if (sub.status === 'canceled' && sub.price_id) {
-                // Verify the cancelled subscription is actually quarterly_refresh
                 const service = getServiceById('quarterly_refresh');
                 if (service && (service.stripePriceIds.test === sub.price_id || service.stripePriceIds.live === sub.price_id)) {
                   setHasCancelledRefresh(true);
@@ -74,18 +74,50 @@ export default function PersonalStatus() {
           }
         }
       } catch {
-        // Non-critical check — don't block rendering
+        // Non-critical check
       }
     };
 
     fetchDocs();
     checkRefreshStatus();
+
+    // Realtime subscription for document delivery updates
+    const channel = supabase.channel(`status_docs:${profile.user_id}`);
+    channel
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'generated_documents',
+        filter: `client_id=eq.${profile.user_id}`,
+      }, (payload) => {
+        // Refetch all documents to get accurate counts
+        fetchDocs();
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'generated_documents',
+        filter: `client_id=eq.${profile.user_id}`,
+      }, () => {
+        fetchDocs();
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, [profile?.user_id]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+      <div>
+        <div className="mb-8">
+          <div className="h-8 bg-gray-200 rounded w-20 mb-1 animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-48 animate-pulse" />
+        </div>
+        <TimelineSkeleton />
       </div>
     );
   }
@@ -147,12 +179,12 @@ export default function PersonalStatus() {
 
       {/* Active service timeline */}
       {activeService && (
-        <ServiceTimeline serviceStatus={activeService} profile={profile} />
+        <ServiceTimeline serviceStatus={activeService} profile={profile} documents={documents} />
       )}
 
       {/* Single service — show directly */}
       {docServiceStatuses.length === 1 && (
-        <ServiceTimeline serviceStatus={docServiceStatuses[0]} profile={profile} />
+        <ServiceTimeline serviceStatus={docServiceStatuses[0]} profile={profile} documents={documents} />
       )}
 
       {/* Subscription section */}
@@ -275,12 +307,21 @@ function TierTabBar({
 function ServiceTimeline({
   serviceStatus,
   profile,
+  documents,
 }: {
   serviceStatus: ServiceDeliveryStatus;
   profile: { has_submitted_intake: boolean; intake_submitted_at: string | null; delivery_status: string };
+  documents: DocRow[];
 }) {
   const service = getServiceById(serviceStatus.serviceId);
   const serviceName = service?.name ?? serviceStatus.serviceId;
+  const docTypesForService = getDocumentTypesForService(serviceStatus.serviceId);
+
+  // Find the most recent delivered_at timestamp for this service's documents
+  const latestDeliveryDate = documents
+    .filter(d => d.delivered_to_client && docTypesForService.includes(d.document_type) && d.delivered_at)
+    .map(d => new Date(d.delivered_at!))
+    .sort((a, b) => b.getTime() - a.getTime())[0];
 
   // Tier-aware styling
   const getTierStyle = (tier: ServiceTier | null) => {
@@ -333,9 +374,9 @@ function ServiceTimeline({
       label: `${tierLabel ? tierLabel + ' ' : ''}documents delivered`,
       complete: serviceStatus.deliveryStatus === 'delivered',
       detail: serviceStatus.deliveryStatus === 'delivered'
-        ? serviceStatus.documentsTotal > 0
-          ? `All ${serviceStatus.documentsTotal} documents available`
-          : 'Available in Documents'
+        ? latestDeliveryDate
+          ? `Delivered on ${latestDeliveryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
+          : `All ${serviceStatus.documentsTotal} documents available`
         : 'Pending',
     },
   ];

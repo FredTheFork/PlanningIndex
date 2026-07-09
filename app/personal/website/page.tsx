@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { AutoDeleteWarning } from '@/components/ui/AutoDeleteWarning';
+import { WebsitePreviewSkeleton } from '@/components/ui/skeletons';
 import { Globe, Download, ExternalLink, AlertTriangle, CheckCircle2, FileCode, Monitor, Tablet, Smartphone, Maximize2 } from 'lucide-react';
 
 interface WebsiteDelivery {
@@ -13,6 +15,7 @@ interface WebsiteDelivery {
   hosting_instructions: string | null;
   delivered_at: string | null;
   delivery_type: 'zip_only' | 'hosted_preview' | 'both';
+  auto_delete_at?: string | null;
 }
 
 type ViewportSize = 'desktop' | 'tablet' | 'mobile';
@@ -45,7 +48,7 @@ export default function PersonalWebsitePage() {
     try {
       const { data, error } = await supabase
         .from('website_deliveries')
-        .select('id, deployment_url, website_zip_path, hosting_instructions, delivered_at, delivery_type')
+        .select('id, deployment_url, website_zip_path, hosting_instructions, delivered_at, delivery_type, auto_delete_at')
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -91,8 +94,12 @@ export default function PersonalWebsitePage() {
 
   if (authLoading || profileLoading || loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+      <div>
+        <div className="mb-8">
+          <div className="h-8 bg-gray-200 rounded w-32 mb-1 animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-64 animate-pulse" />
+        </div>
+        <WebsitePreviewSkeleton />
       </div>
     );
   }
@@ -161,6 +168,14 @@ export default function PersonalWebsitePage() {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Auto-delete warning for website */}
+      {delivery.auto_delete_at && (
+        <AutoDeleteWarning
+          autoDeleteAt={delivery.auto_delete_at}
+          message="Website files are available for a limited time"
+        />
       )}
 
       {/* Live Website Preview */}
