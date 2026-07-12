@@ -201,7 +201,7 @@ export function useIntakeResponses() {
 
     // Subscribe to realtime changes (admin grants edit access, resubmission clears edit fields)
     const channel = supabase
-      .channel(`intake_responses:${user.id}`)
+      .channel(`intake_responses:${user.id}:${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -276,7 +276,7 @@ export function useIntakeResponses() {
     }, 10000);
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       clearInterval(editPollRef);
     };
   }, [user, authLoading]);

@@ -143,7 +143,7 @@ export default function ChatBubble() {
       }
     };
 
-    const channel = supabase.channel(`messages:${convId}`);
+    const channel = supabase.channel(`messages:${convId}:${Date.now()}`);
     channel
       .on(
         'postgres_changes',
@@ -180,7 +180,7 @@ export default function ChatBubble() {
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);

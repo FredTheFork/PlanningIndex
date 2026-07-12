@@ -148,7 +148,7 @@ export function useDeliveryNotifications() {
     fetchNotifications();
 
     // Realtime subscription for new document deliveries
-    const channel = supabase.channel(`delivery_notifications:${user.id}`);
+    const channel = supabase.channel(`delivery_notifications:${user.id}:${Date.now()}`);
     channel
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -190,9 +190,7 @@ export function useDeliveryNotifications() {
           if (activeRef.current) fetchNotifications();
         }
       })
-      .subscribe((status) => {
-        console.log('[useDeliveryNotifications] Subscription status:', status);
-      });
+      .subscribe();
 
     channelRef.current = channel;
 
@@ -207,7 +205,7 @@ export function useDeliveryNotifications() {
 
     return () => {
       activeRef.current = false;
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);

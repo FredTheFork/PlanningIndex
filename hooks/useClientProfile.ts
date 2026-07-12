@@ -67,7 +67,7 @@ export function useClientProfile() {
     fetchProfile();
 
     // Realtime subscription for profile changes (delivery_status, etc.)
-    const channel = supabase.channel(`client_profile:${user.id}`);
+    const channel = supabase.channel(`client_profile:${user.id}:${Date.now()}`);
     channel
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -79,9 +79,7 @@ export function useClientProfile() {
           setProfile(payload.new as ClientProfile);
         }
       })
-      .subscribe((status) => {
-        console.log('[useClientProfile] Realtime subscription status:', status);
-      });
+      .subscribe();
 
     channelRef.current = channel;
 
@@ -96,12 +94,12 @@ export function useClientProfile() {
 
     return () => {
       active = false;
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [user, authLoading]);
+  }, [user?.id, authLoading]);
 
   const intakeFullyComplete = useMemo(() => {
     if (!profile) return false;

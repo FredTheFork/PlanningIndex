@@ -38,7 +38,7 @@ export function useUnreadMessages() {
     fetchUnreadCount();
 
     // Realtime subscription for INSERT/UPDATE on messages where user is recipient
-    const channel = supabase.channel(`unread_messages:${user.id}`);
+    const channel = supabase.channel(`unread_messages:${user.id}:${Date.now()}`);
     channel
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'client_messages', filter: `recipient_id=eq.${user.id}` }, () => {
         if (activeRef.current) fetchUnreadCount();
@@ -63,7 +63,7 @@ export function useUnreadMessages() {
 
     return () => {
       activeRef.current = false;
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);

@@ -82,7 +82,7 @@ export default function PersonalStatus() {
     checkRefreshStatus();
 
     // Realtime subscription for document delivery updates
-    const channel = supabase.channel(`status_docs:${profile.user_id}`);
+    const channel = supabase.channel(`status_docs:${profile.user_id}:${Date.now()}`);
     channel
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -106,7 +106,7 @@ export default function PersonalStatus() {
     channelRef.current = channel;
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [profile?.user_id]);
 

@@ -145,7 +145,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
       });
 
     // Setup Realtime
-    const channel = supabase.channel(`messages:${conversationId}`);
+    const channel = supabase.channel(`messages:${conversationId}:${Date.now()}`);
 
     channel.on(
       'postgres_changes',
@@ -270,7 +270,7 @@ export default function MessagingTab({ userId, data, refreshData }: MessagingTab
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       if (pollingRef.current) clearInterval(pollingRef.current);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
