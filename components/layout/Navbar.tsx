@@ -7,6 +7,7 @@ import { Menu, X, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useDeliveryNotifications } from '@/hooks/useDeliveryNotifications';
 
 // Pages where the hero is a dark photo background — navbar starts transparent
 const HERO_PATHS = new Set([
@@ -133,6 +134,7 @@ export default function Navbar() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading } = useClientProfile();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { unreadCount: deliveryUnreadCount } = useDeliveryNotifications();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -251,7 +253,14 @@ export default function Navbar() {
                 }`}
                 style={{ padding: '10px 20px', fontSize: '0.9rem' }}
               >
-                {cta.label}
+                <span className="flex items-center gap-2">
+                  {cta.label}
+                  {isPaidUser && !isAdmin && deliveryUnreadCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-semibold text-navy bg-green-400 rounded-full">
+                      {deliveryUnreadCount > 9 ? '9+' : deliveryUnreadCount}
+                    </span>
+                  )}
+                </span>
               </Link>
               <button
                 onClick={handleSignOut}
@@ -376,7 +385,14 @@ export default function Navbar() {
             style={{ padding: '14px 32px', fontSize: '1rem' }}
             onClick={() => setMobileOpen(false)}
           >
-            {cta.label}
+            <span className="flex items-center gap-2">
+              {cta.label}
+              {isPaidUser && !isAdmin && deliveryUnreadCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-semibold text-navy bg-green-400 rounded-full">
+                  {deliveryUnreadCount > 9 ? '9+' : deliveryUnreadCount}
+                </span>
+              )}
+            </span>
           </Link>
           {user && !authLoading && (
             <button
