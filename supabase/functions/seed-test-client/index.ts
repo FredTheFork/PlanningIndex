@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CHATZ_API_KEY = Deno.env.get("CHATZ_API_KEY") || "";
+const CHATZ_API_KEY = Deno.env.get("CHATZ_API_KEY") || "261c2fe96fa44ac798c15f20d6ba161b.lRLsgcKSexHFZZDy";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 
 const CHATZ_MODEL = "gpt-4o";
