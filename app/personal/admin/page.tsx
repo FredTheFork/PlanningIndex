@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { RefreshCw, Download, AlertCircle, Clock, Users, Trash2 } from 'lucide-react';
+import { RefreshCw, Download, AlertCircle, Clock, Users, Trash2, Sparkles, Eraser } from 'lucide-react';
 import {
   getAdminDashboardData,
   exportClientsToCSV,
@@ -24,6 +24,8 @@ import SkeletonTable from '@/components/admin/SkeletonTable';
 import AdminToastContainer from '@/components/admin/AdminToastContainer';
 import DeleteClientModal from '@/components/admin/DeleteClientModal';
 import DeleteAllClientsModal from '@/components/admin/DeleteAllClientsModal';
+import SeedTestClientModal from '@/components/admin/SeedTestClientModal';
+import ClearTestClientsModal from '@/components/admin/ClearTestClientsModal';
 
 const DEFAULT_FILTERS: FilterState = {
   search: '',
@@ -57,6 +59,9 @@ export default function AdminDashboard() {
   const [deleteTarget, setDeleteTarget] = useState<{ userId: string; email: string; businessName?: string } | null>(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [seedModalOpen, setSeedModalOpen] = useState(false);
+  const [clearTestOpen, setClearTestOpen] = useState(false);
+  const [testClientCount, setTestClientCount] = useState(0);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -98,6 +103,22 @@ export default function AdminDashboard() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch test client count
+  useEffect(() => {
+    const fetchTestCount = async () => {
+      try {
+        const { count } = await supabase
+          .from('client_profiles')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('is_test_client', true);
+        setTestClientCount(count || 0);
+      } catch {
+        // ignore
+      }
+    };
+    fetchTestCount();
+  }, [data]);
 
   // Selection handlers
   const handleSelect = useCallback((userId: string) => {
@@ -327,6 +348,21 @@ export default function AdminDashboard() {
             <span className="hidden sm:inline">Export All</span>
           </button>
           <button
+            onClick={() => setSeedModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 rounded-md font-inter text-sm font-medium transition-colors"
+          >
+            <Sparkles size={16} />
+            <span className="hidden sm:inline">Generate Test Client</span>
+          </button>
+          <button
+            onClick={() => setClearTestOpen(true)}
+            disabled={testClientCount === 0}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-orange-50 text-orange-600 border border-orange-300 rounded-md font-inter text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <Eraser size={16} />
+            <span className="hidden sm:inline">Clear Test Clients{testClientCount > 0 ? ` (${testClientCount})` : ''}</span>
+          </button>
+          <button
             onClick={() => setDeleteAllOpen(true)}
             disabled={!data?.stats.totalClients}
             className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-300 rounded-md font-inter text-sm font-medium transition-colors disabled:opacity-50"
@@ -447,6 +483,19 @@ export default function AdminDashboard() {
         onClose={() => setDeleteAllOpen(false)}
         onConfirm={handleDeleteAllClients}
         totalCount={data?.stats.totalClients || 0}
+      />
+
+      <SeedTestClientModal
+        open={seedModalOpen}
+        onClose={() => setSeedModalOpen(false)}
+        onSuccess={fetchData}
+      />
+
+      <ClearTestClientsModal
+        open={clearTestOpen}
+        onClose={() => setClearTestOpen(false)}
+        onSuccess={fetchData}
+        showToast={showToast}
       />
     </div>
   );

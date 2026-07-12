@@ -141,6 +141,11 @@ const ClientRowComponent = memo(function ClientRowComponent({
       <td className="px-4 py-3">
         <div className="font-inter text-sm text-gray-900 font-medium truncate max-w-[180px]">
           {client.email}
+          {client.is_test_client && (
+            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-inter font-bold text-white bg-emerald-600 align-middle">
+              TEST
+            </span>
+          )}
         </div>
         {client.business_name && (
           <div className="font-inter text-xs text-[#1B3F7A] truncate max-w-[180px]">

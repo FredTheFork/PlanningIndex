@@ -40,6 +40,7 @@ export interface ClientRow {
   industry: IndustryCategory | null;
   urgency_score: number;
   days_since_created: number;
+  is_test_client?: boolean;
 }
 
 export interface DashboardData {
@@ -284,6 +285,7 @@ export async function getAdminDashboardData(
       industry,
       urgency_score: urgencyScore,
       days_since_created: daysSinceCreated,
+      is_test_client: p.is_test_client ?? false,
     };
   });
 
