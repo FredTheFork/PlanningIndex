@@ -383,7 +383,7 @@ function applyFilters(clients: ClientRow[], filters: FilterState): ClientRow[] {
     // Intake status
     if (filters.intakeStatus && filters.intakeStatus !== 'all') {
       if (filters.intakeStatus === 'pending' && client.has_submitted_intake) return false;
-      if (filters.intakeStatus === 'partial' && (client.has_submitted_intake && client.intake_complete)) return false;
+      if (filters.intakeStatus === 'partial' && !(client.has_submitted_intake && !client.intake_complete)) return false;
       if (filters.intakeStatus === 'complete' && !client.intake_complete) return false;
     }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { RefreshCw, Download, AlertCircle, Clock, Users } from 'lucide-react';
+import { RefreshCw, Download, AlertCircle, Clock, Users, Trash2 } from 'lucide-react';
 import {
   getAdminDashboardData,
   exportClientsToCSV,
@@ -13,6 +13,7 @@ import {
 } from '@/lib/admin/dashboard-queries';
 import { useAdminToast } from '@/hooks/useAdminToast';
 import { briefGenerationLimiter } from '@/lib/admin/rate-limiter';
+import { supabase } from '@/lib/supabase/client';
 
 import DashboardSummaryCards from '@/components/admin/DashboardSummaryCards';
 import DashboardTierBreakdown from '@/components/admin/DashboardTierBreakdown';
@@ -21,6 +22,8 @@ import DashboardClientTable from '@/components/admin/DashboardClientTable';
 import DashboardBulkActions from '@/components/admin/DashboardBulkActions';
 import SkeletonTable from '@/components/admin/SkeletonTable';
 import AdminToastContainer from '@/components/admin/AdminToastContainer';
+import DeleteClientModal from '@/components/admin/DeleteClientModal';
+import DeleteAllClientsModal from '@/components/admin/DeleteAllClientsModal';
 
 const DEFAULT_FILTERS: FilterState = {
   search: '',
@@ -51,6 +54,9 @@ export default function AdminDashboard() {
   const [generatingBriefFor, setGeneratingBriefFor] = useState<string | null>(null);
   const { toasts, showToast, dismissToast } = useAdminToast();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ userId: string; email: string; businessName?: string } | null>(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -202,6 +208,84 @@ export default function AdminDashboard() {
     setPagination(prev => ({ ...prev, page: newPage }));
   }, []);
 
+  // Delete single client
+  const handleDeleteClient = useCallback(async (userId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ user_id: userId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to delete client');
+      }
+      showToast({ message: 'Client deleted successfully.', type: 'success' });
+      setSelectedIds(prev => { const s = new Set(prev); s.delete(userId); return s; });
+      await fetchData();
+    } catch (err: any) {
+      showToast({ message: `Delete failed: ${err.message}`, type: 'error' });
+      throw err;
+    }
+  }, [fetchData, showToast]);
+
+  // Delete all clients
+  const handleDeleteAllClients = useCallback(async () => {
+    setDeletingAll(true);
+    try {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('client_profiles')
+        .select('user_id');
+      if (profilesError) throw new Error(`Failed to fetch client list: ${profilesError.message}`);
+      if (!profiles || profiles.length === 0) {
+        showToast({ message: 'No clients to delete.', type: 'warning' });
+        return;
+      }
+      let successCount = 0;
+      let failCount = 0;
+      for (const p of profiles) {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({ user_id: p.user_id }),
+            }
+          );
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch {
+          failCount++;
+        }
+      }
+      setSelectedIds(new Set());
+      await fetchData();
+      if (failCount === 0) {
+        showToast({ message: `All ${successCount} clients deleted successfully.`, type: 'success' });
+      } else {
+        showToast({ message: `Deleted ${successCount} clients. ${failCount} failed — check console.`, type: 'warning' });
+      }
+    } catch (err: any) {
+      showToast({ message: `Delete all failed: ${err.message}`, type: 'error' });
+      throw err;
+    } finally {
+      setDeletingAll(false);
+    }
+  }, [fetchData, showToast]);
+
   // Selected clients for bulk actions
   const selectedClients = useMemo(() => {
     if (!data?.clients) return [];
@@ -241,6 +325,14 @@ export default function AdminDashboard() {
           >
             <Download size={16} />
             <span className="hidden sm:inline">Export All</span>
+          </button>
+          <button
+            onClick={() => setDeleteAllOpen(true)}
+            disabled={!data?.stats.totalClients}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-300 rounded-md font-inter text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <Trash2 size={16} />
+            <span className="hidden sm:inline">Delete All</span>
           </button>
         </div>
       </div>
@@ -293,6 +385,10 @@ export default function AdminDashboard() {
             onSelectAll={handleSelectAll}
             onAction={handleAction}
             generatingBriefFor={generatingBriefFor}
+            onDeleteClient={(userId, email) => {
+              const client = data.clients.find(c => c.user_id === userId);
+              setDeleteTarget({ userId, email, businessName: client?.business_name });
+            }}
           />
 
           {/* Pagination */}
@@ -335,6 +431,22 @@ export default function AdminDashboard() {
         selectedClients={selectedClients}
         onClearSelection={handleClearSelection}
         onExportSelected={handleExportSelected}
+      />
+
+      <DeleteClientModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => handleDeleteClient(deleteTarget!.userId)}
+        userId={deleteTarget?.userId || ''}
+        email={deleteTarget?.email || ''}
+        businessName={deleteTarget?.businessName}
+      />
+
+      <DeleteAllClientsModal
+        open={deleteAllOpen}
+        onClose={() => setDeleteAllOpen(false)}
+        onConfirm={handleDeleteAllClients}
+        totalCount={data?.stats.totalClients || 0}
       />
     </div>
   );

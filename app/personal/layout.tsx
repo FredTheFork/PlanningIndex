@@ -134,96 +134,100 @@ export default function PersonalLayout({
       </div>
 
       <div className="max-w-[1600px] mx-auto px-4 lg:px-6 py-6">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar */}
-          <nav className="md:w-48 shrink-0">
-            <div className="bg-white rounded-lg border border-gray-200 p-2">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                const isMessages = item.label === 'Messages';
-                const isDocuments = item.label === 'Documents';
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`flex items-center justify-between px-4 py-3 rounded-md font-inter text-sm transition-colors ${
-                      isActive
-                        ? 'bg-[#FAFBFC] text-[#1B3F7A] font-semibold'
-                        : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <item.icon size={18} />
-                      {item.label}
-                    </div>
-                    {isMessages && unreadCount > 0 && (
-                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-medium-blue rounded-full">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                    {isDocuments && deliveryUnreadCount > 0 && (
-                      <DeliveryNotificationBadge count={deliveryUnreadCount} />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Status indicator + service badges for regular clients */}
-            {!isAdmin && profile && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
-                <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
-                  Delivery Status
-                </p>
-                <DeliveryStatusBadge status={profile.delivery_status} />
-
-                {/* Service badges with tier colors */}
-                {safePurchasedServiceIds.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
-                    {safePurchasedServiceIds.map((sid) => {
-                      const service = getServiceById(sid);
-                      const isRefresh = sid === 'quarterly_refresh' || sid === 'monthly_care_plan';
-                      const tier = service?.tier;
-                      const icon = getServiceStyleIcon(isRefresh);
-                      const styleClasses = getServiceStyleClasses(isRefresh, tier);
-                      return (
-                        <span
-                          key={sid}
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${styleClasses.bg} ${styleClasses.text}`}
-                        >
-                          {icon({ size: 9 })}
-                          {service?.name?.split(' ')[0] ?? sid}
+        {isAdmin ? (
+          <main className="min-w-0">{children}</main>
+        ) : (
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Sidebar */}
+            <nav className="md:w-48 shrink-0">
+              <div className="bg-white rounded-lg border border-gray-200 p-2">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  const isMessages = item.label === 'Messages';
+                  const isDocuments = item.label === 'Documents';
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`flex items-center justify-between px-4 py-3 rounded-md font-inter text-sm transition-colors ${
+                        isActive
+                          ? 'bg-[#FAFBFC] text-[#1B3F7A] font-semibold'
+                          : 'text-gray-600 hover:text-[#1B3F7A] hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon size={18} />
+                        {item.label}
+                      </div>
+                      {isMessages && unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-medium-blue rounded-full">
+                          {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+                      {isDocuments && deliveryUnreadCount > 0 && (
+                        <DeliveryNotificationBadge count={deliveryUnreadCount} />
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
-            )}
 
-            {/* Cross-sell link for clients who don't own all services */}
-            {!isAdmin && profile && safePurchasedServiceIds.length < 13 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
-                <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
-                  Expand Your Infrastructure
-                </p>
-                <Link
-                  href="/services"
-                  className="font-inter font-medium text-[#2C68C4] hover:underline text-sm flex items-center gap-1.5"
-                >
-                  <Package size={14} />
-                  Add more packs
-                </Link>
-                <p className="font-inter text-xs text-gray-500 mt-1.5">
-                  Operations, Industry, or bundles. Up to 25% off.
-                </p>
-              </div>
-            )}
-          </nav>
+              {/* Status indicator + service badges for regular clients */}
+              {profile && (
+                <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
+                  <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
+                    Delivery Status
+                  </p>
+                  <DeliveryStatusBadge status={profile.delivery_status} />
 
-          {/* Main content */}
-          <main className="flex-1 min-w-0">{children}</main>
-        </div>
+                  {/* Service badges with tier colors */}
+                  {safePurchasedServiceIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
+                      {safePurchasedServiceIds.map((sid) => {
+                        const service = getServiceById(sid);
+                        const isRefresh = sid === 'quarterly_refresh' || sid === 'monthly_care_plan';
+                        const tier = service?.tier;
+                        const icon = getServiceStyleIcon(isRefresh);
+                        const styleClasses = getServiceStyleClasses(isRefresh, tier);
+                        return (
+                          <span
+                            key={sid}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-inter font-medium ${styleClasses.bg} ${styleClasses.text}`}
+                          >
+                            {icon({ size: 9 })}
+                            {service?.name?.split(' ')[0] ?? sid}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cross-sell link for clients who don't own all services */}
+              {profile && safePurchasedServiceIds.length < 13 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
+                  <p className="font-inter text-xs text-gray-600 mb-2 uppercase tracking-wider">
+                    Expand Your Infrastructure
+                  </p>
+                  <Link
+                    href="/services"
+                    className="font-inter font-medium text-[#2C68C4] hover:underline text-sm flex items-center gap-1.5"
+                  >
+                    <Package size={14} />
+                    Add more packs
+                  </Link>
+                  <p className="font-inter text-xs text-gray-500 mt-1.5">
+                    Operations, Industry, or bundles. Up to 25% off.
+                  </p>
+                </div>
+              )}
+            </nav>
+
+            {/* Main content */}
+            <main className="flex-1 min-w-0">{children}</main>
+          </div>
+        )}
       </div>
 
       {/* Chat Bubble - Only for clients, not admins */}

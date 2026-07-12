@@ -4,7 +4,7 @@ import { memo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Clock, CheckCircle2, AlertTriangle, RefreshCw, Package, Layers, Building2,
-  ChevronRight, Mail, Briefcase, FolderOpen, Send, AlertCircle as AlertCircleIcon
+  ChevronRight, Mail, Briefcase, FolderOpen, Send, AlertCircle as AlertCircleIcon, Trash2
 } from 'lucide-react';
 import type { ClientRow } from '@/lib/admin/dashboard-queries';
 import type { ServiceTier, IndustryCategory } from '@/lib/services/service-catalog';
@@ -16,6 +16,7 @@ interface DashboardClientTableProps {
   onSelectAll: (selectAll: boolean) => void;
   onAction: (userId: string, action: 'reminder' | 'generate-brief' | 'start-delivery' | 'continue') => void;
   generatingBriefFor?: string | null;
+  onDeleteClient?: (userId: string, email: string) => void;
 }
 
 export default function DashboardClientTable({
@@ -25,6 +26,7 @@ export default function DashboardClientTable({
   onSelectAll,
   onAction,
   generatingBriefFor,
+  onDeleteClient,
 }: DashboardClientTableProps) {
   const allSelected = clients.length > 0 && clients.every(c => selectedIds.has(c.user_id));
   const someSelected = selectedIds.size > 0;
@@ -32,7 +34,7 @@ export default function DashboardClientTable({
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto scrollbar-hide">
-        <table className="w-full min-w-[1200px]">
+        <table className="w-full">
           <thead>
             <tr className="bg-[#FAFBFC] border-b border-gray-200">
               <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-3 w-10">
@@ -55,6 +57,7 @@ export default function DashboardClientTable({
               <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-3 w-[60px]">Sub</th>
               <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-left px-4 py-3 w-[100px]">Created</th>
               <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-right px-4 py-3 w-[140px]">Action</th>
+              <th className="font-inter font-semibold text-[#1B3F7A] text-xs uppercase tracking-wider text-center px-2 py-3 w-10"></th>
             </tr>
           </thead>
           <tbody>
@@ -66,6 +69,7 @@ export default function DashboardClientTable({
                 onSelect={onSelect}
                 onAction={onAction}
                 isGeneratingBrief={generatingBriefFor === client.user_id}
+                onDelete={onDeleteClient}
               />
             ))}
           </tbody>
@@ -88,12 +92,14 @@ const ClientRowComponent = memo(function ClientRowComponent({
   onSelect,
   onAction,
   isGeneratingBrief,
+  onDelete,
 }: {
   client: ClientRow;
   isSelected: boolean;
   onSelect: (userId: string) => void;
   onAction: (userId: string, action: 'reminder' | 'generate-brief' | 'start-delivery' | 'continue') => void;
   isGeneratingBrief: boolean;
+  onDelete?: (userId: string, email: string) => void;
 }) {
   // Determine context-aware action
   const getAction = useCallback(() => {
@@ -263,6 +269,20 @@ const ClientRowComponent = memo(function ClientRowComponent({
             <ChevronRight size={12} />
           </Link>
         </div>
+      </td>
+
+      {/* Delete */}
+      <td className="px-2 py-3 text-center">
+        {onDelete && (
+          <button
+            onClick={() => onDelete(client.user_id, client.email)}
+            className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            aria-label={`Delete ${client.email}`}
+            title="Delete client"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
       </td>
     </tr>
   );
