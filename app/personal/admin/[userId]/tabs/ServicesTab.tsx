@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   Package, FileText, Briefcase, Clock, CheckCircle2, AlertCircle,
@@ -13,14 +13,20 @@ import { getDocumentTypesForService } from '@/lib/services/document-service-map'
 import { getDocumentConfigsForService } from '@/lib/services/document-configs';
 import { getServiceDeliveryStatuses } from '@/lib/services/service-status';
 import type { ServiceDeliveryStatus } from '@/lib/services/service-status';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import { ServicesTabSkeleton } from '@/components/admin/skeletons/AdminTabSkeletons';
+import { briefGenerationLimiter } from '@/lib/admin/rate-limiter';
+import { logActivity } from '@/lib/admin/activity-log';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ServicesTabProps {
   userId: string;
   data: any;
   refreshData: () => void;
+  showToast?: (params: { message: string; type: 'success' | 'error' | 'info' | 'warning'; retryFn?: () => void }) => void;
 }
 
-export default function ServicesTab({ userId, data, refreshData }: ServicesTabProps) {
+export default function ServicesTab({ userId, data, refreshData, showToast: externalShowToast }: ServicesTabProps) {
   const [serviceStatuses, setServiceStatuses] = useState<ServiceDeliveryStatus[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [briefs, setBriefs] = useState<any[]>([]);
@@ -28,8 +34,9 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
   const [socialPosts, setSocialPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const { user } = useAuth();
+  const { showToast: localShowToast } = useAdminToast();
+  const showToast = externalShowToast || localShowToast;
 
   useEffect(() => {
     fetchServiceData();
@@ -73,28 +80,28 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
     setLoading(false);
   };
 
-  const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setMessage(msg);
-    setMessageType(type);
-    setTimeout(() => setMessage(''), 5000);
-  };
-
   const handleSaveBrief = async (briefId: string, content: string) => {
     const { error } = await supabase
       .from('client_briefs')
       .update({ brief_content: content })
       .eq('id', briefId);
     if (error) {
-      showMessage('Failed to save brief: ' + error.message, 'error');
+      showToast({ message: 'Failed to save brief: ' + error.message, type: 'error' });
     } else {
-      showMessage('Brief saved successfully', 'success');
+      showToast({ message: 'Brief saved successfully', type: 'success' });
       await fetchServiceData();
     }
   };
 
   const handleGenerateBrief = async (serviceId: string) => {
     if (!data.profile?.has_submitted_intake) {
-      showMessage('Client must submit intake form first', 'error');
+      showToast({ message: 'Client must submit intake form first', type: 'warning' });
+      return;
+    }
+
+    if (!briefGenerationLimiter.consume()) {
+      const waitSec = Math.ceil(briefGenerationLimiter.getWaitTimeMs() / 1000);
+      showToast({ message: `Please wait ${waitSec}s before generating another brief.`, type: 'warning', duration: 4000 });
       return;
     }
 
@@ -108,7 +115,7 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ user_id: userId, service_id: serviceId, debug: true }),
+          body: JSON.stringify({ user_id: userId, service_id: serviceId }),
         }
       );
 
@@ -116,33 +123,29 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
       try {
         result = await response.json();
       } catch {
-        result = { error: `Server returned ${response.status} with non-JSON body` };
+        result = { error: response.status === 404 ? 'Service starting up — please wait 30 seconds and try again.' : `Server returned ${response.status} with non-JSON body` };
       }
 
       if (response.ok && result.success) {
-        showMessage(`Brief generated for ${getServiceById(serviceId)?.name ?? serviceId}`, 'success');
+        showToast({ message: `Brief generated for ${getServiceById(serviceId)?.name ?? serviceId}`, type: 'success' });
+        if (user) {
+          logActivity({ adminId: user?.id || '', adminEmail: user?.email || '', clientId: userId, actionType: 'brief_generated', actionLabel: `Generated brief for ${getServiceById(serviceId)?.name ?? serviceId}`, metadata: { serviceId } });
+        }
         await fetchServiceData();
         refreshData();
       } else {
         const errMsg = result.error || result.message || 'Failed to generate brief';
-        const debugInfo = result.debug ? ` (debug: ${JSON.stringify(result.debug).substring(0, 200)})` : '';
-        const hintInfo = result.hint ? ` — ${result.hint}` : '';
-        console.error('generate-brief full error:', result);
-        showMessage(`${errMsg}${hintInfo}${debugInfo}`, 'error');
+        showToast({ message: errMsg, type: 'error', retryFn: () => handleGenerateBrief(serviceId) });
       }
     } catch (error: any) {
-      showMessage(error.message || 'Error generating brief', 'error');
+      showToast({ message: error.message || 'Network error generating brief.', type: 'error', retryFn: () => handleGenerateBrief(serviceId) });
     } finally {
       setGeneratingBrief(null);
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
-      </div>
-    );
+    return <ServicesTabSkeleton />;
   }
 
   const purchasedServices = data.purchasedServices || [];
@@ -164,19 +167,6 @@ export default function ServicesTab({ userId, data, refreshData }: ServicesTabPr
   return (
     <div className="space-y-6">
       {/* Message Banner */}
-      {message && (
-        <div className={`rounded-lg p-4 border flex items-start gap-3 ${
-          messageType === 'success' ? 'bg-green-50 border-green-200 text-green-800'
-          : messageType === 'error' ? 'bg-red-50 border-red-200 text-red-800'
-          : 'bg-blue-50 border-blue-200 text-blue-800'
-        }`}>
-          {messageType === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />}
-          {messageType === 'error' && <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />}
-          {messageType === 'info' && <Zap size={16} className="shrink-0 mt-0.5 text-blue-600" />}
-          <p className="font-inter text-sm font-medium">{message}</p>
-        </div>
-      )}
-
       {/* Service Cards */}
       {purchasedServices.map((ps: any) => {
         const service = getServiceById(ps.service_id);

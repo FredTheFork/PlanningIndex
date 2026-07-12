@@ -15,6 +15,8 @@ import { buildPlatformPrompt } from '@/lib/services/document-prompts';
 import { buildMasterSocialMediaPrompt, buildCaptionGenerationPrompt } from '@/lib/services/website-page-prompts';
 import JSZip from 'jszip';
 import { LayoutGrid, List, CheckSquare } from 'lucide-react';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import { GenericTabSkeleton } from '@/components/admin/skeletons/AdminTabSkeletons';
 
 // ── Platform icon map ────────────────────────────────────────────────────────
 const PLATFORM_ICON_MAP: Record<PlatformId, React.ElementType> = {
@@ -31,6 +33,7 @@ interface SocialMediaTabProps {
   userId: string;
   data: any;
   refreshData: () => void;
+  showToast?: (params: { message: string; type: 'success' | 'error' | 'info' | 'warning'; retryFn?: () => void }) => void;
 }
 
 interface SocialPost {
@@ -72,13 +75,13 @@ const CATEGORY_STYLES = {
 };
 
 // ── Main Component ───────────────────────────────────────────────────────────
-export default function SocialMediaTab({ userId, data, refreshData }: SocialMediaTabProps) {
+export default function SocialMediaTab({ userId, data, refreshData, showToast: externalShowToast }: SocialMediaTabProps) {
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [clientBrief, setClientBrief] = useState<ClientBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingBrief, setLoadingBrief] = useState(true);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const { showToast: localShowToast } = useAdminToast();
+  const showToast = externalShowToast || localShowToast;
 
   // Platform tabs
   const [activePlatform, setActivePlatform] = useState<PlatformId | 'all'>('all');
@@ -166,9 +169,7 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setMessage(msg);
-    setMessageType(type);
-    setTimeout(() => setMessage(''), 4000);
+    showToast({ message: msg, type });
   };
 
   const handleCopyText = useCallback(async (text: string, postId: string, type: 'caption' | 'hashtags') => {
@@ -766,29 +767,11 @@ export default function SocialMediaTab({ userId, data, refreshData }: SocialMedi
   const withVideoCount = posts.filter(p => p.video_path).length;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
-      </div>
-    );
+    return <GenericTabSkeleton rows={6} />;
   }
 
   return (
     <div className="space-y-6">
-      {/* Message Banner */}
-      {message && (
-        <div className={`rounded-lg p-4 border flex items-start gap-3 ${
-          messageType === 'success' ? 'bg-green-50 border-green-200 text-green-800'
-          : messageType === 'error' ? 'bg-red-50 border-red-200 text-red-800'
-          : 'bg-blue-50 border-blue-200 text-blue-800'
-        }`}>
-          {messageType === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />}
-          {messageType === 'error' && <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />}
-          {messageType === 'info' && <Info size={16} className="shrink-0 mt-0.5 text-blue-600" />}
-          <p className="font-inter text-sm font-medium">{message}</p>
-        </div>
-      )}
-
       {/* Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">

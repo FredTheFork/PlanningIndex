@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import JSZip from 'jszip';
 import { supabase } from '@/lib/supabase/client';
 import {
   FileText, Download, AlertCircle, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Send, X,
-  FileUp, Info, RefreshCw, Copy, AlertTriangle, Package
+  FileUp, Info, RefreshCw, Copy, AlertTriangle, Package, Shield
 } from 'lucide-react';
 import {
   getAllDocumentTypesList, getDocumentLabel
@@ -15,14 +15,23 @@ import { getDocumentTypesForService } from '@/lib/services/document-service-map'
 import { buildFullPrompt } from '@/lib/services/document-prompts';
 import { updateOverallDeliveryStatus, markDocumentDelivered, bulkMarkDocumentsDelivered } from '@/lib/services/delivery-status';
 import { triggerMessageNotification } from '@/app/actions/messaging';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import { DocumentsTabSkeleton } from '@/components/admin/skeletons/AdminTabSkeletons';
+import { runConsistencyChecks, type DocumentConsistencyReport } from '@/lib/admin/document-consistency';
+import { fileUploadLimiter, bulkOperationLimiter } from '@/lib/admin/rate-limiter';
+import { logActivity } from '@/lib/admin/activity-log';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DocumentsTabProps {
   userId: string;
   data: any;
   refreshData: () => void;
+  showToast?: (params: { message: string; type: 'success' | 'error' | 'info' | 'warning'; retryFn?: () => void }) => void;
 }
 
-// Auto-delete urgency helper
+const MAX_PDF_BYTES = 25 * 1024 * 1024; // 25MB
+const MAX_DOCX_BYTES = 10 * 1024 * 1024; // 10MB
+
 function getAutoDeleteUrgency(autoDeleteAt: string | null): { days: number; level: 'none' | 'warning' | 'urgent' } {
   if (!autoDeleteAt) return { days: 0, level: 'none' };
   const diffMs = new Date(autoDeleteAt).getTime() - Date.now();
@@ -33,42 +42,44 @@ function getAutoDeleteUrgency(autoDeleteAt: string | null): { days: number; leve
   return { days, level: 'none' };
 }
 
-// Main component
-export default function DocumentsTab({ userId, data, refreshData }: DocumentsTabProps) {
+export default function DocumentsTab({ userId, data, refreshData, showToast: externalShowToast }: DocumentsTabProps) {
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const [briefContent, setBriefContent] = useState<string>('');
   const [briefVersion, setBriefVersion] = useState<number>(1);
   const [briefGeneratedAt, setBriefGeneratedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
 
-  // Bulk operation states
   const [bulkCopying, setBulkCopying] = useState(false);
   const [bulkDelivering, setBulkDelivering] = useState(false);
   const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [bulkDownloadProgress, setBulkDownloadProgress] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
   const [showConfirmBulkDeliver, setShowConfirmBulkDeliver] = useState(false);
+  const [consistencyReport, setConsistencyReport] = useState<DocumentConsistencyReport | null>(null);
+  const [showConsistencyPanel, setShowConsistencyPanel] = useState(false);
+  const [highlightedDocs, setHighlightedDocs] = useState<Set<string>>(new Set());
+  const lastZipDownloadRef = useRef<number>(0);
 
-  // Build document types list based on purchased services
+  const { user } = useAuth();
+  const { showToast: localShowToast } = useAdminToast();
+  const showToast = externalShowToast || localShowToast;
+
   const purchasedServiceIds: string[] = data.purchasedServices?.map((ps: any) => ps.service_id) || [];
-  const allDocTypes = purchasedServiceIds.length > 0
-    ? purchasedServiceIds.flatMap((sid: string) => getDocumentTypesForService(sid))
-        .filter((v, i, a) => a.indexOf(v) === i)
-        .map(docTypeId => {
-          const config = getAllDocumentTypesList().find(c => c.id === docTypeId);
-          return config || { id: docTypeId, label: getDocumentLabel(docTypeId) ?? docTypeId, description: '', service_id: '' };
-        })
-    : getAllDocumentTypesList();
+  const allDocTypes = useMemo(() => {
+    return purchasedServiceIds.length > 0
+      ? purchasedServiceIds.flatMap((sid: string) => getDocumentTypesForService(sid))
+          .filter((v, i, a) => a.indexOf(v) === i)
+          .map(docTypeId => {
+            const config = getAllDocumentTypesList().find(c => c.id === docTypeId);
+            return config || { id: docTypeId, label: getDocumentLabel(docTypeId) ?? docTypeId, description: '', service_id: '' };
+          })
+      : getAllDocumentTypesList();
+  }, [purchasedServiceIds]);
 
-  useEffect(() => {
-    fetchDocuments();
-    fetchBrief();
-  }, [userId]);
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
     const { data: docs } = await supabase
       .from('generated_documents')
@@ -81,10 +92,9 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     });
     setDocuments(docsMap);
     setLoading(false);
-  };
+  }, [userId]);
 
-  const fetchBrief = async () => {
-    // Fetch the documents-specific brief first
+  const fetchBrief = useCallback(async () => {
     const { data: docBriefs } = await supabase
       .from('client_briefs')
       .select('brief_content, status, service_id, version, created_at')
@@ -101,7 +111,6 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       return;
     }
 
-    // Fallback: comprehensive brief (null service_id)
     const { data: compBriefs } = await supabase
       .from('client_briefs')
       .select('brief_content, status, service_id, version, created_at')
@@ -118,7 +127,6 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       return;
     }
 
-    // Last resort: any completed brief
     const { data: anyBriefs } = await supabase
       .from('client_briefs')
       .select('brief_content, status, version, created_at')
@@ -132,13 +140,12 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       setBriefVersion(anyBriefs[0].version || 1);
       setBriefGeneratedAt(anyBriefs[0].created_at);
     }
-  };
+  }, [userId]);
 
-  const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setMessage(msg);
-    setMessageType(type);
-    setTimeout(() => setMessage(''), 5000);
-  };
+  useEffect(() => {
+    fetchDocuments();
+    fetchBrief();
+  }, [fetchDocuments, fetchBrief]);
 
   const handleCopyPrompt = useCallback(async (docTypeId: string) => {
     const fullPrompt = buildFullPrompt(docTypeId, briefContent);
@@ -147,31 +154,56 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       setCopiedDocId(docTypeId);
       setTimeout(() => setCopiedDocId(null), 2000);
     } catch {
-      showMessage('Failed to copy prompt to clipboard', 'error');
+      showToast({ message: 'Failed to copy prompt to clipboard.', type: 'error' });
     }
-  }, [briefContent]);
+  }, [briefContent, showToast]);
 
   const handleFileUpload = async (
     docTypeId: string,
     file: File,
     fileKind: 'pdf' | 'docx'
   ) => {
+    // Client-side validation
+    const maxBytes = fileKind === 'pdf' ? MAX_PDF_BYTES : MAX_DOCX_BYTES;
+    const expectedMime = fileKind === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    if (file.size > maxBytes) {
+      showToast({ message: `File too large. ${fileKind.toUpperCase()} files must be under ${fileKind === 'pdf' ? '25MB' : '10MB'}.`, type: 'error' });
+      return;
+    }
+
+    if (file.type !== expectedMime && !file.name.toLowerCase().endsWith(fileKind === 'pdf' ? '.pdf' : '.docx')) {
+      showToast({ message: `Invalid file type. Please upload a ${fileKind.toUpperCase()} file.`, type: 'error' });
+      return;
+    }
+
+    if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+      showToast({ message: 'Invalid filename.', type: 'error' });
+      return;
+    }
+
+    if (!fileUploadLimiter.consume()) {
+      const waitSec = Math.ceil(fileUploadLimiter.getWaitTimeMs() / 1000);
+      showToast({ message: `Please wait ${waitSec}s before uploading another file.`, type: 'warning', duration: 4000 });
+      return;
+    }
+
     const docLabel = allDocTypes.find(d => d.id === docTypeId)?.label || getDocumentLabel(docTypeId) || docTypeId;
-    setUploadingDoc(`${docTypeId}-${fileKind}`);
+    const uploadKey = `${docTypeId}-${fileKind}`;
+    setUploadingDoc(uploadKey);
 
     try {
       const ext = fileKind === 'pdf' ? 'pdf' : 'docx';
       const storagePath = `${userId}/${docTypeId}.${ext}`;
-      const mimeType = fileKind === 'pdf'
-        ? 'application/pdf'
-        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
       const { error: uploadError } = await supabase.storage
         .from('generated-documents')
-        .upload(storagePath, file, { contentType: mimeType, upsert: true });
+        .upload(storagePath, file, { contentType: expectedMime, upsert: true });
 
       if (uploadError) {
-        showMessage(`Upload failed: ${uploadError.message}`, 'error');
+        showToast({ message: `Upload failed: ${uploadError.message}`, type: 'error', retryFn: () => handleFileUpload(docTypeId, file, fileKind) });
         return;
       }
 
@@ -190,21 +222,22 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       if (fileKind === 'docx') updatePayload.docx_path = storagePath;
 
       if (existing?.id) {
-        await supabase
-          .from('generated_documents')
-          .update(updatePayload)
-          .eq('id', existing.id);
+        await supabase.from('generated_documents').update(updatePayload).eq('id', existing.id);
       } else {
         await supabase.from('generated_documents').insert(updatePayload);
       }
 
-      showMessage(`${fileKind.toUpperCase()} uploaded for "${docLabel}"`, 'success');
+      showToast({ message: `${fileKind.toUpperCase()} uploaded for "${docLabel}"`, type: 'success' });
+      if (user) {
+        logActivity({ adminId: user?.id || '', adminEmail: user?.email || '', clientId: userId, actionType: existing ? 'file_replaced' : 'document_uploaded', actionLabel: `${existing ? 'Replaced' : 'Uploaded'} ${fileKind.toUpperCase()} for ${docLabel}`, metadata: { docType: docTypeId, fileKind, storagePath } });
+      }
       await fetchDocuments();
       refreshData();
     } catch (err: any) {
-      showMessage(err.message || 'Upload failed', 'error');
+      showToast({ message: err.message || 'Upload failed.', type: 'error', retryFn: () => handleFileUpload(docTypeId, file, fileKind) });
     } finally {
       setUploadingDoc(null);
+      setUploadProgress(prev => { const next = { ...prev }; delete next[uploadKey]; return next; });
     }
   };
 
@@ -214,7 +247,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       .createSignedUrl(filePath, 3600);
 
     if (error || !data) {
-      showMessage('Could not generate download link', 'error');
+      showToast({ message: 'File not found or link expired — please re-upload the document.', type: 'error' });
       return;
     }
 
@@ -227,10 +260,8 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     document.body.removeChild(a);
   };
 
-  // Send delivery notification to client
   const sendDeliveryNotification = useCallback(async (docLabel: string) => {
     try {
-      // Get admin user ID
       const { data: adminRow } = await supabase
         .from('admin_users')
         .select('user_id')
@@ -239,10 +270,7 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
 
       if (!adminRow?.user_id) return;
 
-      // Build conversation ID
       const convId = [adminRow.user_id, userId].sort().join('_');
-
-      // Insert message
       const { data: msg } = await supabase
         .from('client_messages')
         .insert({
@@ -263,16 +291,19 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     }
   }, [userId]);
 
-  // Handle single document delivery
   const handleMarkDelivered = async (docId: string, docLabel: string) => {
-    await markDocumentDelivered(docId);
-
-    // Send notification to client
-    await sendDeliveryNotification(docLabel);
-
-    showMessage('Document marked as delivered', 'success');
-    await fetchDocuments();
-    refreshData();
+    try {
+      await markDocumentDelivered(docId);
+      await sendDeliveryNotification(docLabel);
+      showToast({ message: 'Document marked as delivered.', type: 'success' });
+      if (user) {
+        logActivity({ adminId: user?.id || '', adminEmail: user?.email || '', clientId: userId, actionType: 'document_delivered', actionLabel: `Delivered: ${docLabel}`, metadata: { docId } });
+      }
+      await fetchDocuments();
+      refreshData();
+    } catch (err: any) {
+      showToast({ message: err.message || 'Failed to mark as delivered.', type: 'error', retryFn: () => handleMarkDelivered(docId, docLabel) });
+    }
   };
 
   const handleRemoveFile = async (docTypeId: string, fileKind: 'pdf' | 'docx') => {
@@ -293,15 +324,17 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
     }
 
     await supabase.from('generated_documents').update(updatePayload).eq('id', existing.id);
-    showMessage(`${fileKind.toUpperCase()} removed`, 'info');
+    showToast({ message: `${fileKind.toUpperCase()} removed.`, type: 'info' });
+    if (user) {
+      logActivity({ adminId: user?.id || '', adminEmail: user?.email || '', clientId: userId, actionType: 'document_deleted', actionLabel: `Removed ${fileKind.toUpperCase()} from ${allDocTypes.find(d => d.id === docTypeId)?.label || docTypeId}`, metadata: { docType: docTypeId, fileKind } });
+    }
     await fetchDocuments();
     refreshData();
   };
 
-  // Bulk Copy All Prompts
   const handleBulkCopyAllPrompts = async () => {
     if (!briefContent) {
-      showMessage('No brief content available for prompts', 'error');
+      showToast({ message: 'No brief content available for prompts.', type: 'error' });
       return;
     }
 
@@ -314,36 +347,38 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       }
 
       await navigator.clipboard.writeText(prompts.join('\n'));
-      showMessage(`Copied ${allDocTypes.length} prompts to clipboard`, 'success');
+      showToast({ message: `Copied ${allDocTypes.length} prompts to clipboard.`, type: 'success' });
     } catch {
-      showMessage('Failed to copy prompts', 'error');
+      showToast({ message: 'Failed to copy prompts.', type: 'error' });
     } finally {
       setBulkCopying(false);
     }
   };
 
-  // Bulk Mark All Delivered
   const handleBulkMarkDelivered = async () => {
+    if (!bulkOperationLimiter.consume()) {
+      const waitSec = Math.ceil(bulkOperationLimiter.getWaitTimeMs() / 1000);
+      showToast({ message: `Please wait ${waitSec}s before another bulk operation.`, type: 'warning', duration: 4000 });
+      return;
+    }
+
     setBulkDelivering(true);
     try {
-      // Filter documents that are completed and have at least one file
       const docsToDeliver = allDocTypes.filter(docType => {
         const doc = documents[docType.id];
         return doc?.status === 'completed' && (doc.pdf_path || doc.docx_path) && !doc.delivered_to_client;
       });
 
       if (docsToDeliver.length === 0) {
-        showMessage('No documents ready for delivery', 'info');
+        showToast({ message: 'No documents ready for delivery.', type: 'info' });
         setShowConfirmBulkDeliver(false);
         setBulkDelivering(false);
         return;
       }
 
-      // Get doc IDs
       const docIds = docsToDeliver.map(docType => documents[docType.id].id);
       await bulkMarkDocumentsDelivered(docIds);
 
-      // Send consolidated notification
       const docLabels = docsToDeliver.map(d => d.label);
       let notificationMessage: string;
       if (docLabels.length <= 3) {
@@ -377,22 +412,31 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
         }
       }
 
-      showMessage(`Delivered ${docsToDeliver.length} documents to client`, 'success');
+      showToast({ message: `Delivered ${docsToDeliver.length} documents to client.`, type: 'success' });
+      if (user) {
+        logActivity({ adminId: user?.id || '', adminEmail: user?.email || '', clientId: userId, actionType: 'document_bulk_delivered', actionLabel: `Bulk delivered ${docsToDeliver.length} documents`, metadata: { count: docsToDeliver.length, docTypes: docLabels } });
+      }
       setShowConfirmBulkDeliver(false);
       await fetchDocuments();
       refreshData();
     } catch (err: any) {
-      showMessage(err.message || 'Failed to deliver documents', 'error');
+      showToast({ message: err.message || 'Failed to deliver documents.', type: 'error', retryFn: handleBulkMarkDelivered });
     } finally {
       setBulkDelivering(false);
     }
   };
 
-  // Bulk Download All as ZIP
   const handleBulkDownloadZip = async () => {
+    // Cooldown check
+    const now = Date.now();
+    if (now - lastZipDownloadRef.current < 30000) {
+      const remaining = Math.ceil((30000 - (now - lastZipDownloadRef.current)) / 1000);
+      showToast({ message: `Please wait ${remaining}s before downloading another ZIP.`, type: 'warning', duration: 4000 });
+      return;
+    }
+
     setBulkDownloading(true);
     try {
-      // Collect all files
       const files: { path: string; name: string }[] = [];
       for (const docType of allDocTypes) {
         const doc = documents[docType.id];
@@ -405,17 +449,19 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       }
 
       if (files.length === 0) {
-        showMessage('No files available to download', 'info');
+        showToast({ message: 'No files available to download.', type: 'info' });
         setBulkDownloading(false);
         return;
       }
 
-      // Create ZIP
+      setBulkDownloadProgress({ current: 0, total: files.length });
+
       const zip = new JSZip();
       let successCount = 0;
       let failCount = 0;
 
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         try {
           const { data, error } = await supabase.storage
             .from('generated-documents')
@@ -438,15 +484,15 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
         } catch {
           failCount++;
         }
+        setBulkDownloadProgress({ current: i + 1, total: files.length });
       }
 
       if (successCount === 0) {
-        showMessage('Failed to download any files', 'error');
+        showToast({ message: 'Failed to download any files.', type: 'error' });
         setBulkDownloading(false);
         return;
       }
 
-      // Generate and download ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
@@ -457,66 +503,73 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      lastZipDownloadRef.current = Date.now();
+
       if (failCount > 0) {
-        showMessage(`Downloaded ${successCount} files (${failCount} failed)`, 'info');
+        showToast({ message: `Downloaded ${successCount} files (${failCount} failed).`, type: 'info' });
       } else {
-        showMessage(`Downloaded ${successCount} files as ZIP`, 'success');
+        showToast({ message: `Downloaded ${successCount} files as ZIP.`, type: 'success' });
+      }
+      if (user) {
+        logActivity({ adminId: user?.id || '', adminEmail: user?.email || '', clientId: userId, actionType: 'zip_downloaded', actionLabel: `Downloaded ${successCount} files as ZIP`, metadata: { fileCount: successCount } });
       }
     } catch (err: any) {
-      showMessage(err.message || 'Failed to create ZIP', 'error');
+      showToast({ message: err.message || 'Failed to create ZIP.', type: 'error' });
     } finally {
       setBulkDownloading(false);
+      setBulkDownloadProgress({ current: 0, total: 0 });
     }
   };
 
+  const handleRunConsistencyCheck = () => {
+    const intakeData = data.intakeResponses || {};
+    const report = runConsistencyChecks(documents, intakeData);
+    setConsistencyReport(report);
+    setShowConsistencyPanel(true);
+
+    // Highlight failed docs
+    const failedDocIds = new Set<string>();
+    report.checks.forEach(check => {
+      if (check.status === 'fail' || check.status === 'warn') {
+        check.affectedDocuments.forEach(docId => failedDocIds.add(docId));
+      }
+    });
+    setHighlightedDocs(failedDocIds);
+
+    if (user) {
+      logActivity({ adminId: user?.id || '', adminEmail: user?.email || '', clientId: userId, actionType: 'consistency_check_run', actionLabel: `Consistency check: ${report.passCount} pass, ${report.warnCount} warn, ${report.failCount} fail` });
+    }
+    showToast({ message: `Consistency check complete: ${report.passCount} passed, ${report.warnCount} warnings, ${report.failCount} failed.`, type: report.failCount > 0 ? 'warning' : 'success' });
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
-      </div>
-    );
+    return <DocumentsTabSkeleton />;
   }
 
-  // Calculate progress
   const completedCount = Object.values(documents).filter((d: any) => d.status === 'completed').length;
   const deliveredCount = Object.values(documents).filter((d: any) => d.delivered_to_client).length;
   const pendingCount = allDocTypes.length - completedCount;
   const deliveryPercentage = allDocTypes.length > 0 ? Math.round((deliveredCount / allDocTypes.length) * 100) : 0;
 
-  // Determine progress bar color
   let progressColor = 'bg-gray-300';
   if (deliveryPercentage >= 80) progressColor = 'bg-green-500';
   else if (deliveryPercentage >= 40) progressColor = 'bg-amber-500';
   else if (deliveryPercentage > 0) progressColor = 'bg-red-500';
 
-  // Documents ready for bulk delivery
   const docsReadyForDelivery = allDocTypes.filter(docType => {
     const doc = documents[docType.id];
     return doc?.status === 'completed' && (doc.pdf_path || doc.docx_path) && !doc.delivered_to_client;
   });
 
-  // Files uploaded count
   const filesUploaded = allDocTypes.filter(docType => {
     const doc = documents[docType.id];
     return doc?.pdf_path || doc?.docx_path;
   }).length;
 
+  const allDelivered = deliveredCount === allDocTypes.length && allDocTypes.length > 0;
+
   return (
     <div className="space-y-6">
-      {/* Message Banner */}
-      {message && (
-        <div className={`rounded-lg p-4 border flex items-start gap-3 ${
-          messageType === 'success' ? 'bg-green-50 border-green-200 text-green-800'
-          : messageType === 'error' ? 'bg-red-50 border-red-200 text-red-800'
-          : 'bg-blue-50 border-blue-200 text-blue-800'
-        }`}>
-          {messageType === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />}
-          {messageType === 'error' && <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />}
-          {messageType === 'info' && <Info size={16} className="shrink-0 mt-0.5 text-blue-600" />}
-          <p className="font-inter text-sm font-medium">{message}</p>
-        </div>
-      )}
-
       {/* Header Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-start justify-between mb-4">
@@ -528,7 +581,6 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
               Copy generation prompts, upload completed files, and track delivery.
             </p>
 
-            {/* Brief Version Indicator */}
             <div className="flex items-center gap-2 mt-2">
               {briefContent ? (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-inter font-medium">
@@ -543,13 +595,12 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-inter font-medium">
                   <AlertTriangle size={12} />
-                  No brief available - prompts will use placeholder context
+                  No brief available — prompts will use placeholder context
                 </span>
               )}
             </div>
           </div>
 
-          {/* Stats */}
           <div className="flex items-center gap-6 text-sm shrink-0">
             <div className="text-center">
               <div className="font-inter font-bold text-2xl text-green-600">{completedCount}</div>
@@ -575,7 +626,6 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-1.5">
             <span className="font-inter text-xs text-gray-600">Delivery Progress</span>
@@ -592,16 +642,24 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
         </div>
       </div>
 
+      {/* All Delivered State */}
+      {allDelivered && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+          <CheckCircle2 size={48} className="text-green-500 mx-auto mb-3" />
+          <h4 className="font-inter font-semibold text-green-900 text-lg mb-1">All Done!</h4>
+          <p className="font-inter text-green-700 text-sm">All documents have been delivered to this client.</p>
+        </div>
+      )}
+
       {/* Bulk Actions Toolbar */}
       {allDocTypes.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2">
               <Package size={16} className="text-[#1B3F7A]" />
               <span className="font-inter font-medium text-sm text-gray-700">Bulk Actions</span>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Copy All Prompts */}
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={handleBulkCopyAllPrompts}
                 disabled={bulkCopying || !briefContent}
@@ -609,20 +667,12 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
                 title={!briefContent ? 'No brief content available' : ''}
               >
                 {bulkCopying ? (
-                  <>
-                    <RefreshCw size={13} className="animate-spin" />
-                    Copying...
-                  </>
+                  <><RefreshCw size={13} className="animate-spin" /> Copying...</>
                 ) : (
-                  <>
-                    <Copy size={13} />
-                    Copy All Prompts
-                    <span className="bg-white/20 rounded px-1">{allDocTypes.length}</span>
-                  </>
+                  <><Copy size={13} /> Copy All Prompts <span className="bg-white/20 rounded px-1">{allDocTypes.length}</span></>
                 )}
               </button>
 
-              {/* Mark All Delivered */}
               <button
                 onClick={() => setShowConfirmBulkDeliver(true)}
                 disabled={bulkDelivering || docsReadyForDelivery.length === 0}
@@ -630,22 +680,12 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
                 title={docsReadyForDelivery.length === 0 ? 'No completed documents with files ready for delivery' : ''}
               >
                 {bulkDelivering ? (
-                  <>
-                    <RefreshCw size={13} className="animate-spin" />
-                    Delivering...
-                  </>
+                  <><RefreshCw size={13} className="animate-spin" /> Delivering...</>
                 ) : (
-                  <>
-                    <Send size={13} />
-                    Mark All Delivered
-                    {docsReadyForDelivery.length > 0 && (
-                      <span className="bg-white/20 rounded px-1">{docsReadyForDelivery.length}</span>
-                    )}
-                  </>
+                  <><Send size={13} /> Mark All Delivered {docsReadyForDelivery.length > 0 && <span className="bg-white/20 rounded px-1">{docsReadyForDelivery.length}</span>}</>
                 )}
               </button>
 
-              {/* Download All as ZIP */}
               <button
                 onClick={handleBulkDownloadZip}
                 disabled={bulkDownloading || filesUploaded === 0}
@@ -653,21 +693,75 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
                 title={filesUploaded === 0 ? 'No files uploaded' : ''}
               >
                 {bulkDownloading ? (
-                  <>
-                    <RefreshCw size={13} className="animate-spin" />
-                    Downloading...
-                  </>
+                  <><RefreshCw size={13} className="animate-spin" /> Downloading {bulkDownloadProgress.current}/{bulkDownloadProgress.total}...</>
                 ) : (
-                  <>
-                    <Download size={13} />
-                    Download All as ZIP
-                    {filesUploaded > 0 && (
-                      <span className="bg-white/20 rounded px-1">{filesUploaded}</span>
-                    )}
-                  </>
+                  <><Download size={13} /> Download All as ZIP {filesUploaded > 0 && <span className="bg-white/20 rounded px-1">{filesUploaded}</span>}</>
                 )}
               </button>
+
+              <button
+                onClick={handleRunConsistencyCheck}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-inter font-medium transition-colors"
+              >
+                <Shield size={13} /> Consistency Check
+              </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Consistency Check Results Panel */}
+      {showConsistencyPanel && consistencyReport && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Shield size={18} className="text-[#1B3F7A]" />
+              <h4 className="font-inter font-semibold text-gray-900 text-base">Consistency Report</h4>
+              <div className="flex items-center gap-2 ml-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">{consistencyReport.passCount} Pass</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">{consistencyReport.warnCount} Warn</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700">{consistencyReport.failCount} Fail</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600">{consistencyReport.skippedCount} Skipped</span>
+              </div>
+            </div>
+            <button
+              onClick={() => { setShowConsistencyPanel(false); setHighlightedDocs(new Set()); }}
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              aria-label="Close consistency report"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {consistencyReport.checks.map(check => (
+              <div
+                key={check.id}
+                className={`flex items-start gap-3 p-3 rounded-lg border ${
+                  check.status === 'pass' ? 'border-green-200 bg-green-50/30' :
+                  check.status === 'fail' ? 'border-red-200 bg-red-50/30' :
+                  check.status === 'warn' ? 'border-amber-200 bg-amber-50/30' :
+                  'border-gray-200 bg-gray-50/30'
+                }`}
+              >
+                <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                  check.status === 'pass' ? 'bg-green-100' :
+                  check.status === 'fail' ? 'bg-red-100' :
+                  check.status === 'warn' ? 'bg-amber-100' : 'bg-gray-100'
+                }`}>
+                  {check.status === 'pass' && <CheckCircle2 size={12} className="text-green-600" />}
+                  {check.status === 'fail' && <AlertCircle size={12} className="text-red-600" />}
+                  {check.status === 'warn' && <AlertTriangle size={12} className="text-amber-600" />}
+                  {check.status === 'skipped' && <Clock size={12} className="text-gray-400" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-inter text-sm font-medium text-gray-800">{check.label}</p>
+                  <p className="font-inter text-xs text-gray-600 mt-0.5">{check.detail}</p>
+                  {check.affectedDocuments.length > 0 && (
+                    <p className="font-inter text-xs text-gray-400 mt-1">Affected: {check.affectedDocuments.join(', ')}</p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -704,44 +798,58 @@ export default function DocumentsTab({ userId, data, refreshData }: DocumentsTab
       )}
 
       {/* Document cards */}
-      <div className="space-y-3">
-        {allDocTypes.map(docType => {
-          const doc = documents[docType.id];
-          const isExpanded = expandedDoc === docType.id;
-          const isUploadingPdf = uploadingDoc === `${docType.id}-pdf`;
-          const isUploadingDocx = uploadingDoc === `${docType.id}-docx`;
+      {allDocTypes.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <Package size={48} className="text-gray-300 mx-auto mb-4" />
+          <h4 className="font-inter font-semibold text-gray-900 text-lg mb-2">No Documents Created Yet</h4>
+          <p className="font-inter text-gray-600 text-sm">Generate a brief and copy prompts to create documents, then upload the completed files here.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {allDocTypes.map(docType => {
+            const doc = documents[docType.id];
+            const isExpanded = expandedDoc === docType.id;
+            const isUploadingPdf = uploadingDoc === `${docType.id}-pdf`;
+            const isUploadingDocx = uploadingDoc === `${docType.id}-docx`;
+            const isHighlighted = highlightedDocs.has(docType.id);
 
-          return (
-            <DocumentCard
-              key={docType.id}
-              docType={docType}
-              doc={doc}
-              isExpanded={isExpanded}
-              isUploadingPdf={isUploadingPdf}
-              isUploadingDocx={isUploadingDocx}
-              copiedDocId={copiedDocId}
-              onToggleExpand={() => setExpandedDoc(isExpanded ? null : docType.id)}
-              onCopyPrompt={() => handleCopyPrompt(docType.id)}
-              onUploadFile={(file, kind) => handleFileUpload(docType.id, file, kind)}
-              onDownload={handleDownloadFile}
-              onMarkDelivered={() => handleMarkDelivered(doc?.id, docType.label)}
-              onRemoveFile={(kind) => handleRemoveFile(docType.id, kind)}
-            />
-          );
-        })}
-      </div>
+            return (
+              <DocumentCard
+                key={docType.id}
+                docType={docType}
+                doc={doc}
+                isExpanded={isExpanded}
+                isUploadingPdf={isUploadingPdf}
+                isUploadingDocx={isUploadingDocx}
+                uploadProgressPdf={uploadProgress[`${docType.id}-pdf`] || 0}
+                uploadProgressDocx={uploadProgress[`${docType.id}-docx`] || 0}
+                copiedDocId={copiedDocId}
+                isHighlighted={isHighlighted}
+                onToggleExpand={() => setExpandedDoc(isExpanded ? null : docType.id)}
+                onCopyPrompt={() => handleCopyPrompt(docType.id)}
+                onUploadFile={(file, kind) => handleFileUpload(docType.id, file, kind)}
+                onDownload={handleDownloadFile}
+                onMarkDelivered={() => handleMarkDelivered(doc?.id, docType.label)}
+                onRemoveFile={(kind) => handleRemoveFile(docType.id, kind)}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
-// Document Card Component
 function DocumentCard({
   docType,
   doc,
   isExpanded,
   isUploadingPdf,
   isUploadingDocx,
+  uploadProgressPdf,
+  uploadProgressDocx,
   copiedDocId,
+  isHighlighted,
   onToggleExpand,
   onCopyPrompt,
   onUploadFile,
@@ -754,7 +862,10 @@ function DocumentCard({
   isExpanded: boolean;
   isUploadingPdf: boolean;
   isUploadingDocx: boolean;
+  uploadProgressPdf: number;
+  uploadProgressDocx: number;
   copiedDocId: string | null;
+  isHighlighted: boolean;
   onToggleExpand: () => void;
   onCopyPrompt: () => void;
   onUploadFile: (file: File, kind: 'pdf' | 'docx') => void;
@@ -772,7 +883,6 @@ function DocumentCard({
   const isCompleted = status === 'completed';
   const isCopied = copiedDocId === docType.id;
 
-  // Auto-delete urgency
   const autoDelete = getAutoDeleteUrgency(doc?.auto_delete_at);
 
   const statusConfig: Record<string, { colour: string; bg: string; label: string; icon: React.ReactNode }> = {
@@ -783,16 +893,12 @@ function DocumentCard({
   };
 
   const s = statusConfig[status] || statusConfig.pending;
-
-  // Can deliver if completed and has at least one file
   const canDeliver = isCompleted && hasFiles && !doc?.delivered_to_client;
 
   return (
-    <div className={`bg-white rounded-lg border overflow-hidden transition-shadow ${isExpanded ? 'border-[#1B3F7A] border-opacity-40 shadow-sm' : 'border-gray-200'}`}>
-      {/* Card header row */}
+    <div className={`bg-white rounded-lg border overflow-hidden transition-all ${isExpanded ? 'border-[#1B3F7A] border-opacity-40 shadow-sm' : 'border-gray-200'} ${isHighlighted ? 'ring-2 ring-amber-300' : ''}`}>
       <div className="px-4 py-3">
         <div className="flex items-center justify-between gap-3">
-          {/* Left: icon + name + badges */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="bg-[#FAFBFC] rounded-lg p-2 shrink-0">
               <FileText size={16} className="text-[#1B3F7A]" />
@@ -805,7 +911,6 @@ function DocumentCard({
                   {s.label}
                 </span>
 
-                {/* Auto-delete warning badge */}
                 {autoDelete.level === 'urgent' && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700 border border-red-200">
                     <AlertTriangle size={10} />
@@ -828,27 +933,18 @@ function DocumentCard({
             </div>
           </div>
 
-          {/* Right: action buttons */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Copy Prompt */}
             <button
               onClick={onCopyPrompt}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B3F7A] hover:bg-[#2C68C4] text-white rounded text-xs font-inter font-medium transition-colors"
             >
               {isCopied ? (
-                <>
-                  <CheckCircle2 size={13} />
-                  Copied
-                </>
+                <><CheckCircle2 size={13} /> Copied</>
               ) : (
-                <>
-                  <Copy size={13} />
-                  Copy Prompt
-                </>
+                <><Copy size={13} /> Copy Prompt</>
               )}
             </button>
 
-            {/* Manage (expand/collapse) */}
             <button
               onClick={onToggleExpand}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-inter font-medium transition-colors"
@@ -860,16 +956,15 @@ function DocumentCard({
         </div>
       </div>
 
-      {/* Expanded Manage panel */}
       {isExpanded && (
         <div className="border-t border-gray-200 px-4 py-4 bg-[#FAFBFC] space-y-4">
-          {/* Upload zones */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FileUploadZone
               label="PDF"
               existingPath={doc?.pdf_path}
               existingName={`${docType.label}.pdf`}
               isUploading={isUploadingPdf}
+              uploadProgress={uploadProgressPdf}
               accept=".pdf,application/pdf"
               inputRef={pdfInputRef}
               onFileSelect={(file) => onUploadFile(file, 'pdf')}
@@ -881,6 +976,7 @@ function DocumentCard({
               existingPath={doc?.docx_path}
               existingName={`${docType.label}.docx`}
               isUploading={isUploadingDocx}
+              uploadProgress={uploadProgressDocx}
               accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               inputRef={docxInputRef}
               onFileSelect={(file) => onUploadFile(file, 'docx')}
@@ -889,7 +985,6 @@ function DocumentCard({
             />
           </div>
 
-          {/* Deliver to client */}
           {isCompleted && (
             <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
               {!doc.delivered_to_client ? (
@@ -925,12 +1020,12 @@ function DocumentCard({
   );
 }
 
-// File Upload Zone Component
 function FileUploadZone({
   label,
   existingPath,
   existingName,
   isUploading,
+  uploadProgress,
   accept,
   inputRef,
   onFileSelect,
@@ -941,6 +1036,7 @@ function FileUploadZone({
   existingPath: string | null;
   existingName: string;
   isUploading: boolean;
+  uploadProgress: number;
   accept: string;
   inputRef: React.RefObject<HTMLInputElement>;
   onFileSelect: (file: File) => void;
@@ -1009,7 +1105,16 @@ function FileUploadZone({
       {isUploading ? (
         <>
           <RefreshCw size={16} className="text-blue-500 animate-spin" />
-          <p className="font-inter text-xs text-blue-600 font-medium">Uploading...</p>
+          {uploadProgress > 0 ? (
+            <>
+              <div className="w-full h-1 bg-blue-100 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full transition-all duration-150" style={{ width: `${uploadProgress}%` }} />
+              </div>
+              <p className="font-inter text-xs text-blue-600 font-medium">{uploadProgress}%</p>
+            </>
+          ) : (
+            <p className="font-inter text-xs text-blue-600 font-medium">Uploading...</p>
+          )}
         </>
       ) : (
         <>

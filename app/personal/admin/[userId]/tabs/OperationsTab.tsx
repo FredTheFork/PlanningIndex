@@ -17,11 +17,17 @@ import {
 import { getDocumentTypesForService } from '@/lib/services/document-service-map';
 import { buildFullPrompt } from '@/lib/services/document-prompts';
 import { triggerMessageNotification } from '@/app/actions/messaging';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import { GenericTabSkeleton } from '@/components/admin/skeletons/AdminTabSkeletons';
+import { briefGenerationLimiter } from '@/lib/admin/rate-limiter';
+import { logActivity } from '@/lib/admin/activity-log';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OperationsTabProps {
   userId: string;
   data: any;
   refreshData: () => void;
+  showToast?: (params: { message: string; type: 'success' | 'error' | 'info' | 'warning'; retryFn?: () => void }) => void;
 }
 
 // Auto-delete urgency helper
@@ -36,12 +42,13 @@ function getAutoDeleteUrgency(autoDeleteAt: string | null): { days: number; leve
 }
 
 // Main component
-export default function OperationsTab({ userId, data, refreshData }: OperationsTabProps) {
+export default function OperationsTab({ userId, data, refreshData, showToast: externalShowToast }: OperationsTabProps) {
+  const { user } = useAuth();
+  const { showToast: localShowToast } = useAdminToast();
+  const showToast = externalShowToast || localShowToast;
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const [briefs, setBriefs] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
@@ -119,9 +126,7 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setMessage(msg);
-    setMessageType(type);
-    setTimeout(() => setMessage(''), 5000);
+    showToast({ message: msg, type });
   };
 
   const handleCopyPrompt = useCallback(async (docTypeId: string, serviceId: string) => {
@@ -262,7 +267,15 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
       .eq('id', docId);
 
     await sendDeliveryNotification(docLabel);
-    showMessage('Document marked as delivered', 'success');
+    showToast({ message: 'Document marked as delivered', type: 'success' });
+    logActivity({
+      adminId: user?.id ?? 'unknown',
+      adminEmail: user?.email ?? 'unknown',
+      clientId: userId,
+      actionType: 'documents_delivered',
+      actionLabel: `Delivered operations document "${docLabel}"`,
+      metadata: { docId },
+    });
     await fetchData();
   };
 
@@ -292,7 +305,17 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
   // Brief generation
   const handleGenerateBrief = async (serviceId: string) => {
     if (!data.profile?.has_submitted_intake) {
-      showMessage('Client must submit intake form first', 'error');
+      showToast({ message: 'Client must submit intake form first', type: 'error' });
+      return;
+    }
+
+    if (!briefGenerationLimiter.consume()) {
+      const waitMs = briefGenerationLimiter.getWaitTimeMs();
+      showToast({
+        message: `Rate limit reached — please wait ${Math.ceil(waitMs / 1000)}s before retrying.`,
+        type: 'warning',
+        retryFn: () => handleGenerateBrief(serviceId),
+      });
       return;
     }
 
@@ -311,14 +334,22 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
       );
       const result = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
       if (response.ok && result.success) {
-        showMessage(`Brief generated for ${getServiceById(serviceId)?.name ?? serviceId}`, 'success');
+        showToast({ message: `Brief generated for ${getServiceById(serviceId)?.name ?? serviceId}`, type: 'success' });
+        logActivity({
+          adminId: user?.id ?? 'unknown',
+          adminEmail: user?.email ?? 'unknown',
+          clientId: userId,
+          actionType: 'brief_generated',
+          actionLabel: `Generated operations brief for ${getServiceById(serviceId)?.name ?? serviceId}`,
+          metadata: { serviceId },
+        });
         await fetchData();
         refreshData();
       } else {
-        showMessage(result.error || 'Failed to generate brief', 'error');
+        showToast({ message: result.error || 'Failed to generate brief', type: 'error' });
       }
     } catch (err: any) {
-      showMessage(err.message || 'Error generating brief', 'error');
+      showToast({ message: err.message || 'Error generating brief', type: 'error' });
     } finally {
       setGeneratingBrief(null);
     }
@@ -327,7 +358,17 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
   // Generate all briefs with progress
   const handleGenerateAllBriefs = async () => {
     if (!data.profile?.has_submitted_intake) {
-      showMessage('Client must submit intake form first', 'error');
+      showToast({ message: 'Client must submit intake form first', type: 'error' });
+      return;
+    }
+
+    if (!briefGenerationLimiter.consume()) {
+      const waitMs = briefGenerationLimiter.getWaitTimeMs();
+      showToast({
+        message: `Rate limit reached — please wait ${Math.ceil(waitMs / 1000)}s before retrying.`,
+        type: 'warning',
+        retryFn: handleGenerateAllBriefs,
+      });
       return;
     }
 
@@ -370,9 +411,17 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
     refreshData();
 
     if (failCount === 0) {
-      showMessage(`All ${successCount} operations briefs generated successfully`, 'success');
+      showToast({ message: `All ${successCount} operations briefs generated successfully`, type: 'success' });
+      logActivity({
+        adminId: user?.id ?? 'unknown',
+        adminEmail: user?.email ?? 'unknown',
+        clientId: userId,
+        actionType: 'brief_generated',
+        actionLabel: `Generated all ${successCount} operations briefs`,
+        metadata: { successCount, failCount },
+      });
     } else {
-      showMessage(`${successCount} briefs generated, ${failCount} failed`, 'error');
+      showToast({ message: `${successCount} briefs generated, ${failCount} failed`, type: 'error' });
     }
   };
 
@@ -385,9 +434,17 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
       .eq('id', briefId);
 
     if (error) {
-      showMessage('Failed to save brief', 'error');
+      showToast({ message: 'Failed to save brief', type: 'error' });
     } else {
-      showMessage('Brief saved', 'success');
+      showToast({ message: 'Brief saved', type: 'success' });
+      logActivity({
+        adminId: user?.id ?? 'unknown',
+        adminEmail: user?.email ?? 'unknown',
+        clientId: userId,
+        actionType: 'brief_edited',
+        actionLabel: 'Saved operations brief edits',
+        metadata: { briefId },
+      });
       await fetchData();
       setEditingBriefId(null);
     }
@@ -486,11 +543,19 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
         }
       }
 
-      showMessage(`Delivered ${docsToDeliver.length} documents to client`, 'success');
+      showToast({ message: `Delivered ${docsToDeliver.length} documents to client`, type: 'success' });
+      logActivity({
+        adminId: user?.id ?? 'unknown',
+        adminEmail: user?.email ?? 'unknown',
+        clientId: userId,
+        actionType: 'documents_delivered',
+        actionLabel: `Bulk delivered ${docsToDeliver.length} operations documents`,
+        metadata: { documentCount: docsToDeliver.length },
+      });
       setShowConfirmBulkDeliver(false);
       await fetchData();
     } catch (err: any) {
-      showMessage(err.message || 'Failed to deliver documents', 'error');
+      showToast({ message: err.message || 'Failed to deliver documents', type: 'error' });
     } finally {
       setBulkDelivering(false);
     }
@@ -601,11 +666,7 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
-      </div>
-    );
+    return <GenericTabSkeleton rows={6} />;
   }
 
   if (operationsServices.length === 0) {
@@ -646,20 +707,6 @@ export default function OperationsTab({ userId, data, refreshData }: OperationsT
 
   return (
     <div className="space-y-6">
-      {/* Message Banner */}
-      {message && (
-        <div className={`rounded-lg p-4 border flex items-start gap-3 ${
-          messageType === 'success' ? 'bg-green-50 border-green-200 text-green-800'
-          : messageType === 'error' ? 'bg-red-50 border-red-200 text-red-800'
-          : 'bg-blue-50 border-blue-200 text-blue-800'
-        }`}>
-          {messageType === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />}
-          {messageType === 'error' && <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />}
-          {messageType === 'info' && <Info size={16} className="shrink-0 mt-0.5 text-blue-600" />}
-          <p className="font-inter text-sm font-medium">{message}</p>
-        </div>
-      )}
-
       {/* Header Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-start justify-between mb-4">

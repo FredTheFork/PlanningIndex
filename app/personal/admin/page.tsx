@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { RefreshCw, Download, AlertCircle, Clock, Users } from 'lucide-react';
 import {
   getAdminDashboardData,
@@ -11,6 +11,8 @@ import {
   type ClientRow,
   type PaginationInfo,
 } from '@/lib/admin/dashboard-queries';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import { briefGenerationLimiter } from '@/lib/admin/rate-limiter';
 
 import DashboardSummaryCards from '@/components/admin/DashboardSummaryCards';
 import DashboardTierBreakdown from '@/components/admin/DashboardTierBreakdown';
@@ -18,6 +20,7 @@ import DashboardFilterBar from '@/components/admin/DashboardFilterBar';
 import DashboardClientTable from '@/components/admin/DashboardClientTable';
 import DashboardBulkActions from '@/components/admin/DashboardBulkActions';
 import SkeletonTable from '@/components/admin/SkeletonTable';
+import AdminToastContainer from '@/components/admin/AdminToastContainer';
 
 const DEFAULT_FILTERS: FilterState = {
   search: '',
@@ -46,6 +49,8 @@ export default function AdminDashboard() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [secondsSinceRefresh, setSecondsSinceRefresh] = useState(0);
   const [generatingBriefFor, setGeneratingBriefFor] = useState<string | null>(null);
+  const { toasts, showToast, dismissToast } = useAdminToast();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -149,43 +154,48 @@ export default function AdminDashboard() {
   // Context-aware actions
   const handleAction = useCallback(async (userId: string, action: 'reminder' | 'generate-brief' | 'start-delivery' | 'continue') => {
     if (action === 'generate-brief') {
-      setGeneratingBriefFor(userId);
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-brief`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({ user_id: userId }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          console.error('Brief generation failed:', result);
-          alert(`Failed to generate brief: ${result.error || 'Unknown error'}`);
-        } else {
-          // Refresh data to show updated brief status
-          fetchData();
-        }
-      } catch (err) {
-        console.error('Error generating brief:', err);
-        alert('Error generating brief');
-      } finally {
-        setGeneratingBriefFor(null);
+      if (!briefGenerationLimiter.consume()) {
+        const waitSec = Math.ceil(briefGenerationLimiter.getWaitTimeMs() / 1000);
+        showToast({ message: `Please wait ${waitSec}s before generating another brief.`, type: 'warning', duration: 4000 });
+        return;
       }
+      const generateBrief = async () => {
+        setGeneratingBriefFor(userId);
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-brief`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({ user_id: userId }),
+            }
+          );
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            const errMsg = result.error || (response.status === 404 ? 'Service starting up — please wait 30 seconds and try again.' : 'Unexpected server error. Please try again.');
+            showToast({ message: `Failed to generate brief: ${errMsg}`, type: 'error', retryFn: () => handleAction(userId, 'generate-brief') });
+          } else {
+            showToast({ message: 'Brief generated successfully.', type: 'success' });
+            fetchData();
+          }
+        } catch (err) {
+          showToast({ message: 'Network error generating brief. Check your connection and try again.', type: 'error', retryFn: () => handleAction(userId, 'generate-brief') });
+        } finally {
+          setGeneratingBriefFor(null);
+        }
+      };
+      await generateBrief();
     } else if (action === 'reminder') {
-      // Navigate to client messaging tab
       window.location.href = `/personal/admin/${userId}?tab=messaging`;
     } else {
-      // Navigate to documents tab
       window.location.href = `/personal/admin/${userId}?tab=documents`;
     }
-  }, [fetchData]);
+  }, [fetchData, showToast]);
 
   // Pagination
   const handlePageChange = useCallback((newPage: number) => {
@@ -200,6 +210,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-4 pb-20">
+      <AdminToastContainer toasts={toasts} onDismiss={dismissToast} onRetry={(id) => { const t = toasts.find(t => t.id === id); if (t?.retryFn) { dismissToast(id); t.retryFn(); } }} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

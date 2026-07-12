@@ -26,11 +26,16 @@ import {
   SUBSCRIPTION_STATUS_CONFIG,
   REFRESH_JOB_STATUS_CONFIG,
 } from '@/lib/services/subscription-types';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import { GenericTabSkeleton } from '@/components/admin/skeletons/AdminTabSkeletons';
+import { logActivity } from '@/lib/admin/activity-log';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SubscriptionTabProps {
   userId: string;
   data: any;
   refreshData: () => void;
+  showToast?: (params: { message: string; type: 'success' | 'error' | 'info' | 'warning'; retryFn?: () => void }) => void;
 }
 
 const JOB_STATUS_CONFIG = {
@@ -79,7 +84,7 @@ function StatusBadge({ status, size = 'md' }: { status: string; size?: 'sm' | 'm
   );
 }
 
-export default function SubscriptionTab({ userId, data, refreshData }: SubscriptionTabProps) {
+export default function SubscriptionTab({ userId, data, refreshData, showToast: externalShowToast }: SubscriptionTabProps) {
   const purchasedServices: SubscriptionRecord[] = data?.purchasedServices ?? [];
 
   // Find the care plan subscription (monthly_care_plan or legacy quarterly_refresh)
@@ -106,6 +111,9 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
   const [updateInstructions, setUpdateInstructions] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const { user } = useAuth();
+  const { showToast: localShowToast } = useAdminToast();
+  const showToast = externalShowToast || localShowToast;
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
 
   useEffect(() => {
@@ -165,19 +173,19 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
 
   const handleCreateRefreshJob = async () => {
     if (!selectedServiceId) {
-      setMessage({ text: 'Please select a service.', ok: false });
+      showToast({ message: 'Please select a service.', type: 'warning' });
       return;
     }
     if (selectedDocs.length === 0) {
-      setMessage({ text: 'Please select at least one document to refresh.', ok: false });
+      showToast({ message: 'Please select at least one document to refresh.', type: 'warning' });
       return;
     }
     if (!updateInstructions.trim() || updateInstructions.trim().length < 10) {
-      setMessage({ text: 'Please provide detailed update instructions (at least 10 characters).', ok: false });
+      showToast({ message: 'Please provide detailed update instructions (at least 10 characters).', type: 'warning' });
       return;
     }
     setSubmitting(true);
-    setMessage(null);
+    setSubmitting(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -212,20 +220,19 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
         await fetchJobs();
         refreshData();
       } else {
-        setMessage({ text: result.error ?? 'Failed to create refresh job.', ok: false });
+        showToast({ message: result.error ?? 'Failed to create refresh job.', type: 'error', retryFn: () => handleCreateRefreshJob() });
       }
     } catch (err: any) {
-      setMessage({ text: err.message ?? 'Unexpected error.', ok: false });
+      showToast({ message: err.message ?? 'Unexpected error.', type: 'error' });
     } finally {
       setSubmitting(false);
-      setTimeout(() => setMessage(null), 6000);
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+        <GenericTabSkeleton rows={4} />
       </div>
     );
   }
@@ -261,12 +268,6 @@ export default function SubscriptionTab({ userId, data, refreshData }: Subscript
 
   return (
     <div className="space-y-5">
-      {message && (
-        <div className={`rounded-lg p-4 border ${message.ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
-          <p className="font-inter text-sm font-medium">{message.text}</p>
-        </div>
-      )}
-
       {/* Subscription Status Card */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-start justify-between mb-5">

@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import AdminToastContainer from '@/components/admin/AdminToastContainer';
 import {
   ArrowLeft, User, FileText, Clock, Save, AlertCircle, FileCheck,
   MessageSquare, StickyNote, Settings, GitBranch, Zap, RefreshCw,
@@ -109,6 +111,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [refreshKey, setRefreshKey] = useState(0);
+  const { toasts, showToast, dismissToast } = useAdminToast();
 
   useEffect(() => {
     if (!userId) return;
@@ -215,6 +218,7 @@ export default function AdminClientDetail({ params }: { params: { userId: string
 
   return (
     <div className="space-y-4">
+      <AdminToastContainer toasts={toasts} onDismiss={dismissToast} onRetry={(id) => { const t = toasts.find(t => t.id === id); if (t?.retryFn) { dismissToast(id); t.retryFn(); } }} />
       {/* Back link */}
       <Link
         href="/personal/admin"
@@ -316,25 +320,25 @@ export default function AdminClientDetail({ params }: { params: { userId: string
         {/* Tab Content */}
         <div className="p-4">
           {activeTab === 'overview' && (
-            <OverviewTab userId={userId} data={data} refreshData={refreshData} />
+            <OverviewTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} onNavigateTab={setActiveTab} />
           )}
           {activeTab === 'documents' && (
-            <DocumentsTab userId={userId} data={data} refreshData={refreshData} />
+            <DocumentsTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} />
           )}
           {activeTab === 'social_media' && (
-            <SocialMediaTab userId={userId} data={data} refreshData={refreshData} />
+            <SocialMediaTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} />
           )}
           {activeTab === 'website_copy' && (
-            <WebsiteCopyTab userId={userId} data={data} refreshData={refreshData} />
+            <WebsiteCopyTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} />
           )}
           {activeTab === 'services' && (
-            <ServicesTab userId={userId} data={data} refreshData={refreshData} />
+            <ServicesTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} />
           )}
           {activeTab === 'tier_bundle' && (
             <TierBundleTab userId={userId} data={data} refreshData={refreshData} />
           )}
           {activeTab === 'brief' && (
-            <BriefTab userId={userId} data={data} refreshData={refreshData} />
+            <BriefTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} />
           )}
           {activeTab === 'intake' && (
             <IntakeTab userId={userId} data={data} refreshData={refreshData} />
@@ -343,10 +347,10 @@ export default function AdminClientDetail({ params }: { params: { userId: string
             <MessagingTab userId={userId} data={data} refreshData={refreshData} />
           )}
           {activeTab === 'subscription' && (
-            <SubscriptionTab userId={userId} data={data} refreshData={refreshData} />
+            <SubscriptionTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} />
           )}
           {activeTab === 'operations' && (
-            <OperationsTab userId={userId} data={data} refreshData={refreshData} />
+            <OperationsTab userId={userId} data={data} refreshData={refreshData} showToast={showToast} />
           )}
           {activeTab === 'industry' && (
             <IndustryTab userId={userId} data={data} refreshData={refreshData} />

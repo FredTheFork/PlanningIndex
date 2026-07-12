@@ -11,11 +11,14 @@ import {
 } from 'lucide-react';
 import { buildWebsiteFullPrompt } from '@/lib/services/document-prompts';
 import { buildPagePrompt, buildAllPagePrompts, PAGE_CONFIGS } from '@/lib/services/website-page-prompts';
+import { useAdminToast } from '@/hooks/useAdminToast';
+import { GenericTabSkeleton } from '@/components/admin/skeletons/AdminTabSkeletons';
 
 interface WebsiteCopyTabProps {
   userId: string;
   data: any;
   refreshData: () => void;
+  showToast?: (params: { message: string; type: 'success' | 'error' | 'info' | 'warning'; retryFn?: () => void }) => void;
 }
 
 interface WebsiteDelivery {
@@ -106,7 +109,7 @@ const ASSET_CATEGORIES = {
   },
 };
 
-export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCopyTabProps) {
+export default function WebsiteCopyTab({ userId, data, refreshData, showToast: externalShowToast }: WebsiteCopyTabProps) {
   const [delivery, setDelivery] = useState<WebsiteDelivery | null>(null);
   const [clientBrief, setClientBrief] = useState<ClientBrief | null>(null);
   const [clientAssets, setClientAssets] = useState<ClientAsset[]>([]);
@@ -135,8 +138,8 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
       }
     }
   }, [data?.purchasedServices]);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const { showToast: localShowToast } = useAdminToast();
+  const showToast = externalShowToast || localShowToast;
   const [editing, setEditing] = useState(false);
   const [uploadingZip, setUploadingZip] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
@@ -266,9 +269,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   };
 
   const showMessage = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setMessage(msg);
-    setMessageType(type);
-    setTimeout(() => setMessage(''), 4000);
+    showToast({ message: msg, type });
   };
 
   const handleSave = async () => {
@@ -591,7 +592,7 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3F7A]" />
+        <GenericTabSkeleton rows={5} />
       </div>
     );
   }
@@ -599,19 +600,6 @@ export default function WebsiteCopyTab({ userId, data, refreshData }: WebsiteCop
   return (
     <div className="space-y-6">
       {/* Message Banner */}
-      {message && (
-        <div className={`rounded-lg p-4 border flex items-start gap-3 ${
-          messageType === 'success' ? 'bg-green-50 border-green-200 text-green-800'
-          : messageType === 'error' ? 'bg-red-50 border-red-200 text-red-800'
-          : 'bg-blue-50 border-blue-200 text-blue-800'
-        }`}>
-          {messageType === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />}
-          {messageType === 'error' && <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />}
-          {messageType === 'info' && <Clock size={16} className="shrink-0 mt-0.5 text-blue-600" />}
-          <p className="font-inter text-sm font-medium">{message}</p>
-        </div>
-      )}
-
       {/* Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
