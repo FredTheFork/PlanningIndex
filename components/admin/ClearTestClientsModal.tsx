@@ -36,6 +36,12 @@ export default function ClearTestClientsModal({ open, onClose, onSuccess, showTo
 
       setProgress({ done: 0, total: testProfiles.length });
 
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        showToast({ message: 'You must be signed in as an admin.', type: 'error' });
+        return;
+      }
+
       let successCount = 0;
       let failCount = 0;
 
@@ -47,7 +53,7 @@ export default function ClearTestClientsModal({ open, onClose, onSuccess, showTo
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                'Authorization': `Bearer ${session.access_token}`,
               },
               body: JSON.stringify({ user_id: p.user_id }),
             }

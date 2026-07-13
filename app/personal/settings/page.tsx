@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { useClientProfile } from '@/hooks/useClientProfile';
 import { supabase } from '@/lib/supabase/client';
+import { useClientProfile } from '@/hooks/useClientProfile';
 import { AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -27,13 +27,18 @@ export default function SettingsPage() {
 
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('You must be signed in to delete your account.');
+        setDeleting(false);
+        return;
+      }
 
       const response = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ user_id: user?.id }),
       });

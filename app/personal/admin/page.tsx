@@ -189,13 +189,19 @@ export default function AdminDashboard() {
       const generateBrief = async () => {
         setGeneratingBriefFor(userId);
         try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.access_token) {
+            showToast({ message: 'You must be signed in as an admin.', type: 'error' });
+            setGeneratingBriefFor(null);
+            return;
+          }
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-brief`,
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                'Authorization': `Bearer ${session.access_token}`,
               },
               body: JSON.stringify({ user_id: userId }),
             }
@@ -232,13 +238,18 @@ export default function AdminDashboard() {
   // Delete single client
   const handleDeleteClient = useCallback(async (userId: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        showToast({ message: 'You must be signed in as an admin.', type: 'error' });
+        return;
+      }
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ user_id: userId }),
         }
@@ -260,6 +271,11 @@ export default function AdminDashboard() {
   const handleDeleteAllClients = useCallback(async () => {
     setDeletingAll(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        showToast({ message: 'You must be signed in as an admin.', type: 'error' });
+        return;
+      }
       const { data: profiles, error: profilesError } = await supabase
         .from('client_profiles')
         .select('user_id');
@@ -278,7 +294,7 @@ export default function AdminDashboard() {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                'Authorization': `Bearer ${session.access_token}`,
               },
               body: JSON.stringify({ user_id: p.user_id }),
             }

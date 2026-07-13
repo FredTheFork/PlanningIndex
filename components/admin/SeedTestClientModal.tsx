@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Sparkles, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 
 const SERVICE_OPTIONS = [
   { id: 'business_foundations_pack', label: 'Business Foundations Pack' },
@@ -60,13 +61,19 @@ export default function SeedTestClientModal({ open, onClose, onSuccess }: SeedTe
     setResults(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('You must be signed in as an admin.');
+        return;
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seed-test-client`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             service_ids: Array.from(selectedServices),
