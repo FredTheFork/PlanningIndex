@@ -1015,7 +1015,9 @@ Deno.serve(async (req: Request) => {
     // Check if user is admin (via email or app_metadata)
     const email = user.email || '';
     const appMetadata = user.app_metadata || {};
-    const isAdmin = appMetadata?.is_admin === true ||
+    const role = appMetadata?.role;
+    const isAdmin = role === 'admin' ||
+      email === 'foundationarybusiness@gmail.com' ||
       email.endsWith('@foundationary.co.uk') ||
       email.endsWith('@foundationary.com') ||
       email === 'admin@foundationary.co.uk';
