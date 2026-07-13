@@ -11,8 +11,8 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CHATZ_API_KEY = Deno.env.get("CHATZ_API_KEY") || "261c2fe96fa44ac798c15f20d6ba161b.lRLsgcKSexHFZZDy";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 
-const CHATZ_MODEL = "gpt-4o";
-const GEMINI_MODEL = "gemini-2.5-flash";
+const CHATZ_MODEL = "glm-4.6";
+const GEMINI_MODEL = "gemini-2.0-flash";
 const MAX_TOKENS = 16384;
 const TEMPERATURE = 0.7;
 const TIMEOUT_MS = 90000;
@@ -557,7 +557,7 @@ async function callChatzAI(prompt: string, systemPrompt: string): Promise<AIResu
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetch('https://api.chat-z.ai/v1/chat/completions', {
+    const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CHATZ_API_KEY}` },
       body: JSON.stringify({
