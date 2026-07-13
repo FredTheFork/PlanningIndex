@@ -189,7 +189,7 @@ export default function Pricing() {
               icon={Star}
               headline="Start Your Business"
               description="Core documents, website copy, and social media. Everything to launch professionally."
-              startingPrice="79"
+              startingPrice="£79"
               colorScheme={{
                 border: '#E2E8F0',
                 background: '#ffffff',
@@ -213,7 +213,7 @@ export default function Pricing() {
               icon={Briefcase}
               headline="Run Your Business"
               description="Client onboarding, payment protection, GDPR, and IP rights. Protect what you build."
-              startingPrice="149"
+              startingPrice="£149"
               colorScheme={{
                 border: '#2C68C4',
                 background: '#f8faff',
@@ -238,7 +238,7 @@ export default function Pricing() {
               icon={Crown}
               headline="Dominate Your Industry"
               description="Profession-specific documents for coaches, photographers, consultants, and contractors."
-              startingPrice="199"
+              startingPrice="£199"
               colorScheme={{
                 border: '#F59E0B',
                 background: '#fffbeb',

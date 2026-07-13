@@ -299,7 +299,7 @@ export default function Hero() {
                   <Star size={14} className="text-white/90" />
                   <span className="font-inter font-semibold text-white" style={{ fontSize: '0.75rem' }}>FOUNDATION</span>
                 </div>
-                <span className="font-inter font-medium text-white/60" style={{ fontSize: '0.7rem' }}>From 79</span>
+                <span className="font-inter font-medium text-white/60" style={{ fontSize: '0.7rem' }}>From £79</span>
               </div>
               <div className="p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
@@ -343,7 +343,7 @@ export default function Hero() {
                 <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>Payment Protection</span>
                 <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>GDPR Deep Pack</span>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="font-inter font-bold text-navy" style={{ fontSize: '0.75rem' }}>From 149</span>
+                  <span className="font-inter font-bold text-navy" style={{ fontSize: '0.75rem' }}>From £149</span>
                 </div>
               </div>
             </div>
@@ -375,7 +375,7 @@ export default function Hero() {
                 <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>Consultant Pack</span>
                 <span className="font-inter font-medium text-secondary-text" style={{ fontSize: '0.65rem' }}>Contractor Pack</span>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="font-inter font-bold text-amber-600" style={{ fontSize: '0.75rem' }}>From 199</span>
+                  <span className="font-inter font-bold text-amber-600" style={{ fontSize: '0.75rem' }}>From £199</span>
                 </div>
               </div>
             </div>

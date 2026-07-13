@@ -32,7 +32,7 @@ export function VisualComparison({
     { feature: 'Operations packs available', foundationary: 'check', alternatives: { 'DIY Templates': 'cross', 'Solicitor': 'partial', 'Generic AI': 'cross' } },
     { feature: 'Industry-specific documents', foundationary: 'check', alternatives: { 'DIY Templates': 'cross', 'Solicitor': 'check', 'Generic AI': 'cross' } },
     { feature: 'Human reviewed', foundationary: 'check', alternatives: { 'DIY Templates': 'cross', 'Solicitor': 'check', 'Generic AI': 'cross' } },
-    { feature: 'Typical cost', foundationary: '£79-£299', alternatives: { 'DIY Templates': '£100-300/yr', 'Solicitor': '£2,000+', 'Generic AI': 'Free-£200/yr' } },
+    { feature: 'Typical cost', foundationary: '£79-£299', alternatives: { 'DIY Templates': '£100-£300/yr', 'Solicitor': '£2,000+', 'Generic AI': 'Free-£200/yr' } },
   ],
   columns = ['Foundationary', 'DIY Templates', 'Solicitor', 'Generic AI'],
   className = '',
