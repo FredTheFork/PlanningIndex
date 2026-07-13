@@ -215,14 +215,19 @@ async function callGeminiAI(prompt: string): Promise<AIResult> {
   return { text, model: `gemini-${GEMINI_MODEL}`, provider: 'fallback_gemini', tokenCount: 0 };
 }
 
-async function generateWithAI(prompt: string): Promise<AIResult> {
+async function generateWithAI(prompt: string): Promise<AIResult & { chatzError?: string }> {
   if (CHATZ_API_KEY) {
     try {
       console.log('Attempting chat.z.ai...');
       const result = await callChatzAI(prompt);
       return { ...result, provider: 'chatz' };
     } catch (e) {
-      console.warn(`Chatz failed: ${e instanceof Error ? e.message : e} — falling back to Gemini`);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      console.warn(`Chatz failed: ${errMsg} — falling back to Gemini`);
+      if (!GEMINI_API_KEY) throw new Error(`Chatz failed (${errMsg}) and no GEMINI_API_KEY fallback available`);
+      console.log('Using Gemini fallback...');
+      const geminiResult = await callGeminiAI(prompt);
+      return { ...geminiResult, chatzError: errMsg };
     }
   } else {
     console.warn('CHATZ_API_KEY not set — using Gemini directly');

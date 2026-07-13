@@ -253,14 +253,19 @@ async function callGeminiAI(prompt: string, systemPrompt: string): Promise<AIRes
   return { text, model: `gemini-${GEMINI_MODEL}`, provider: 'fallback_gemini', tokenCount: 0 };
 }
 
-async function generateWithAI(prompt: string, systemPrompt: string): Promise<AIResult> {
+async function generateWithAI(prompt: string, systemPrompt: string): Promise<AIResult & { chatzError?: string }> {
   if (CHATZ_API_KEY) {
     try {
       console.log('Attempting chat.z.ai...');
       const result = await callChatzAI(prompt, systemPrompt);
       return { ...result, provider: 'chatz' };
     } catch (e) {
-      console.warn(`Chatz failed: ${e instanceof Error ? e.message : e} — falling back to Gemini`);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      console.warn(`Chatz failed: ${errMsg} — falling back to Gemini`);
+      if (!GEMINI_API_KEY) throw new Error(`Chatz failed (${errMsg}) and no GEMINI_API_KEY fallback available`);
+      console.log('Using Gemini fallback...');
+      const geminiResult = await callGeminiAI(prompt, systemPrompt);
+      return { ...geminiResult, chatzError: errMsg };
     }
   } else {
     console.warn('CHATZ_API_KEY not set — using Gemini directly');
@@ -576,7 +581,7 @@ Deno.serve(async (req: Request) => {
       if (Array.isArray(rows) && rows.length > 0) await adminUpdate("client_briefs", rows[0].id, briefUpdate);
     }
 
-    if (shouldDebug) Object.assign(debugInfo, { provider: aiResult.provider, model: aiResult.model, riskLevel, wordCount, sectionsGenerated, generationDurationMs });
+    if (shouldDebug) Object.assign(debugInfo, { provider: aiResult.provider, model: aiResult.model, riskLevel, wordCount, sectionsGenerated, generationDurationMs, chatzError: (aiResult as any).chatzError });
 
     return successResponse({
       success: true,

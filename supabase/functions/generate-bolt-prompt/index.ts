@@ -9,6 +9,9 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const CHATZ_API_KEY = Deno.env.get("CHATZ_API_KEY") || "";
+const CHATZ_MODEL = "glm-4.6";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 // Admin query helper
 async function adminQuery(table: string, select: string, filter: Record<string, string>) {
@@ -218,12 +221,51 @@ Generate a COMPREHENSIVE Bolt.new prompt that will create a complete, profession
 Write the prompt as if you are speaking directly to Bolt.new. Start with "Build a professional website for..." and be extremely specific about every detail. Use the actual business name, actual services, actual content - no placeholders. The website should be ready to deploy immediately after Bolt.new generates it.`;
 }
 
-// Call Gemini API
-async function callGemini(prompt: string): Promise<{ text: string; model: string }> {
-  const model = "gemini-flash-latest";
+async function callChatzAI(prompt: string): Promise<{ text: string; model: string }> {
+  const body = JSON.stringify({
+    model: CHATZ_MODEL,
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 8192,
+    temperature: 0.7,
+  });
+  const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${CHATZ_API_KEY}` };
 
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    try {
+      const response = await fetch("https://api.z.ai/api/paas/v4/chat/completions", {
+        method: "POST", headers, body, signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        const errText = await response.text();
+        let errCode = "";
+        try { errCode = JSON.parse(errText)?.error?.code || ""; } catch {}
+        console.error(`Chatz API error ${response.status} (code ${errCode}): ${errText.substring(0, 400)}`);
+        if (attempt === 1 && (response.status === 429 || response.status >= 500)) {
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        throw new Error(`Chatz API ${response.status} (code ${errCode}): ${errText.substring(0, 300)}`);
+      }
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) throw new Error("Chatz returned empty content");
+      return { text, model: `chatz-${CHATZ_MODEL}` };
+    } catch (e) {
+      clearTimeout(timeout);
+      if (attempt === 2) throw e;
+      if (e instanceof Error && e.name === "AbortError") continue;
+      throw e;
+    }
+  }
+  throw new Error("Chatz API exhausted retries");
+}
+
+async function callGemini(prompt: string): Promise<{ text: string; model: string }> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: {
@@ -252,6 +294,9 @@ async function callGemini(prompt: string): Promise<{ text: string; model: string
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`Gemini API error: ${response.status} ${errorText}`);
+    if (response.status === 429) {
+      throw new Error(`Gemini quota exceeded (429): ${errorText.substring(0, 200)}`);
+    }
     throw new Error(`Gemini API error: ${response.status}`);
   }
 
@@ -262,9 +307,25 @@ async function callGemini(prompt: string): Promise<{ text: string; model: string
     throw new Error("No text generated from Gemini");
   }
 
-  await trackGeminiUsage(model);
+  await trackGeminiUsage(GEMINI_MODEL);
 
-  return { text: generatedText, model };
+  return { text: generatedText, model: GEMINI_MODEL };
+}
+
+async function generateWithAI(prompt: string): Promise<{ text: string; model: string }> {
+  if (CHATZ_API_KEY) {
+    try {
+      console.log("Attempting chat.z.ai...");
+      return await callChatzAI(prompt);
+    } catch (e) {
+      console.warn(`Chatz failed: ${e instanceof Error ? e.message : e} — falling back to Gemini`);
+    }
+  } else {
+    console.warn("CHATZ_API_KEY not set — using Gemini directly");
+  }
+  if (!GEMINI_API_KEY) throw new Error("Both CHATZ_API_KEY and GEMINI_API_KEY are missing");
+  console.log("Using Gemini fallback...");
+  return await callGemini(prompt);
 }
 
 // Update website_deliveries with generated prompt
@@ -329,8 +390,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
+    if (!GEMINI_API_KEY && !CHATZ_API_KEY) {
+      return new Response(JSON.stringify({ error: "No AI API keys configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -382,8 +443,8 @@ Deno.serve(async (req: Request) => {
     // Build the Gemini prompt
     const geminiPrompt = buildGeminiPrompt(intakeData[0], briefContent, websitePages);
 
-    // Call Gemini to generate the Bolt prompt
-    const { text: boltPrompt, model: usedModel } = await callGemini(geminiPrompt);
+    // Call AI to generate the Bolt prompt (chat.z.ai first, Gemini fallback)
+    const { text: boltPrompt, model: usedModel } = await generateWithAI(geminiPrompt);
 
     // Save to website_deliveries
     await updateWebsiteDelivery(user_id, boltPrompt, usedModel);
