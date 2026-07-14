@@ -690,56 +690,145 @@ function buildPersonaPrompt(personaHint?: string): { prompt: string; systemPromp
   return { prompt, systemPrompt };
 }
 
-// ── PHASE 2: FILL THE INTAKE FORM ──
+// ── PHASE 2: FILL THE INTAKE FORM (section-by-section) ──
 
-function buildFormFillPrompt(sections: SectionDef[], persona: any): { prompt: string; systemPrompt: string } {
-  const systemPrompt = `You are filling out a business intake form on behalf of a UK sole trader. You will receive a list of form fields and a persona. You must return ONLY a valid JSON object where every key is an exact field ID and every value is a valid answer.
+function buildSectionFillPrompt(section: SectionDef, persona: any, priorResponses: Record<string, any>): { prompt: string; systemPrompt: string } {
+  const systemPrompt = `You are filling out one section of a business intake form on behalf of a realistic UK sole trader. You must return ONLY a valid JSON object where every key is an exact field ID and every value is a valid answer.
 
-Rules:
-1. For "short_text" and "long_text" fields: return a string.
-2. For "email" fields: return a valid email string.
-3. For "phone" fields: return a realistic UK phone number string.
-4. For "url" fields: return a realistic URL string (or empty string if not applicable).
-5. For "single_choice" fields: return EXACTLY one of the provided options (as a string).
-6. For "multi_select" fields: return an array of strings, each being one of the provided options. Select 1-3 options.
-7. For "checkbox" fields: return true.
-8. For "file_upload" fields: return an empty array [].
-9. For "repeating_section" fields: return an array of objects, each object having keys matching the subField IDs. Include 2-3 items.
-10. For conditional fields (conditionalOn): only include the field if the condition would be met based on your answers. If the condition would NOT be met, omit that field entirely.
-11. All answers must be consistent with the persona and make business sense.
-12. Return ONLY the JSON object, no other text, no markdown code blocks.`;
+ABSOLUTE RULES — follow all of these:
+1. You MUST answer EVERY SINGLE field in this section — required AND optional. Do not skip any field. Do not leave any field out. Every field ID listed below must appear as a key in your JSON output.
+2. For "short_text" and "long_text" fields: return a detailed, realistic string. Never return empty string unless the field is a file_upload. Write 1-3 sentences for long_text fields. Write a real answer — never "N/A", "Not provided", or placeholder text.
+3. For "email" fields: return a valid email string matching the persona's business domain.
+4. For "phone" fields: return a realistic UK phone number string (e.g. "07700 900123").
+5. For "url" fields: return a realistic URL string. If the persona wouldn't have one, still invent a plausible one.
+6. For "single_choice" fields: return EXACTLY one of the provided options (as a string). Pick the most realistic option for this persona.
+7. For "multi_select" fields: return an array of strings, each being one of the provided options. Select 1-3 options that make sense for this business.
+8. For "checkbox" fields: return true.
+9. For "file_upload" fields: return an empty array [].
+10. For "repeating_section" fields: return an array of objects, each object having keys matching the subField IDs. Include 2-3 items with realistic, detailed values.
+11. For conditional fields (conditionalOn): include the field with a value if the condition WOULD be met based on your answers. If the condition would NOT be met, set the value to empty string "" for text fields or empty array [] for multi_select — but still include the key.
+12. All answers must be consistent with the persona, the business type, and answers in prior sections (provided below). Make the business feel real and specific.
+13. Return ONLY the JSON object, no other text, no markdown code blocks, no explanation.`;
 
-  const fieldsDescription = sections.map(section => {
-    const fields = section.fields.map(field => {
-      let desc = `${field.id} (${field.type}, required: ${field.required})`;
-      if (field.options) {
-        desc += ` [options: ${field.options.map(o => `"${o}"`).join(', ')}]`;
-      }
-      if (field.conditionalOn) {
-        const valStr = Array.isArray(field.conditionalOn.value) ? field.conditionalOn.value.join(' or ') : field.conditionalOn.value;
-        desc += ` [only include if ${field.conditionalOn.field} is ${valStr}]`;
-      }
-      if (field.isRepeating && field.subFields) {
-        desc += ` [repeating section with sub-fields: ${field.subFields.map(sf => `${sf.id} (${sf.type})`).join(', ')}]`;
-      }
-      if (field.maxSelections) {
-        desc += ` [max ${field.maxSelections} selections]`;
-      }
-      return `  - ${desc}`;
-    }).join('\n');
+  const fieldsDescription = section.fields.map(field => {
+    let desc = `${field.id} (${field.type}, required: ${field.required})`;
+    if (field.options) {
+      desc += ` [options: ${field.options.map(o => `"${o}"`).join(', ')}]`;
+    }
+    if (field.conditionalOn) {
+      const valStr = Array.isArray(field.conditionalOn.value) ? field.conditionalOn.value.join(' or ') : field.conditionalOn.value;
+      const notEqual = field.conditionalOn.notEqual ? ' (NOT equal to)' : '';
+      desc += ` [only include if ${field.conditionalOn.field} is${notEqual} ${valStr}]`;
+    }
+    if (field.isRepeating && field.subFields) {
+      desc += ` [repeating section with sub-fields: ${field.subFields.map(sf => `${sf.id} (${sf.type})`).join(', ')}]`;
+    }
+    if (field.maxSelections) {
+      desc += ` [max ${field.maxSelections} selections]`;
+    }
+    return `  - ${desc}`;
+  }).join('\n');
 
-    return `Section "${section.title}":\n${fields}`;
-  }).join('\n\n');
+  // Include prior responses for context so answers are consistent
+  const priorContext = Object.keys(priorResponses).length > 0
+    ? `\nPrior answers from other sections (for consistency — do NOT re-answer these, just use as context):\n${JSON.stringify(priorResponses, null, 2)}\n`
+    : '';
 
   const prompt = `Persona:
 ${JSON.stringify(persona, null, 2)}
+${priorContext}
+Section to fill: "${section.title}"
 
-Form fields to fill:
+Fields in this section (answer ALL of them):
 ${fieldsDescription}
 
-Return ONLY a JSON object with field IDs as keys and valid answers as values. Do not include any markdown formatting or explanation.`;
+Return ONLY a JSON object with field IDs as keys and valid answers as values. Every field ID listed above MUST be present in your response. Do not include any markdown formatting or explanation.`;
 
   return { prompt, systemPrompt };
+}
+
+// ── DETERMINISTIC FALLBACK VALUES ──
+// Used when the AI fails to fill a field. Produces a sensible default based on field type and persona.
+function getFallbackValue(field: FieldDef, persona: any, allResponses: Record<string, any>): any {
+  // Check conditional first
+  if (field.conditionalOn) {
+    const sourceValue = allResponses[field.conditionalOn.field];
+    const conditionValue = field.conditionalOn.value;
+    const isMet = Array.isArray(conditionValue)
+      ? conditionValue.includes(sourceValue)
+      : sourceValue === conditionValue;
+    const notEqual = (field.conditionalOn as any).notEqual === true;
+    const conditionMet = notEqual ? !isMet : isMet;
+    if (!conditionMet) {
+      return field.type === 'multi_select' ? [] : '';
+    }
+  }
+
+  switch (field.type) {
+    case 'email':
+      return persona.email || `hello@${(persona.trading_name || 'business').toLowerCase().replace(/[^a-z0-9]/g, '')}.co.uk`;
+    case 'phone':
+      return persona.phone || '07700 900123';
+    case 'url':
+      return `https://www.${(persona.trading_name || 'business').toLowerCase().replace(/[^a-z0-9]/g, '')}.co.uk`;
+    case 'single_choice':
+      if (field.options && field.options.length > 0) {
+        // Pick a sensible default — prefer "No" or first option
+        const noOption = field.options.find(o => o.toLowerCase().startsWith('no'));
+        return noOption || field.options[0];
+      }
+      return '';
+    case 'multi_select':
+      if (field.options && field.options.length > 0) {
+        return [field.options[0]];
+      }
+      return [];
+    case 'checkbox':
+      return true;
+    case 'file_upload':
+      return [];
+    case 'repeating_section':
+      if (field.subFields) {
+        return [{
+          service_name: `${persona.industry || 'Business'} Service`,
+          service_includes: `Core ${persona.industry || 'business'} service delivery including consultation, implementation, and follow-up support.`,
+          service_excludes: 'Any work outside the agreed scope, third-party costs, or services not explicitly listed in the proposal.',
+          service_client_provides: 'Access to relevant accounts, information, and timely responses to queries.',
+          service_timeline: '2-4 weeks per project',
+          service_outcome: 'Professional delivery of the agreed scope with clear documentation and handover.',
+          service_starting_price: 'From £500',
+        }];
+      }
+      return [];
+    case 'long_text':
+      return `As a ${persona.industry || 'UK sole trader'} based in ${persona.jurisdiction || 'England & Wales'}, this reflects our standard approach and professional practice.`;
+    case 'short_text':
+    default:
+      return persona.trading_name || persona.industry || 'Not specified';
+  }
+}
+
+// Fill any missing fields with deterministic fallback values
+function fillMissingFields(
+  sections: SectionDef[],
+  responses: Record<string, any>,
+  persona: any,
+): Record<string, any> {
+  const filled = { ...responses };
+
+  for (const section of sections) {
+    for (const field of section.fields) {
+      const current = filled[field.id];
+      const isEmpty = current === undefined || current === null || current === '' ||
+        (Array.isArray(current) && current.length === 0);
+
+      if (isEmpty) {
+        filled[field.id] = getFallbackValue(field, persona, filled);
+      }
+    }
+  }
+
+  return filled;
 }
 
 // ── VALIDATION ──
@@ -760,7 +849,9 @@ function validateResponses(sections: SectionDef[], responses: Record<string, any
         const isMet = Array.isArray(conditionValue)
           ? conditionValue.includes(sourceValue)
           : sourceValue === conditionValue;
-        if (!isMet) continue; // Condition not met, skip
+        const notEqual = (field.conditionalOn as any).notEqual === true;
+        const conditionMet = notEqual ? !isMet : isMet;
+        if (!conditionMet) continue; // Condition not met, skip
       }
 
       // Skip file_upload fields — always empty
@@ -843,61 +934,73 @@ async function generateTestClient(serviceIds: string[], personaHint?: string): P
     return { success: false, error: 'AI generated invalid persona' };
   }
 
-  // Phase 2: Fill the intake form
+  // Phase 2: Fill the intake form — section by section for completeness
   const sections = buildFieldDefinitions(serviceIds);
-  const { prompt: fillPrompt, systemPrompt: fillSystem } = buildFormFillPrompt(sections, persona);
+  const allResponses: Record<string, any> = {};
+  const sectionsNeedingRetry: SectionDef[] = [];
 
-  let responses: Record<string, any> | null = null;
-  let lastError = '';
-
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (const section of sections) {
     try {
-      const fillResult = await callAI(fillPrompt, fillSystem);
-      responses = extractJSON(fillResult.text);
+      const { prompt: sectionPrompt, systemPrompt: sectionSystem } = buildSectionFillPrompt(section, persona, allResponses);
+      const sectionResult = await callAI(sectionPrompt, sectionSystem);
+      const sectionResponses = extractJSON(sectionResult.text);
 
-      // Hardcode consent checkboxes
-      responses['q82_consent_not_legal'] = true;
-      responses['q83_consent_accuracy'] = true;
-
-      // Validate
-      const validation = validateResponses(sections, responses);
-      if (validation.valid) {
-        break;
+      // Merge section responses into the running total
+      for (const [key, value] of Object.entries(sectionResponses)) {
+        allResponses[key] = value;
       }
 
-      lastError = `Validation failed: missing [${validation.missing.slice(0, 5).join(', ')}${validation.missing.length > 5 ? '...' : ''}], errors [${validation.errors.slice(0, 3).join(', ')}]`;
-      console.log(`Attempt ${attempt + 1} validation failed: ${lastError}`);
-
-      // If not the last attempt, add the errors to the prompt for a retry
-      if (attempt < 2) {
-        const retryHint = `\n\nYour previous response had these issues: ${lastError}. Please fix and return the complete JSON object again.`;
-        const retryPrompt = fillPrompt + retryHint;
-        const retryResult = await callAI(retryPrompt, fillSystem);
-        responses = extractJSON(retryResult.text);
-        responses['q82_consent_not_legal'] = true;
-        responses['q83_consent_accuracy'] = true;
-
-        const retryValidation = validateResponses(sections, responses);
-        if (retryValidation.valid) {
-          break;
-        }
-        lastError = `Retry validation failed: missing [${retryValidation.missing.slice(0, 5).join(', ')}], errors [${retryValidation.errors.slice(0, 3).join(', ')}]`;
+      // Check completeness for this section
+      const sectionValidation = validateResponses([section], sectionResponses);
+      if (!sectionValidation.valid && sectionValidation.missing.length > 0) {
+        console.log(`Section "${section.title}" missing ${sectionValidation.missing.length} fields — will retry`);
+        sectionsNeedingRetry.push(section);
       }
     } catch (err) {
-      lastError = err instanceof Error ? err.message : 'Unknown error during form fill';
-      console.error(`Form fill attempt ${attempt + 1} error:`, lastError);
+      console.error(`Section "${section.title}" fill error:`, err instanceof Error ? err.message : err);
+      sectionsNeedingRetry.push(section);
     }
   }
 
-  if (!responses) {
-    return { success: false, error: `Failed to generate valid form responses: ${lastError}` };
+  // Retry failed sections once more with explicit missing field list
+  for (const section of sectionsNeedingRetry) {
+    try {
+      const { prompt: retryPrompt, systemPrompt: retrySystem } = buildSectionFillPrompt(section, persona, allResponses);
+      const missingFields = section.fields
+        .filter(f => {
+          const v = allResponses[f.id];
+          return v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+        })
+        .map(f => f.id);
+      const enhancedPrompt = retryPrompt + `\n\nIMPORTANT: In your previous attempt, these fields were missing or empty: ${missingFields.join(', ')}. You MUST include EVERY field listed above with a non-empty, realistic value.`;
+      const retryResult = await callAI(enhancedPrompt, retrySystem);
+      const retryResponses = extractJSON(retryResult.text);
+      for (const [key, value] of Object.entries(retryResponses)) {
+        allResponses[key] = value;
+      }
+    } catch (err) {
+      console.error(`Section "${section.title}" retry failed:`, err instanceof Error ? err.message : err);
+    }
   }
 
-  // Final validation — accept even with minor issues (missing optional fields)
+  // Hardcode consent checkboxes
+  allResponses['q82_consent_not_legal'] = true;
+  allResponses['q83_consent_accuracy'] = true;
+
+  // Phase 2b: Fill any remaining gaps with deterministic fallback values
+  const responses = fillMissingFields(sections, allResponses, persona);
+
+  // Log completeness
   const finalValidation = validateResponses(sections, responses);
-  if (!finalValidation.valid && finalValidation.missing.length > 0) {
-    console.log(`Accepting responses with ${finalValidation.missing.length} missing required fields (best effort)`);
+  if (finalValidation.missing.length > 0) {
+    console.log(`After all fills, ${finalValidation.missing.length} required fields still missing (will use fallbacks): ${finalValidation.missing.join(', ')}`);
   }
+  const totalFields = sections.reduce((sum, s) => sum + s.fields.length, 0);
+  const filledFields = sections.reduce((sum, s) => sum + s.fields.filter(f => {
+    const v = responses[f.id];
+    return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0);
+  }).length, 0);
+  console.log(`Intake form fill complete: ${filledFields}/${totalFields} fields populated`);
 
   // Create auth user
   const timestamp = Date.now();
