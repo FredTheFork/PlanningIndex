@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { callGeminiWithFallback } from "../_shared/gemini-fallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -181,38 +182,16 @@ async function callChatzAI(prompt: string): Promise<AIResult> {
 }
 
 async function callGeminiAI(prompt: string): Promise<AIResult> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: TEMPERATURE, maxOutputTokens: MAX_TOKENS },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-        ],
-      }),
-    }
-  );
-  if (!response.ok) {
-    const err = await response.text();
-    if (response.status === 429) {
-      throw new Error(`Gemini quota exceeded (429): ${err.substring(0, 200)}`);
-    }
-    throw new Error(`Gemini API ${response.status}: ${err.substring(0, 400)}`);
-  }
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    const reason = data.candidates?.[0]?.finishReason;
-    throw new Error(`Gemini returned empty content (finishReason: ${reason || 'unknown'})`);
-  }
-  await trackUsage("gemini_api_usage", GEMINI_MODEL);
-  return { text, model: `gemini-${GEMINI_MODEL}`, provider: 'fallback_gemini', tokenCount: 0 };
+  const result = await callGeminiWithFallback({
+    prompt,
+    apiKey: GEMINI_API_KEY,
+    temperature: TEMPERATURE,
+    maxOutputTokens: MAX_TOKENS,
+    timeoutMs: TIMEOUT_MS,
+    preferredModel: GEMINI_MODEL,
+    onUsage: (model, tokenCount) => trackUsage("gemini_api_usage", model, tokenCount),
+  });
+  return { text: result.text, model: `gemini-${result.model}`, provider: 'fallback_gemini', tokenCount: result.tokenCount };
 }
 
 async function generateWithAI(prompt: string): Promise<AIResult & { chatzError?: string }> {

@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { callGeminiWithFallback } from "../_shared/gemini-fallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -552,34 +553,16 @@ async function callAI(prompt: string, systemPrompt: string): Promise<AIResult> {
     throw new Error('No Gemini API key configured. Set TEST_CLIENT_GEMINI_API_KEY (or GEMINI_API_KEY) in Edge Function secrets.');
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: TEMPERATURE },
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (!response.ok) {
-      const err = await response.text();
-      if (response.status === 429) {
-        throw new Error(`Gemini quota exceeded (429): ${err.substring(0, 200)}`);
-      }
-      throw new Error(`Gemini API ${response.status}: ${err.substring(0, 400)}`);
-    }
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('Gemini returned empty content');
-    return { text, model: `gemini-${GEMINI_MODEL}`, provider: 'gemini' };
-  } finally {
-    clearTimeout(timeout);
-  }
+  const result = await callGeminiWithFallback({
+    prompt,
+    systemPrompt,
+    apiKey: GEMINI_API_KEY,
+    temperature: TEMPERATURE,
+    maxOutputTokens: MAX_TOKENS,
+    timeoutMs: TIMEOUT_MS,
+    preferredModel: GEMINI_MODEL,
+  });
+  return { text: result.text, model: `gemini-${result.model}`, provider: 'gemini' };
 }
 
 // ── JSON EXTRACTION ──

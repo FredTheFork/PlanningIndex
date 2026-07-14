@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { callGeminiWithFallback } from "../_shared/gemini-fallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,7 +57,7 @@ async function adminUpsert(table: string, data: Record<string, unknown>, onConfl
 }
 
 // Track Gemini API usage
-async function trackGeminiUsage(model: string) {
+async function trackGeminiUsage(model: string, tokenCount: number = 0) {
   const today = new Date().toISOString().split('T')[0];
   try {
     // Try to increment existing record
@@ -264,52 +265,16 @@ async function callChatzAI(prompt: string): Promise<{ text: string; model: strin
 }
 
 async function callGemini(prompt: string): Promise<{ text: string; model: string }> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        },
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-        ],
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Gemini API error: ${response.status} ${errorText}`);
-    if (response.status === 429) {
-      throw new Error(`Gemini quota exceeded (429): ${errorText.substring(0, 200)}`);
-    }
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!generatedText) {
-    throw new Error("No text generated from Gemini");
-  }
-
-  await trackGeminiUsage(GEMINI_MODEL);
-
-  return { text: generatedText, model: GEMINI_MODEL };
+  const result = await callGeminiWithFallback({
+    prompt,
+    apiKey: GEMINI_API_KEY,
+    temperature: 0.7,
+    maxOutputTokens: 8192,
+    timeoutMs: TIMEOUT_MS,
+    preferredModel: GEMINI_MODEL,
+    onUsage: (model, tokenCount) => trackGeminiUsage(model, tokenCount),
+  });
+  return { text: result.text, model: `gemini-${result.model}` };
 }
 
 async function generateWithAI(prompt: string): Promise<{ text: string; model: string }> {

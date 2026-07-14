@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { GEMINI_FALLBACK_MODELS } from "../_shared/gemini-fallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,7 +86,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (mode === "gemini") {
-    const models = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-2.5-flash"];
+    const models = ["gemini-flash-latest", ...GEMINI_FALLBACK_MODELS.filter(m => m !== "gemini-flash-latest")];
     const results = [];
 
     for (const model of models) {
@@ -128,6 +129,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({
       geminiKeyPresent: !!GEMINI_API_KEY,
+      fallbackChain: models,
       results,
     }, null, 2), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
