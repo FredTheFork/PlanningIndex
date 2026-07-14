@@ -474,8 +474,7 @@ async function adminInsert(table: string, data: Record<string, unknown>) {
   });
   if (!res.ok) {
     const text = await res.text();
-    console.error(`Admin insert ${table} failed: ${res.status} ${text}`);
-    return null;
+    throw new Error(`Admin insert ${table} failed: ${res.status} ${text}`);
   }
   return await res.json();
 }
@@ -493,8 +492,7 @@ async function adminUpsert(table: string, data: Record<string, unknown>, onConfl
   });
   if (!res.ok) {
     const text = await res.text();
-    console.error(`Admin upsert ${table} failed: ${res.status} ${text}`);
-    return null;
+    throw new Error(`Admin upsert ${table} failed: ${res.status} ${text}`);
   }
   return await res.json();
 }
@@ -516,8 +514,7 @@ async function adminUpdate(table: string, data: Record<string, unknown>, filter:
   });
   if (!res.ok) {
     const text = await res.text();
-    console.error(`Admin update ${table} failed: ${res.status} ${text}`);
-    return null;
+    throw new Error(`Admin update ${table} failed: ${res.status} ${text}`);
   }
   return await res.json();
 }
@@ -537,8 +534,7 @@ async function adminDelete(table: string, filter: Record<string, string>) {
   });
   if (!res.ok) {
     const text = await res.text();
-    console.error(`Admin delete ${table} failed: ${res.status} ${text}`);
-    return null;
+    throw new Error(`Admin delete ${table} failed: ${res.status} ${text}`);
   }
   return true;
 }
