@@ -8,10 +8,8 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CHATZ_API_KEY = Deno.env.get("CHATZ_API_KEY") || "";
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const GEMINI_API_KEY = Deno.env.get("TEST_CLIENT_GEMINI_API_KEY") || Deno.env.get("GEMINI_API_KEY") || "";
 
-const CHATZ_MODEL = "glm-4.6";
 const GEMINI_MODEL = "gemini-flash-latest";
 const MAX_TOKENS = 16384;
 const TEMPERATURE = 0.7;
@@ -545,61 +543,19 @@ async function adminDelete(table: string, filter: Record<string, string>) {
   return true;
 }
 
-// ── AI CALL (chat.z.ai with Gemini fallback) ──
+// ── AI CALL (Gemini) ──
 
 interface AIResult {
   text: string;
   model: string;
-  provider: 'chatz' | 'fallback_gemini';
+  provider: 'gemini';
 }
 
-async function callChatzAI(prompt: string, systemPrompt: string): Promise<AIResult> {
-  const body = JSON.stringify({
-    model: CHATZ_MODEL,
-    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }],
-    max_tokens: MAX_TOKENS,
-    temperature: TEMPERATURE,
-  });
-  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CHATZ_API_KEY}` };
-
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    try {
-      const response = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
-        method: 'POST', headers, body, signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      if (!response.ok) {
-        const errText = await response.text();
-        let errCode = '';
-        try { errCode = JSON.parse(errText)?.error?.code || ''; } catch {}
-        console.error(`Chatz API error ${response.status} (code ${errCode}): ${errText.substring(0, 400)}`);
-        if (attempt === 1 && (response.status === 429 || response.status >= 500)) {
-          console.warn(`Chatz transient error (attempt ${attempt}), retrying in 3s...`);
-          await new Promise(r => setTimeout(r, 3000));
-          continue;
-        }
-        throw new Error(`Chatz API ${response.status} (code ${errCode}): ${errText.substring(0, 400)}`);
-      }
-      const data = await response.json();
-      const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error('Chatz returned empty content');
-      return { text, model: `chatz-${CHATZ_MODEL}`, provider: 'chatz' };
-    } catch (e) {
-      clearTimeout(timeout);
-      if (attempt === 2) throw e;
-      if (e instanceof Error && e.name === 'AbortError') {
-        console.warn('Chatz request timed out on attempt 1, retrying...');
-        continue;
-      }
-      throw e;
-    }
+async function callAI(prompt: string, systemPrompt: string): Promise<AIResult> {
+  if (!GEMINI_API_KEY) {
+    throw new Error('No Gemini API key configured. Set TEST_CLIENT_GEMINI_API_KEY (or GEMINI_API_KEY) in Edge Function secrets.');
   }
-  throw new Error('Chatz API exhausted retries');
-}
 
-async function callGeminiAI(prompt: string, systemPrompt: string): Promise<AIResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -624,24 +580,10 @@ async function callGeminiAI(prompt: string, systemPrompt: string): Promise<AIRes
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error('Gemini returned empty content');
-    return { text, model: `gemini-${GEMINI_MODEL}`, provider: 'fallback_gemini' };
+    return { text, model: `gemini-${GEMINI_MODEL}`, provider: 'gemini' };
   } finally {
     clearTimeout(timeout);
   }
-}
-
-async function callAI(prompt: string, systemPrompt: string): Promise<AIResult> {
-  if (CHATZ_API_KEY) {
-    try {
-      return await callChatzAI(prompt, systemPrompt);
-    } catch (err) {
-      console.error('Chatz AI failed, falling back to Gemini:', err);
-    }
-  }
-  if (GEMINI_API_KEY) {
-    return await callGeminiAI(prompt, systemPrompt);
-  }
-  throw new Error('No AI API keys configured. Set CHATZ_API_KEY or GEMINI_API_KEY.');
 }
 
 // ── JSON EXTRACTION ──
