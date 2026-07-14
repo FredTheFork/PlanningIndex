@@ -875,7 +875,6 @@ async function generateTestClient(serviceIds: string[], personaHint?: string): P
       service_id: serviceId,
       status: 'active',
       created_at: now,
-      updated_at: now,
     });
   }
 
