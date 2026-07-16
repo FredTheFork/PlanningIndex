@@ -30,6 +30,7 @@ export function useDeliveryNotifications() {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeRef = useRef(true);
+  const fetchNotificationsRef = useRef(async () => {});
 
   const getSeenIds = useCallback((): Set<string> => {
     if (typeof window === 'undefined') return new Set();
@@ -145,6 +146,7 @@ export function useDeliveryNotifications() {
     }
 
     activeRef.current = true;
+    fetchNotificationsRef.current = fetchNotifications;
     fetchNotifications();
 
     // Realtime subscription for new document deliveries
@@ -157,7 +159,7 @@ export function useDeliveryNotifications() {
         filter: `client_id=eq.${user.id}`,
       }, (payload) => {
         if (payload.new?.delivered_to_client === true && payload.old?.delivered_to_client === false) {
-          if (activeRef.current) fetchNotifications();
+          if (activeRef.current) fetchNotificationsRef.current();
         }
       })
       .on('postgres_changes', {
@@ -167,7 +169,7 @@ export function useDeliveryNotifications() {
         filter: `client_id=eq.${user.id}`,
       }, (payload) => {
         if (payload.new?.delivered_to_client === true) {
-          if (activeRef.current) fetchNotifications();
+          if (activeRef.current) fetchNotificationsRef.current();
         }
       })
       .on('postgres_changes', {
@@ -177,7 +179,7 @@ export function useDeliveryNotifications() {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         if (payload.new?.delivered_at && !payload.old?.delivered_at) {
-          if (activeRef.current) fetchNotifications();
+          if (activeRef.current) fetchNotificationsRef.current();
         }
       })
       .on('postgres_changes', {
@@ -187,7 +189,7 @@ export function useDeliveryNotifications() {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         if (payload.new?.delivered_to_client === true) {
-          if (activeRef.current) fetchNotifications();
+          if (activeRef.current) fetchNotificationsRef.current();
         }
       })
       .subscribe();
@@ -195,11 +197,11 @@ export function useDeliveryNotifications() {
     channelRef.current = channel;
 
     // Periodic polling as fallback
-    pollingRef.current = setInterval(fetchNotifications, POLLING_INTERVAL);
+    pollingRef.current = setInterval(() => fetchNotificationsRef.current(), POLLING_INTERVAL);
 
     // Refetch on focus
-    const onFocus = () => { if (activeRef.current) fetchNotifications(); };
-    const onVisible = () => { if (document.visibilityState === 'visible' && activeRef.current) fetchNotifications(); };
+    const onFocus = () => { if (activeRef.current) fetchNotificationsRef.current(); };
+    const onVisible = () => { if (document.visibilityState === 'visible' && activeRef.current) fetchNotificationsRef.current(); };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisible);
 
@@ -210,7 +212,7 @@ export function useDeliveryNotifications() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [user?.id, fetchNotifications]);
+  }, [user?.id]);
 
   const markAsRead = useCallback((notificationId: string) => {
     markSeen([notificationId]);
