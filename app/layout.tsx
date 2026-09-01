@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import { SITE_CONFIG, SITE_URL, KEYWORDS } from '@/lib/seo';
 import { JsonLd } from '@/components/seo';
 import { generateOrganizationSchema, generateWebSiteSchema } from '@/lib/seo';
+import { ToastProvider } from '@/components/ui/Toast';
 
 const ClientOverlays = dynamic(() => import('@/components/layout/ClientOverlays'), {
   ssr: false,
@@ -77,12 +78,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-GB">
-      <body>
-        <JsonLd data={[generateOrganizationSchema(), generateWebSiteSchema()]} />
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-        <ClientOverlays />
+      <body className="bg-surface-page font-sans text-primary-900 antialiased">
+        <ToastProvider>
+          <JsonLd data={[generateOrganizationSchema(), generateWebSiteSchema()]} />
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+          <ClientOverlays />
+        </ToastProvider>
       </body>
     </html>
   );
