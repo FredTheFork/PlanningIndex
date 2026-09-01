@@ -16,17 +16,19 @@ import {
   Zap,
 } from 'lucide-react';
 import { DarkCTABanner, FAQSection, SectionLabel } from '@/components/ui';
+import {
+  WorkflowSteps,
+  ProductShowcaseSection,
+  PlanningSearchShowcase,
+  ApplicationDetailShowcase,
+  CRMPipelineShowcase,
+  ProposalShowcase,
+} from '@/components/marketing';
 
 const applications = [
   { title: 'Replacement windows and doors', location: 'Harefield, UB9', type: 'Windows', status: 'Pending', color: 'bg-amber-500' },
   { title: 'Rear extension and alterations', location: 'Rickmansworth, WD3', type: 'Extensions', status: 'Pending', color: 'bg-sky-600' },
   { title: 'Construction of a new dwelling', location: 'Amersham, HP6', type: 'New build', status: 'Approved', color: 'bg-emerald-600' },
-];
-
-const workflow = [
-  { number: '01', icon: Search, title: 'Search the signal', description: 'See what is being proposed in your target areas before the project becomes common knowledge.' },
-  { number: '02', icon: Target, title: 'Choose the right work', description: 'Filter by trade, location, application type, value, and status to focus on the opportunities that fit.' },
-  { number: '03', icon: Users, title: 'Build the relationship', description: 'Save promising applications as leads and keep every next action connected and visible.' },
 ];
 
 const capabilities = [
@@ -46,18 +48,6 @@ const mapMarkers = [
   { left: '58%', top: '18%', color: 'bg-sky-600' },
   { left: '72%', top: '65%', color: 'bg-emerald-600' },
   { left: '38%', top: '72%', color: 'bg-primary-700' },
-];
-
-const pipelineStats = [
-  { label: 'New leads', value: '38' },
-  { label: 'In progress', value: '16' },
-  { label: 'Won', value: '09' },
-];
-
-const pipelineItems = [
-  { label: 'Replacement windows and doors', color: 'bg-sky-400', days: 2 },
-  { label: 'Rear extension and alterations', color: 'bg-amber-400', days: 3 },
-  { label: 'Loft conversion with rear dormer', color: 'bg-emerald-400', days: 4 },
 ];
 
 const designPoints = [
@@ -269,42 +259,51 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Workflow */}
-      <section className="bg-white px-6 py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-16 lg:grid-cols-[0.78fr_1.22fr] lg:gap-24">
-            <div className="max-w-md">
-              <SectionLabel>From signal to opportunity</SectionLabel>
-              <h2 className="font-display text-4xl font-bold leading-[1.08] tracking-[-0.04em] text-primary-900 sm:text-5xl">
-                The work is already being planned. See it sooner.
-              </h2>
-              <p className="mt-6 text-base leading-7 text-slate-600">
-                Stop relying on word of mouth and scattered council websites. PlanningIndex brings the earliest, clearest view of local construction demand into one calm workspace.
-              </p>
-              <Link href="/features" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-sky-700 hover:text-sky-900">
-                See how it works <ArrowRight size={16} />
-              </Link>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-3">
-              {workflow.map((item) => (
-                <div key={item.number} className="border-t-2 border-slate-200 pt-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-900 text-white">
-                      <item.icon size={18} />
-                    </div>
-                    <span className="font-mono text-xs text-slate-400">{item.number}</span>
-                  </div>
-                  <h3 className="mt-8 text-base font-semibold text-primary-900">{item.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Phase 5: Six-step workflow */}
+      <WorkflowSteps />
+
+      {/* Phase 6: Planning Search showcase */}
+      <ProductShowcaseSection
+        label="Planning Search"
+        title="Search every UK planning application from one place."
+        description="Nationwide coverage, updated daily. Filter by keyword, location, radius, application type, status, date, and council to find the exact projects that match your trade."
+      >
+        <PlanningSearchShowcase />
+      </ProductShowcaseSection>
+
+      {/* Phase 6: Application Detail showcase */}
+      <ProductShowcaseSection
+        label="Application Details"
+        title="Every application, fully broken down."
+        description="See the full picture — description, documents, status history, decision dates, council details, and property location. No more clicking through council websites."
+        reverse
+        className="bg-[#f7f9fc]"
+      >
+        <ApplicationDetailShowcase />
+      </ProductShowcaseSection>
+
+      {/* Phase 6: CRM Pipeline showcase */}
+      <ProductShowcaseSection
+        label="Lead Pipeline"
+        title="Turn planning data into a managed pipeline."
+        description="Drag cards from New Lead to Won. Track pipeline value and win rate at every stage. Keep every conversation, note, and follow-up connected to the right application."
+      >
+        <CRMPipelineShowcase />
+      </ProductShowcaseSection>
+
+      {/* Phase 6: Proposal showcase */}
+      <ProductShowcaseSection
+        label="Professional Proposals"
+        title="From application to posted proposal, without leaving the platform."
+        description="Auto-populate proposals from planning application data. Edit, preview, and send by physical post — printed, delivered, and tracked to the property door."
+        reverse
+        className="bg-[#f7f9fc]"
+      >
+        <ProposalShowcase />
+      </ProductShowcaseSection>
 
       {/* Capabilities */}
-      <section className="bg-[#f7f9fc] px-6 py-24 sm:py-32">
+      <section className="bg-white px-6 py-24 sm:py-32">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-2xl text-center">
             <SectionLabel className="text-center">Built around the way you work</SectionLabel>
@@ -384,7 +383,11 @@ export default function HomePage() {
               </span>
             </div>
             <div className="mt-7 grid grid-cols-3 gap-3">
-              {pipelineStats.map((stat) => (
+              {[
+                { label: 'New leads', value: '38' },
+                { label: 'In progress', value: '16' },
+                { label: 'Won', value: '09' },
+              ].map((stat) => (
                 <div key={stat.label} className="border border-white/10 bg-white/[0.05] p-3">
                   <p className="text-[10px] text-slate-400">{stat.label}</p>
                   <p className="mt-2 font-display text-2xl font-bold text-white">{stat.value}</p>
@@ -392,7 +395,11 @@ export default function HomePage() {
               ))}
             </div>
             <div className="mt-7 space-y-4">
-              {pipelineItems.map((item) => (
+              {[
+                { label: 'Replacement windows and doors', color: 'bg-sky-400', days: 2 },
+                { label: 'Rear extension and alterations', color: 'bg-amber-400', days: 3 },
+                { label: 'Loft conversion with rear dormer', color: 'bg-emerald-400', days: 4 },
+              ].map((item) => (
                 <div key={item.label} className="flex items-center gap-3">
                   <div className={`h-2 w-2 rounded-full ${item.color}`} />
                   <span className="flex-1 truncate text-xs text-slate-300">{item.label}</span>
