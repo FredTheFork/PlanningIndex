@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import {
-  Search, Plus, Trash2, Mail, Bell, ChevronRight,
-  Inbox, AlertCircle, RefreshCw, Home,
+  Search, Plus, Trash2, Mail, ChevronRight,
+  Inbox,
 } from 'lucide-react';
 import {
   Button, Input, Select, Checkbox, RadioGroup, Textarea, Toggle, SearchInput,
