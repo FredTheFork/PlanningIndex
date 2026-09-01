@@ -13,3 +13,5 @@ export { MapSearchShowcase } from './MapSearchShowcase';
 export { OpportunityDiscoveryShowcase } from './OpportunityDiscoveryShowcase';
 export { TeamShowcase } from './TeamShowcase';
 export { AccountShowcase } from './AccountShowcase';
+export { ScenarioWalkthrough } from './ScenarioWalkthrough';
+export type { Scenario } from './ScenarioWalkthrough';
