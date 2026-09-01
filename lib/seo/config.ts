@@ -54,9 +54,14 @@ export const OG_IMAGES = {
 
 export const NAVIGATION = {
   main: [
+    { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'About', href: '/about' },
-    { name: 'Contact', href: '/contact' },
+  ],
+  resources: [
+    { name: 'Blog', href: '/blog' },
+    { name: 'Help Centre', href: '/help' },
+    { name: 'Guides', href: '/guides' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },

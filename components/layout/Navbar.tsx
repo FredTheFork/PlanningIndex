@@ -5,11 +5,17 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { NavLinkDropdown } from '@/components/marketing';
 
 const navLinks = [
+  { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'About', href: '/about' },
-  { label: 'Contact', href: '/contact' },
+];
+
+const resourceLinks = [
+  { label: 'Blog', href: '/blog', description: 'Industry insights and updates' },
+  { label: 'Help Centre', href: '/help', description: 'Guides and answers to common questions' },
+  { label: 'Guides', href: '/guides', description: 'Step-by-step tutorials' },
 ];
 
 export default function Navbar() {
@@ -60,7 +66,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden lg:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-7">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -80,6 +86,23 @@ export default function Navbar() {
               />
             </Link>
           ))}
+          <NavLinkDropdown label="Resources" items={resourceLinks} transparent={transparent} />
+          <Link
+            href="/about"
+            className={`font-sans font-medium relative group transition-colors duration-300 ${
+              transparent
+                ? 'text-white/90 hover:text-white'
+                : 'text-primary-600 hover:text-primary-900'
+            }`}
+            style={{ fontSize: '0.9rem' }}
+          >
+            About
+            <span
+              className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-200 group-hover:w-full ${
+                transparent ? 'bg-white/70' : 'bg-accent-500'
+              }`}
+            />
+          </Link>
         </div>
 
         <div className="hidden lg:flex items-center gap-4">
@@ -142,7 +165,7 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="fixed inset-0 bg-primary-900 z-40 flex flex-col items-center justify-center gap-6 lg:hidden overflow-y-auto py-10">
+        <div className="fixed inset-0 bg-primary-900 z-40 flex flex-col items-center justify-center gap-5 lg:hidden overflow-y-auto py-10">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -153,6 +176,31 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          <div className="flex flex-col items-center gap-3">
+            <p className="font-sans font-semibold text-white/40 uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.15em' }}>
+              Resources
+            </p>
+            {resourceLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="font-sans font-medium text-white/80 text-xl"
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          <Link
+            href="/about"
+            className="font-sans font-medium text-white text-2xl"
+            onClick={() => setMobileOpen(false)}
+          >
+            About
+          </Link>
+
           <Link
             href="/login"
             className="font-sans font-semibold text-primary-900 bg-white rounded-md mt-4"
