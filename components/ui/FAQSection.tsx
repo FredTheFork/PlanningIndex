@@ -21,10 +21,10 @@ export function FAQSection({ items, title = 'Common questions', label = 'FAQ', c
 
   return (
     <section className="bg-white py-20 px-6">
-      <div className="mx-auto" style={{ maxWidth: 760 }}>
+      <div className="max-w-3xl mx-auto">
         <SectionLabel>{label}</SectionLabel>
         <h2
-          className="font-inter font-bold text-dark-text"
+          className="font-sans font-bold text-primary-900"
           style={{ fontSize: 'clamp(1.5rem, 2.8vw, 2rem)' }}
         >
           {title}
@@ -32,19 +32,19 @@ export function FAQSection({ items, title = 'Common questions', label = 'FAQ', c
 
         <div className="mt-10">
           {items.map((faq, i) => (
-            <div key={i} className="border-b border-border py-5">
+            <div key={i} className="border-b border-primary-200 py-5">
               {collapsible ? (
                 <>
                   <button
                     className="flex items-center justify-between w-full text-left gap-4"
                     onClick={() => setOpenIndex(openIndex === i ? null : i)}
                   >
-                    <span className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
+                    <span className="font-sans font-semibold text-primary-900" style={{ fontSize: '1rem' }}>
                       {faq.q}
                     </span>
                     <ChevronDown
                       size={18}
-                      className="text-secondary-text shrink-0 transition-transform duration-200"
+                      className="text-primary-500 shrink-0 transition-transform duration-200"
                       style={{ transform: openIndex === i ? 'rotate(180deg)' : 'rotate(0deg)' }}
                     />
                   </button>
@@ -53,7 +53,7 @@ export function FAQSection({ items, title = 'Common questions', label = 'FAQ', c
                     style={{ maxHeight: openIndex === i ? 200 : 0 }}
                   >
                     <p
-                      className="font-inter font-normal text-secondary-text pt-3 leading-[1.7]"
+                      className="font-sans text-primary-500 pt-3 leading-relaxed"
                       style={{ fontSize: '0.95rem' }}
                     >
                       {faq.a}
@@ -62,11 +62,11 @@ export function FAQSection({ items, title = 'Common questions', label = 'FAQ', c
                 </>
               ) : (
                 <>
-                  <h3 className="font-inter font-semibold text-dark-text" style={{ fontSize: '1rem' }}>
+                  <h3 className="font-sans font-semibold text-primary-900" style={{ fontSize: '1rem' }}>
                     {faq.q}
                   </h3>
                   <p
-                    className="font-inter font-normal text-secondary-text mt-2 leading-[1.7]"
+                    className="font-sans text-primary-500 mt-2 leading-relaxed"
                     style={{ fontSize: '0.95rem' }}
                   >
                     {faq.a}

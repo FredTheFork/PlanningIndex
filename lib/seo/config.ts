@@ -54,9 +54,7 @@ export const OG_IMAGES = {
 
 export const NAVIGATION = {
   main: [
-    { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
-    { name: 'Resources', href: '/resources' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ],

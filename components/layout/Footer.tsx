@@ -1,14 +1,6 @@
 import Link from 'next/link';
 
 const productLinks = [
-  { label: 'Planning Search', href: '/features' },
-  { label: 'Map Search', href: '/features' },
-  { label: 'CRM & Leads', href: '/features' },
-  { label: 'Pipeline', href: '/features' },
-];
-
-const resourceLinks = [
-  { label: 'Resources', href: '/resources' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
@@ -37,24 +29,6 @@ export default function Footer() {
               </h4>
               <ul className="flex flex-col gap-2.5">
                 {productLinks.map((l) => (
-                  <li key={l.label}>
-                    <Link
-                      href={l.href}
-                      className="font-sans font-normal hover:text-white transition-colors"
-                      style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-sans font-semibold text-white uppercase mb-4" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>
-                Resources
-              </h4>
-              <ul className="flex flex-col gap-2.5">
-                {resourceLinks.map((l) => (
                   <li key={l.label}>
                     <Link
                       href={l.href}

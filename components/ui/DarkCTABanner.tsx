@@ -13,40 +13,34 @@ interface DarkCTABannerProps {
 
 export function DarkCTABanner({ title, subtitle, ctaLabel, ctaHref, icon: Icon, note }: DarkCTABannerProps) {
   return (
-    <section
-      className="text-center px-6"
-      style={{
-        padding: '80px 0',
-        background: 'linear-gradient(135deg, #1B3F7A 0%, #2C68C4 100%)',
-      }}
-    >
-      <div className="mx-auto" style={{ maxWidth: 700 }}>
+    <section className="bg-primary-900 text-center px-6 py-24">
+      <div className="max-w-3xl mx-auto">
         <h2
-          className="font-inter font-bold text-white"
-          style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)' }}
+          className="font-sans font-bold text-white"
+          style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)' }}
         >
           {title}
         </h2>
         {subtitle && (
           <p
-            className="font-inter font-normal mt-4 leading-[1.7]"
-            style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.85)' }}
+            className="font-sans mt-4 leading-relaxed"
+            style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.8)' }}
           >
             {subtitle}
           </p>
         )}
         <Link
           href={ctaHref}
-          className="inline-flex items-center gap-2 font-inter font-bold text-navy bg-white rounded-lg hover:bg-[rgba(255,255,255,0.92)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-200 mt-8"
-          style={{ padding: '16px 36px', fontSize: '1rem' }}
+          className="inline-flex items-center gap-2 font-sans font-semibold text-primary-900 bg-white rounded-lg hover:bg-primary-50 transition-all duration-200 mt-8"
+          style={{ padding: '14px 32px', fontSize: '1rem' }}
         >
           {Icon && <Icon size={18} />}
           {ctaLabel}
         </Link>
         {note && (
           <p
-            className="font-inter font-normal mt-4"
-            style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.65)' }}
+            className="font-sans mt-4"
+            style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}
           >
             {note}
           </p>

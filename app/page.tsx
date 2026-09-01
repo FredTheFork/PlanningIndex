@@ -22,11 +22,11 @@ export default function HomePage() {
               Get Started
             </Link>
             <Link
-              href="/features"
+              href="/pricing"
               className="font-sans font-semibold text-white border-2 border-white/30 rounded-lg hover:bg-white/10 transition-all duration-200"
               style={{ padding: '14px 32px', fontSize: '1rem' }}
             >
-              Explore Features
+              View Pricing
             </Link>
           </div>
         </div>
