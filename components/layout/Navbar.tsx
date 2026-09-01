@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { NavLinkDropdown } from '@/components/marketing';
 
 const navLinks = [
+  { label: 'Planning Search', href: '/login' },
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
 ];
@@ -67,25 +68,34 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden lg:flex items-center gap-7">
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className={`font-sans font-medium relative group transition-colors duration-300 ${
-                transparent
-                  ? 'text-white/90 hover:text-white'
-                  : 'text-primary-600 hover:text-primary-900'
-              }`}
-              style={{ fontSize: '0.9rem' }}
-            >
-              {link.label}
-              <span
-                className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-200 group-hover:w-full ${
-                  transparent ? 'bg-white/70' : 'bg-accent-500'
+          {navLinks.map((link) => {
+            const isSearch = link.label === 'Planning Search';
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`font-sans font-medium relative group transition-colors duration-300 ${
+                  isSearch
+                    ? 'text-accent-400'
+                    : transparent
+                      ? 'text-white/90 hover:text-white'
+                      : 'text-primary-600 hover:text-primary-900'
                 }`}
-              />
-            </Link>
-          ))}
+                style={{ fontSize: '0.9rem' }}
+              >
+                {link.label}
+                <span
+                  className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-200 group-hover:w-full ${
+                    isSearch
+                      ? 'bg-accent-400'
+                      : transparent
+                        ? 'bg-white/70'
+                        : 'bg-accent-500'
+                  }`}
+                />
+              </Link>
+            );
+          })}
           <NavLinkDropdown label="Resources" items={resourceLinks} transparent={transparent} />
           <Link
             href="/about"
@@ -166,16 +176,19 @@ export default function Navbar() {
 
       {mobileOpen && (
         <div className="fixed inset-0 bg-primary-900 z-40 flex flex-col items-center justify-center gap-5 lg:hidden overflow-y-auto py-10">
-          {navLinks.map((link) => (
+          {navLinks.map((link) => {
+            const isSearch = link.label === 'Planning Search';
+            return (
             <Link
               key={link.label}
               href={link.href}
-              className="font-sans font-medium text-white text-2xl"
+              className={`font-sans font-medium text-2xl ${isSearch ? 'text-accent-400' : 'text-white'}`}
               onClick={() => setMobileOpen(false)}
             >
               {link.label}
             </Link>
-          ))}
+            );
+          })}
 
           <div className="flex flex-col items-center gap-3">
             <p className="font-sans font-semibold text-white/40 uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.15em' }}>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Linkedin, Twitter } from 'lucide-react';
 
 const productLinks = [
+  { label: 'Planning Search', href: '/login' },
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'About', href: '/about' },
