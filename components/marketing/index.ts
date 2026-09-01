@@ -9,3 +9,7 @@ export { PlanningSearchShowcase } from './PlanningSearchShowcase';
 export { ApplicationDetailShowcase } from './ApplicationDetailShowcase';
 export { CRMPipelineShowcase } from './CRMPipelineShowcase';
 export { ProposalShowcase } from './ProposalShowcase';
+export { MapSearchShowcase } from './MapSearchShowcase';
+export { OpportunityDiscoveryShowcase } from './OpportunityDiscoveryShowcase';
+export { TeamShowcase } from './TeamShowcase';
+export { AccountShowcase } from './AccountShowcase';

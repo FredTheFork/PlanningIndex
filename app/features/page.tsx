@@ -1,9 +1,18 @@
 import type { Metadata } from 'next';
-import { Search, Users, FileText, Calendar, FolderOpen, Map, LayoutGrid, Filter, Send, Mail, CheckCircle2 } from 'lucide-react';
+import { Search, Map, Target, Users, FileText, ShieldCheck, CreditCard, CheckCircle2, LayoutGrid, Filter, Send, Mail, Calendar, FolderOpen } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import { PageHero, DarkCTABanner, SectionLabel } from '@/components/ui';
-import { FeatureShowcase } from '@/components/marketing';
+import {
+  ProductShowcaseSection,
+  PlanningSearchShowcase,
+  CRMPipelineShowcase,
+  ProposalShowcase,
+  MapSearchShowcase,
+  OpportunityDiscoveryShowcase,
+  TeamShowcase,
+  AccountShowcase,
+} from '@/components/marketing';
 
 export const metadata: Metadata = {
   title: 'Features',
@@ -35,136 +44,108 @@ export default function FeaturesPage() {
       />
 
       <section className="bg-white py-24 px-6">
-        <div className="max-w-page mx-auto space-y-24">
-          <FeatureShowcase
-            label="Search & Discovery"
-            title="Find every planning application. Before your competitors."
-            description="Stop wasting hours on council websites. Every UK planning application, filtered exactly the way you work, updated daily."
-            icon={Search}
-            features={[
-              'Map View — see every project pinned with exact postcode location',
-              'Grid View — browse all jobs in one organised, filterable list',
-              'Smart Filters — keyword, date range, postcode, council, value, type',
-              'Save your favourite searches and get instant results',
-            ]}
-            image={
-              <div className="bg-primary-100 rounded-2xl border border-primary-200 p-8 aspect-[4/3] flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-2xl bg-accent-100 flex items-center justify-center mx-auto mb-4">
-                    <Map className="text-accent-700" size={40} />
-                  </div>
-                  <p className="font-sans text-primary-400" style={{ fontSize: '0.9rem' }}>
-                    Map & Grid View
-                  </p>
-                </div>
-              </div>
-            }
-          />
+        <div className="max-w-page mx-auto">
+          <div className="mx-auto max-w-2xl text-center mb-16">
+            <SectionLabel className="text-center">Seven capabilities. One platform.</SectionLabel>
+            <h2 className="font-display text-4xl font-bold leading-[1.08] tracking-[-0.04em] text-primary-900 sm:text-5xl">
+              From search to signed contract.
+            </h2>
+            <p className="mt-5 text-base leading-7 text-slate-600">
+              Every part of PlanningIndex is designed to move you forward — from discovering a planning application to delivering a physical proposal to the property door.
+            </p>
+          </div>
 
-          <FeatureShowcase
-            label="Workspace & Pipeline"
-            title="Your entire sales process. One beautiful dashboard."
-            description="Turn every planning application into a live lead in seconds. Drag-and-drop your way from first contact to signed contract."
-            icon={Users}
-            features={[
-              'Lead Manager Pipeline — drag cards from New Lead to Won',
-              'Job Manager — track site progress, variations, and invoicing',
-              'Live totals show £ value and win rate at every stage',
-              'Zero switching — everything lives in the same workspace',
-            ]}
-            reverse
-            image={
-              <div className="bg-primary-100 rounded-2xl border border-primary-200 p-8 aspect-[4/3] flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-2xl bg-accent-100 flex items-center justify-center mx-auto mb-4">
-                    <Users className="text-accent-700" size={40} />
-                  </div>
-                  <p className="font-sans text-primary-400" style={{ fontSize: '0.9rem' }}>
-                    Pipeline Dashboard
-                  </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+            {[
+              { icon: Search, label: 'Planning Search' },
+              { icon: Map, label: 'Geographic Search' },
+              { icon: Target, label: 'Opportunity Discovery' },
+              { icon: Users, label: 'CRM' },
+              { icon: FileText, label: 'Proposals' },
+              { icon: ShieldCheck, label: 'Team' },
+              { icon: CreditCard, label: 'Account & Billing' },
+            ].map((item) => (
+              <div key={item.label} className="flex flex-col items-center gap-3 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-900 text-white">
+                  <item.icon size={22} />
                 </div>
+                <span className="font-sans text-xs font-semibold text-primary-700">{item.label}</span>
               </div>
-            }
-          />
-
-          <FeatureShowcase
-            label="Proposals & Quoting"
-            title="Professional proposals. Sent in seconds, not hours."
-            description="Build, send, and track polished proposals faster than any competitor. One click from quote to client inbox."
-            icon={FileText}
-            features={[
-              'Instant proposal generation — enter your quote once',
-              'One-click sending directly from the platform',
-              'Track opens, reads, and replies in real time',
-              'Searchable archive of every proposal you have ever sent',
-            ]}
-            image={
-              <div className="bg-primary-100 rounded-2xl border border-primary-200 p-8 aspect-[4/3] flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-2xl bg-accent-100 flex items-center justify-center mx-auto mb-4">
-                    <Send className="text-accent-700" size={40} />
-                  </div>
-                  <p className="font-sans text-primary-400" style={{ fontSize: '0.9rem' }}>
-                    Proposal Builder
-                  </p>
-                </div>
-              </div>
-            }
-          />
-
-          <FeatureShowcase
-            label="Calendar & Tasks"
-            title="Never miss a site visit, deadline, or follow-up."
-            description="Everything connected. Calendar, tasks, leads, and jobs — all linked automatically so nothing slips through the cracks."
-            icon={Calendar}
-            features={[
-              'Integrated calendar with site visits and meetings',
-              'Smart tasks automatically linked to the correct lead or job',
-              'Drag to reschedule, click for full details',
-              'Due dates, reminders, and progress tracking',
-            ]}
-            reverse
-            image={
-              <div className="bg-primary-100 rounded-2xl border border-primary-200 p-8 aspect-[4/3] flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-2xl bg-accent-100 flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="text-accent-700" size={40} />
-                  </div>
-                  <p className="font-sans text-primary-400" style={{ fontSize: '0.9rem' }}>
-                    Calendar & Tasks
-                  </p>
-                </div>
-              </div>
-            }
-          />
-
-          <FeatureShowcase
-            label="File Storage"
-            title="Every receipt, photo, and contract — in one vault."
-            description="Upload and organise documents directly against each lead or job. Searchable, secure, always there when you need them."
-            icon={FolderOpen}
-            features={[
-              'Site photos — snap and upload directly from your phone',
-              'Receipts & invoices — attach costs to the right job instantly',
-              'Drawings & plans — store architect drawings alongside project data',
-              'Contracts — keep signed documents secure and accessible',
-            ]}
-            image={
-              <div className="bg-primary-100 rounded-2xl border border-primary-200 p-8 aspect-[4/3] flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-2xl bg-accent-100 flex items-center justify-center mx-auto mb-4">
-                    <FolderOpen className="text-accent-700" size={40} />
-                  </div>
-                  <p className="font-sans text-primary-400" style={{ fontSize: '0.9rem' }}>
-                    File Vault
-                  </p>
-                </div>
-              </div>
-            }
-          />
+            ))}
+          </div>
         </div>
       </section>
 
+      {/* 1. Planning Search */}
+      <ProductShowcaseSection
+        label="Planning Search"
+        title="Search every UK planning application from one place."
+        description="Nationwide coverage, updated daily. Filter by keyword, location, radius, application type, status, date, and council to find the exact projects that match your trade."
+      >
+        <PlanningSearchShowcase />
+      </ProductShowcaseSection>
+
+      {/* 2. Geographic Search */}
+      <ProductShowcaseSection
+        label="Geographic Search"
+        title="See opportunities where they actually are."
+        description="Interactive map with radius search from 1 to 100 miles. Search by postcode, town, or council. Pan, zoom, and click markers to inspect applications geographically — no more guessing which council website to check."
+        reverse
+        className="bg-[#f7f9fc]"
+      >
+        <MapSearchShowcase />
+      </ProductShowcaseSection>
+
+      {/* 3. Opportunity Discovery */}
+      <ProductShowcaseSection
+        label="Opportunity Discovery"
+        title="Find the work that matches your trade."
+        description="Not every application is relevant to you. PlanningIndex ranks results by trade relevance and highlights the specific work being proposed — so you spend time on applications that actually matter to your business."
+      >
+        <OpportunityDiscoveryShowcase />
+      </ProductShowcaseSection>
+
+      {/* 4. CRM */}
+      <ProductShowcaseSection
+        label="CRM"
+        title="Turn planning data into a managed pipeline."
+        description="Drag cards from New Lead to Won. Track pipeline value and win rate at every stage. Keep every conversation, note, and follow-up connected to the right application. No more spreadsheets and sticky notes."
+        reverse
+        className="bg-[#f7f9fc]"
+      >
+        <CRMPipelineShowcase />
+      </ProductShowcaseSection>
+
+      {/* 5. Proposals */}
+      <ProductShowcaseSection
+        label="Professional Proposals"
+        title="Professional proposals, sent by post."
+        description="Auto-populate proposals from planning application data. Edit, preview, and send by physical post — printed, delivered, and tracked to the property door. No more printing, stuffing envelopes, or trips to the post office."
+      >
+        <ProposalShowcase />
+      </ProductShowcaseSection>
+
+      {/* 6. Team */}
+      <ProductShowcaseSection
+        label="Team"
+        title="Your whole team, working from the same data."
+        description="Multiple users with role-based permissions. Share leads, proposals, and notes across your company. Owner, Admin, Sales, Estimator, Installer — everyone sees what they need, nothing they shouldn't."
+        reverse
+        className="bg-[#f7f9fc]"
+      >
+        <TeamShowcase />
+      </ProductShowcaseSection>
+
+      {/* 7. Account & Billing */}
+      <ProductShowcaseSection
+        label="Account & Billing"
+        title="Manage your membership, your way."
+        description="Choose your coverage — from a single council to the whole country. Upgrade, downgrade, or cancel anytime. Your company profile auto-populates into every proposal you send."
+      >
+        <AccountShowcase />
+      </ProductShowcaseSection>
+
+      {/* Capabilities grid */}
       <section className="bg-primary-50 py-20 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <SectionLabel className="text-center">One Platform</SectionLabel>

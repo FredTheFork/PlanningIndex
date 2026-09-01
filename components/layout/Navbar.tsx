@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { NavLinkDropdown } from '@/components/marketing';
@@ -11,6 +11,7 @@ const navLinks = [
   { label: 'Planning Search', href: '/login' },
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
+  { label: 'Industries', href: '/industries' },
 ];
 
 const resourceLinks = [
@@ -23,7 +24,6 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
 
   const transparent = false;
 
@@ -89,6 +89,22 @@ export default function Navbar() {
             );
           })}
           <NavLinkDropdown label="Resources" items={resourceLinks} transparent={transparent} />
+          <Link
+            href="/industries"
+            className={`font-sans font-medium relative group transition-colors duration-300 ${
+              transparent
+                ? 'text-white/90 hover:text-white'
+                : 'text-primary-600 hover:text-primary-900'
+            }`}
+            style={{ fontSize: '0.9rem' }}
+          >
+            Industries
+            <span
+              className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-200 group-hover:w-full ${
+                transparent ? 'bg-white/70' : 'bg-accent-500'
+              }`}
+            />
+          </Link>
           <Link
             href="/about"
             className={`font-sans font-medium relative group transition-colors duration-300 ${
@@ -197,6 +213,14 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
+
+          <Link
+            href="/industries"
+            className="font-sans font-medium text-white text-2xl"
+            onClick={() => setMobileOpen(false)}
+          >
+            Industries
+          </Link>
 
           <Link
             href="/about"
