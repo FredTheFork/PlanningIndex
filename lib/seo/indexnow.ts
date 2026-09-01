@@ -1,6 +1,6 @@
 import { SITE_URL } from './config';
 
-const INDEXNOW_KEY = process.env.INDEXNOW_KEY || 'foundationary2024indexnow';
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY || 'planningindex2026indexnow';
 
 export async function pingIndexNow(urls: string[]) {
   if (!urls.length) return;

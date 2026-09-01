@@ -8,265 +8,37 @@ html {
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  color: #1A1A2E;
+  color: #0F172A;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Hide horizontal scrollbar while keeping scrolling functional */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Custom focus ring for all interactive elements */
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #4A90E2;
+  outline: 2px solid #0EA5E9;
   outline-offset: 2px;
 }
 
-/* Scroll progress bar */
-#scroll-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #1B3F7A, #2C68C4);
-  z-index: 9999;
-  transition: width 50ms linear;
-}
-
-/* ─── Float animations (hero cards) ──────────────────────────────── */
-@keyframes float-a {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-14px) rotate(0.5deg); }
-}
-
-@keyframes float-b {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-9px) rotate(-0.3deg); }
-}
-
-@keyframes float-c {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-18px) rotate(0.8deg); }
-}
-
-/* ─── Fade in up (section entrances) ─────────────────────────────── */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(28px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Scale in with bounce (step circles) ────────────────────────── */
-@keyframes scaleInBounce {
-  0%   { opacity: 0; transform: scale(0.5); }
-  60%  { opacity: 1; transform: scale(1.1); }
-  80%  { transform: scale(0.96); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-/* ─── Draw line (HowItWorks connector) ───────────────────────────── */
-@keyframes drawLine {
-  from { width: 0; opacity: 0; }
-  10%  { opacity: 1; }
-  to   { width: 100%; opacity: 1; }
-}
-
-/* ─── Pulse ring (CTA button halo) ───────────────────────────────── */
-@keyframes pulseRing {
-  0%   { transform: scale(1); opacity: 0.55; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-
-/* ─── Hero swirl blobs ───────────────────────────────────────────── */
-@keyframes swirl-1 {
-  0%   { transform: translate(0px, 0px) rotate(0deg) scale(1); }
-  25%  { transform: translate(40px, -30px) rotate(90deg) scale(1.05); }
-  50%  { transform: translate(20px, 40px) rotate(180deg) scale(0.95); }
-  75%  { transform: translate(-30px, 10px) rotate(270deg) scale(1.08); }
-  100% { transform: translate(0px, 0px) rotate(360deg) scale(1); }
-}
-
-@keyframes swirl-2 {
-  0%   { transform: translate(0px, 0px) rotate(0deg) scale(1); }
-  33%  { transform: translate(-50px, 30px) rotate(-120deg) scale(1.1); }
-  66%  { transform: translate(30px, -40px) rotate(-240deg) scale(0.9); }
-  100% { transform: translate(0px, 0px) rotate(-360deg) scale(1); }
-}
-
-@keyframes swirl-3 {
-  0%   { transform: translate(0px, 0px) scale(1); }
-  40%  { transform: translate(30px, -20px) scale(1.12); }
-  70%  { transform: translate(-20px, 30px) scale(0.88); }
-  100% { transform: translate(0px, 0px) scale(1); }
-}
-
-/* ─── Animated gradient shift (CTA banner) ───────────────────────── */
-@keyframes gradientShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ─── Testimonials infinite carousel ─────────────────────────────── */
-@keyframes carousel-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.carousel-track {
-  animation: carousel-scroll 52s linear infinite;
-  display: flex;
-  width: fit-content;
-  will-change: transform;
-}
-
-.carousel-wrapper:hover .carousel-track {
-  animation-play-state: paused;
-}
-
-/* ─── New Visual Enhancement Animations ───────────────────────────── */
-
-/* Fade in animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Slide animations */
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-/* Bar/chart animations */
-@keyframes barGrow {
-  from { transform: scaleX(0); transform-origin: left; }
-  to { transform: scaleX(1); transform-origin: left; }
-}
-
-@keyframes fillUp {
-  from { transform: scaleY(0); transform-origin: bottom; }
-  to { transform: scaleY(1); transform-origin: bottom; }
-}
-
-/* Pulse animations */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(27, 63, 122, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(27, 63, 122, 0.6); }
-}
-
-/* Shimmer loading effect */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
 .shimmer {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
-/* Bounce animations */
-@keyframes bounce-subtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
-/* Count up number animation */
-@keyframes countUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Spinner */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Ring pulse for attention */
-@keyframes ring-pulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-
-/* Utility classes for animations */
 .animate-fade-in-up { animation: fadeInUp 0.5s ease forwards; }
 .animate-fade-in { animation: fadeIn 0.4s ease forwards; }
-.animate-scale-in { animation: fadeInScale 0.5s ease forwards; }
-.animate-slide-in-left { animation: slideInLeft 0.5s ease forwards; }
-.animate-slide-in-right { animation: slideInRight 0.5s ease forwards; }
-.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-.animate-bounce-subtle { animation: bounce-subtle 2s ease-in-out infinite; }
-
-/* Hover scale micro-interaction */
-.hover-scale {
-  transition: transform 0.2s ease;
-}
-.hover-scale:hover {
-  transform: scale(1.02);
-}
-
-/* Glassmorphism card */
-.glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #1B3F7A, #2C68C4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}

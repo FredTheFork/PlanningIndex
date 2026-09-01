@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { SITE_CONFIG, SITE_URL, OG_IMAGES } from './config';
+import { SITE_CONFIG, SITE_URL } from './config';
 
 interface PageSEO {
   title: string;
@@ -29,7 +29,7 @@ export function generatePageMetadata({
   noIndex = false,
 }: PageSEO): Metadata {
   const url = `${SITE_URL}${path}`;
-  const ogImage = image || `${SITE_URL}/api/og?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description.slice(0, 100))}`;
+  const ogImage = image || `${SITE_URL}/og/default.png`;
 
   const metadata: Metadata = {
     title,
@@ -90,29 +90,4 @@ export function generatePageMetadata({
   };
 
   return metadata;
-}
-
-export function generateArticleMetadata(article: {
-  title: string;
-  description: string;
-  slug: string;
-  date: string;
-  modifiedDate?: string;
-  author?: string;
-  category: string;
-  keywords?: string;
-  image?: string;
-}): Metadata {
-  return generatePageMetadata({
-    title: `${article.title} | Foundationary Blog`,
-    description: article.description,
-    path: `/blog/${article.slug}`,
-    type: 'article',
-    image: article.image ? `${SITE_URL}/og/articles/${article.slug}.png` : `${SITE_URL}/api/og?title=${encodeURIComponent(article.title)}&description=${encodeURIComponent(article.description.slice(0, 100))}&type=blog`,
-    publishedTime: article.date,
-    modifiedTime: article.modifiedDate || article.date,
-    author: article.author || SITE_CONFIG.name,
-    section: article.category,
-    tags: article.keywords?.split(',').map(k => k.trim()) || [],
-  });
 }

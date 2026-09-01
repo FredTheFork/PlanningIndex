@@ -1,21 +1,15 @@
 import Link from 'next/link';
 
-const serviceLinks = [
-  { label: "What's Included (10 Documents)", href: '/whats-included' },
-  { label: 'Website Copy Starter Pack', href: '/services/website-copy' },
-  { label: 'Social Media Starter Pack', href: '/services/social-media' },
-  { label: 'Quarterly Document Refresh', href: '/services/quarterly-refresh' },
-  { label: 'View All Services', href: '/services' },
+const productLinks = [
+  { label: 'Planning Search', href: '/features' },
+  { label: 'Map Search', href: '/features' },
+  { label: 'CRM & Leads', href: '/features' },
+  { label: 'Pipeline', href: '/features' },
 ];
 
 const resourceLinks = [
-  { label: 'How It Works', href: '/how-it-works' },
+  { label: 'Resources', href: '/resources' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'FAQ', href: '/faq' },
-];
-
-const companyLinks = [
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ];
@@ -27,45 +21,26 @@ const legalLinks = [
 
 export default function Footer() {
   return (
-    <footer className="bg-[#1A1A2E] pt-14 pb-8 px-6">
-      <div className="max-w-[1200px] mx-auto">
+    <footer className="bg-primary-900 pt-14 pb-8 px-6">
+      <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between gap-10">
-          {/* Logo (white version) */}
-          <Link href="/" className="flex items-center gap-2 shrink-0" style={{ height: 40 }}>
-            <img src="/images/logo-white.png" alt="Foundationary logo" style={{ height: 40, width: 'auto' }} />
-            <div className="flex flex-col">
-              <span className="font-inter font-bold text-white leading-none" style={{ fontSize: '1.15rem' }}>
-                <span style={{ fontSize: '1.3rem' }}>F</span>oundationary
-              </span>
-              <span
-                className="font-inter font-semibold"
-                style={{
-                  fontSize: '0.65rem',
-                  letterSpacing: '0.12em',
-                  color: 'rgba(255,255,255,0.6)',
-                  lineHeight: 1.2,
-                }}
-              >
-                BUSINESS FOUNDATIONS. FAST.
-              </span>
-            </div>
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <span className="font-sans font-bold text-white leading-none" style={{ fontSize: '1.25rem' }}>
+              PlanningIndex
+            </span>
           </Link>
 
-          {/* Nav columns */}
           <div className="flex gap-16 flex-wrap">
             <div>
-              <h4
-                className="font-inter font-semibold text-white uppercase mb-4"
-                style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}
-              >
-                Services
+              <h4 className="font-sans font-semibold text-white uppercase mb-4" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>
+                Product
               </h4>
               <ul className="flex flex-col gap-2.5">
-                {serviceLinks.map((l) => (
+                {productLinks.map((l) => (
                   <li key={l.label}>
                     <Link
                       href={l.href}
-                      className="font-inter font-normal hover:text-white transition-colors"
+                      className="font-sans font-normal hover:text-white transition-colors"
                       style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}
                     >
                       {l.label}
@@ -75,10 +50,7 @@ export default function Footer() {
               </ul>
             </div>
             <div>
-              <h4
-                className="font-inter font-semibold text-white uppercase mb-4"
-                style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}
-              >
+              <h4 className="font-sans font-semibold text-white uppercase mb-4" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>
                 Resources
               </h4>
               <ul className="flex flex-col gap-2.5">
@@ -86,7 +58,7 @@ export default function Footer() {
                   <li key={l.label}>
                     <Link
                       href={l.href}
-                      className="font-inter font-normal hover:text-white transition-colors"
+                      className="font-sans font-normal hover:text-white transition-colors"
                       style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}
                     >
                       {l.label}
@@ -96,31 +68,7 @@ export default function Footer() {
               </ul>
             </div>
             <div>
-              <h4
-                className="font-inter font-semibold text-white uppercase mb-4"
-                style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}
-              >
-                Company
-              </h4>
-              <ul className="flex flex-col gap-2.5">
-                {companyLinks.map((l) => (
-                  <li key={l.label}>
-                    <Link
-                      href={l.href}
-                      className="font-inter font-normal hover:text-white transition-colors"
-                      style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4
-                className="font-inter font-semibold text-white uppercase mb-4"
-                style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}
-              >
+              <h4 className="font-sans font-semibold text-white uppercase mb-4" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>
                 Legal
               </h4>
               <ul className="flex flex-col gap-2.5">
@@ -128,7 +76,7 @@ export default function Footer() {
                   <li key={l.label}>
                     <Link
                       href={l.href}
-                      className="font-inter font-normal hover:text-white transition-colors"
+                      className="font-sans font-normal hover:text-white transition-colors"
                       style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}
                     >
                       {l.label}
@@ -140,15 +88,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-[rgba(255,255,255,0.1)] mt-10 pt-6 flex flex-col md:flex-row justify-between gap-4">
-          <p className="font-inter font-normal" style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
-            &copy; 2025 Foundationary. All rights reserved.
-          </p>
-          <p
-            className="font-inter font-normal md:text-right"
-            style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}
-          >
-            Foundationary is a document drafting service and does not provide legal advice. UK GDPR compliant.
+        <div className="border-t border-white/10 mt-10 pt-6">
+          <p className="font-sans font-normal" style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+            &copy; 2026 PlanningIndex. All rights reserved.
           </p>
         </div>
       </div>
