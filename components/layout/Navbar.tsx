@@ -12,6 +12,7 @@ const navLinks = [
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Industries', href: '/industries' },
+  { label: 'About', href: '/about' },
 ];
 
 const resourceLinks = [
@@ -89,38 +90,6 @@ export default function Navbar() {
             );
           })}
           <NavLinkDropdown label="Resources" items={resourceLinks} transparent={transparent} />
-          <Link
-            href="/industries"
-            className={`font-sans font-medium relative group transition-colors duration-300 ${
-              transparent
-                ? 'text-white/90 hover:text-white'
-                : 'text-primary-600 hover:text-primary-900'
-            }`}
-            style={{ fontSize: '0.9rem' }}
-          >
-            Industries
-            <span
-              className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-200 group-hover:w-full ${
-                transparent ? 'bg-white/70' : 'bg-accent-500'
-              }`}
-            />
-          </Link>
-          <Link
-            href="/about"
-            className={`font-sans font-medium relative group transition-colors duration-300 ${
-              transparent
-                ? 'text-white/90 hover:text-white'
-                : 'text-primary-600 hover:text-primary-900'
-            }`}
-            style={{ fontSize: '0.9rem' }}
-          >
-            About
-            <span
-              className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-200 group-hover:w-full ${
-                transparent ? 'bg-white/70' : 'bg-accent-500'
-              }`}
-            />
-          </Link>
         </div>
 
         <div className="hidden lg:flex items-center gap-4">
@@ -213,22 +182,6 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
-
-          <Link
-            href="/industries"
-            className="font-sans font-medium text-white text-2xl"
-            onClick={() => setMobileOpen(false)}
-          >
-            Industries
-          </Link>
-
-          <Link
-            href="/about"
-            className="font-sans font-medium text-white text-2xl"
-            onClick={() => setMobileOpen(false)}
-          >
-            About
-          </Link>
 
           <Link
             href="/login"
