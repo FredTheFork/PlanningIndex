@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Search, Map, Target, Users, FileText, ShieldCheck, CreditCard, CheckCircle2, LayoutGrid, Filter, Send, Mail, Calendar, FolderOpen } from 'lucide-react';
+import { Search, Map, Target, Users, FileText, ShieldCheck, CreditCard, CheckCircle2, LayoutGrid, Filter, Send, Mail, Calendar, FolderOpen, Check, ArrowRight } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import { PageHero, DarkCTABanner, SectionLabel } from '@/components/ui';
@@ -19,6 +19,83 @@ export const metadata: Metadata = {
   description: 'Everything you need to find, win, and manage construction work. Search planning applications, run your CRM pipeline, generate proposals, track costs, and stay organised.',
   alternates: { canonical: `${SITE_URL}/features` },
 };
+
+const capabilityNav = [
+  { icon: Search, label: 'Planning Search' },
+  { icon: Map, label: 'Geographic Search' },
+  { icon: Target, label: 'Opportunity Discovery' },
+  { icon: Users, label: 'CRM' },
+  { icon: FileText, label: 'Proposals' },
+  { icon: ShieldCheck, label: 'Team' },
+  { icon: CreditCard, label: 'Account & Billing' },
+];
+
+const featurePoints = {
+  planning: [
+    'Nationwide UK coverage across every council',
+    'Daily updates as new applications are submitted',
+    'Keyword search across application descriptions',
+    'Filter by date, application type, and status',
+    'Save and revisit your most useful searches',
+  ],
+  geographic: [
+    'Interactive map with pan and zoom',
+    'Radius search from 1 to 100 miles',
+    'Search by postcode, town, or council',
+    'Visual geographic filtering with markers',
+    'Switch between map and list views instantly',
+  ],
+  opportunity: [
+    'Results ranked by trade relevance',
+    'Highlights the specific work being proposed',
+    'Identifies trade-relevant items automatically',
+    'Spend time on applications that matter',
+    'Add relevant results to your lead pipeline',
+  ],
+  crm: [
+    'Drag-and-drop pipeline from New Lead to Won',
+    'Track pipeline value and win rate',
+    'Notes and follow-ups on every lead',
+    'Contact information linked to applications',
+    'Activity history and status tracking',
+  ],
+  proposals: [
+    'Auto-populated from planning application data',
+    'Editable work details and pricing',
+    'Professional proposal templates',
+    'Sent by physical post — printed and delivered',
+    'Delivery tracking to the property door',
+  ],
+  team: [
+    'Multiple users with role-based permissions',
+    'Owner, Admin, Sales, Estimator, and Installer roles',
+    'Shared leads across your company',
+    'Collaboration on proposals and notes',
+    'See who is working on what at a glance',
+  ],
+  account: [
+    'Choose coverage from one council to nationwide',
+    'Upgrade, downgrade, or cancel anytime',
+    'Company profile auto-populates into proposals',
+    'Manage council and region access',
+    'Subscription and billing in one place',
+  ],
+};
+
+function FeatureList({ items }: { items: string[] }) {
+  return (
+    <ul className="mt-8 space-y-3">
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-3">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+            <Check size={12} className="text-emerald-600" />
+          </span>
+          <span className="text-sm leading-6 text-slate-600">{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function FeaturesPage() {
   const breadcrumbs = generateBreadcrumbSchema([
@@ -43,9 +120,10 @@ export default function FeaturesPage() {
         ctaHref="/login"
       />
 
-      <section className="bg-white py-24 px-6">
+      {/* Capability navigation */}
+      <section className="bg-white py-20 px-6 border-b border-slate-100">
         <div className="max-w-page mx-auto">
-          <div className="mx-auto max-w-2xl text-center mb-16">
+          <div className="mx-auto max-w-2xl text-center mb-14">
             <SectionLabel className="text-center">Seven capabilities. One platform.</SectionLabel>
             <h2 className="font-display text-4xl font-bold leading-[1.08] tracking-[-0.04em] text-primary-900 sm:text-5xl">
               From search to signed contract.
@@ -55,22 +133,18 @@ export default function FeaturesPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
-            {[
-              { icon: Search, label: 'Planning Search' },
-              { icon: Map, label: 'Geographic Search' },
-              { icon: Target, label: 'Opportunity Discovery' },
-              { icon: Users, label: 'CRM' },
-              { icon: FileText, label: 'Proposals' },
-              { icon: ShieldCheck, label: 'Team' },
-              { icon: CreditCard, label: 'Account & Billing' },
-            ].map((item) => (
-              <div key={item.label} className="flex flex-col items-center gap-3 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-900 text-white">
-                  <item.icon size={22} />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {capabilityNav.map((item) => (
+              <a
+                key={item.label}
+                href={`#${item.label.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'and').replace(/-/g, '-')}`}
+                className="group flex flex-col items-center gap-3 text-center rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-card-hover transition-all duration-200"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-900 text-white group-hover:bg-accent-600 transition-colors duration-200">
+                  <item.icon size={20} />
                 </div>
                 <span className="font-sans text-xs font-semibold text-primary-700">{item.label}</span>
-              </div>
+              </a>
             ))}
           </div>
         </div>
@@ -78,15 +152,18 @@ export default function FeaturesPage() {
 
       {/* 1. Planning Search */}
       <ProductShowcaseSection
+        id="planning-search"
         label="Planning Search"
         title="Search every UK planning application from one place."
         description="Nationwide coverage, updated daily. Filter by keyword, location, radius, application type, status, date, and council to find the exact projects that match your trade."
       >
         <PlanningSearchShowcase />
+        <FeatureList items={featurePoints.planning} />
       </ProductShowcaseSection>
 
       {/* 2. Geographic Search */}
       <ProductShowcaseSection
+        id="geographic-search"
         label="Geographic Search"
         title="See opportunities where they actually are."
         description="Interactive map with radius search from 1 to 100 miles. Search by postcode, town, or council. Pan, zoom, and click markers to inspect applications geographically — no more guessing which council website to check."
@@ -94,19 +171,23 @@ export default function FeaturesPage() {
         className="bg-[#f7f9fc]"
       >
         <MapSearchShowcase />
+        <FeatureList items={featurePoints.geographic} />
       </ProductShowcaseSection>
 
       {/* 3. Opportunity Discovery */}
       <ProductShowcaseSection
+        id="opportunity-discovery"
         label="Opportunity Discovery"
         title="Find the work that matches your trade."
         description="Not every application is relevant to you. PlanningIndex ranks results by trade relevance and highlights the specific work being proposed — so you spend time on applications that actually matter to your business."
       >
         <OpportunityDiscoveryShowcase />
+        <FeatureList items={featurePoints.opportunity} />
       </ProductShowcaseSection>
 
       {/* 4. CRM */}
       <ProductShowcaseSection
+        id="crm"
         label="CRM"
         title="Turn planning data into a managed pipeline."
         description="Drag cards from New Lead to Won. Track pipeline value and win rate at every stage. Keep every conversation, note, and follow-up connected to the right application. No more spreadsheets and sticky notes."
@@ -114,19 +195,23 @@ export default function FeaturesPage() {
         className="bg-[#f7f9fc]"
       >
         <CRMPipelineShowcase />
+        <FeatureList items={featurePoints.crm} />
       </ProductShowcaseSection>
 
       {/* 5. Proposals */}
       <ProductShowcaseSection
+        id="proposals"
         label="Professional Proposals"
         title="Professional proposals, sent by post."
         description="Auto-populate proposals from planning application data. Edit, preview, and send by physical post — printed, delivered, and tracked to the property door. No more printing, stuffing envelopes, or trips to the post office."
       >
         <ProposalShowcase />
+        <FeatureList items={featurePoints.proposals} />
       </ProductShowcaseSection>
 
       {/* 6. Team */}
       <ProductShowcaseSection
+        id="team"
         label="Team"
         title="Your whole team, working from the same data."
         description="Multiple users with role-based permissions. Share leads, proposals, and notes across your company. Owner, Admin, Sales, Estimator, Installer — everyone sees what they need, nothing they shouldn't."
@@ -134,19 +219,22 @@ export default function FeaturesPage() {
         className="bg-[#f7f9fc]"
       >
         <TeamShowcase />
+        <FeatureList items={featurePoints.team} />
       </ProductShowcaseSection>
 
       {/* 7. Account & Billing */}
       <ProductShowcaseSection
+        id="account-and-billing"
         label="Account & Billing"
         title="Manage your membership, your way."
         description="Choose your coverage — from a single council to the whole country. Upgrade, downgrade, or cancel anytime. Your company profile auto-populates into every proposal you send."
       >
         <AccountShowcase />
+        <FeatureList items={featurePoints.account} />
       </ProductShowcaseSection>
 
       {/* Capabilities grid */}
-      <section className="bg-primary-50 py-20 px-6">
+      <section className="bg-primary-50 py-24 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <SectionLabel className="text-center">One Platform</SectionLabel>
           <h2 className="font-display font-bold text-primary-900 text-h2 mt-2 mb-6">
@@ -167,7 +255,7 @@ export default function FeaturesPage() {
               { icon: FolderOpen, label: 'File Storage' },
               { icon: CheckCircle2, label: 'Job Tracking' },
             ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2.5 bg-white rounded-lg border border-primary-200 px-4 py-3">
+              <div key={item.label} className="flex items-center gap-2.5 bg-white rounded-lg border border-primary-200 px-4 py-3 hover:border-primary-300 hover:shadow-card-hover transition-all duration-200">
                 <item.icon className="text-accent-600" size={18} />
                 <span className="font-sans font-medium text-primary-700 text-sm">{item.label}</span>
               </div>

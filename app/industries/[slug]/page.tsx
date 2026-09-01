@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { ArrowLeft, MapPin, FileText, Check, Target } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
@@ -189,18 +190,18 @@ export default function IndustryPage({ params }: PageProps) {
 
             {/* Actions */}
             <div className="flex gap-3 p-6 border-t border-primary-100">
-              <a
+              <Link
                 href="/login"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary-900 px-4 py-2.5 font-sans font-semibold text-sm text-white hover:bg-primary-800 transition-colors"
               >
                 <FileText size={15} /> Add to Leads
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/login"
                 className="inline-flex items-center gap-2 rounded-lg border border-primary-300 bg-white px-4 py-2.5 font-sans font-semibold text-sm text-primary-700 hover:bg-primary-50 transition-colors"
               >
                 Create Proposal
-              </a>
+              </Link>
             </div>
           </Card>
         </div>
@@ -209,12 +210,12 @@ export default function IndustryPage({ params }: PageProps) {
       {/* Back link */}
       <section className="bg-primary-50 py-8 px-6 border-t border-primary-100">
         <div className="max-w-4xl mx-auto">
-          <a
+          <Link
             href="/industries"
             className="inline-flex items-center gap-2 font-sans font-medium text-primary-500 hover:text-primary-900 transition-colors text-sm"
           >
             <ArrowLeft size={16} /> Back to all industries
-          </a>
+          </Link>
         </div>
       </section>
 

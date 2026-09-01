@@ -1,3 +1,5 @@
+import { Lock } from 'lucide-react';
+
 const members = [
   { name: 'Sarah Mitchell', role: 'Owner', initials: 'SM', color: 'bg-primary-900', status: 'Active', statusColor: 'text-emerald-600' },
   { name: 'James Carter', role: 'Admin', initials: 'JC', color: 'bg-sky-600', status: 'Active', statusColor: 'text-emerald-600' },
@@ -72,7 +74,7 @@ export function TeamShowcase() {
             {/* Permissions note */}
             <div className="mt-3 flex items-center gap-2 rounded-lg bg-primary-50 px-3 py-2.5">
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-100 shrink-0">
-                <span className="text-[10px]">🔒</span>
+                <Lock size={12} className="text-sky-700" />
               </div>
               <p className="text-[10px] text-primary-600">
                 Role-based permissions control who can view, edit, and send proposals. Enforced server-side.

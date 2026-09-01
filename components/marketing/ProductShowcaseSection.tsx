@@ -8,6 +8,7 @@ interface ProductShowcaseSectionProps {
   children: React.ReactNode;
   reverse?: boolean;
   className?: string;
+  id?: string;
 }
 
 export function ProductShowcaseSection({
@@ -17,9 +18,10 @@ export function ProductShowcaseSection({
   children,
   reverse = false,
   className = '',
+  id,
 }: ProductShowcaseSectionProps) {
   return (
-    <section className={`px-6 py-24 sm:py-32 ${className}`}>
+    <section id={id} className={`px-6 py-24 sm:py-32 ${className}`}>
       <div className="mx-auto max-w-7xl">
         <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-20">
           <div className={reverse ? 'lg:order-2' : ''}>

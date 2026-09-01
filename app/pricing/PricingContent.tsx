@@ -2,9 +2,15 @@
 
 import { useState, Fragment } from 'react';
 import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check, ShieldCheck, Clock, Headphones } from 'lucide-react';
 import { PricingToggle } from '@/components/ui';
 import { pricingTiers, comparisonRows } from '@/lib/pricing';
+
+const trustBadges = [
+  { icon: ShieldCheck, label: '14-day free trial', description: 'Full access, no credit card' },
+  { icon: Clock, label: 'Cancel anytime', description: 'No lock-in contracts' },
+  { icon: Headphones, label: 'UK-based support', description: 'Real people, real answers' },
+];
 
 export function PricingContent() {
   const [annual, setAnnual] = useState(false);
@@ -36,15 +42,15 @@ export function PricingContent() {
               return (
                 <div
                   key={tier.name}
-                  className={`relative flex flex-col rounded-2xl border bg-white p-6 ${
+                  className={`relative flex flex-col rounded-2xl border bg-white p-6 transition-all duration-200 ${
                     tier.popular
-                      ? 'border-accent-500 shadow-raised ring-2 ring-accent-500/20'
-                      : 'border-primary-200'
+                      ? 'border-accent-500 shadow-raised ring-2 ring-accent-500/20 lg:scale-[1.02]'
+                      : 'border-primary-200 hover:border-primary-300 hover:shadow-card-hover'
                   }`}
                 >
                   {tier.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="inline-flex items-center rounded-full bg-accent-600 px-3 py-1 font-sans text-xs font-semibold text-white">
+                      <span className="inline-flex items-center rounded-full bg-accent-600 px-3 py-1 font-sans text-xs font-semibold text-white shadow-sm">
                         Most popular
                       </span>
                     </div>
@@ -118,6 +124,21 @@ export function PricingContent() {
           <p className="text-center mt-8 font-sans text-sm text-primary-400">
             All prices exclude VAT. 14-day free trial on every plan. No credit card required.
           </p>
+
+          {/* Trust badges */}
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+            {trustBadges.map((badge) => (
+              <div key={badge.label} className="flex items-center gap-3 justify-center text-center md:text-left">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 shrink-0">
+                  <badge.icon size={18} className="text-primary-700" />
+                </div>
+                <div>
+                  <p className="font-sans font-semibold text-primary-900 text-sm">{badge.label}</p>
+                  <p className="font-sans text-primary-400 text-xs">{badge.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -133,7 +154,7 @@ export function PricingContent() {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary-200 bg-white">
+          <div className="overflow-x-auto rounded-2xl border border-primary-200 bg-white shadow-card">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-primary-200 bg-primary-50">
@@ -158,7 +179,7 @@ export function PricingContent() {
                       </td>
                     </tr>
                     {row.features.map((feature) => (
-                      <tr key={feature.label} className="border-b border-primary-100 last:border-b-0">
+                      <tr key={feature.label} className="border-b border-primary-100 last:border-b-0 hover:bg-primary-50/30 transition-colors">
                         <td className="px-6 py-3.5 font-sans text-sm text-primary-600">
                           {feature.label}
                         </td>
@@ -190,5 +211,4 @@ export function PricingContent() {
   );
 }
 
-
-export default PricingContent
+export default PricingContent;
