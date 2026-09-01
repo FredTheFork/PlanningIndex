@@ -20,20 +20,12 @@ const resourceLinks = [
 ];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const transparent = pathname === '/' && !scrolled;
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
-    setScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const transparent = false;
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
