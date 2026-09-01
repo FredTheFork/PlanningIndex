@@ -1,0 +1,2486 @@
+Absolutely. The key is to **stop treating this as “convert Foundationary”** and instead treat it as a **full frontend rebuild of PlanningIndex, using Foundationary only as the technical starting point**.
+
+The transformation should happen in **strict phases**. Bolt should never be asked to build the whole thing at once.
+
+# PlanningIndex — Complete Frontend Rebuild Plan
+
+## 0. The fundamental rule
+
+The new project is:
+
+> **PlanningIndex rebuilt from the ground up, using the existing Foundationary codebase as the frontend foundation.**
+
+Foundationary is **not** being redesigned.
+
+It is being **removed conceptually and visually**.
+
+The existing Foundationary project gives us useful infrastructure such as:
+
+* Next.js/React structure
+* Tailwind/design system
+* routing
+* authentication foundations
+* Stripe foundations
+* client-side application structure
+* admin/client concepts
+* reusable UI components
+* Vercel deployment
+* GitHub workflow
+
+But the finished product must contain **zero Foundationary identity**.
+
+No:
+
+* Foundationary terminology
+* Foundationary documents
+* Foundationary questionnaire
+* Foundationary business logic
+* Foundationary branding
+* Foundationary marketing
+* Foundationary database
+* Foundationary-specific workflows
+
+The final product should feel as though **PlanningIndex was always built in this application**.
+
+---
+
+# 1. The architecture we are building
+
+The frontend should ultimately look conceptually like this:
+
+```text
+                    PLANNINGINDEX.CO.UK
+                            │
+             ┌──────────────┴──────────────┐
+             │                             │
+             ▼                             ▼
+       PUBLIC WEBSITE                  APPLICATION
+             │                             │
+      ┌──────┼───────┐             ┌───────┼────────┐
+      │      │       │             │       │        │
+     Home  Features  Pricing      Search    CRM    Proposals
+      │      │       │             │       │        │
+    About  Contact  Blog          Maps    Leads   Mail
+    Help                         Filters  Notes   Tracking
+```
+
+The frontend lives on Vercel.
+
+The existing backend remains elsewhere.
+
+```text
+                    NEXT.JS
+                       │
+                       │ HTTPS
+                       ▼
+              EXISTING BACKEND/API
+                       │
+          ┌────────────┼─────────────┐
+          ▼            ▼             ▼
+       Planning      Users         PMPro
+        Data                       Stripe
+          │
+       Scraper
+```
+
+**The frontend does not own the planning database.**
+
+The frontend does not become responsible for scraping.
+
+The frontend does not create a second planning database.
+
+The frontend simply becomes a vastly better interface to the existing PlanningIndex infrastructure.
+
+---
+
+# 2. Build order
+
+This is the most important part.
+
+We should build in this exact broad order:
+
+```text
+PHASE 1   → Strip Foundationary
+PHASE 2   → Establish PlanningIndex design system
+PHASE 3   → Public website shell
+PHASE 4   → Homepage
+PHASE 5   → Marketing pages
+PHASE 6   → Pricing / membership
+PHASE 7   → Blog / Help / content
+PHASE 8   → Authentication
+PHASE 9   → Application shell
+PHASE 10  → Planning search
+PHASE 11  → Map / geographic search
+PHASE 12  → Planning application details
+PHASE 13  → Lead / CRM system
+PHASE 14  → Proposals
+PHASE 15  → Mail / physical sending
+PHASE 16  → Customer workspace
+PHASE 17  → Team / account / billing
+PHASE 18  → Admin interface
+PHASE 19  → Backend/API integration
+PHASE 20  → Performance / security / polish
+PHASE 21  → Production migration
+```
+
+However, **each phase itself should be broken into small Bolt tasks**.
+
+---
+
+# PHASE 1 — Completely remove Foundationary
+
+Do this before building PlanningIndex features.
+
+The objective is to turn the existing repository into a **blank PlanningIndex frontend foundation**.
+
+### Remove Foundationary's identity
+
+Replace:
+
+* name
+* metadata
+* titles
+* descriptions
+* favicons
+* manifest
+* SEO
+* social metadata
+* colours
+* terminology
+* navigation
+* copy
+* imagery
+
+Everything should say PlanningIndex.
+
+### Remove Foundationary functionality
+
+Anything relating specifically to:
+
+* business foundation packs
+* questionnaires
+* document generation
+* foundationary products
+* foundationary checkout
+* foundationary customer workflows
+* Foundationary-specific database tables
+* Foundationary-specific APIs
+* Foundationary-specific dashboards
+
+must disappear.
+
+### Preserve useful infrastructure
+
+Do **not** blindly delete the whole project.
+
+Keep useful:
+
+* authentication infrastructure
+* Stripe infrastructure
+* reusable components
+* layout system
+* responsive behaviour
+* notifications
+* forms
+* modal systems
+* loading states
+* error handling
+* deployment configuration
+* routing patterns
+
+At the end of this phase:
+
+> You should have an essentially empty but fully functional React/Next.js application branded as PlanningIndex.
+
+---
+
+# PHASE 2 — Establish the PlanningIndex design language
+
+Before building pages, establish the visual language.
+
+This is critical because otherwise Bolt will create 20 pages that all look slightly different.
+
+PlanningIndex should feel:
+
+**Professional. Industrial. Trustworthy. Modern. Data-heavy. British.**
+
+Not:
+
+* gimmicky SaaS
+* AI startup
+* overly colourful
+* cartoonish
+* generic Bootstrap dashboard
+* "tech bro" startup
+
+Think:
+
+> **Professional construction/planning intelligence platform.**
+
+---
+
+## Design system
+
+Establish consistent:
+
+### Colours
+
+A strong PlanningIndex palette should be defined globally.
+
+For example:
+
+```text
+Primary dark
+White
+Light grey
+Mid grey
+Planning/application accent
+Success
+Warning
+Danger
+Map colours
+```
+
+The exact palette can be refined during implementation.
+
+### Typography
+
+Establish:
+
+* display typography
+* heading typography
+* body typography
+* labels
+* metadata
+* tables
+* numbers
+
+### Components
+
+Build reusable:
+
+* buttons
+* inputs
+* selects
+* checkboxes
+* cards
+* badges
+* tabs
+* tables
+* dropdowns
+* tooltips
+* modals
+* drawers
+* alerts
+* pagination
+* breadcrumbs
+* loading skeletons
+* empty states
+* error states
+
+### Responsive system
+
+Everything must work properly on:
+
+```text
+Desktop
+Laptop
+Tablet
+Mobile
+```
+
+The **workspace**, however, can be desktop-first because it is fundamentally a professional work application.
+
+---
+
+# PHASE 3 — Public website framework
+
+Now create the public-facing PlanningIndex website.
+
+The public navigation should be something along the lines of:
+
+```text
+PlanningIndex
+
+Planning Search
+Features
+Pricing
+Resources
+About
+
+                    Log in
+                    Get Started
+```
+
+Potentially:
+
+```text
+Resources
+ ├── Blog
+ ├── Help Centre
+ └── Guides
+```
+
+The header should be exceptionally clean.
+
+The objective is:
+
+> A visitor should understand PlanningIndex within 5 seconds.
+
+---
+
+# PHASE 4 — Homepage
+
+This is the most important marketing page.
+
+The homepage should explain:
+
+> **PlanningIndex helps construction businesses find new work directly from UK planning applications.**
+
+The page should be structured roughly as:
+
+## Hero
+
+Large statement.
+
+Something along the lines of:
+
+> **Find the planning applications that create your next jobs.**
+
+Supporting explanation:
+
+PlanningIndex gives construction businesses access to planning applications across the UK, allowing them to identify relevant projects, find opportunities and turn planning data into real leads.
+
+Primary CTA:
+
+**Start searching**
+
+Secondary CTA:
+
+**Explore PlanningIndex**
+
+And show a visual representation of the actual product.
+
+Not a generic stock image.
+
+Show:
+
+```text
+Planning Search
+──────────────────────────────────
+Search planning applications...
+
+Location      Radius       Type
+Harefield     25 miles     Windows
+
+──────────────────────────────────
+
+●  Replacement windows
+●  Rear extension
+●  New dwelling
+●  Loft conversion
+```
+
+This immediately communicates what the product actually does.
+
+---
+
+# PHASE 5 — Homepage product explanation
+
+Then explain the workflow.
+
+## 1. Find
+
+```text
+Search thousands of planning applications.
+```
+
+## 2. Filter
+
+```text
+Find applications relevant to your trade.
+```
+
+## 3. Identify
+
+```text
+See exactly what work is being proposed.
+```
+
+## 4. Save
+
+```text
+Turn applications into leads.
+```
+
+## 5. Contact
+
+```text
+Generate professional proposals.
+```
+
+## 6. Win work
+
+```text
+Send physical proposals directly to the property.
+```
+
+This should become the central PlanningIndex story.
+
+---
+
+# PHASE 6 — Product showcase
+
+The homepage should contain multiple real-looking product screenshots.
+
+For example:
+
+### Planning Search
+
+Large UI showing:
+
+* applications
+* filters
+* map
+* dates
+* council
+* application type
+* radius
+
+### Application
+
+Show:
+
+```text
+Application
+24/01234/FUL
+
+Replacement windows and doors
+
+Address
+...
+
+Received
+...
+
+Status
+...
+
+Description
+...
+
+Documents
+...
+
+[Add to Leads]
+[Create Proposal]
+```
+
+### CRM
+
+Show:
+
+```text
+New Lead
+Contacted
+Proposal Sent
+Follow Up
+Won
+Lost
+```
+
+### Proposal
+
+Show the professional proposal workflow.
+
+This is where PlanningIndex begins to distinguish itself from a simple planning database.
+
+---
+
+# PHASE 7 — Features page
+
+Create a proper product/features page.
+
+Break PlanningIndex into major capabilities.
+
+## Planning Search
+
+Explain:
+
+* nationwide UK coverage
+* council applications
+* search
+* filters
+* dates
+* application types
+* status
+* keyword search
+
+## Geographic Search
+
+Explain:
+
+* map
+* radius search
+* location
+* geographic filtering
+
+## Opportunity Discovery
+
+Explain how users identify applications relevant to their trade.
+
+## CRM
+
+Explain:
+
+* leads
+* pipeline
+* notes
+* follow-ups
+* contact information
+* status
+
+## Proposals
+
+Explain:
+
+* professional proposals
+* customer/application information
+* work details
+* proposal templates
+* physical mail
+
+## Team
+
+Explain:
+
+* multiple users
+* shared leads
+* collaboration
+* permissions
+
+## Account/Billing
+
+Explain:
+
+* membership
+* councils/regions
+* subscription
+* account management
+
+---
+
+# PHASE 8 — Industry/use-case pages
+
+PlanningIndex shouldn't only explain features.
+
+Explain **who it is for**.
+
+For example:
+
+```text
+Window & Door Companies
+Builders
+Roofers
+Bricklayers
+Extension Contractors
+Architects / Designers
+Landscapers
+Roofing Companies
+Plumbers
+Electrical Contractors
+```
+
+The idea is:
+
+> PlanningIndex isn't just planning data. It is a way for construction businesses to discover commercially relevant work.
+
+These pages are also important for SEO.
+
+---
+
+# PHASE 9 — Pricing
+
+Build the entire pricing experience visually.
+
+Potential structure:
+
+```text
+PlanningIndex
+
+Choose your coverage
+────────────────────────
+
+Local
+Regional
+National
+Enterprise
+```
+
+Explain:
+
+* council access
+* number of councils
+* features
+* team members
+* CRM
+* proposals
+* search
+* support
+
+The existing Stripe functionality from Foundationary can eventually be adapted.
+
+But **do not connect billing yet**.
+
+First make the frontend perfect.
+
+Use realistic mock states:
+
+```text
+Monthly
+Annual
+
+[Choose plan]
+```
+
+---
+
+# PHASE 10 — About
+
+Create an actual PlanningIndex About page.
+
+Explain:
+
+* what PlanningIndex is
+* why it exists
+* the problem with finding construction work
+* how planning applications provide an early signal of upcoming work
+* the company's purpose
+* who it is built for
+
+Keep it professional.
+
+Not corporate waffle.
+
+---
+
+# PHASE 11 — Contact
+
+Build a proper contact experience.
+
+Include:
+
+```text
+Contact PlanningIndex
+
+Sales
+Support
+General enquiries
+Partnerships
+```
+
+Form:
+
+```text
+Name
+Company
+Email
+Reason
+Message
+
+[Send message]
+```
+
+For now this can be frontend-only.
+
+---
+
+# PHASE 12 — Examples / use cases
+
+This is important.
+
+Create an **Examples** or **How It Works** section showing real-world scenarios.
+
+Example:
+
+### A window company
+
+```text
+Planning application
+       ↓
+"Replacement of 12 timber sash windows"
+       ↓
+PlanningIndex identifies opportunity
+       ↓
+Add as lead
+       ↓
+Review address
+       ↓
+Create proposal
+       ↓
+Print + post proposal
+```
+
+Another:
+
+### Builder
+
+```text
+Rear extension
+       ↓
+Application discovered
+       ↓
+Lead created
+       ↓
+CRM follow-up
+```
+
+This makes the product immediately understandable.
+
+---
+
+# PHASE 13 — Blog
+
+Build the blog frontend.
+
+Important:
+
+**WordPress can remain the content source later.**
+
+The frontend should support:
+
+```text
+Blog
+ ├── Articles
+ ├── Categories
+ ├── Search
+ └── Individual article
+```
+
+Cards should show:
+
+* title
+* excerpt
+* category
+* date
+* image
+* read time
+
+Individual article pages should look like a professional publication rather than WordPress.
+
+---
+
+# PHASE 14 — Help Centre
+
+Build the Help Centre separately from the marketing site.
+
+Structure:
+
+```text
+Help Centre
+
+Search for help...
+
+Getting Started
+Planning Search
+Applications
+CRM
+Proposals
+Account
+Billing
+Teams
+```
+
+Each article:
+
+```text
+Breadcrumbs
+
+Article title
+
+Article content
+
+Related articles
+
+Was this helpful?
+Yes / No
+```
+
+Again, the content can initially be mocked.
+
+---
+
+# PHASE 15 — Authentication
+
+Only **after the entire public website exists** should authentication be built.
+
+Create:
+
+```text
+/login
+/register
+/forgot-password
+/reset-password
+```
+
+Login should be extremely simple.
+
+```text
+Email
+Password
+
+[Log in]
+
+Forgot password?
+
+────────────────
+
+Don't have an account?
+[Create account]
+```
+
+Registration should eventually connect to the existing PlanningIndex membership system.
+
+But initially:
+
+> Make the frontend work using mocked authentication.
+
+---
+
+# PHASE 16 — Application/workspace shell
+
+Now we leave the marketing website.
+
+This is effectively the second half of PlanningIndex.
+
+The workspace should feel like a **professional piece of software**, not another website.
+
+Example:
+
+```text
+┌─────────────────────────────────────────────────────┐
+│ PlanningIndex                         Account       │
+├───────────────┬─────────────────────────────────────┤
+│               │                                     │
+│ Search        │                                     │
+│ Leads         │             WORKSPACE               │
+│ Proposals     │                                     │
+│ Jobs          │                                     │
+│ Team          │                                     │
+│               │                                     │
+│ Settings      │                                     │
+│               │                                     │
+└───────────────┴─────────────────────────────────────┘
+```
+
+Sidebar sections should be carefully considered.
+
+I'd structure it around the actual workflow:
+
+```text
+SEARCH
+
+Planning Applications
+
+CRM
+
+Leads
+Pipeline
+
+WORK
+
+Proposals
+Jobs
+
+TEAM
+
+Team
+Activity
+
+ACCOUNT
+
+Billing
+Settings
+```
+
+---
+
+# PHASE 17 — Dashboard
+
+The workspace landing page should be useful rather than decorative.
+
+Show:
+
+```text
+Good morning, [Company]
+
+────────────────────────────────
+
+New applications        New leads
+     128                    12
+
+Proposals sent          Follow-ups
+      8                    17
+
+────────────────────────────────
+
+Recent opportunities
+
+...
+
+────────────────────────────────
+
+Lead pipeline
+
+New → Contacted → Proposal → Won
+```
+
+Also potentially:
+
+```text
+Applications near you
+Recent activity
+Upcoming follow-ups
+Proposal status
+```
+
+The dashboard should answer:
+
+> **"What should I do today?"**
+
+---
+
+# PHASE 18 — Planning Application Search
+
+This becomes the core product.
+
+The search screen should be one of the best interfaces in the entire application.
+
+Something like:
+
+```text
+Planning Applications
+
+[ Search applications........................ ]
+
+Location
+[ London ]
+
+Radius
+[ 25 miles ]
+
+Application type
+[ All ]
+
+Status
+[ All ]
+
+Date
+[ Last 30 days ]
+
+Keywords
+[ windows ]
+
+                         [Search]
+```
+
+Then:
+
+```text
+247 applications found
+```
+
+with results.
+
+---
+
+# PHASE 19 — Mapbox integration
+
+The search interface should eventually be split into:
+
+```text
+┌──────────────────────────┬─────────────────────────┐
+│                          │                         │
+│ APPLICATION RESULTS      │                         │
+│                          │                         │
+│ Application 1            │          MAP            │
+│ Application 2            │                         │
+│ Application 3            │      ●   ●              │
+│ Application 4            │   ●      ●   ●          │
+│                          │                         │
+└──────────────────────────┴─────────────────────────┘
+```
+
+Mapbox becomes a major part of the experience.
+
+Users should be able to:
+
+* search a location
+* choose a radius
+* see applications geographically
+* click markers
+* filter results
+* see the corresponding result highlighted
+* potentially move around the map
+* inspect application clusters
+
+---
+
+# PHASE 20 — Search filters
+
+Build filters carefully.
+
+Potential filters:
+
+### Location
+
+* postcode
+* town
+* address
+* council
+* map location
+
+### Radius
+
+For example:
+
+```text
+1 mile
+5 miles
+10 miles
+25 miles
+50 miles
+100 miles
+```
+
+### Application
+
+* application type
+* status
+* date received
+* decision
+* keyword
+
+### Trade relevance
+
+Eventually:
+
+```text
+Windows
+Doors
+Roofing
+Brickwork
+Extensions
+Loft conversions
+New builds
+etc.
+```
+
+This could become one of PlanningIndex's strongest features.
+
+---
+
+# PHASE 21 — Application result cards
+
+Each application should provide enough information to decide:
+
+> "Is this worth investigating?"
+
+Example:
+
+```text
+Replacement of windows and doors
+
+24/01234/FUL
+
+12 High Street
+Amersham
+
+Received
+28 August 2026
+
+Status
+Pending
+
+Replacement of existing timber
+windows with new units...
+
+8 miles away
+
+[View application]
+[Add to leads]
+```
+
+Don't force users to open every application.
+
+The card should contain meaningful information.
+
+---
+
+# PHASE 22 — Individual application page
+
+This needs to become a major page.
+
+Structure:
+
+```text
+← Back to applications
+
+Replacement windows and doors
+
+Application reference
+24/01234/FUL
+
+Address
+12 High Street
+Amersham
+
+────────────────────────
+
+Application details
+
+Received
+...
+
+Status
+...
+
+Decision
+...
+
+Council
+...
+
+────────────────────────
+
+Description
+
+...
+
+────────────────────────
+
+Location
+
+[Map]
+
+────────────────────────
+
+Documents
+
+Planning documents
+Drawings
+Supporting information
+
+────────────────────────
+
+CRM
+
+[Add to leads]
+```
+
+And eventually:
+
+```text
+[Create proposal]
+```
+
+---
+
+# PHASE 23 — Application intelligence
+
+Eventually, the application page should intelligently highlight relevant information.
+
+For example:
+
+```text
+Potential work identified
+
+Windows
+12
+
+Doors
+2
+
+Extension
+Rear extension
+
+Potential trade
+Window / Door Contractor
+```
+
+This is where PlanningIndex becomes much more than a raw planning database.
+
+---
+
+# PHASE 24 — Leads / CRM
+
+Once an application can be identified, the user needs to turn it into a lead.
+
+The fundamental action:
+
+```text
+[Add to Leads]
+```
+
+Then create:
+
+```text
+Lead
+
+Property
+12 High Street
+Amersham
+
+Planning application
+24/01234/FUL
+
+Contact
+John Smith
+
+Status
+New
+
+Notes
+...
+
+Next follow-up
+...
+
+Assigned to
+...
+```
+
+---
+
+# PHASE 25 — CRM pipeline
+
+The CRM should support a visual pipeline.
+
+For example:
+
+```text
+NEW
+│
+├── Lead A
+├── Lead B
+│
+CONTACTED
+│
+├── Lead C
+│
+PROPOSAL SENT
+│
+├── Lead D
+│
+FOLLOW UP
+│
+├── Lead E
+│
+WON
+│
+├── Lead F
+```
+
+Potentially Kanban-style.
+
+But also provide a table/list view.
+
+---
+
+# PHASE 26 — Lead detail
+
+A lead should have a full history.
+
+```text
+Lead
+
+Property
+Contact
+Planning application
+Status
+
+──────────────────────
+
+Activity
+
+01 Sep
+Proposal created
+
+31 Aug
+Lead added
+
+29 Aug
+Application discovered
+
+──────────────────────
+
+Notes
+
+...
+
+──────────────────────
+
+Next action
+
+Follow up 04 Sep
+```
+
+This is where the CRM becomes genuinely useful.
+
+---
+
+# PHASE 27 — Proposals
+
+This is a major PlanningIndex differentiator.
+
+The user should be able to go:
+
+```text
+Planning application
+       ↓
+Lead
+       ↓
+Create proposal
+```
+
+The proposal should automatically populate:
+
+```text
+Customer/property address
+Planning application
+Contact details
+Company details
+Relevant work
+```
+
+The user then edits the proposal.
+
+---
+
+# PHASE 28 — Proposal builder
+
+Build a proper proposal editor.
+
+Sections could include:
+
+```text
+Proposal details
+
+Recipient
+Address
+Project
+Reference
+
+──────────────────
+
+Introduction
+
+Scope of works
+
+Products / services
+
+Pricing
+
+Terms
+
+Contact information
+```
+
+Allow templates.
+
+For example:
+
+```text
+Window replacement
+General building works
+Roofing
+Extension
+Custom
+```
+
+The important part:
+
+> The user should not have to manually retype information already present in the planning application.
+
+---
+
+# PHASE 29 — Physical mail
+
+This needs to be treated as a **separate delivery channel**.
+
+PlanningIndex isn't merely:
+
+> "Send an email."
+
+The workflow is:
+
+```text
+Create proposal
+      ↓
+Generate final document
+      ↓
+Preview
+      ↓
+Confirm recipient/address
+      ↓
+Send by post
+      ↓
+Physical letter delivered
+```
+
+The UI should explicitly say:
+
+```text
+Send by post
+```
+
+not simply:
+
+```text
+Send
+```
+
+---
+
+# PHASE 30 — Proposal tracking
+
+Every proposal needs a status.
+
+For example:
+
+```text
+Draft
+Ready
+Sent
+Processing
+Mailed
+Delivered
+Delivery issue
+Undeliverable
+```
+
+The user should be able to see:
+
+```text
+Proposal #PI-10482
+
+Recipient
+12 High Street
+Amersham
+
+Status
+Mailed
+
+Sent
+01 September 2026
+
+Delivery
+Tracking information
+```
+
+The existing Pingen/Docmail infrastructure can be connected later.
+
+---
+
+# PHASE 31 — Proposal history
+
+Users need:
+
+```text
+All proposals
+
+Proposal
+Recipient
+Lead
+Created
+Sent
+Status
+```
+
+Filters:
+
+```text
+Draft
+Mailed
+Delivered
+Failed
+```
+
+---
+
+# PHASE 32 — Jobs
+
+Once a lead becomes successful:
+
+```text
+Lead
+ ↓
+Won
+ ↓
+Job
+```
+
+A job can contain:
+
+* customer
+* address
+* planning application
+* proposal
+* notes
+* documents
+* status
+* dates
+* team members
+
+This creates the natural progression:
+
+```text
+Planning Application
+        ↓
+Opportunity
+        ↓
+Lead
+        ↓
+Proposal
+        ↓
+Won
+        ↓
+Job
+```
+
+That should become the fundamental PlanningIndex workflow.
+
+---
+
+# PHASE 33 — Team functionality
+
+Then add teams.
+
+A company should be able to have:
+
+```text
+Owner
+Admin
+Sales
+Estimator
+Installer
+```
+
+depending on what functionality eventually requires.
+
+Team members should be able to share:
+
+* applications
+* leads
+* proposals
+* jobs
+* notes
+* activity
+
+Permissions must eventually be enforced by the backend, not merely hidden in the frontend.
+
+---
+
+# PHASE 34 — Account
+
+Build:
+
+```text
+Account
+Profile
+Company
+Preferences
+Notifications
+Security
+```
+
+Company information:
+
+```text
+Company name
+Address
+Telephone
+Email
+Website
+Logo
+```
+
+This information should automatically appear in proposals.
+
+---
+
+# PHASE 35 — Billing
+
+Only now connect the existing Stripe/PMPro functionality.
+
+Build:
+
+```text
+Current plan
+
+Regional
+
+Billing cycle
+Monthly
+
+Next payment
+...
+
+[Manage subscription]
+```
+
+Then:
+
+```text
+Upgrade
+Downgrade
+Cancel
+Payment history
+```
+
+The frontend communicates with the existing backend.
+
+---
+
+# PHASE 36 — Admin application
+
+There should be a separate admin experience.
+
+Not necessarily visible to ordinary users.
+
+Admin should eventually be able to see:
+
+```text
+Users
+Companies
+Memberships
+Planning applications
+Councils
+Scraper status
+Leads
+Proposals
+Mail
+Payments
+System health
+```
+
+---
+
+# PHASE 37 — Scraper/admin monitoring
+
+Because you already have the scraper, build a simple administrative interface around it.
+
+For example:
+
+```text
+Scraper Status
+
+Last run
+09:42
+
+Councils processed
+312
+
+Applications imported
+14,821
+
+Errors
+3
+
+────────────────────
+
+Council
+Status
+Applications
+Last updated
+```
+
+This isn't customer-facing.
+
+But it becomes extremely useful operationally.
+
+---
+
+# PHASE 38 — Backend/API integration
+
+**Only after the frontend has been built and tested with realistic mock data** should the existing backend be connected.
+
+This is extremely important.
+
+Instead of Bolt simultaneously trying to understand:
+
+```text
+React
+WordPress
+MySQL
+PMPro
+Stripe
+Ruby
+scrapers
+Pingen
+Mapbox
+```
+
+we make the frontend first.
+
+Then integration happens systematically.
+
+---
+
+# PHASE 39 — Replace mock planning data
+
+First real connection:
+
+```text
+Planning Search
+       ↓
+PlanningIndex API
+       ↓
+Existing database
+```
+
+Replace:
+
+```text
+mockApplications
+```
+
+with actual application API responses.
+
+Then verify:
+
+* pagination
+* filtering
+* searching
+* application detail
+* map locations
+* radius
+* permissions
+
+---
+
+# PHASE 40 — Authentication integration
+
+Next:
+
+```text
+Login
+ ↓
+Existing user system
+```
+
+Then test:
+
+```text
+logged out
+logged in
+wrong password
+expired session
+logout
+password reset
+```
+
+---
+
+# PHASE 41 — Membership integration
+
+Connect:
+
+```text
+Customer
+ ↓
+Membership
+ ↓
+Council access
+```
+
+The frontend should receive something like:
+
+```text
+User
+Membership
+Accessible councils
+Team
+Permissions
+```
+
+But the backend remains responsible for actually enforcing access.
+
+---
+
+# PHASE 42 — CRM integration
+
+Then connect:
+
+```text
+Leads
+Notes
+Statuses
+Activity
+Follow-ups
+```
+
+Test every CRUD operation.
+
+---
+
+# PHASE 43 — Proposal integration
+
+Then:
+
+```text
+Create
+Save
+Edit
+Generate
+Preview
+Send
+Track
+```
+
+---
+
+# PHASE 44 — Physical mail integration
+
+Finally connect the proposal delivery system.
+
+The frontend should only need to understand something like:
+
+```text
+POST proposal/send
+```
+
+and then display the resulting state.
+
+The complexity of Pingen/Docmail should remain backend-side.
+
+---
+
+# PHASE 45 — Blog/Help integration
+
+Connect WordPress content:
+
+```text
+WordPress
+    ↓
+API
+    ↓
+Next.js
+```
+
+The marketing frontend controls presentation.
+
+WordPress controls content.
+
+This gives you the best of both worlds.
+
+---
+
+# PHASE 46 — Error handling
+
+Now deliberately break things.
+
+Test:
+
+```text
+API unavailable
+No applications
+No search results
+Invalid postcode
+Map failure
+Expired session
+Proposal generation failure
+Mail failure
+Stripe failure
+```
+
+Every situation should have a professional UI.
+
+Never show:
+
+```text
+undefined
+null
+500 error
+something went wrong lol
+```
+
+---
+
+# PHASE 47 — Loading states
+
+Every major page needs proper loading behaviour.
+
+Use:
+
+```text
+Skeletons
+Spinners where appropriate
+Progress indicators
+Optimistic UI where safe
+```
+
+Especially:
+
+* search
+* maps
+* applications
+* CRM
+* proposals
+
+---
+
+# PHASE 48 — Empty states
+
+Examples:
+
+### No leads
+
+> You haven't added any leads yet. Find a planning application and add it to your CRM.
+
+### No proposals
+
+> Your proposals will appear here once you create your first one.
+
+### No search results
+
+> No applications match your current filters.
+
+These should guide users toward their next action.
+
+---
+
+# PHASE 49 — Mobile/responsive refinement
+
+Marketing website:
+
+**Fully responsive.**
+
+Workspace:
+
+**Responsive, but optimised for desktop.**
+
+Don't compromise the desktop application simply to make a complicated CRM fit perfectly onto a phone.
+
+Instead, provide sensible mobile layouts:
+
+```text
+Search
+Applications
+Lead
+Proposal
+```
+
+with appropriate stacked layouts.
+
+---
+
+# PHASE 50 — Performance pass
+
+Once everything works:
+
+### Marketing
+
+Optimise:
+
+* images
+* fonts
+* JavaScript
+* page loading
+* SEO
+* metadata
+
+### Application
+
+Optimise:
+
+* API requests
+* map rendering
+* search
+* large application lists
+* CRM tables
+* proposal editor
+
+Avoid loading the entire PlanningIndex database into the browser.
+
+Everything should be:
+
+```text
+paginated
+filtered
+server-side queried
+```
+
+where appropriate.
+
+---
+
+# PHASE 51 — SEO
+
+Every public page should have proper:
+
+* title
+* description
+* canonical URL
+* OpenGraph metadata
+* structured data where useful
+* sitemap
+* robots.txt
+
+Potential SEO content:
+
+```text
+planning applications
+planning applications UK
+find planning applications
+construction leads
+planning leads
+planning application search
+planning applications for builders
+planning applications for window companies
+```
+
+But SEO copy should remain natural.
+
+---
+
+# PHASE 52 — Security
+
+Before launch:
+
+* authentication
+* authorisation
+* API validation
+* CSRF protection where applicable
+* secure sessions
+* rate limiting
+* input validation
+* file access control
+* proposal access control
+* team permissions
+* billing permissions
+
+Most importantly:
+
+> **Never rely on the frontend to enforce permissions.**
+
+If a user shouldn't access something, the backend must reject it.
+
+---
+
+# PHASE 53 — Cross-browser testing
+
+Test:
+
+```text
+Chrome
+Edge
+Firefox
+Safari
+```
+
+And:
+
+```text
+Windows
+macOS
+iPhone
+Android
+```
+
+Especially:
+
+* maps
+* forms
+* tables
+* modals
+* proposal editor
+* login
+* navigation
+
+---
+
+# PHASE 54 — Real-world workflow testing
+
+Don't merely test individual buttons.
+
+Test the actual business journey.
+
+### Workflow 1 — Finding work
+
+```text
+Login
+ ↓
+Planning Search
+ ↓
+Choose location
+ ↓
+Set radius
+ ↓
+Filter applications
+ ↓
+Open application
+```
+
+### Workflow 2 — Creating lead
+
+```text
+Application
+ ↓
+Add to Leads
+ ↓
+Lead appears in CRM
+ ↓
+Open lead
+ ↓
+Add notes
+```
+
+### Workflow 3 — Sending proposal
+
+```text
+Lead
+ ↓
+Create proposal
+ ↓
+Edit
+ ↓
+Preview
+ ↓
+Confirm address
+ ↓
+Send by post
+ ↓
+Proposal marked mailed
+```
+
+### Workflow 4 — Winning work
+
+```text
+Lead
+ ↓
+Proposal sent
+ ↓
+Follow-up
+ ↓
+Won
+ ↓
+Create Job
+```
+
+If these four workflows feel excellent, PlanningIndex will feel like a real product.
+
+---
+
+# PHASE 55 — Production migration
+
+Only after everything is working:
+
+```text
+planningindex.vercel.app
+```
+
+becomes:
+
+```text
+planningindex.co.uk
+```
+
+The old site stays alive until the new one is completely ready.
+
+Then switch DNS.
+
+The important thing is:
+
+**Do not destroy the existing production site while building the new one.**
+
+You want:
+
+```text
+OLD SITE
+   │
+   │ still operational
+   │
+   └──────────────┐
+                  │
+NEW SITE          │
+   │              │
+   ▼              │
+Testing           │
+   │              │
+   ▼              │
+Production ───────┘
+```
+
+Only switch once you're confident.
+
+---
+
+# The actual Bolt workflow
+
+This is probably the most important practical part for you.
+
+**Do not paste the entire plan above into Bolt as one task.**
+
+Instead, work through approximately these prompts:
+
+```text
+01 — Strip Foundationary
+02 — PlanningIndex design system
+03 — Public site shell
+04 — Homepage
+05 — Features
+06 — Pricing
+07 — About
+08 — Contact
+09 — Examples / use cases
+10 — Blog
+11 — Help Centre
+12 — Authentication UI
+13 — Workspace shell
+14 — Dashboard
+15 — Planning search
+16 — Mapbox
+17 — Application results
+18 — Application detail
+19 — Leads
+20 — CRM pipeline
+21 — Lead detail
+22 — Proposal system
+23 — Proposal builder
+24 — Physical mail workflow
+25 — Proposal tracking
+26 — Jobs
+27 — Teams
+28 — Account
+29 — Billing
+30 — Admin
+31 — Mock API layer
+32 — Planning API integration
+33 — Authentication integration
+34 — Membership integration
+35 — CRM integration
+36 — Proposal integration
+37 — Mail integration
+38 — WordPress content integration
+39 — Error/loading/empty states
+40 — Performance
+41 — SEO
+42 — Security
+43 — Responsive testing
+44 — Full workflow testing
+45 — Production preparation
+```
+
+And **each prompt should have one objective**.
+
+---
+
+# The most important development principle
+
+There should be a very clear dividing line between:
+
+## Marketing PlanningIndex
+
+```text
+/
+ /features
+ /pricing
+ /about
+ /contact
+ /examples
+ /blog
+ /help
+```
+
+and:
+
+## Product PlanningIndex
+
+```text
+/app
+ /app/search
+ /app/applications
+ /app/leads
+ /app/proposals
+ /app/jobs
+ /app/team
+ /app/settings
+```
+
+They should share the same brand/design language, but the product should feel like a **serious professional application**.
+
+---
+
+# What the finished PlanningIndex experience should feel like
+
+A construction company arrives at:
+
+```text
+planningindex.co.uk
+```
+
+They immediately understand:
+
+> **Planning applications → construction opportunities.**
+
+They explore the product.
+
+They see:
+
+```text
+Search
+→
+Map
+→
+Applications
+→
+Leads
+→
+CRM
+→
+Proposal
+→
+Physical Mail
+→
+Job
+```
+
+They subscribe.
+
+They log in.
+
+They land on:
+
+```text
+PlanningIndex Workspace
+```
+
+They search:
+
+> "Windows"
+
+within:
+
+> 25 miles of a location
+
+The map shows opportunities.
+
+They open:
+
+> **Replacement of 12 timber sash windows**
+
+They click:
+
+> **Add to Leads**
+
+The lead enters their CRM.
+
+They click:
+
+> **Create Proposal**
+
+PlanningIndex already knows:
+
+* property
+* address
+* planning reference
+* project description
+* relevant work
+
+They create the proposal.
+
+They click:
+
+> **Send by Post**
+
+PlanningIndex handles the physical mailing process.
+
+The CRM records:
+
+> **Proposal mailed — 1 September 2026**
+
+That is the **core product loop**.
+
+---
+
+# And the crucial thing about this rebuild
+
+You are **not actually rebuilding PlanningIndex's underlying business infrastructure**.
+
+You're rebuilding its **interface and user experience**.
+
+The existing infrastructure remains:
+
+```text
+Ruby scraper
+       ↓
+Planning data
+       ↓
+SiteGround / WordPress
+       ↓
+existing API
+       ↓
+PMPro
+       ↓
+Stripe
+       ↓
+mail integrations
+```
+
+While the new frontend becomes:
+
+```text
+                    Vercel
+                      │
+                  Next.js
+                      │
+             PlanningIndex UI
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+      Search         CRM        Proposals
+        │             │             │
+        └─────────────┼─────────────┘
+                      │
+                  API layer
+                      │
+                      ▼
+               Existing backend
+```
+
+That means **Foundationary is essentially just the scaffolding**.
+
+Once the rebuild is finished, a customer shouldn't be able to tell that the application started life as Foundationary.
+
+And that's exactly what we should aim for.
+
+## The first milestone
+
+Don't start with the search engine.
+
+Don't start with Mapbox.
+
+Don't start with CRM.
+
+Don't start with the API.
+
+**The first milestone should be:**
+
+> **“If I open the new PlanningIndex site, it looks and feels like a completely finished professional PlanningIndex marketing website.”**
+
+That means:
+
+**Home → Features → Pricing → About → Examples → Blog → Help → Contact → Login/Register**
+
+all need to exist and feel coherent **before we build the actual workspace**.
+
+Then we move into:
+
+**Workspace → Search → Map → Application → Lead → CRM → Proposal → Physical Mail → Jobs → Team → Billing.**
+
+Then, and only then:
+
+**Existing backend/API integration.**
+
+That sequencing will make the Bolt project dramatically easier to control and will prevent it from getting buried trying to simultaneously understand Foundationary, WordPress, PMPro, your scraper, the planning database, Mapbox, CRM, proposals and mail integrations.
