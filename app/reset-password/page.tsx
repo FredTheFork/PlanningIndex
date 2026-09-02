@@ -1,38 +1,35 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { Button, Input, Alert, Checkbox } from '@/components/ui';
+import { Button, Input, Alert } from '@/components/ui';
 
-function RegisterForm() {
+export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const plan = searchParams.get('plan');
-
-  const [companyName, setCompanyName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verifying, setVerifying] = useState(true);
 
-  const handleRegister = async (e: React.FormEvent) => {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.replace('/login');
+        return;
+      }
+      setVerifying(false);
+    });
+  }, [router]);
+
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!companyName.trim()) {
-      setError('Please enter your company name.');
-      return;
-    }
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Please enter a valid email address.');
-      return;
-    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;
@@ -41,41 +38,32 @@ function RegisterForm() {
       setError('Passwords do not match.');
       return;
     }
-    if (!agreed) {
-      setError('Please agree to the Terms of Use and Privacy Policy.');
-      return;
-    }
 
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      const { error: updateError } = await supabase.auth.updateUser({ password });
 
-      if (signUpError) {
-        setError(signUpError.message);
+      if (updateError) {
+        setError(updateError.message);
         return;
       }
 
-      if (data.user) {
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          company_name: companyName.trim(),
-        });
-        await supabase.from('customers').insert({
-          user_id: data.user.id,
-        });
-      }
-
-      router.push(plan ? `/choose-plan?plan=${plan}` : '/choose-plan');
+      router.replace('/login');
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (verifying) {
+    return (
+      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary-200 border-t-accent-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-primary-50 flex items-center justify-center py-12 px-6">
@@ -87,16 +75,16 @@ function RegisterForm() {
             </span>
           </Link>
           <p className="font-sans text-primary-500 text-sm mt-2">
-            Create your account
+            Set a new password
           </p>
         </div>
 
         <div className="bg-white rounded-xl border border-primary-200 p-8 shadow-card">
           <h1 className="font-sans font-bold text-primary-900 text-lg mb-1">
-            Get started
+            New password
           </h1>
           <p className="font-sans text-primary-500 text-sm mb-6">
-            Start finding work from planning applications today.
+            Choose a new password for your account.
           </p>
 
           {error && (
@@ -105,33 +93,16 @@ function RegisterForm() {
             </Alert>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-4" noValidate>
+          <form onSubmit={handleReset} className="space-y-4">
             <Input
-              label="Company name"
-              name="companyName"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Your company name"
-              required
-              autoFocus
-            />
-            <Input
-              label="Email address"
-              type="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-            <Input
-              label="Password"
+              label="New password"
               type={showPassword ? 'text' : 'password'}
               name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
               required
+              autoFocus
               rightIcon={
                 <button
                   type="button"
@@ -152,39 +123,18 @@ function RegisterForm() {
               placeholder="Re-enter your password"
               required
             />
-            <Checkbox
-              label="I agree to the Terms of Use and Privacy Policy"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-            />
+
             <Button
               type="submit"
               fullWidth
               loading={loading}
               rightIcon={!loading ? <ArrowRight size={16} /> : undefined}
             >
-              Create Account
+              Update Password
             </Button>
           </form>
-
-          <div className="mt-6 pt-4 border-t border-primary-200 text-center">
-            <p className="font-sans text-primary-500 text-xs">
-              Already have an account?{' '}
-              <Link href="/login" className="text-accent-600 hover:underline font-medium">
-                Log in
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>
-  );
-}
-
-export default function RegisterPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-primary-50 flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary-200 border-t-accent-600 rounded-full animate-spin" /></div>}>
-      <RegisterForm />
-    </Suspense>
   );
 }

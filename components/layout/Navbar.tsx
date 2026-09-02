@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { NavLinkDropdown } from '@/components/marketing';
 
 const navLinks = [
-  { label: 'Planning Search', href: '/login' },
+  { label: 'Planning Search', href: '/app' },
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Industries', href: '/industries' },
@@ -129,7 +129,7 @@ export default function Navbar() {
                 Log In
               </Link>
               <Link
-                href="/login"
+                href="/register"
                 className={`font-sans font-semibold rounded-md transition-all duration-300 ${
                   transparent
                     ? 'text-white border-2 border-white/50 hover:bg-white/15 hover:border-white/80'
@@ -185,7 +185,7 @@ export default function Navbar() {
           </div>
 
           <Link
-            href="/login"
+            href="/register"
             className="font-sans font-semibold text-primary-900 bg-white rounded-md mt-4"
             style={{ padding: '14px 32px', fontSize: '1rem' }}
             onClick={() => setMobileOpen(false)}

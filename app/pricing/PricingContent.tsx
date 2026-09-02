@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { Check, ShieldCheck, Clock, Headphones } from 'lucide-react';
 import { PricingToggle } from '@/components/ui';
+import { supabase } from '@/lib/supabase/client';
 import { pricingTiers, comparisonRows } from '@/lib/pricing';
 
 const trustBadges = [
@@ -14,6 +15,13 @@ const trustBadges = [
 
 export function PricingContent() {
   const [annual, setAnnual] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(Boolean(session));
+    });
+  }, []);
 
   return (
     <>
@@ -106,7 +114,7 @@ export function PricingContent() {
                   </div>
 
                   <Link
-                    href={tier.ctaHref}
+                    href={tier.slug === 'enterprise' ? tier.ctaHref : `/choose-plan?plan=${tier.slug}`}
                     className={`inline-flex items-center justify-center rounded-lg font-sans font-semibold text-sm transition-colors w-full ${
                       tier.popular
                         ? 'bg-accent-600 text-white hover:bg-accent-700'
@@ -114,7 +122,7 @@ export function PricingContent() {
                     }`}
                     style={{ padding: '12px 24px' }}
                   >
-                    {tier.ctaLabel}
+                    {tier.slug === 'enterprise' ? tier.ctaLabel : isLoggedIn ? 'Start Free Trial' : 'Get Started'}
                   </Link>
                 </div>
               );

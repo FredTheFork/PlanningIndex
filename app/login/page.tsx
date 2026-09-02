@@ -23,7 +23,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
@@ -33,7 +33,20 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace('/app');
+      if (data.user) {
+        const { data: subData } = await supabase
+          .from('subscriptions')
+          .select('status, cancel_at_period_end')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        const sub = subData as { status: string; cancel_at_period_end: boolean } | null;
+        const isActive = sub && (sub.status === 'active' || sub.status === 'trialing') && !sub.cancel_at_period_end;
+
+        router.replace(isActive ? '/app' : '/choose-plan');
+      } else {
+        router.replace('/choose-plan');
+      }
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -101,6 +114,15 @@ export default function LoginPage() {
               }
             />
 
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="font-sans text-xs text-accent-600 hover:text-accent-700 hover:underline transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             <Button
               type="submit"
               fullWidth
@@ -114,8 +136,8 @@ export default function LoginPage() {
           <div className="mt-6 pt-4 border-t border-primary-200 text-center">
             <p className="font-sans text-primary-500 text-xs">
               Don&apos;t have an account?{' '}
-              <Link href="/contact" className="text-accent-600 hover:underline font-medium">
-                Get in touch
+              <Link href="/register" className="text-accent-600 hover:underline font-medium">
+                Create one
               </Link>
             </p>
           </div>
