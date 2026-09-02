@@ -103,3 +103,97 @@ export function generateWebPageSchema(options: {
     ...(options.dateModified && { dateModified: options.dateModified }),
   };
 }
+
+export function generateArticleSchema(options: {
+  title: string;
+  description: string;
+  path: string;
+  author: string;
+  datePublished: string;
+  dateModified?: string;
+  image?: string;
+  section?: string;
+  tags?: string[];
+}) {
+  const url = `${SITE_URL}${options.path}`;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: options.title,
+    description: options.description,
+    url,
+    image: options.image || `${SITE_URL}/og/default.png`,
+    datePublished: options.datePublished,
+    dateModified: options.dateModified || options.datePublished,
+    author: {
+      '@type': 'Organization',
+      name: options.author,
+      url: SITE_URL,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_CONFIG.name,
+      url: SITE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE_URL}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': url,
+    },
+    ...(options.section && { articleSection: options.section }),
+    ...(options.tags && { keywords: options.tags.join(', ') }),
+    inLanguage: 'en-GB',
+  };
+}
+
+export function generateArticleSchema(options: {
+  title: string;
+  description: string;
+  path: string;
+  author: string;
+  datePublished: string;
+  dateModified?: string;
+  image?: string;
+  section?: string;
+  tags?: string[];
+}) {
+  const url = `${SITE_URL}${options.path}`;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: options.title,
+    description: options.description,
+    url,
+    image: options.image || `${SITE_URL}/og/default.png`,
+    datePublished: options.datePublished,
+    dateModified: options.dateModified || options.datePublished,
+    author: {
+      '@type': 'Organization',
+      name: options.author,
+      url: SITE_URL,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_CONFIG.name,
+      url: SITE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE_URL}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': url,
+    },
+    ...(options.section && { articleSection: options.section }),
+    ...(options.tags && { keywords: options.tags.join(', ') }),
+    inLanguage: 'en-GB',
+  };
+}

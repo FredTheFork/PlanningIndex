@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import { industries } from '@/lib/industries';
+import { blogPosts } from '@/lib/blog';
+import { helpCategories, getAllHelpArticleSlugs } from '@/lib/help';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: Array<{
@@ -28,7 +30,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: 'monthly' as const,
   }));
 
-  const allPages = [...staticPages, ...industryPages];
+  const blogArticlePages = blogPosts.map((post) => ({
+    path: `/blog/${post.slug}`,
+    priority: 0.6,
+    changeFrequency: 'weekly' as const,
+  }));
+
+  const helpCategoryPages = helpCategories.map((cat) => ({
+    path: `/help/${cat.slug}`,
+    priority: 0.6,
+    changeFrequency: 'monthly' as const,
+  }));
+
+  const helpArticlePages = getAllHelpArticleSlugs().map(({ category, article }) => ({
+    path: `/help/${category}/${article}`,
+    priority: 0.5,
+    changeFrequency: 'monthly' as const,
+  }));
+
+  const allPages = [
+    ...staticPages,
+    ...industryPages,
+    ...blogArticlePages,
+    ...helpCategoryPages,
+    ...helpArticlePages,
+  ];
 
   return allPages.map((page) => ({
     url: `${SITE_URL}${page.path}`,
