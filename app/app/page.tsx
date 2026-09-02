@@ -12,17 +12,26 @@ import {
   Check,
   Phone,
   ArrowRight,
-  TrendingUp,
   MapPin,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, Badge, Button } from '@/components/ui';
+import { StatCard } from '@/components/workspace/StatCard';
+import { DashboardSection } from '@/components/workspace/DashboardSection';
+import { ApplicationsNearYou } from '@/components/workspace/ApplicationsNearYou';
+import { ProposalStatusList } from '@/components/workspace/ProposalStatusList';
+import { TodaysPriorities } from '@/components/workspace/TodaysPriorities';
+import { DashboardSkeleton } from '@/components/workspace/DashboardSkeleton';
 import {
   mockStats,
   mockRecentApplications,
+  mockNearbyApplications,
   mockPipelineStages,
+  mockPipelineSummary,
   mockFollowUps,
   mockActivity,
+  mockProposals,
+  mockPriorities,
 } from '@/lib/mock/workspace';
 import type { MockStat, MockApplication, MockFollowUp, MockActivityItem } from '@/lib/mock/workspace';
 
@@ -51,6 +60,7 @@ const statusBadgeVariant = (status: string): 'success' | 'warning' | 'danger' | 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [companyName, setCompanyName] = useState('your company');
+  const [companyLoading, setCompanyLoading] = useState(true);
   const [hour, setHour] = useState(9);
 
   useEffect(() => {
@@ -59,7 +69,9 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     if (user?.id) {
+      setCompanyLoading(true);
       import('@/lib/supabase/client').then(({ supabase }) => {
         supabase
           .from('profiles')
@@ -67,16 +79,28 @@ export default function DashboardPage() {
           .eq('id', user.id)
           .maybeSingle()
           .then(({ data }) => {
+            if (cancelled) return;
             if (data?.company_name) setCompanyName(data.company_name);
+            setCompanyLoading(false);
           });
+      }).catch(() => {
+        if (!cancelled) setCompanyLoading(false);
       });
+    } else {
+      setCompanyLoading(false);
     }
+    return () => { cancelled = true; };
   }, [user]);
 
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
+  if (companyLoading) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="space-y-6">
+      {/* Greeting */}
       <div>
         <h1 className="font-display font-bold text-primary-900 text-h2">
           {greeting}, {companyName}
@@ -86,37 +110,31 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Today's priorities */}
+      <DashboardSection title="Today's priorities">
+        <TodaysPriorities priorities={mockPriorities} />
+      </DashboardSection>
+
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {mockStats.map((stat) => {
           const Icon = statIcons[stat.icon];
           return (
-            <Card key={stat.label} padding="md" className="h-full">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50">
-                  <Icon size={20} className="text-primary-700" />
-                </div>
-                <span className="inline-flex items-center gap-1 font-sans text-xs font-semibold text-emerald-600">
-                  <TrendingUp size={12} /> {stat.trend}
-                </span>
-              </div>
-              <p className="font-display font-bold text-primary-900 text-3xl">{stat.value}</p>
-              <p className="font-sans text-primary-500 text-sm mt-0.5">{stat.label}</p>
-            </Card>
+            <StatCard
+              key={stat.label}
+              icon={Icon}
+              value={stat.value}
+              label={stat.label}
+              trend={stat.trend}
+              trendUp={stat.trendUp}
+            />
           );
         })}
       </div>
 
-      {/* Recent opportunities + Pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6">
-        {/* Recent opportunities */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-sans font-semibold text-primary-900 text-base">Recent opportunities</h2>
-            <Link href="/app" className="font-sans text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors">
-              View all
-            </Link>
-          </div>
+      {/* Recent opportunities + Applications near you */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <DashboardSection title="Recent opportunities" viewAllHref="/app" viewAllLabel="View all">
           <div className="space-y-3">
             {mockRecentApplications.map((app: MockApplication) => (
               <Card key={app.id} padding="md" className="hover:shadow-card-hover transition-shadow">
@@ -141,16 +159,16 @@ export default function DashboardPage() {
               </Card>
             ))}
           </div>
-        </div>
+        </DashboardSection>
 
-        {/* Pipeline summary */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-sans font-semibold text-primary-900 text-base">Lead pipeline</h2>
-            <Link href="/app/pipeline" className="font-sans text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors">
-              View board
-            </Link>
-          </div>
+        <DashboardSection title="Applications near you" viewAllHref="/app" viewAllLabel="View all">
+          <ApplicationsNearYou applications={mockNearbyApplications} />
+        </DashboardSection>
+      </div>
+
+      {/* Pipeline summary + Proposal status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <DashboardSection title="Lead pipeline" viewAllHref="/app/pipeline" viewAllLabel="View board">
           <Card padding="md">
             <div className="space-y-3">
               {mockPipelineStages.map((stage) => (
@@ -161,26 +179,31 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-            <div className="mt-5 pt-4 border-t border-primary-100">
+            <div className="mt-5 pt-4 border-t border-primary-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-sans text-sm font-semibold text-primary-900">Pipeline value</span>
+                <span className="font-display font-bold text-primary-900 text-lg">{mockPipelineSummary.totalValue}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-sans text-sm font-semibold text-primary-900">Win rate</span>
+                <span className="font-display font-bold text-primary-900 text-lg">{mockPipelineSummary.winRate}</span>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="font-sans text-sm font-semibold text-primary-900">Total active</span>
-                <span className="font-display font-bold text-primary-900 text-xl">22</span>
+                <span className="font-display font-bold text-primary-900 text-lg">{mockPipelineSummary.activeLeads}</span>
               </div>
             </div>
           </Card>
-        </div>
+        </DashboardSection>
+
+        <DashboardSection title="Proposal status" viewAllHref="/app/proposals" viewAllLabel="View all">
+          <ProposalStatusList proposals={mockProposals} />
+        </DashboardSection>
       </div>
 
       {/* Follow-ups + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming follow-ups */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-sans font-semibold text-primary-900 text-base">Upcoming follow-ups</h2>
-            <Link href="/app/leads" className="font-sans text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors">
-              All leads
-            </Link>
-          </div>
+        <DashboardSection title="Upcoming follow-ups" viewAllHref="/app/leads" viewAllLabel="All leads">
           <Card padding="none" className="overflow-hidden">
             {mockFollowUps.map((fu: MockFollowUp, i: number) => (
               <div
@@ -201,16 +224,9 @@ export default function DashboardPage() {
               </div>
             ))}
           </Card>
-        </div>
+        </DashboardSection>
 
-        {/* Recent activity */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-sans font-semibold text-primary-900 text-base">Recent activity</h2>
-            <Link href="/app/activity" className="font-sans text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors">
-              View all
-            </Link>
-          </div>
+        <DashboardSection title="Recent activity" viewAllHref="/app/activity" viewAllLabel="View all">
           <Card padding="none" className="overflow-hidden">
             {mockActivity.map((item: MockActivityItem, i: number) => {
               const Icon = activityIcons[item.icon];
@@ -233,7 +249,7 @@ export default function DashboardPage() {
               );
             })}
           </Card>
-        </div>
+        </DashboardSection>
       </div>
 
       {/* Quick action CTA */}

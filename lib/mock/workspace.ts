@@ -9,6 +9,18 @@ export interface MockApplication {
   distance: string;
 }
 
+export interface MockNearbyApplication {
+  id: string;
+  reference: string;
+  title: string;
+  address: string;
+  distanceMiles: number;
+  tradeRelevance: 'High' | 'Medium' | 'Low';
+  tradeTag: string;
+  estimatedValue: string;
+  status: 'Pending' | 'Approved' | 'Refused' | 'Withdrawn';
+}
+
 export interface MockPipelineStage {
   stage: string;
   count: number;
@@ -39,12 +51,38 @@ export interface MockStat {
   icon: 'search' | 'users' | 'file' | 'calendar';
 }
 
+export interface MockProposal {
+  id: string;
+  reference: string;
+  recipient: string;
+  property: string;
+  status: 'Draft' | 'Ready' | 'Sent' | 'Processing' | 'Mailed' | 'Delivered' | 'Delivery issue' | 'Undeliverable';
+  createdDate: string;
+  sentDate: string | null;
+  value: string;
+}
+
+export interface MockPriority {
+  id: string;
+  title: string;
+  detail: string;
+  type: 'follow-up' | 'proposal' | 'lead';
+  dueLabel: string;
+  urgency: 'today' | 'tomorrow' | 'this-week';
+}
+
 export const mockStats: MockStat[] = [
   { label: 'New applications', value: 128, trend: '+12%', trendUp: true, icon: 'search' },
   { label: 'New leads', value: 12, trend: '+3', trendUp: true, icon: 'users' },
   { label: 'Proposals sent', value: 8, trend: '+2', trendUp: true, icon: 'file' },
   { label: 'Follow-ups due', value: 17, trend: '5 today', trendUp: true, icon: 'calendar' },
 ];
+
+export const mockPipelineSummary = {
+  totalValue: '£48,600',
+  winRate: '32%',
+  activeLeads: 22,
+};
 
 export const mockRecentApplications: MockApplication[] = [
   {
@@ -89,6 +127,64 @@ export const mockRecentApplications: MockApplication[] = [
   },
 ];
 
+export const mockNearbyApplications: MockNearbyApplication[] = [
+  {
+    id: 'n1',
+    reference: '24/01236/FUL',
+    title: 'Construction of a new dwelling',
+    address: '3 School Lane, Amersham, HP6 5AB',
+    distanceMiles: 6,
+    tradeRelevance: 'High',
+    tradeTag: 'New build',
+    estimatedValue: '£32,000',
+    status: 'Approved',
+  },
+  {
+    id: 'n2',
+    reference: '24/01234/FUL',
+    title: 'Replacement of windows and doors',
+    address: '12 High Street, Amersham, HP6 5BA',
+    distanceMiles: 8,
+    tradeRelevance: 'High',
+    tradeTag: 'Windows',
+    estimatedValue: '£4,200',
+    status: 'Pending',
+  },
+  {
+    id: 'n3',
+    reference: '24/01241/FUL',
+    title: 'Loft conversion with rear dormer',
+    address: '78 High Street, Chesham, HP5 1AB',
+    distanceMiles: 10,
+    tradeRelevance: 'Medium',
+    tradeTag: 'Loft',
+    estimatedValue: '£8,750',
+    status: 'Pending',
+  },
+  {
+    id: 'n4',
+    reference: '24/01235/FUL',
+    title: 'Rear extension and alterations',
+    address: '45 The Broadway, Rickmansworth, WD3 7AB',
+    distanceMiles: 12,
+    tradeRelevance: 'Medium',
+    tradeTag: 'Extension',
+    estimatedValue: '£18,500',
+    status: 'Pending',
+  },
+  {
+    id: 'n5',
+    reference: '24/01238/FUL',
+    title: 'Replacement of existing roof covering',
+    address: '22 Station Road, Chesham, HP5 1AB',
+    distanceMiles: 14,
+    tradeRelevance: 'High',
+    tradeTag: 'Roofing',
+    estimatedValue: '£6,400',
+    status: 'Pending',
+  },
+];
+
 export const mockPipelineStages: MockPipelineStage[] = [
   { stage: 'New', count: 8, color: 'bg-sky-500' },
   { stage: 'Contacted', count: 5, color: 'bg-amber-500' },
@@ -109,4 +205,84 @@ export const mockActivity: MockActivityItem[] = [
   { id: '3', action: 'Lead moved to Won', detail: '9 Park Avenue, Chorleywood — Door replacement', time: 'Yesterday', icon: 'check' },
   { id: '4', action: 'Follow-up call logged', detail: '78 High Street, Chesham — Loft conversion', time: 'Yesterday', icon: 'phone' },
   { id: '5', action: 'Proposal created', detail: '22 Station Road, Chesham — Roof replacement', time: '2 days ago', icon: 'file' },
+];
+
+export const mockProposals: MockProposal[] = [
+  {
+    id: 'p1',
+    reference: 'PI-10482',
+    recipient: 'Mr J. Smith',
+    property: '12 High Street, Amersham, HP6 5BA',
+    status: 'Mailed',
+    createdDate: '30 Aug 2026',
+    sentDate: '01 Sep 2026',
+    value: '£5,210',
+  },
+  {
+    id: 'p2',
+    reference: 'PI-10481',
+    recipient: 'Mrs A. Brown',
+    property: '45 The Broadway, Rickmansworth, WD3 7AB',
+    status: 'Delivered',
+    createdDate: '28 Aug 2026',
+    sentDate: '29 Aug 2026',
+    value: '£18,500',
+  },
+  {
+    id: 'p3',
+    reference: 'PI-10480',
+    recipient: 'Mr R. Patel',
+    property: '22 Station Road, Chesham, HP5 1AB',
+    status: 'Processing',
+    createdDate: '01 Sep 2026',
+    sentDate: '01 Sep 2026',
+    value: '£6,400',
+  },
+  {
+    id: 'p4',
+    reference: 'PI-10479',
+    recipient: 'Ms E. Roberts',
+    property: '78 High Street, Chesham, HP5 1AB',
+    status: 'Draft',
+    createdDate: '01 Sep 2026',
+    sentDate: null,
+    value: '£8,750',
+  },
+  {
+    id: 'p5',
+    reference: 'PI-10478',
+    recipient: 'Mr T. Wilson',
+    property: '9 Park Avenue, Chorleywood, WD3 5AB',
+    status: 'Delivery issue',
+    createdDate: '27 Aug 2026',
+    sentDate: '28 Aug 2026',
+    value: '£3,200',
+  },
+];
+
+export const mockPriorities: MockPriority[] = [
+  {
+    id: 'pr1',
+    title: 'Call J. Smith about replacement windows',
+    detail: '12 High Street, Amersham — Lead is in Contacted stage',
+    type: 'follow-up',
+    dueLabel: 'Today, 2:00 PM',
+    urgency: 'today',
+  },
+  {
+    id: 'pr2',
+    title: 'Send proposal to A. Brown',
+    detail: '45 The Broadway, Rickmansworth — Rear extension, £18,500',
+    type: 'proposal',
+    dueLabel: 'Tomorrow, 10:00 AM',
+    urgency: 'tomorrow',
+  },
+  {
+    id: 'pr3',
+    title: 'Site visit for R. Patel roof replacement',
+    detail: '22 Station Road, Chesham — Proposal sent, awaiting response',
+    type: 'lead',
+    dueLabel: '04 Sep, 9:00 AM',
+    urgency: 'this-week',
+  },
 ];
