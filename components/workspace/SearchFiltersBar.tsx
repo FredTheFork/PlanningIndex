@@ -9,6 +9,9 @@ import {
   statusOptions,
   dateRangeOptions,
   radiusOptions,
+  councilOptions,
+  decisionOptions,
+  tradeTagOptions,
   defaultFilters,
 } from '@/lib/mock/applications';
 
@@ -45,12 +48,13 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
     local.applicationType !== 'all' ||
     local.status !== 'all' ||
     local.dateRange !== defaultFilters.dateRange ||
-    local.radius !== defaultFilters.radius;
+    local.radius !== defaultFilters.radius ||
+    local.council !== 'all' ||
+    local.decision !== 'all' ||
+    local.tradeTag !== 'all';
 
   const selectClass =
-    variant === 'sidebar'
-      ? 'block w-full pl-3 pr-10 py-2.5 border border-primary-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors appearance-none cursor-pointer'
-      : 'block w-full pl-3 pr-10 py-2.5 border border-primary-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors appearance-none cursor-pointer';
+    'block w-full pl-3 pr-10 py-2.5 border border-primary-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors appearance-none cursor-pointer';
 
   if (variant === 'sidebar') {
     return (
@@ -92,11 +96,7 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.radius}
-            onChange={(e) => update('radius', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.radius} onChange={(e) => update('radius', e.target.value)} className={selectClass}>
             {radiusOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -105,11 +105,16 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.applicationType}
-            onChange={(e) => update('applicationType', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.council} onChange={(e) => update('council', e.target.value)} className={selectClass}>
+            {councilOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <ChevronDownIcon />
+        </div>
+
+        <div className="relative">
+          <select value={local.applicationType} onChange={(e) => update('applicationType', e.target.value)} className={selectClass}>
             {applicationTypeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -118,11 +123,7 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.status}
-            onChange={(e) => update('status', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.status} onChange={(e) => update('status', e.target.value)} className={selectClass}>
             {statusOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -131,11 +132,25 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.dateRange}
-            onChange={(e) => update('dateRange', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.decision} onChange={(e) => update('decision', e.target.value)} className={selectClass}>
+            {decisionOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <ChevronDownIcon />
+        </div>
+
+        <div className="relative">
+          <select value={local.tradeTag} onChange={(e) => update('tradeTag', e.target.value)} className={selectClass}>
+            {tradeTagOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <ChevronDownIcon />
+        </div>
+
+        <div className="relative">
+          <select value={local.dateRange} onChange={(e) => update('dateRange', e.target.value)} className={selectClass}>
             {dateRangeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -164,7 +179,7 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <div className="relative col-span-2 sm:col-span-1">
           <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400 pointer-events-none" />
           <input
@@ -178,11 +193,7 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.radius}
-            onChange={(e) => update('radius', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.radius} onChange={(e) => update('radius', e.target.value)} className={selectClass}>
             {radiusOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -191,11 +202,16 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.applicationType}
-            onChange={(e) => update('applicationType', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.council} onChange={(e) => update('council', e.target.value)} className={selectClass}>
+            {councilOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <ChevronDownIcon />
+        </div>
+
+        <div className="relative">
+          <select value={local.applicationType} onChange={(e) => update('applicationType', e.target.value)} className={selectClass}>
             {applicationTypeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -204,11 +220,7 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.status}
-            onChange={(e) => update('status', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.status} onChange={(e) => update('status', e.target.value)} className={selectClass}>
             {statusOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -217,11 +229,25 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
         </div>
 
         <div className="relative">
-          <select
-            value={local.dateRange}
-            onChange={(e) => update('dateRange', e.target.value)}
-            className={selectClass}
-          >
+          <select value={local.decision} onChange={(e) => update('decision', e.target.value)} className={selectClass}>
+            {decisionOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <ChevronDownIcon />
+        </div>
+
+        <div className="relative">
+          <select value={local.tradeTag} onChange={(e) => update('tradeTag', e.target.value)} className={selectClass}>
+            {tradeTagOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <ChevronDownIcon />
+        </div>
+
+        <div className="relative">
+          <select value={local.dateRange} onChange={(e) => update('dateRange', e.target.value)} className={selectClass}>
             {dateRangeOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}

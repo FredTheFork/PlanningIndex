@@ -27,6 +27,8 @@ export interface SearchApplication {
   distanceMiles: number;
   tradeTags: string[];
   estimatedValue: string;
+  lat: number;
+  lng: number;
 }
 
 export interface SearchFilters {
@@ -37,6 +39,9 @@ export interface SearchFilters {
   status: string;
   dateRange: string;
   sort: string;
+  council: string;
+  decision: string;
+  tradeTag: string;
 }
 
 export interface SearchResultMeta {
@@ -90,6 +95,57 @@ export const sortOptions: { value: string; label: string }[] = [
   { value: 'relevance', label: 'Relevance' },
 ];
 
+export const councilOptions: { value: string; label: string }[] = [
+  { value: 'all', label: 'All councils' },
+  { value: 'Buckinghamshire Council', label: 'Buckinghamshire Council' },
+  { value: 'Three Rivers District Council', label: 'Three Rivers District Council' },
+];
+
+export const decisionOptions: { value: string; label: string }[] = [
+  { value: 'all', label: 'All decisions' },
+  { value: 'Awaiting decision', label: 'Awaiting decision' },
+  { value: 'Approved', label: 'Approved' },
+  { value: 'Approved with conditions', label: 'Approved with conditions' },
+  { value: 'Refused - impact on green belt', label: 'Refused' },
+  { value: 'Withdrawn by applicant', label: 'Withdrawn by applicant' },
+];
+
+export const tradeTagOptions: { value: string; label: string }[] = [
+  { value: 'all', label: 'All trades' },
+  { value: 'Windows', label: 'Windows' },
+  { value: 'Doors', label: 'Doors' },
+  { value: 'Roofing', label: 'Roofing' },
+  { value: 'Brickwork', label: 'Brickwork' },
+  { value: 'Extensions', label: 'Extensions' },
+  { value: 'Loft', label: 'Loft' },
+  { value: 'Dormers', label: 'Dormers' },
+  { value: 'Conversions', label: 'Conversions' },
+  { value: 'New Build', label: 'New Build' },
+  { value: 'Building', label: 'Building' },
+  { value: 'Landscaping', label: 'Landscaping' },
+  { value: 'Plumbing', label: 'Plumbing' },
+  { value: 'Electrical', label: 'Electrical' },
+  { value: 'Kitchen', label: 'Kitchen' },
+  { value: 'Bathroom', label: 'Bathroom' },
+  { value: 'Outbuilding', label: 'Outbuilding' },
+  { value: 'Wraparound', label: 'Wraparound' },
+  { value: 'Garden Room', label: 'Garden Room' },
+  { value: 'Masonry', label: 'Masonry' },
+  { value: 'Porch', label: 'Porch' },
+  { value: 'Development', label: 'Development' },
+  { value: 'Driveway', label: 'Driveway' },
+  { value: 'EV', label: 'EV' },
+  { value: 'Heating', label: 'Heating' },
+  { value: 'Rewiring', label: 'Rewiring' },
+  { value: 'Conservatory', label: 'Conservatory' },
+  { value: 'Glazing', label: 'Glazing' },
+  { value: 'Demolition', label: 'Demolition' },
+  { value: 'Listed Building', label: 'Listed Building' },
+  { value: 'Solar', label: 'Solar' },
+  { value: 'Renewables', label: 'Renewables' },
+  { value: 'Retaining Wall', label: 'Retaining Wall' },
+];
+
 export const defaultFilters: SearchFilters = {
   keyword: '',
   location: '',
@@ -98,6 +154,9 @@ export const defaultFilters: SearchFilters = {
   status: 'all',
   dateRange: '30',
   sort: 'newest',
+  council: 'all',
+  decision: 'all',
+  tradeTag: 'all',
 };
 
 const baseDate = new Date('2026-09-01');
@@ -129,6 +188,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 8,
     tradeTags: ['Windows', 'Doors'],
     estimatedValue: '£4,200',
+    lat: 51.6708,
+    lng: -0.6080,
   },
   {
     id: '2',
@@ -147,6 +208,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 12,
     tradeTags: ['Extensions', 'Building'],
     estimatedValue: '£18,500',
+    lat: 51.6390,
+    lng: -0.4730,
   },
   {
     id: '3',
@@ -165,6 +228,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 6,
     tradeTags: ['New Build', 'Building'],
     estimatedValue: '£32,000',
+    lat: 51.6780,
+    lng: -0.6150,
   },
   {
     id: '4',
@@ -183,6 +248,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 10,
     tradeTags: ['Loft', 'Building'],
     estimatedValue: '£8,750',
+    lat: 51.7040,
+    lng: -0.6130,
   },
   {
     id: '5',
@@ -201,6 +268,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 14,
     tradeTags: ['Roofing', 'Dormers'],
     estimatedValue: '£6,400',
+    lat: 51.6910,
+    lng: -0.6210,
   },
   {
     id: '6',
@@ -219,6 +288,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 15,
     tradeTags: ['Extensions', 'Building'],
     estimatedValue: '£12,000',
+    lat: 51.6540,
+    lng: -0.5180,
   },
   {
     id: '7',
@@ -237,6 +308,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 18,
     tradeTags: ['Extensions', 'Building'],
     estimatedValue: '£28,000',
+    lat: 51.6060,
+    lng: -0.5630,
   },
   {
     id: '8',
@@ -255,6 +328,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 20,
     tradeTags: ['Conversions', 'Building'],
     estimatedValue: '£5,500',
+    lat: 51.6430,
+    lng: -0.6790,
   },
   {
     id: '9',
@@ -273,6 +348,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 22,
     tradeTags: ['Brickwork', 'Masonry'],
     estimatedValue: '£3,800',
+    lat: 51.6110,
+    lng: -0.6460,
   },
   {
     id: '10',
@@ -291,6 +368,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 15,
     tradeTags: ['Extensions', 'Wraparound'],
     estimatedValue: '£22,000',
+    lat: 51.6490,
+    lng: -0.5240,
   },
   {
     id: '11',
@@ -309,6 +388,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 18,
     tradeTags: ['Landscaping', 'Garden Room'],
     estimatedValue: '£7,200',
+    lat: 51.6090,
+    lng: -0.5580,
   },
   {
     id: '12',
@@ -327,6 +408,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 25,
     tradeTags: ['Windows'],
     estimatedValue: '£4,800',
+    lat: 51.8170,
+    lng: -0.8120,
   },
   {
     id: '13',
@@ -345,6 +428,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 28,
     tradeTags: ['Loft', 'Dormers'],
     estimatedValue: '£14,500',
+    lat: 51.7040,
+    lng: -0.7090,
   },
   {
     id: '14',
@@ -363,6 +448,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 30,
     tradeTags: ['Building', 'Porch'],
     estimatedValue: '£3,200',
+    lat: 51.7670,
+    lng: -0.7450,
   },
   {
     id: '15',
@@ -381,6 +468,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 28,
     tradeTags: ['Extensions', 'Plumbing', 'Building'],
     estimatedValue: '£35,000',
+    lat: 51.7060,
+    lng: -0.7120,
   },
   {
     id: '16',
@@ -399,6 +488,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 20,
     tradeTags: ['Loft', 'Electrical'],
     estimatedValue: '£11,000',
+    lat: 51.6450,
+    lng: -0.6820,
   },
   {
     id: '17',
@@ -417,6 +508,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 32,
     tradeTags: ['New Build', 'Development'],
     estimatedValue: '£120,000',
+    lat: 51.5890,
+    lng: -0.5540,
   },
   {
     id: '18',
@@ -435,6 +528,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 14,
     tradeTags: ['Roofing'],
     estimatedValue: '£4,500',
+    lat: 51.6970,
+    lng: -0.6180,
   },
   {
     id: '19',
@@ -453,6 +548,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 7,
     tradeTags: ['Landscaping', 'Driveway'],
     estimatedValue: '£2,800',
+    lat: 51.6730,
+    lng: -0.6010,
   },
   {
     id: '20',
@@ -471,6 +568,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 12,
     tradeTags: ['Plumbing', 'Bathroom'],
     estimatedValue: '£6,200',
+    lat: 51.6370,
+    lng: -0.4760,
   },
   {
     id: '21',
@@ -489,6 +588,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 22,
     tradeTags: ['Extensions', 'Kitchen', 'Plumbing'],
     estimatedValue: '£26,000',
+    lat: 51.6140,
+    lng: -0.6410,
   },
   {
     id: '22',
@@ -507,6 +608,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 9,
     tradeTags: ['Electrical', 'EV'],
     estimatedValue: '£850',
+    lat: 51.6650,
+    lng: -0.5950,
   },
   {
     id: '23',
@@ -525,6 +628,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 20,
     tradeTags: ['Windows', 'Listed Building'],
     estimatedValue: '£6,800',
+    lat: 51.6410,
+    lng: -0.6850,
   },
   {
     id: '24',
@@ -543,6 +648,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 24,
     tradeTags: ['Outbuilding', 'Demolition'],
     estimatedValue: '£9,500',
+    lat: 51.5960,
+    lng: -0.5780,
   },
   {
     id: '25',
@@ -561,6 +668,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 13,
     tradeTags: ['Plumbing', 'Heating'],
     estimatedValue: '£7,400',
+    lat: 51.6350,
+    lng: -0.4790,
   },
   {
     id: '26',
@@ -579,6 +688,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 11,
     tradeTags: ['Electrical', 'Rewiring'],
     estimatedValue: '£4,200',
+    lat: 51.7020,
+    lng: -0.6100,
   },
   {
     id: '27',
@@ -597,6 +708,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 32,
     tradeTags: ['Conservatory', 'Building', 'Glazing'],
     estimatedValue: '£15,000',
+    lat: 51.5870,
+    lng: -0.5570,
   },
   {
     id: '28',
@@ -615,6 +728,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 8,
     tradeTags: ['Extensions', 'Bathroom', 'Plumbing'],
     estimatedValue: '£13,500',
+    lat: 51.6690,
+    lng: -0.6110,
   },
   {
     id: '29',
@@ -633,6 +748,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 18,
     tradeTags: ['Landscaping', 'Retaining Wall'],
     estimatedValue: '£4,600',
+    lat: 51.6040,
+    lng: -0.5660,
   },
   {
     id: '30',
@@ -651,6 +768,8 @@ export const mockApplications: SearchApplication[] = [
     distanceMiles: 30,
     tradeTags: ['Electrical', 'Solar', 'Renewables'],
     estimatedValue: '£8,200',
+    lat: 51.7690,
+    lng: -0.7480,
   },
 ];
 
@@ -689,6 +808,18 @@ export function filterApplications(
   if (filters.radius !== 'all') {
     const maxMiles = parseInt(filters.radius, 10);
     results = results.filter((app) => app.distanceMiles <= maxMiles);
+  }
+
+  if (filters.council !== 'all') {
+    results = results.filter((app) => app.council === filters.council);
+  }
+
+  if (filters.decision !== 'all') {
+    results = results.filter((app) => app.decision === filters.decision);
+  }
+
+  if (filters.tradeTag !== 'all') {
+    results = results.filter((app) => app.tradeTags.includes(filters.tradeTag));
   }
 
   switch (filters.sort) {

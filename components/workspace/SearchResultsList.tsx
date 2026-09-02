@@ -13,6 +13,9 @@ interface SearchResultsListProps {
   onSortChange: (sort: string) => void;
   onClearFilters: () => void;
   loading?: boolean;
+  selectedId?: string | null;
+  hoveredId?: string | null;
+  onHover?: (id: string | null) => void;
 }
 
 const PER_PAGE = 10;
@@ -23,6 +26,9 @@ export function SearchResultsList({
   onSortChange,
   onClearFilters,
   loading = false,
+  selectedId = null,
+  hoveredId = null,
+  onHover,
 }: SearchResultsListProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -100,7 +106,13 @@ export function SearchResultsList({
         <>
           <div className="space-y-3">
             {paginatedResults.map((app) => (
-              <ApplicationResultCard key={app.id} application={app} />
+              <ApplicationResultCard
+                key={app.id}
+                application={app}
+                selected={app.id === selectedId}
+                hovered={app.id === hoveredId}
+                onHover={onHover}
+              />
             ))}
           </div>
 
