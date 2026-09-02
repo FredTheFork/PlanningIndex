@@ -1,9 +1,12 @@
 export interface PricingTier {
   name: string;
+  slug: string;
   description: string;
   monthlyPrice: number | null;
   annualPrice: number | null;
   priceSuffix: string;
+  monthlyStripePriceId: string;
+  annualStripePriceId: string;
   popular?: boolean;
   features: string[];
   ctaLabel: string;
@@ -13,6 +16,7 @@ export interface PricingTier {
 export const pricingTiers: PricingTier[] = [
   {
     name: 'Local',
+    slug: 'local',
     description: 'For solo tradespeople covering a single area.',
     monthlyPrice: 29,
     annualPrice: 279,
@@ -27,10 +31,13 @@ export const pricingTiers: PricingTier[] = [
       'Email support',
     ],
     ctaLabel: 'Choose Local',
-    ctaHref: '/login',
+    ctaHref: '/choose-plan',
+    monthlyStripePriceId: '',
+    annualStripePriceId: '',
   },
   {
     name: 'Regional',
+    slug: 'regional',
     description: 'For growing businesses covering a region.',
     monthlyPrice: 79,
     annualPrice: 759,
@@ -47,10 +54,13 @@ export const pricingTiers: PricingTier[] = [
       'Priority support',
     ],
     ctaLabel: 'Choose Regional',
-    ctaHref: '/login',
+    ctaHref: '/choose-plan',
+    monthlyStripePriceId: '',
+    annualStripePriceId: '',
   },
   {
     name: 'National',
+    slug: 'national',
     description: 'For established companies covering the country.',
     monthlyPrice: 199,
     annualPrice: 1899,
@@ -66,10 +76,13 @@ export const pricingTiers: PricingTier[] = [
       'Phone support',
     ],
     ctaLabel: 'Choose National',
-    ctaHref: '/login',
+    ctaHref: '/choose-plan',
+    monthlyStripePriceId: '',
+    annualStripePriceId: '',
   },
   {
     name: 'Enterprise',
+    slug: 'enterprise',
     description: 'For large organisations with custom needs.',
     monthlyPrice: null,
     annualPrice: null,
@@ -85,8 +98,14 @@ export const pricingTiers: PricingTier[] = [
     ],
     ctaLabel: 'Contact Sales',
     ctaHref: '/contact',
+    monthlyStripePriceId: '',
+    annualStripePriceId: '',
   },
 ];
+
+export function getPricingTierBySlug(slug: string): PricingTier | undefined {
+  return pricingTiers.find((tier) => tier.slug === slug);
+}
 
 export interface ComparisonRow {
   category: string;
