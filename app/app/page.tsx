@@ -134,7 +134,7 @@ export default function DashboardPage() {
 
       {/* Recent opportunities + Applications near you */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DashboardSection title="Recent opportunities" viewAllHref="/app" viewAllLabel="View all">
+        <DashboardSection title="Recent opportunities" viewAllHref="/app/search" viewAllLabel="View all">
           <div className="space-y-3">
             {mockRecentApplications.map((app: MockApplication) => (
               <Card key={app.id} padding="md" className="hover:shadow-card-hover transition-shadow">
@@ -161,7 +161,7 @@ export default function DashboardPage() {
           </div>
         </DashboardSection>
 
-        <DashboardSection title="Applications near you" viewAllHref="/app" viewAllLabel="View all">
+        <DashboardSection title="Applications near you" viewAllHref="/app/search" viewAllLabel="View all">
           <ApplicationsNearYou applications={mockNearbyApplications} />
         </DashboardSection>
       </div>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
             <h3 className="font-sans font-semibold text-white text-base">Ready to find your next job?</h3>
             <p className="font-sans text-white/60 text-sm mt-1">Search planning applications and turn them into leads.</p>
           </div>
-          <Link href="/app">
+          <Link href="/app/search">
             <Button variant="secondary" rightIcon={<ArrowRight size={16} />}>
               Search Applications
             </Button>

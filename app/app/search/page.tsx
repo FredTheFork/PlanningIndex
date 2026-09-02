@@ -78,6 +78,7 @@ export default function SearchPage() {
             applications={results}
             filters={filters}
             onSortChange={handleSortChange}
+            onClearFilters={() => setFilters({ ...defaultFilters })}
             loading={loading}
           />
         </div>

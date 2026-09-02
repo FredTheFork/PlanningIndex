@@ -20,7 +20,8 @@ const navSections: NavSection[] = [
   {
     label: 'Search',
     items: [
-      { label: 'Planning Applications', href: '/app', icon: Search },
+      { label: 'Dashboard', href: '/app', icon: LayoutDashboard },
+      { label: 'Planning Applications', href: '/app/search', icon: Search },
       { label: 'Leads', href: '/app/leads', icon: Users },
       { label: 'Pipeline', href: '/app/pipeline', icon: LayoutGrid },
     ],
@@ -58,6 +59,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }: SidebarProps) {
 
   const isActive = (href: string) => {
     if (href === '/app') return pathname === '/app';
+    if (href === '/app/search') return pathname === '/app/search';
     return pathname.startsWith(href);
   };
 
