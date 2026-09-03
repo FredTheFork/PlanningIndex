@@ -2,16 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Save, Mail, Plus, Trash2, ChevronDown, ChevronUp, Eye, CreditCard as Edit3 } from 'lucide-react';
+import { ArrowLeft, Save, Mail, Plus, Trash2, ChevronDown, ChevronUp, Eye, CreditCard as Edit3, Copy, CheckCircle2, AlertTriangle, Send as SendIcon, Clock, Package } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { useProposals } from '@/components/workspace/ProposalsContext';
 import { ProposalDocumentPreview } from '@/components/workspace/ProposalDocumentPreview';
 import { SendByPostModal } from '@/components/workspace/SendByPostModal';
-import type { Proposal, ProposalSection, ProposalLineItem } from '@/lib/mock/proposals';
+import { DeliveryTimeline } from '@/components/workspace/DeliveryTimeline';
+import type { Proposal, ProposalSection, ProposalLineItem, ProposalStatus } from '@/lib/mock/proposals';
 import { calculateProposalTotal } from '@/lib/mock/proposals';
 
 interface ProposalEditorProps {
@@ -33,12 +35,13 @@ const statusBadgeVariant = (status: Proposal['status']): 'neutral' | 'info' | 'w
 };
 
 export function ProposalEditor({ proposal: initialProposal }: ProposalEditorProps) {
-  const { updateProposal } = useProposals();
+  const { updateProposal, updateProposalStatus } = useProposals();
   const { toast } = useToast();
 
   const [proposal, setProposal] = useState<Proposal>(initialProposal);
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
+  const [copied, setCopied] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     details: true,
     introduction: true,
@@ -134,6 +137,43 @@ export function ProposalEditor({ proposal: initialProposal }: ProposalEditorProp
   }, [proposal, updateProposal, toast]);
 
   const isSent = proposal.status !== 'Draft' && proposal.status !== 'Ready';
+
+  const showTracking = isSent;
+
+  const handleCopyTracking = () => {
+    if (proposal.trackingNumber) {
+      navigator.clipboard.writeText(proposal.trackingNumber);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const nextStatusMap: Record<string, ProposalStatus> = {
+    'Sent': 'Processing',
+    'Processing': 'Mailed',
+    'Mailed': 'Delivered',
+  };
+
+  const handleAdvanceStatus = () => {
+    const next = nextStatusMap[proposal.status];
+    if (next) {
+      updateProposalStatus(proposal.id, next);
+      setProposal(prev => ({ ...prev, status: next }));
+      toast({ variant: 'info', title: 'Status updated', message: `Proposal moved to ${next}.` });
+    }
+  };
+
+  const handleMarkDelivered = () => {
+    updateProposalStatus(proposal.id, 'Delivered');
+    setProposal(prev => ({ ...prev, status: 'Delivered' }));
+    toast({ variant: 'success', title: 'Delivered', message: 'Proposal marked as delivered.' });
+  };
+
+  const handleRetrySend = () => {
+    updateProposalStatus(proposal.id, 'Sent');
+    setProposal(prev => ({ ...prev, status: 'Sent', deliveryIssueReason: null }));
+    toast({ variant: 'info', title: 'Retrying', message: 'Proposal is being re-sent by post.' });
+  };
 
   return (
     <div className="space-y-4">
@@ -251,6 +291,116 @@ export function ProposalEditor({ proposal: initialProposal }: ProposalEditorProp
           <ProposalDocumentPreview proposal={proposal} className="h-full" />
         </div>
       </div>
+
+      {showTracking && (
+        <Card padding="lg" className="border-accent-200">
+          <div className="flex items-center gap-2 mb-5">
+            <Package size={18} className="text-accent-600" />
+            <h2 className="font-sans font-semibold text-primary-900 text-base">Delivery Tracking</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <p className="font-display font-bold text-primary-900 text-lg">{proposal.reference}</p>
+                <div className="mt-2 rounded-lg border border-primary-200 bg-primary-50 p-3">
+                  <p className="font-sans text-sm font-medium text-primary-900">{proposal.recipientName}</p>
+                  <p className="font-sans text-sm text-primary-600">{proposal.recipientAddress}</p>
+                  <p className="font-sans text-sm text-primary-600">{proposal.recipientPostcode}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-label text-primary-400">Status</span>
+                <Badge variant={statusBadgeVariant(proposal.status)}>{proposal.status}</Badge>
+              </div>
+
+              {proposal.sentDate && (
+                <div className="flex items-center justify-between">
+                  <span className="font-sans text-sm text-primary-500">Sent</span>
+                  <span className="font-sans text-sm font-medium text-primary-900">
+                    {new Date(proposal.sentDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
+
+              {proposal.estimatedDeliveryDate && proposal.status !== 'Delivered' && !proposal.deliveryIssueReason && (
+                <div className="flex items-center justify-between">
+                  <span className="font-sans text-sm text-primary-500">Est. delivery</span>
+                  <span className="font-sans text-sm font-medium text-primary-900">
+                    {new Date(proposal.estimatedDeliveryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
+
+              {proposal.trackingNumber && (
+                <div>
+                  <p className="text-label text-primary-400 mb-1.5">Tracking number</p>
+                  <div className="flex items-center gap-2 rounded-lg border border-primary-200 bg-white px-3 py-2.5">
+                    <span className="font-mono text-sm text-primary-900 flex-1">{proposal.trackingNumber}</span>
+                    <button
+                      onClick={handleCopyTracking}
+                      className="text-primary-400 hover:text-primary-900 transition-colors shrink-0"
+                      aria-label="Copy tracking number"
+                    >
+                      {copied ? <CheckCircle2 size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <DeliveryTimeline proposal={proposal} />
+            </div>
+          </div>
+
+          {(proposal.status === 'Delivery issue' || proposal.status === 'Undeliverable') && (
+            <div className="mt-5 flex items-start gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4">
+              <AlertTriangle size={18} className="text-danger-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-sans font-semibold text-danger-800 text-sm">Delivery problem</p>
+                <p className="font-sans text-sm text-danger-700 mt-1">
+                  {proposal.deliveryIssueReason || 'There was an issue delivering this proposal.'}
+                </p>
+              </div>
+              {proposal.status === 'Delivery issue' && (
+                <Button size="sm" variant="outline" onClick={handleRetrySend} leftIcon={<SendIcon size={14} />}>
+                  Retry Send
+                </Button>
+              )}
+            </div>
+          )}
+
+          {proposal.status === 'Mailed' && (
+            <div className="mt-5 flex items-center justify-between rounded-lg border border-success-200 bg-success-50 p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-success-600" />
+                <p className="font-sans text-sm text-success-800">Proposal has been mailed. Mark as delivered when confirmed.</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleMarkDelivered}>
+                Mark as Delivered
+              </Button>
+            </div>
+          )}
+
+          {(proposal.status === 'Sent' || proposal.status === 'Processing') && (
+            <div className="mt-5 rounded-lg border border-primary-200 bg-primary-50 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-sans text-sm font-medium text-primary-900">Simulate mail platform update</p>
+                  <p className="font-sans text-xs text-primary-500 mt-0.5">
+                    This simulates status updates from the mail platform (Pingen/Docmail). These updates will arrive automatically once the integration is connected.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={handleAdvanceStatus} leftIcon={<Clock size={14} />}>
+                  Advance Status
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       <SendByPostModal open={sendModalOpen} onClose={() => setSendModalOpen(false)} proposal={proposal} />
     </div>
