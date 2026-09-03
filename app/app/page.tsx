@@ -19,7 +19,8 @@ import { Card, Badge, Button } from '@/components/ui';
 import { StatCard } from '@/components/workspace/StatCard';
 import { DashboardSection } from '@/components/workspace/DashboardSection';
 import { ApplicationsNearYou } from '@/components/workspace/ApplicationsNearYou';
-import { ProposalStatusList } from '@/components/workspace/ProposalStatusList';
+import { ProposalStatusList, type ProposalStatusItem } from '@/components/workspace/ProposalStatusList';
+import { useProposals } from '@/components/workspace/ProposalsContext';
 import { TodaysPriorities } from '@/components/workspace/TodaysPriorities';
 import { DashboardSkeleton } from '@/components/workspace/DashboardSkeleton';
 import {
@@ -59,6 +60,7 @@ const statusBadgeVariant = (status: string): 'success' | 'warning' | 'danger' | 
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { proposals } = useProposals();
   const [companyName, setCompanyName] = useState('your company');
   const [companyLoading, setCompanyLoading] = useState(true);
   const [hour, setHour] = useState(9);
@@ -197,7 +199,16 @@ export default function DashboardPage() {
         </DashboardSection>
 
         <DashboardSection title="Proposal status" viewAllHref="/app/proposals" viewAllLabel="View all">
-          <ProposalStatusList proposals={mockProposals} />
+          <ProposalStatusList proposals={proposals.map((p): ProposalStatusItem => ({
+              id: p.id,
+              reference: p.reference,
+              recipient: p.recipientName,
+              property: p.propertyAddress,
+              status: p.status,
+              createdDate: new Date(p.createdDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+              sentDate: p.sentDate ? new Date(p.sentDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : null,
+              value: p.totalValue,
+            }))} />
         </DashboardSection>
       </div>
 

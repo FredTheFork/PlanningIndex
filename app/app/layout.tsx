@@ -14,6 +14,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
   return (
     <AuthGuard>
       <LeadsProvider>
+      <ProposalsProvider>
       <ToastProvider>
         <div className="min-h-screen bg-surface-page">
           <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
@@ -25,6 +26,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </ToastProvider>
+      </ProposalsProvider>
       </LeadsProvider>
     </AuthGuard>
   );

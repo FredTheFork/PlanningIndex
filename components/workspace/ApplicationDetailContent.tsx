@@ -2,11 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, FileText, Plus, Send, Calendar, Building2, CheckCircle2, XCircle, Clock, Ban, PoundSterling, Download } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
 import { ApplicationIntelligence } from '@/components/workspace/ApplicationIntelligence';
 import { SingleMarkerMap } from '@/components/workspace/SingleMarkerMap';
 import { AddLeadModal } from '@/components/workspace/AddLeadModal';
+import { TemplateSelectorModal } from '@/components/workspace/TemplateSelectorModal';
+import { useLeads } from '@/components/workspace/LeadsContext';
+import { useProposals } from '@/components/workspace/ProposalsContext';
+import { createProposalFromLead, getTemplateById } from '@/lib/mock/proposals';
 import type { SearchApplication } from '@/lib/mock/applications';
 
 const statusVariant: Record<SearchApplication['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -35,7 +40,23 @@ interface ApplicationDetailContentProps {
 
 export function ApplicationDetailContent({ application: app }: ApplicationDetailContentProps) {
   const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const { leads } = useLeads();
+  const { addProposal } = useProposals();
+  const router = useRouter();
   const StatusIcon = statusIcon[app.status];
+
+  const existingLead = leads.find((l) => l.applicationId === app.id);
+
+  const handleTemplateSelect = (templateId: string) => {
+    if (!existingLead) return;
+    const template = getTemplateById(templateId);
+    if (!template) return;
+    const newProposal = createProposalFromLead(existingLead, template);
+    addProposal(newProposal);
+    setTemplateModalOpen(false);
+    router.push(`/app/proposals/${newProposal.id}`);
+  };
 
   const details = [
     { label: 'Received', value: app.dateReceived, icon: Calendar },
@@ -162,13 +183,32 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
           <Button variant="primary" leftIcon={<Plus size={15} />} onClick={() => setAddLeadOpen(true)}>
             Add to Leads
           </Button>
-          <Button variant="outline" leftIcon={<Send size={15} />}>
-            Create Proposal
+          <Button
+            variant="outline"
+            leftIcon={<Send size={15} />}
+            onClick={() => {
+              if (existingLead) {
+                setTemplateModalOpen(true);
+              } else {
+                setAddLeadOpen(true);
+              }
+            }}
+          >
+            {existingLead ? 'Create Proposal' : 'Add to Leads First'}
           </Button>
         </div>
       </section>
 
       <AddLeadModal open={addLeadOpen} onClose={() => setAddLeadOpen(false)} application={app} />
+
+      {existingLead && (
+        <TemplateSelectorModal
+          open={templateModalOpen}
+          onClose={() => setTemplateModalOpen(false)}
+          onSelect={handleTemplateSelect}
+          lead={existingLead}
+        />
+      )}
     </div>
   );
 }

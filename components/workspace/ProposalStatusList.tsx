@@ -1,9 +1,9 @@
 import { FileText, Mail, Clock, CheckCircle2, AlertCircle, Package, Send } from 'lucide-react';
 import { Card, Badge } from '@/components/ui';
-import type { MockProposal } from '@/lib/mock/workspace';
+import type { ProposalStatus } from '@/lib/mock/proposals';
 
 const statusConfig: Record<
-  MockProposal['status'],
+  ProposalStatus,
   { variant: 'neutral' | 'info' | 'warning' | 'danger' | 'success'; icon: typeof FileText }
 > = {
   Draft: { variant: 'neutral', icon: FileText },
@@ -16,8 +16,19 @@ const statusConfig: Record<
   Undeliverable: { variant: 'danger', icon: AlertCircle },
 };
 
+export interface ProposalStatusItem {
+  id: string;
+  reference: string;
+  recipient: string;
+  property: string;
+  status: ProposalStatus;
+  createdDate: string;
+  sentDate: string | null;
+  value: string;
+}
+
 interface ProposalStatusListProps {
-  proposals: MockProposal[];
+  proposals: ProposalStatusItem[];
 }
 
 export function ProposalStatusList({ proposals }: ProposalStatusListProps) {
