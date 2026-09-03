@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MapPin, FileText, User, Phone, Mail, Calendar, PoundSterling, Trash2, ArrowRight } from 'lucide-react';
+import {
+  MapPin, FileText, User, Phone, Mail, Calendar, PoundSterling,
+  Trash2, ArrowRight, Plus, Check, Mail as MailIcon, Send, Package,
+  Phone as PhoneIcon,
+} from 'lucide-react';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,6 +17,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import { leadStatusOptions, type Lead, type LeadStatus, type FollowUpType } from '@/lib/mock/leads';
+import type { LeadActivity, ActivityIcon } from '@/lib/mock/lead-activity';
 
 interface LeadDetailDrawerProps {
   lead: Lead | null;
@@ -32,8 +37,34 @@ const statusBadgeVariant = (status: LeadStatus): 'success' | 'warning' | 'danger
   }
 };
 
+const iconMap: Record<ActivityIcon, typeof Plus> = {
+  plus: Plus,
+  file: FileText,
+  mail: MailIcon,
+  check: Check,
+  phone: PhoneIcon,
+  calendar: Calendar,
+  send: Send,
+  package: Package,
+};
+
+const iconBgMap: Record<ActivityIcon, string> = {
+  plus: 'bg-sky-100 text-sky-700',
+  file: 'bg-primary-100 text-primary-700',
+  mail: 'bg-violet-100 text-violet-700',
+  check: 'bg-emerald-100 text-emerald-700',
+  phone: 'bg-amber-100 text-amber-700',
+  calendar: 'bg-sky-100 text-sky-700',
+  send: 'bg-violet-100 text-violet-700',
+  package: 'bg-emerald-100 text-emerald-700',
+};
+
+function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps) {
-  const { updateLead, deleteLead } = useLeads();
+  const { updateLead, deleteLead, addActivity, getActivityByLeadId } = useLeads();
   const { toast } = useToast();
 
   const [status, setStatus] = useState<LeadStatus>('New');
@@ -46,6 +77,7 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [leadActivities, setLeadActivities] = useState<LeadActivity[]>([]);
 
   useEffect(() => {
     if (lead) {
@@ -58,12 +90,14 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
       setContactName(lead.contactName);
       setContactPhone(lead.contactPhone);
       setContactEmail(lead.contactEmail);
+      setLeadActivities(getActivityByLeadId(lead.id));
     }
-  }, [lead]);
+  }, [lead, getActivityByLeadId]);
 
   if (!lead) return null;
 
   const handleSave = () => {
+    const oldStatus = lead.status;
     updateLead(lead.id, {
       status,
       notes: notes.trim(),
@@ -75,7 +109,19 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
       contactPhone: contactPhone.trim(),
       contactEmail: contactEmail.trim(),
     });
+    if (oldStatus !== status) {
+      const entry = addActivity(lead.id, 'status_changed', 'Status changed', `${oldStatus} → ${status}`, 'check');
+      setLeadActivities((prev) => [entry, ...prev]);
+    }
     toast({ variant: 'success', title: 'Lead updated', message: 'Changes have been saved.' });
+  };
+
+  const handleAddNote = () => {
+    if (!notes.trim()) return;
+    const snippet = notes.trim().slice(0, 80) + (notes.trim().length > 80 ? '...' : '');
+    const entry = addActivity(lead.id, 'note_added', 'Note added', snippet, 'file');
+    setLeadActivities((prev) => [entry, ...prev]);
+    toast({ variant: 'success', title: 'Note saved', message: 'Note has been added to the activity timeline.' });
   };
 
   const handleDelete = () => {
@@ -107,6 +153,22 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
         }
       >
         <div className="space-y-6">
+          {/* Next action callout */}
+          {nextFollowUp && (
+            <div className="flex items-center gap-3 rounded-lg border border-accent-200 bg-accent-50 px-4 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-600 text-white shrink-0">
+                <Calendar size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-sans text-xs font-semibold text-accent-700 uppercase tracking-wider">Next action</p>
+                <p className="font-sans text-sm font-medium text-primary-900 mt-0.5">
+                  Follow up {formatDateShort(nextFollowUp)}
+                  {nextFollowUpType && ` — ${nextFollowUpType}`}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Property */}
           <section>
             <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Property</h3>
@@ -227,7 +289,12 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
 
           {/* Notes */}
           <section>
-            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Notes</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-sans font-semibold text-primary-900 text-sm">Notes</h3>
+              <Button size="sm" variant="outline" onClick={handleAddNote} leftIcon={<Plus size={13} />}>
+                Add note
+              </Button>
+            </div>
             <Textarea
               name="notes"
               value={notes}
@@ -237,9 +304,37 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
             />
           </section>
 
-          {/* Activity */}
+          {/* Activity timeline */}
           <section className="pt-4 border-t border-primary-100">
-            <div className="flex items-center gap-2 text-xs text-primary-400">
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-4">Activity</h3>
+            {leadActivities.length > 0 ? (
+              <div className="relative">
+                <div className="absolute left-[1.375rem] top-3 bottom-3 w-px bg-primary-200" />
+                <div className="space-y-4">
+                  {leadActivities.map((activity) => {
+                    const Icon = iconMap[activity.icon] || Plus;
+                    return (
+                      <div key={activity.id} className="relative flex items-start gap-4">
+                        <div className={`relative flex h-11 w-11 items-center justify-center rounded-xl shrink-0 z-10 ${iconBgMap[activity.icon] || 'bg-primary-100 text-primary-700'}`}>
+                          <Icon size={16} />
+                        </div>
+                        <div className="pt-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-sans text-xs text-primary-400">{formatDateShort(activity.timestamp)}</span>
+                          </div>
+                          <p className="font-sans font-semibold text-primary-900 text-sm mt-0.5">{activity.title}</p>
+                          <p className="font-sans text-primary-500 text-sm leading-relaxed mt-0.5">{activity.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="font-sans text-sm text-primary-400 py-4">No activity recorded yet.</p>
+            )}
+
+            <div className="mt-6 flex items-center gap-2 text-xs text-primary-400">
               <FileText size={12} />
               <span>Created {createdDate}</span>
               <span className="text-primary-300">·</span>
