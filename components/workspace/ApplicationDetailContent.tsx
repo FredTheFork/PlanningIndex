@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, FileText, Plus, Send, Calendar, Building2, CheckCircle2, XCircle, Clock, Ban, PoundSterling, Download } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
 import { ApplicationIntelligence } from '@/components/workspace/ApplicationIntelligence';
 import { SingleMarkerMap } from '@/components/workspace/SingleMarkerMap';
+import { AddLeadModal } from '@/components/workspace/AddLeadModal';
 import type { SearchApplication } from '@/lib/mock/applications';
 
 const statusVariant: Record<SearchApplication['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -32,6 +34,7 @@ interface ApplicationDetailContentProps {
 }
 
 export function ApplicationDetailContent({ application: app }: ApplicationDetailContentProps) {
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
   const StatusIcon = statusIcon[app.status];
 
   const details = [
@@ -156,7 +159,7 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
       <section>
         <h2 className="font-sans font-semibold text-primary-900 text-base mb-4">CRM</h2>
         <div className="flex flex-wrap gap-3">
-          <Button variant="primary" leftIcon={<Plus size={15} />}>
+          <Button variant="primary" leftIcon={<Plus size={15} />} onClick={() => setAddLeadOpen(true)}>
             Add to Leads
           </Button>
           <Button variant="outline" leftIcon={<Send size={15} />}>
@@ -164,6 +167,8 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
           </Button>
         </div>
       </section>
+
+      <AddLeadModal open={addLeadOpen} onClose={() => setAddLeadOpen(false)} application={app} />
     </div>
   );
 }

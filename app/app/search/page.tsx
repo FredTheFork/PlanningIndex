@@ -6,8 +6,10 @@ import { SearchFiltersBar } from '@/components/workspace/SearchFiltersBar';
 import { SearchResultsList } from '@/components/workspace/SearchResultsList';
 import { SearchSkeleton } from '@/components/workspace/SearchSkeleton';
 import { MapView } from '@/components/workspace/MapView';
+import { AddLeadModal } from '@/components/workspace/AddLeadModal';
 import {
   type SearchFilters,
+  type SearchApplication,
   mockApplications,
   filterApplications,
   defaultFilters,
@@ -21,6 +23,8 @@ export default function SearchPage() {
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const [addLeadApp, setAddLeadApp] = useState<SearchApplication | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -47,6 +51,11 @@ export default function SearchPage() {
 
   const handleCardHover = useCallback((id: string | null) => {
     setHoveredId(id);
+  }, []);
+
+  const handleAddLead = useCallback((app: SearchApplication) => {
+    setAddLeadApp(app);
+    setAddLeadOpen(true);
   }, []);
 
   const radiusMiles = parseInt(filters.radius, 10) || 25;
@@ -117,6 +126,7 @@ export default function SearchPage() {
             selectedId={selectedId}
             hoveredId={hoveredId}
             onHover={handleCardHover}
+            onAddLead={handleAddLead}
           />
         </div>
 
@@ -132,6 +142,12 @@ export default function SearchPage() {
           />
         </div>
       </div>
+
+      <AddLeadModal
+        open={addLeadOpen}
+        onClose={() => { setAddLeadOpen(false); setAddLeadApp(null); }}
+        application={addLeadApp}
+      />
     </div>
   );
 }

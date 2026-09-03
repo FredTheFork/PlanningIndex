@@ -16,6 +16,7 @@ interface SearchResultsListProps {
   selectedId?: string | null;
   hoveredId?: string | null;
   onHover?: (id: string | null) => void;
+  onAddLead?: (application: SearchApplication) => void;
 }
 
 const PER_PAGE = 10;
@@ -29,6 +30,7 @@ export function SearchResultsList({
   selectedId = null,
   hoveredId = null,
   onHover,
+  onAddLead,
 }: SearchResultsListProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -112,6 +114,7 @@ export function SearchResultsList({
                 selected={app.id === selectedId}
                 hovered={app.id === hoveredId}
                 onHover={onHover}
+                onAddLead={onAddLead}
               />
             ))}
           </div>

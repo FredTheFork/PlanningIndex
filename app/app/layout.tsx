@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Sidebar from '@/components/workspace/Sidebar';
 import TopBar from '@/components/workspace/TopBar';
 import AuthGuard from '@/components/workspace/AuthGuard';
+import { LeadsProvider } from '@/components/workspace/LeadsContext';
 import { ToastProvider } from '@/components/ui/Toast';
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
@@ -11,6 +12,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
 
   return (
     <AuthGuard>
+      <LeadsProvider>
       <ToastProvider>
         <div className="min-h-screen bg-surface-page">
           <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
@@ -22,6 +24,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </ToastProvider>
+      </LeadsProvider>
     </AuthGuard>
   );
 }

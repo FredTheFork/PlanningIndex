@@ -18,6 +18,7 @@ interface ApplicationResultCardProps {
   hovered?: boolean;
   onSelect?: (id: string) => void;
   onHover?: (id: string | null) => void;
+  onAddLead?: (application: SearchApplication) => void;
 }
 
 export function ApplicationResultCard({
@@ -26,6 +27,7 @@ export function ApplicationResultCard({
   hovered = false,
   onSelect,
   onHover,
+  onAddLead,
 }: ApplicationResultCardProps) {
   const cardRef = (el: HTMLDivElement | null) => {
     if (el && selected) {
@@ -95,7 +97,7 @@ export function ApplicationResultCard({
                 size="sm"
                 variant="primary"
                 leftIcon={<Plus size={13} />}
-                onClick={() => onSelect?.(app.id)}
+                onClick={() => onAddLead?.(app)}
               >
                 Add to Leads
               </Button>

@@ -1,0 +1,263 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { MapPin, FileText, User, Phone, Mail, Calendar, PoundSterling, Trash2, ArrowRight } from 'lucide-react';
+import { Drawer } from '@/components/ui/Drawer';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
+import { Badge } from '@/components/ui/Badge';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
+import { useLeads } from '@/components/workspace/LeadsContext';
+import { leadStatusOptions, type Lead, type LeadStatus, type FollowUpType } from '@/lib/mock/leads';
+
+interface LeadDetailDrawerProps {
+  lead: Lead | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+const statusBadgeVariant = (status: LeadStatus): 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'accent' => {
+  switch (status) {
+    case 'Won': return 'success';
+    case 'New': return 'info';
+    case 'Contacted': return 'warning';
+    case 'Proposal Sent': return 'accent';
+    case 'Follow Up': return 'warning';
+    case 'Lost': return 'danger';
+    default: return 'neutral';
+  }
+};
+
+export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps) {
+  const { updateLead, deleteLead } = useLeads();
+  const { toast } = useToast();
+
+  const [status, setStatus] = useState<LeadStatus>('New');
+  const [notes, setNotes] = useState('');
+  const [nextFollowUp, setNextFollowUp] = useState('');
+  const [nextFollowUpType, setNextFollowUpType] = useState<FollowUpType | ''>('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [estimatedValue, setEstimatedValue] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    if (lead) {
+      setStatus(lead.status);
+      setNotes(lead.notes);
+      setNextFollowUp(lead.nextFollowUp ? lead.nextFollowUp.split('T')[0] : '');
+      setNextFollowUpType(lead.nextFollowUpType || '');
+      setAssignedTo(lead.assignedTo);
+      setEstimatedValue(lead.estimatedValue);
+      setContactName(lead.contactName);
+      setContactPhone(lead.contactPhone);
+      setContactEmail(lead.contactEmail);
+    }
+  }, [lead]);
+
+  if (!lead) return null;
+
+  const handleSave = () => {
+    updateLead(lead.id, {
+      status,
+      notes: notes.trim(),
+      nextFollowUp: nextFollowUp || null,
+      nextFollowUpType: nextFollowUpType || null,
+      assignedTo: assignedTo.trim() || 'Unassigned',
+      estimatedValue: estimatedValue,
+      contactName: contactName.trim(),
+      contactPhone: contactPhone.trim(),
+      contactEmail: contactEmail.trim(),
+    });
+    toast({ variant: 'success', title: 'Lead updated', message: 'Changes have been saved.' });
+  };
+
+  const handleDelete = () => {
+    deleteLead(lead.id);
+    toast({ variant: 'success', title: 'Lead deleted', message: 'The lead has been removed.' });
+    setConfirmDelete(false);
+    onClose();
+  };
+
+  const createdDate = new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const updatedDate = new Date(lead.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  return (
+    <>
+      <Drawer
+        open={open}
+        onClose={onClose}
+        title="Lead details"
+        size="lg"
+        footer={
+          <>
+            <Button variant="danger" leftIcon={<Trash2 size={15} />} onClick={() => setConfirmDelete(true)}>
+              Delete
+            </Button>
+            <Button onClick={handleSave}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-6">
+          {/* Property */}
+          <section>
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Property</h3>
+            <div className="rounded-lg border border-primary-200 bg-primary-50 p-4">
+              <p className="font-sans font-medium text-primary-900 text-sm flex items-center gap-1.5">
+                <MapPin size={14} className="text-primary-400 shrink-0" />
+                {lead.propertyAddress}, {lead.propertyPostcode}
+              </p>
+            </div>
+          </section>
+
+          {/* Linked application */}
+          <section>
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Planning application</h3>
+            <Link
+              href={`/app/applications/${lead.applicationId}`}
+              className="group flex items-center justify-between gap-3 rounded-lg border border-primary-200 bg-white p-4 hover:border-primary-300 hover:shadow-card-hover transition-all"
+            >
+              <div className="min-w-0">
+                <p className="font-sans font-medium text-primary-900 text-sm group-hover:text-accent-700 transition-colors">{lead.applicationTitle}</p>
+                <p className="font-mono text-xs text-primary-400 mt-0.5">{lead.applicationReference}</p>
+              </div>
+              <ArrowRight size={16} className="text-primary-300 group-hover:text-accent-600 transition-colors shrink-0" />
+            </Link>
+          </section>
+
+          {/* Contact */}
+          <section>
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Contact</h3>
+            <div className="space-y-3">
+              <Input
+                label="Contact name"
+                name="contactName"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                leftIcon={<User size={15} />}
+              />
+              <Input
+                label="Phone"
+                name="contactPhone"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                leftIcon={<Phone size={15} />}
+              />
+              <Input
+                label="Email"
+                name="contactEmail"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                leftIcon={<Mail size={15} />}
+              />
+            </div>
+          </section>
+
+          {/* Status */}
+          <section>
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Status</h3>
+            <Select
+              name="status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as LeadStatus)}
+            >
+              {leadStatusOptions.filter(o => o.value !== 'all').map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </Select>
+            <div className="mt-2">
+              <Badge variant={statusBadgeVariant(status)}>{status}</Badge>
+            </div>
+          </section>
+
+          {/* Value and assignment */}
+          <section>
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Value & assignment</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Estimated value"
+                name="estimatedValue"
+                value={estimatedValue}
+                onChange={(e) => setEstimatedValue(e.target.value)}
+                leftIcon={<PoundSterling size={15} />}
+              />
+              <Input
+                label="Assigned to"
+                name="assignedTo"
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+              />
+            </div>
+          </section>
+
+          {/* Follow-up */}
+          <section>
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Next follow-up</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Date"
+                type="date"
+                name="nextFollowUp"
+                value={nextFollowUp}
+                onChange={(e) => setNextFollowUp(e.target.value)}
+                leftIcon={<Calendar size={15} />}
+              />
+              <Select
+                label="Type"
+                name="nextFollowUpType"
+                value={nextFollowUpType}
+                onChange={(e) => setNextFollowUpType(e.target.value as FollowUpType | '')}
+              >
+                <option value="">Select type</option>
+                <option value="Call">Call</option>
+                <option value="Email">Email</option>
+                <option value="Visit">Visit</option>
+                <option value="Proposal">Proposal</option>
+              </Select>
+            </div>
+          </section>
+
+          {/* Notes */}
+          <section>
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Notes</h3>
+            <Textarea
+              name="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add notes about this lead..."
+              rows={4}
+            />
+          </section>
+
+          {/* Activity */}
+          <section className="pt-4 border-t border-primary-100">
+            <div className="flex items-center gap-2 text-xs text-primary-400">
+              <FileText size={12} />
+              <span>Created {createdDate}</span>
+              <span className="text-primary-300">·</span>
+              <span>Updated {updatedDate}</span>
+            </div>
+          </section>
+        </div>
+      </Drawer>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+        title="Delete this lead?"
+        message="This action cannot be undone. The lead will be permanently removed from your pipeline."
+        confirmLabel="Delete"
+        danger
+      />
+    </>
+  );
+}
