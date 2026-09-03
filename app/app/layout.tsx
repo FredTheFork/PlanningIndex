@@ -5,6 +5,7 @@ import Sidebar from '@/components/workspace/Sidebar';
 import TopBar from '@/components/workspace/TopBar';
 import AuthGuard from '@/components/workspace/AuthGuard';
 import { LeadsProvider } from '@/components/workspace/LeadsContext';
+import { ProposalsProvider } from '@/components/workspace/ProposalsContext';
 import { ToastProvider } from '@/components/ui/Toast';
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {

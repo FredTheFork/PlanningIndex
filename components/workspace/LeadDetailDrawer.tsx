@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   MapPin, FileText, User, Phone, Mail, Calendar, PoundSterling,
   Trash2, ArrowRight, Plus, Check, Mail as MailIcon, Send, Package,
-  Phone as PhoneIcon,
+  Phone as PhoneIcon, FilePlus,
 } from 'lucide-react';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
@@ -16,8 +17,11 @@ import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 import { useLeads } from '@/components/workspace/LeadsContext';
+import { useProposals } from '@/components/workspace/ProposalsContext';
+import { TemplateSelectorModal } from '@/components/workspace/TemplateSelectorModal';
 import { leadStatusOptions, type Lead, type LeadStatus, type FollowUpType } from '@/lib/mock/leads';
 import type { LeadActivity, ActivityIcon } from '@/lib/mock/lead-activity';
+import type { ProposalStatus } from '@/lib/mock/proposals';
 
 interface LeadDetailDrawerProps {
   lead: Lead | null;
@@ -63,9 +67,25 @@ function formatDateShort(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
+const proposalStatusBadgeVariant = (status: ProposalStatus): 'neutral' | 'info' | 'warning' | 'danger' | 'success' | 'accent' => {
+  switch (status) {
+    case 'Delivered': return 'success';
+    case 'Draft': return 'neutral';
+    case 'Ready': return 'info';
+    case 'Sent': return 'info';
+    case 'Processing': return 'warning';
+    case 'Mailed': return 'accent';
+    case 'Delivery issue': return 'warning';
+    case 'Undeliverable': return 'danger';
+    default: return 'neutral';
+  }
+};
+
 export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps) {
   const { updateLead, deleteLead, addActivity, getActivityByLeadId } = useLeads();
+  const { getProposalsByLeadId } = useProposals();
   const { toast } = useToast();
+  const router = useRouter();
 
   const [status, setStatus] = useState<LeadStatus>('New');
   const [notes, setNotes] = useState('');
@@ -78,6 +98,8 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
   const [contactEmail, setContactEmail] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [leadActivities, setLeadActivities] = useState<LeadActivity[]>([]);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [linkedProposals, setLinkedProposals] = useState<ReturnType<typeof getProposalsByLeadId>>([]);
 
   useEffect(() => {
     if (lead) {
@@ -91,8 +113,9 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
       setContactPhone(lead.contactPhone);
       setContactEmail(lead.contactEmail);
       setLeadActivities(getActivityByLeadId(lead.id));
+      setLinkedProposals(getProposalsByLeadId(lead.id));
     }
-  }, [lead, getActivityByLeadId]);
+  }, [lead, getActivityByLeadId, getProposalsByLeadId]);
 
   if (!lead) return null;
 
@@ -129,6 +152,11 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
     toast({ variant: 'success', title: 'Lead deleted', message: 'The lead has been removed.' });
     setConfirmDelete(false);
     onClose();
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    setTemplateModalOpen(false);
+    router.push(`/app/proposals/new?leadId=${lead.id}&templateId=${templateId}`);
   };
 
   const createdDate = new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -193,6 +221,43 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
               </div>
               <ArrowRight size={16} className="text-primary-300 group-hover:text-accent-600 transition-colors shrink-0" />
             </Link>
+          </section>
+
+          {/* Proposals */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-sans font-semibold text-primary-900 text-sm">Proposals</h3>
+              <Button
+                size="sm"
+                variant={linkedProposals.length > 0 ? 'outline' : 'primary'}
+                leftIcon={<FilePlus size={13} />}
+                onClick={() => setTemplateModalOpen(true)}
+              >
+                {linkedProposals.length > 0 ? 'Create another' : 'Create Proposal'}
+              </Button>
+            </div>
+            {linkedProposals.length > 0 ? (
+              <div className="space-y-2">
+                {linkedProposals.map((proposal) => (
+                  <Link
+                    key={proposal.id}
+                    href={`/app/proposals/${proposal.id}`}
+                    className="group flex items-center justify-between gap-3 rounded-lg border border-primary-200 bg-white p-3 hover:border-primary-300 hover:shadow-card-hover transition-all"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs text-primary-500">{proposal.reference}</p>
+                      <p className="font-sans text-sm font-medium text-primary-900 mt-0.5">{proposal.totalValue}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={proposalStatusBadgeVariant(proposal.status)}>{proposal.status}</Badge>
+                      <ArrowRight size={14} className="text-primary-300 group-hover:text-accent-600 transition-colors" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="font-sans text-sm text-primary-400 py-2">No proposals yet for this lead.</p>
+            )}
           </section>
 
           {/* Contact */}
@@ -352,6 +417,13 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
         message="This action cannot be undone. The lead will be permanently removed from your pipeline."
         confirmLabel="Delete"
         danger
+      />
+
+      <TemplateSelectorModal
+        open={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSelect={handleTemplateSelect}
+        lead={lead}
       />
     </>
   );
