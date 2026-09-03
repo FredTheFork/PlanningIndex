@@ -76,6 +76,8 @@ export interface Proposal {
   mailedDate: string | null;
   deliveredDate: string | null;
   trackingNumber: string | null;
+  deliveryIssueReason: string | null;
+  estimatedDeliveryDate: string | null;
 }
 
 let proposalCounter = 10483;
@@ -100,6 +102,12 @@ const baseDate = new Date('2026-09-01');
 function daysAgo(days: number): string {
   const d = new Date(baseDate);
   d.setDate(d.getDate() - days);
+  return d.toISOString();
+}
+
+function daysAheadFrom(daysAgoRef: number, addDays: number): string {
+  const d = new Date(baseDate);
+  d.setDate(d.getDate() - daysAgoRef + addDays);
   return d.toISOString();
 }
 
@@ -409,6 +417,8 @@ export const mockProposals: Proposal[] = [
     mailedDate: daysAgo(1),
     deliveredDate: null,
     trackingNumber: 'RM-TRK-001842',
+    deliveryIssueReason: null,
+    estimatedDeliveryDate: daysAheadFrom(1, 3),
   },
   {
     id: 'proposal-2',
@@ -442,6 +452,8 @@ export const mockProposals: Proposal[] = [
     mailedDate: daysAgo(3),
     deliveredDate: daysAgo(2),
     trackingNumber: 'RM-TRK-001841',
+    deliveryIssueReason: null,
+    estimatedDeliveryDate: daysAheadFrom(3, 3),
   },
   {
     id: 'proposal-3',
@@ -475,6 +487,8 @@ export const mockProposals: Proposal[] = [
     mailedDate: null,
     deliveredDate: null,
     trackingNumber: 'RM-TRK-001843',
+    deliveryIssueReason: null,
+    estimatedDeliveryDate: daysAheadFrom(1, 3),
   },
   {
     id: 'proposal-4',
@@ -508,6 +522,8 @@ export const mockProposals: Proposal[] = [
     mailedDate: null,
     deliveredDate: null,
     trackingNumber: null,
+    deliveryIssueReason: null,
+    estimatedDeliveryDate: null,
   },
   {
     id: 'proposal-5',
@@ -541,6 +557,8 @@ export const mockProposals: Proposal[] = [
     mailedDate: daysAgo(6),
     deliveredDate: null,
     trackingNumber: 'RM-TRK-001840',
+    deliveryIssueReason: 'Recipient not known at address — return to sender',
+    estimatedDeliveryDate: daysAheadFrom(6, 3),
   },
   {
     id: 'proposal-6',
@@ -574,6 +592,8 @@ export const mockProposals: Proposal[] = [
     mailedDate: daysAgo(8),
     deliveredDate: daysAgo(7),
     trackingNumber: 'RM-TRK-001839',
+    deliveryIssueReason: null,
+    estimatedDeliveryDate: daysAheadFrom(8, 3),
   },
 ];
 
@@ -626,5 +646,7 @@ export function createProposalFromLead(
     mailedDate: null,
     deliveredDate: null,
     trackingNumber: null,
+    deliveryIssueReason: null,
+    estimatedDeliveryDate: null,
   };
 }

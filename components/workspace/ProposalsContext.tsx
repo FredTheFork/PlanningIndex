@@ -71,6 +71,10 @@ export function ProposalsProvider({ children }: { children: ReactNode }) {
         if (status === 'Sent' && !proposal.sentDate) {
           updates.sentDate = now;
           updates.trackingNumber = `RM-TRK-${Math.floor(Math.random() * 900000 + 100000)}`;
+          updates.deliveryIssueReason = null;
+          const estDate = new Date();
+          estDate.setDate(estDate.getDate() + 3);
+          updates.estimatedDeliveryDate = estDate.toISOString();
           addActivity(
             proposal.leadId,
             'proposal_sent',
