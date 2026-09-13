@@ -11,7 +11,11 @@ export default function CompanyPage() {
   const [city, setCity] = useState('');
   const [postcode, setPostcode] = useState('');
   const [phone, setPhone] = useState('');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
   const [website, setWebsite] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [vatNumber, setVatNumber] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +26,7 @@ export default function CompanyPage() {
       if (!session?.user) return;
       const { data } = await supabase
         .from('profiles')
-        .select('company_name, address_line1, address_line2, city, postcode, phone, website')
+        .select('company_name, address_line1, address_line2, city, postcode, phone, company_email, company_phone, website, logo_url, vat_number')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -33,7 +37,11 @@ export default function CompanyPage() {
         setCity(data.city || '');
         setPostcode(data.postcode || '');
         setPhone(data.phone || '');
+        setCompanyEmail(data.company_email || '');
+        setCompanyPhone(data.company_phone || '');
         setWebsite(data.website || '');
+        setLogoUrl(data.logo_url || '');
+        setVatNumber(data.vat_number || '');
       }
       setLoading(false);
     });
@@ -58,7 +66,11 @@ export default function CompanyPage() {
           city: city.trim() || null,
           postcode: postcode.trim() || null,
           phone: phone.trim() || null,
+          company_email: companyEmail.trim() || null,
+          company_phone: companyPhone.trim() || null,
           website: website.trim() || null,
+          logo_url: logoUrl.trim() || null,
+          vat_number: vatNumber.trim() || null,
         })
         .eq('id', session.user.id);
 
@@ -134,11 +146,19 @@ export default function CompanyPage() {
           />
         </div>
         <Input
-          label="Phone"
-          name="phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="Company phone"
+          label="Company phone"
+          name="companyPhone"
+          value={companyPhone}
+          onChange={(e) => setCompanyPhone(e.target.value)}
+          placeholder="01895 123456"
+        />
+        <Input
+          label="Company email"
+          name="companyEmail"
+          type="email"
+          value={companyEmail}
+          onChange={(e) => setCompanyEmail(e.target.value)}
+          placeholder="info@yourcompany.co.uk"
         />
         <Input
           label="Website"
@@ -146,6 +166,22 @@ export default function CompanyPage() {
           value={website}
           onChange={(e) => setWebsite(e.target.value)}
           placeholder="www.example.co.uk"
+        />
+        <Input
+          label="Logo URL"
+          name="logoUrl"
+          value={logoUrl}
+          onChange={(e) => setLogoUrl(e.target.value)}
+          placeholder="https://..."
+          helperText="Link to your company logo. This appears on proposals."
+        />
+        <Input
+          label="VAT number"
+          name="vatNumber"
+          value={vatNumber}
+          onChange={(e) => setVatNumber(e.target.value)}
+          placeholder="GB123456789"
+          helperText="Appears on proposals if registered for VAT."
         />
         <Button type="submit" loading={saving}>
           Save Changes

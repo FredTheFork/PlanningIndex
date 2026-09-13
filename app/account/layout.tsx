@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { User, Building2, CreditCard, Shield, ArrowLeft } from 'lucide-react';
+import { User, Building2, CreditCard, Shield, ArrowLeft, SlidersHorizontal, Bell } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Account',
@@ -10,6 +10,8 @@ export const metadata: Metadata = {
 const accountNav = [
   { label: 'Profile', href: '/account', icon: User },
   { label: 'Company', href: '/account/company', icon: Building2 },
+  { label: 'Preferences', href: '/account/preferences', icon: SlidersHorizontal },
+  { label: 'Notifications', href: '/account/notifications', icon: Bell },
   { label: 'Billing', href: '/account/billing', icon: CreditCard },
   { label: 'Security', href: '/account/security', icon: Shield },
 ];
