@@ -11,8 +11,9 @@ import { AddLeadModal } from '@/components/workspace/AddLeadModal';
 import { TemplateSelectorModal } from '@/components/workspace/TemplateSelectorModal';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import { useProposals } from '@/components/workspace/ProposalsContext';
-import { createProposalFromLead, getTemplateById } from '@/lib/mock/proposals';
+import { createProposalFromLead, getTemplateById, type CompanyInfo } from '@/lib/mock/proposals';
 import type { SearchApplication } from '@/lib/mock/applications';
+import { supabase } from '@/lib/supabase/client';
 
 const statusVariant: Record<SearchApplication['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
   Approved: 'success',
@@ -48,11 +49,32 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
 
   const existingLead = leads.find((l) => l.applicationId === app.id);
 
-  const handleTemplateSelect = (templateId: string) => {
+  const handleTemplateSelect = async (templateId: string) => {
     if (!existingLead) return;
     const template = getTemplateById(templateId);
     if (!template) return;
-    const newProposal = createProposalFromLead(existingLead, template);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    let companyInfo: CompanyInfo = {};
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_name, address_line1, address_line2, city, postcode, company_phone, company_email, vat_number')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (profile) {
+        const addressParts = [profile.address_line1, profile.address_line2, profile.city, profile.postcode].filter(Boolean);
+        companyInfo = {
+          companyName: profile.company_name || '',
+          companyAddress: addressParts.join(', '),
+          companyPhone: profile.company_phone || '',
+          companyEmail: profile.company_email || '',
+          companyVatNumber: profile.vat_number || '',
+        };
+      }
+    }
+
+    const newProposal = createProposalFromLead(existingLead, template, companyInfo);
     addProposal(newProposal);
     setTemplateModalOpen(false);
     router.push(`/app/proposals/${newProposal.id}`);

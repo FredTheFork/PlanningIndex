@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CreditCard, Check, ArrowRight } from 'lucide-react';
+import { CreditCard, Check, ArrowRight, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { Button, Alert, Badge } from '@/components/ui';
+import { Button, Alert, Badge, ConfirmDialog } from '@/components/ui';
 import { pricingTiers } from '@/lib/pricing';
+
+interface PaymentHistoryItem {
+  id: string;
+  event_type: string;
+  created_at: string;
+  subscription_data: Record<string, unknown>;
+}
 
 export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [error, setError] = useState('');
   const [subscription, setSubscription] = useState<{
     plan_tier: string | null;
@@ -18,17 +26,28 @@ export default function BillingPage() {
     current_period_end: string | null;
     cancel_at_period_end: boolean;
   } | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) return;
-      const { data } = await supabase
+      const { data: subData } = await supabase
         .from('subscriptions')
         .select('plan_tier, billing_cycle, status, current_period_end, cancel_at_period_end')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      setSubscription(data as typeof subscription);
+      setSubscription(subData as typeof subscription);
+
+      const { data: histData } = await supabase
+        .from('subscription_history')
+        .select('id, event_type, created_at, subscription_data')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      setPaymentHistory((histData as PaymentHistoryItem[]) || []);
       setLoading(false);
     });
   }, []);
@@ -66,6 +85,38 @@ export default function BillingPage() {
     }
   };
 
+  const handleCancel = async () => {
+    setCancelLoading(true);
+    setError('');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch('/api/cancel-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to cancel subscription.');
+        return;
+      }
+
+      setSubscription((prev) => prev ? { ...prev, cancel_at_period_end: true } : null);
+      setShowCancelConfirm(false);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -80,6 +131,36 @@ export default function BillingPage() {
 
   const statusVariant = subscription?.status === 'active' ? 'success' : subscription?.status === 'trialing' ? 'info' : 'neutral';
 
+  const currentTierIndex = pricingTiers.findIndex((t) => t.slug === subscription?.plan_tier);
+  const canUpgrade = currentTierIndex >= 0 && currentTierIndex < pricingTiers.length - 2;
+  const canDowngrade = currentTierIndex > 0;
+
+  const formatHistoryEvent = (item: PaymentHistoryItem): { label: string; amount: string | null } => {
+    const data = item.subscription_data;
+    const eventType = item.event_type;
+
+    if (eventType === 'payment_succeeded') {
+      const amountPaid = (data as Record<string, unknown>).amount_paid as number | undefined;
+      return {
+        label: 'Payment succeeded',
+        amount: amountPaid ? `\u00A3${(amountPaid / 100).toFixed(2)}` : null,
+      };
+    }
+    if (eventType === 'payment_failed') {
+      return { label: 'Payment failed', amount: null };
+    }
+    if (eventType === 'created') {
+      return { label: 'Subscription created', amount: null };
+    }
+    if (eventType === 'updated') {
+      return { label: 'Subscription updated', amount: null };
+    }
+    if (eventType === 'deleted') {
+      return { label: 'Subscription cancelled', amount: null };
+    }
+    return { label: eventType, amount: null };
+  };
+
   return (
     <div>
       <h2 className="font-sans font-semibold text-primary-900 text-lg mb-1">
@@ -93,6 +174,7 @@ export default function BillingPage() {
 
       {subscription ? (
         <div className="max-w-lg space-y-4">
+          {/* Current plan card */}
           <div className="rounded-xl border border-primary-200 bg-white p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -138,16 +220,54 @@ export default function BillingPage() {
               )}
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Button onClick={handlePortal} loading={portalLoading}>
                 Manage Subscription
               </Button>
               <Link href="/choose-plan">
                 <Button variant="outline">Change Plan</Button>
               </Link>
+              {!subscription.cancel_at_period_end && (
+                <Button
+                  variant="danger"
+                  leftIcon={<XCircle size={15} />}
+                  onClick={() => setShowCancelConfirm(true)}
+                >
+                  Cancel
+                </Button>
+              )}
             </div>
           </div>
 
+          {/* Upgrade / Downgrade */}
+          {!subscription.cancel_at_period_end && (canUpgrade || canDowngrade) && (
+            <div className="rounded-xl border border-primary-200 bg-white p-6">
+              <h3 className="font-sans font-semibold text-primary-900 text-sm mb-4">
+                Change your plan
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {canUpgrade && (
+                  <Link href="/choose-plan">
+                    <Button variant="secondary" leftIcon={<TrendingUp size={15} />}>
+                      Upgrade Plan
+                    </Button>
+                  </Link>
+                )}
+                {canDowngrade && (
+                  <Link href="/choose-plan">
+                    <Button variant="outline" leftIcon={<TrendingDown size={15} />}>
+                      Downgrade Plan
+                    </Button>
+                  </Link>
+                )}
+              </div>
+              <p className="font-sans text-xs text-primary-400 mt-3">
+                Changes take effect at the start of your next billing period. You can switch between monthly and annual billing anytime.
+              </p>
+            </div>
+          )}
+
+          {/* What's included */}
           <div className="rounded-xl border border-primary-200 bg-white p-6">
             <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">
               What&apos;s included
@@ -167,6 +287,41 @@ export default function BillingPage() {
               </p>
             )}
           </div>
+
+          {/* Payment history */}
+          <div className="rounded-xl border border-primary-200 bg-white p-6">
+            <h3 className="font-sans font-semibold text-primary-900 text-sm mb-4">
+              Payment history
+            </h3>
+            {paymentHistory.length > 0 ? (
+              <div className="space-y-2">
+                {paymentHistory.map((item) => {
+                  const { label, amount } = formatHistoryEvent(item);
+                  return (
+                    <div key={item.id} className="flex items-center justify-between py-2 border-b border-primary-100 last:border-b-0">
+                      <div>
+                        <p className="font-sans text-sm font-medium text-primary-900">{label}</p>
+                        <p className="font-sans text-xs text-primary-400 mt-0.5">
+                          {new Date(item.created_at).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      {amount && (
+                        <span className="font-sans text-sm font-semibold text-primary-900">{amount}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="font-sans text-sm text-primary-400">
+                No payment history yet. Your payments will appear here once your subscription is active.
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         <div className="max-w-lg rounded-xl border border-primary-200 bg-white p-8 text-center">
@@ -183,6 +338,17 @@ export default function BillingPage() {
           </Link>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={handleCancel}
+        title="Cancel subscription?"
+        message="Your subscription will remain active until the end of your current billing period, after which it will be cancelled. You can re-subscribe at any time."
+        confirmLabel="Cancel Subscription"
+        danger
+        loading={cancelLoading}
+      />
     </div>
   );
 }

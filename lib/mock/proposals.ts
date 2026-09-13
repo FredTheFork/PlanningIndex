@@ -605,9 +605,18 @@ export function getProposalsByLeadId(leadId: string): Proposal[] {
   return mockProposals.filter((p) => p.leadId === leadId);
 }
 
+export interface CompanyInfo {
+  companyName?: string;
+  companyAddress?: string;
+  companyPhone?: string;
+  companyEmail?: string;
+  companyVatNumber?: string;
+}
+
 export function createProposalFromLead(
   lead: Lead,
-  template: ProposalTemplate
+  template: ProposalTemplate,
+  companyInfo?: CompanyInfo
 ): Proposal {
   const reference = generateProposalReference();
   const now = new Date().toISOString();
@@ -629,11 +638,11 @@ export function createProposalFromLead(
     contactName: lead.contactName,
     contactPhone: lead.contactPhone,
     contactEmail: lead.contactEmail,
-    companyName: '',
-    companyAddress: '',
-    companyPhone: '',
-    companyEmail: '',
-    companyVatNumber: '',
+    companyName: companyInfo?.companyName || '',
+    companyAddress: companyInfo?.companyAddress || '',
+    companyPhone: companyInfo?.companyPhone || '',
+    companyEmail: companyInfo?.companyEmail || '',
+    companyVatNumber: companyInfo?.companyVatNumber || '',
     projectTitle: lead.applicationTitle,
     projectReference: lead.applicationReference,
     templateId: template.id,
