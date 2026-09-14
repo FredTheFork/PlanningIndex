@@ -1,0 +1,37 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_URL",
+      "description": "Supabase project URL (https://<project>.supabase.co) — needed for auth and database features. Get it from your Supabase dashboard > Project Settings > API.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "description": "Supabase anon/public API key — needed for auth and database features. Get it from your Supabase dashboard > Project Settings > API.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "STRIPE_SECRET_KEY",
+      "description": "Stripe secret key (sk_...) — needed for checkout and subscription features. Get it from your Stripe dashboard > Developers > API keys.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+      "description": "Stripe publishable key (pk_...) — needed for client-side Stripe integration. Get it from your Stripe dashboard > Developers > API keys.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "STRIPE_WEBHOOK_SECRET",
+      "description": "Stripe webhook signing secret (whsec_...) — needed for webhook signature verification. Get it from your Stripe dashboard > Developers > Webhooks.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "NEXT_PUBLIC_MAPBOX_TOKEN",
+      "description": "Mapbox public access token — needed for map features in the workspace. Get it from your Mapbox account > Access tokens.",
+      "requiredAtBoot": false
+    }
+  ]
+}
