@@ -3,6 +3,7 @@ import { SITE_URL } from '@/lib/seo';
 import { industries } from '@/lib/industries';
 import { blogPosts } from '@/lib/blog';
 import { helpCategories, getAllHelpArticleSlugs } from '@/lib/help';
+import { guides } from '@/lib/guides';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: Array<{
@@ -48,12 +49,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: 'monthly' as const,
   }));
 
+  const guideArticlePages = guides.map((guide) => ({
+    path: `/guides/${guide.slug}`,
+    priority: 0.5,
+    changeFrequency: 'monthly' as const,
+  }));
+
   const allPages = [
     ...staticPages,
     ...industryPages,
     ...blogArticlePages,
     ...helpCategoryPages,
     ...helpArticlePages,
+    ...guideArticlePages,
   ];
 
   return allPages.map((page) => ({

@@ -19,9 +19,11 @@ import { useToast } from '@/components/ui/Toast';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import { useProposals } from '@/components/workspace/ProposalsContext';
 import { TemplateSelectorModal } from '@/components/workspace/TemplateSelectorModal';
+import { createProposalFromLead, getTemplateById, type CompanyInfo } from '@/lib/mock/proposals';
 import { leadStatusOptions, type Lead, type LeadStatus, type FollowUpType } from '@/lib/mock/leads';
 import type { LeadActivity, ActivityIcon } from '@/lib/mock/lead-activity';
 import type { ProposalStatus } from '@/lib/mock/proposals';
+import { supabase } from '@/lib/supabase/client';
 
 interface LeadDetailDrawerProps {
   lead: Lead | null;
@@ -83,7 +85,7 @@ const proposalStatusBadgeVariant = (status: ProposalStatus): 'neutral' | 'info' 
 
 export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps) {
   const { updateLead, deleteLead, addActivity, getActivityByLeadId } = useLeads();
-  const { getProposalsByLeadId } = useProposals();
+  const { getProposalsByLeadId, addProposal } = useProposals();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -154,9 +156,36 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
     onClose();
   };
 
-  const handleTemplateSelect = (templateId: string) => {
+  const handleTemplateSelect = async (templateId: string) => {
+    if (!lead) return;
+    const template = getTemplateById(templateId);
+    if (!template) return;
+
     setTemplateModalOpen(false);
-    router.push(`/app/proposals/new?leadId=${lead.id}&templateId=${templateId}`);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    let companyInfo: CompanyInfo = {};
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_name, address_line1, address_line2, city, postcode, company_phone, company_email, vat_number')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (profile) {
+        const addressParts = [profile.address_line1, profile.address_line2, profile.city, profile.postcode].filter(Boolean);
+        companyInfo = {
+          companyName: profile.company_name || '',
+          companyAddress: addressParts.join(', '),
+          companyPhone: profile.company_phone || '',
+          companyEmail: profile.company_email || '',
+          companyVatNumber: profile.vat_number || '',
+        };
+      }
+    }
+
+    const newProposal = createProposalFromLead(lead, template, companyInfo);
+    addProposal(newProposal);
+    router.push(`/app/proposals/${newProposal.id}`);
   };
 
   const createdDate = new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
