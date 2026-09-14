@@ -2,19 +2,36 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight, Clock, Search, X } from 'lucide-react';
 import { DarkCTABanner, SectionLabel, Badge } from '@/components/ui';
 import { blogPosts, getBlogCategories, getFeaturedBlogPost } from '@/lib/blog';
 
 export default function BlogListContent() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const categories = getBlogCategories();
   const featuredPost = getFeaturedBlogPost();
 
   const filteredPosts = useMemo(() => {
-    if (activeCategory === 'All') return blogPosts.filter((p) => p.slug !== featuredPost.slug);
-    return blogPosts.filter((p) => p.slug !== featuredPost.slug && p.category === activeCategory);
-  }, [activeCategory, featuredPost.slug]);
+    let posts = blogPosts.filter((p) => p.slug !== featuredPost.slug);
+
+    if (activeCategory !== 'All') {
+      posts = posts.filter((p) => p.category === activeCategory);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      posts = posts.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.excerpt.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          p.tags.some((tag) => tag.toLowerCase().includes(q))
+      );
+    }
+
+    return posts;
+  }, [activeCategory, searchQuery, featuredPost.slug]);
 
   return (
     <>
@@ -56,6 +73,26 @@ export default function BlogListContent() {
 
       <section className="bg-white py-20 px-6">
         <div className="max-w-page mx-auto">
+          <div className="relative max-w-xl mb-8">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400 pointer-events-none" />
+            <input
+              type="search"
+              placeholder="Search articles..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-12 pr-10 py-3 border border-primary-300 rounded-xl shadow-sm placeholder:text-primary-400 focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-primary-400 hover:text-primary-700 transition-colors"
+                aria-label="Clear search"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-wrap gap-2 mb-12">
             {categories.map((cat) => (
               <button
@@ -105,7 +142,11 @@ export default function BlogListContent() {
 
           {filteredPosts.length === 0 && (
             <div className="text-center py-16">
-              <p className="font-sans text-primary-400">No articles in this category yet. Check back soon.</p>
+              <p className="font-sans text-primary-400">
+                {searchQuery.trim()
+                  ? `No articles found for "${searchQuery}". Try a different search term.`
+                  : 'No articles in this category yet. Check back soon.'}
+              </p>
             </div>
           )}
         </div>
