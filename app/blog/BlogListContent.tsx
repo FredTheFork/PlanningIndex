@@ -4,24 +4,28 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock, Search, X } from 'lucide-react';
 import { DarkCTABanner, SectionLabel, Badge } from '@/components/ui';
-import { blogPosts, getBlogCategories, getFeaturedBlogPost } from '@/lib/blog';
+import type { BlogPost } from '@/lib/blog';
 
-export default function BlogListContent() {
+interface BlogListContentProps {
+  posts: BlogPost[];
+}
+
+export default function BlogListContent({ posts }: BlogListContentProps) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const categories = getBlogCategories();
-  const featuredPost = getFeaturedBlogPost();
+  const categories = ['All', ...Array.from(new Set(posts.map((post) => post.category)))];
+  const featuredPost = posts[0];
 
   const filteredPosts = useMemo(() => {
-    let posts = blogPosts.filter((p) => p.slug !== featuredPost.slug);
+    let result = posts.filter((p) => p.slug !== featuredPost.slug);
 
     if (activeCategory !== 'All') {
-      posts = posts.filter((p) => p.category === activeCategory);
+      result = result.filter((p) => p.category === activeCategory);
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      posts = posts.filter(
+      result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.excerpt.toLowerCase().includes(q) ||
@@ -30,8 +34,8 @@ export default function BlogListContent() {
       );
     }
 
-    return posts;
-  }, [activeCategory, searchQuery, featuredPost.slug]);
+    return result;
+  }, [posts, activeCategory, searchQuery, featuredPost.slug]);
 
   return (
     <>

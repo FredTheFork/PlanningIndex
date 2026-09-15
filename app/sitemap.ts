@@ -1,11 +1,11 @@
 import { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import { industries } from '@/lib/industries';
-import { blogPosts } from '@/lib/blog';
-import { helpCategories, getAllHelpArticleSlugs } from '@/lib/help';
+import { getBlogPosts, getHelpCategories } from '@/lib/content/wordpress';
 import { guides } from '@/lib/guides';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [blogPosts, helpCategories] = await Promise.all([getBlogPosts(), getHelpCategories()]);
   const staticPages: Array<{
     path: string;
     priority: number;
@@ -43,11 +43,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: 'monthly' as const,
   }));
 
-  const helpArticlePages = getAllHelpArticleSlugs().map(({ category, article }) => ({
-    path: `/help/${category}/${article}`,
-    priority: 0.5,
-    changeFrequency: 'monthly' as const,
-  }));
+  const helpArticlePages = helpCategories.flatMap((cat) =>
+    cat.articles.map((article) => ({
+      path: `/help/${cat.slug}/${article.slug}`,
+      priority: 0.5,
+      changeFrequency: 'monthly' as const,
+    }))
+  );
 
   const guideArticlePages = guides.map((guide) => ({
     path: `/guides/${guide.slug}`,

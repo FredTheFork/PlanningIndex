@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Users, Plus, Search, MapPin, Calendar, Phone, Mail } from 'lucide-react';
-import { Button, Badge, EmptyState, Table, type TableColumn } from '@/components/ui';
+import { Button, Badge, EmptyState, ErrorState, Table, type TableColumn } from '@/components/ui';
+import { TableSkeleton } from '@/components/ui/skeletons';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import { AddLeadModal } from '@/components/workspace/AddLeadModal';
 import { LeadDetailDrawer } from '@/components/workspace/LeadDetailDrawer';
@@ -27,7 +28,7 @@ function formatDate(iso: string | null): string {
 }
 
 export default function LeadsPage() {
-  const { leads } = useLeads();
+  const { leads, status, retry } = useLeads();
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -133,7 +134,17 @@ export default function LeadsPage() {
         </Button>
       </div>
 
-      {leads.length === 0 ? (
+      {status === 'loading' ? (
+        <TableSkeleton rows={6} cols={6} />
+      ) : status === 'error' ? (
+        <div className="rounded-xl border border-primary-200 bg-white">
+          <ErrorState
+            title="Couldn't load your leads"
+            description="There was a problem reaching the server. Your data is safe — please try again."
+            onRetry={retry}
+          />
+        </div>
+      ) : leads.length === 0 ? (
         <div className="rounded-xl border border-primary-200 bg-white">
           <EmptyState
             icon={Users}

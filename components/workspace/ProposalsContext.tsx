@@ -5,14 +5,25 @@ import type { Proposal, ProposalStatus } from '@/lib/mock/proposals';
 import type { LeadActivity } from '@/lib/mock/lead-activity';
 import { useLeads } from '@/components/workspace/LeadsContext';
 
+export type LoadStatus = 'loading' | 'ready' | 'error';
+
+export interface SendRecipient {
+  recipientName?: string;
+  recipientAddress?: string;
+  recipientPostcode?: string;
+}
+
 interface ProposalsContextValue {
   proposals: Proposal[];
+  status: LoadStatus;
+  retry: () => void;
   addProposal: (proposal: Proposal) => void;
   updateProposal: (id: string, updates: Partial<Proposal>) => void;
   deleteProposal: (id: string) => void;
   getProposalById: (id: string) => Proposal | undefined;
   getProposalsByLeadId: (leadId: string) => Proposal[];
   updateProposalStatus: (id: string, status: ProposalStatus) => void;
+  sendProposal: (id: string, recipient?: SendRecipient) => Promise<Proposal>;
 }
 
 const ProposalsContext = createContext<ProposalsContextValue | null>(null);
@@ -26,20 +37,33 @@ export function useProposals() {
 export function ProposalsProvider({ children }: { children: ReactNode }) {
   const { setActivitiesFromServer } = useLeads();
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [status, setStatus] = useState<LoadStatus>('loading');
+  const [reloadToken, setReloadToken] = useState(0);
 
   // Initial load from the backend (Phase 43 — Proposal integration).
   useEffect(() => {
     let cancelled = false;
+    setStatus('loading');
     fetch('/api/proposals', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { proposals: [] }))
-      .then((data) => {
-        if (!cancelled) setProposals(data.proposals ?? []);
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
       })
-      .catch(() => {});
+      .then((data) => {
+        if (!cancelled) {
+          setProposals(data.proposals ?? []);
+          setStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('error');
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadToken]);
+
+  const retry = useCallback(() => setReloadToken((t) => t + 1), []);
 
   const refreshActivities = useCallback(() => {
     fetch('/api/activities', { cache: 'no-store' })
@@ -104,14 +128,14 @@ export function ProposalsProvider({ children }: { children: ReactNode }) {
   );
 
   const updateProposalStatus = useCallback(
-    (id: string, status: ProposalStatus) => {
-      setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    (id: string, proposalStatus: ProposalStatus) => {
+      setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: proposalStatus } : p)));
       // The server owns the send/delivery state machine and the lifecycle
       // activities (proposal_sent / proposal_delivered).
       fetch(`/api/proposals/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: proposalStatus }),
       })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
@@ -125,16 +149,54 @@ export function ProposalsProvider({ children }: { children: ReactNode }) {
     [refreshActivities]
   );
 
+  /**
+   * Phase 44 — physical mail. All provider complexity lives behind
+   * POST /api/proposals/[id]/send; this returns the server's resulting
+   * state, or throws a user-safe error message for the UI to display.
+   */
+  const sendProposal = useCallback(
+    async (id: string, recipient?: SendRecipient): Promise<Proposal> => {
+      // Optimistic: show the proposal as being processed while dispatch runs.
+      setProposals((prev) =>
+        prev.map((p) => (p.id === id && (p.status === 'Draft' || p.status === 'Ready') ? { ...p, status: 'Processing' } : p))
+      );
+
+      const res = await fetch(`/api/proposals/${id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recipient ?? {}),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.proposal) {
+        // Dispatch failed — restore the previous status so the UI reflects
+        // that nothing was sent.
+        setProposals((prev) =>
+          prev.map((p) => (p.id === id && p.status === 'Processing' ? { ...p, status: 'Ready' } : p))
+        );
+        throw new Error(data?.error ?? 'We could not send this proposal. Please try again in a moment.');
+      }
+
+      setProposals((prev) => prev.map((p) => (p.id === id ? data.proposal : p)));
+      refreshActivities();
+      return data.proposal as Proposal;
+    },
+    [refreshActivities]
+  );
+
   return (
     <ProposalsContext.Provider
       value={{
         proposals,
+        status,
+        retry,
         addProposal,
         updateProposal,
         deleteProposal,
         getProposalById,
         getProposalsByLeadId,
         updateProposalStatus,
+        sendProposal,
       }}
     >
       {children}

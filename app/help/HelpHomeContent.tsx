@@ -4,16 +4,22 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, ChevronRight } from 'lucide-react';
 import { DarkCTABanner, Card } from '@/components/ui';
-import { helpCategories, getPopularHelpArticles } from '@/lib/help';
+import type { HelpCategory } from '@/lib/help';
 
-export default function HelpHomeContent() {
+interface HelpHomeContentProps {
+  categories: HelpCategory[];
+}
+
+export default function HelpHomeContent({ categories }: HelpHomeContentProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const popularArticles = getPopularHelpArticles(6);
+  const popularArticles = categories
+    .flatMap((cat) => cat.articles)
+    .slice(0, 6);
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
-    return helpCategories.flatMap((cat) =>
+    return categories.flatMap((cat) =>
       cat.articles
         .filter(
           (article) =>
@@ -23,7 +29,7 @@ export default function HelpHomeContent() {
         )
         .map((article) => ({ ...article, categorySlug: cat.slug }))
     );
-  }, [searchQuery]);
+  }, [searchQuery, categories]);
 
   return (
     <>
@@ -100,7 +106,7 @@ export default function HelpHomeContent() {
           <div className="max-w-page mx-auto">
             <h2 className="font-display font-bold text-primary-900 text-h3 mb-8">Browse by category</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {helpCategories.map((category) => (
+              {categories.map((category) => (
                 <Link key={category.slug} href={`/help/${category.slug}`} className="group block h-full">
                   <Card variant="raised" className="h-full">
                     <div className="flex items-start justify-between gap-3">

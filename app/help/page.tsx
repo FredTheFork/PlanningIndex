@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import { PageHero } from '@/components/ui';
+import { getHelpCategories } from '@/lib/content/wordpress';
 import HelpHomeContent from './HelpHomeContent';
 
 export const metadata: Metadata = {
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/help` },
 };
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const categories = await getHelpCategories();
+
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Home', path: '/' },
     { name: 'Help Centre', path: '/help' },
@@ -30,7 +33,7 @@ export default function HelpPage() {
         title="Help Centre"
         subtitle="Find answers to common questions about PlanningIndex. Browse our help categories or get in touch with our team."
       />
-      <HelpHomeContent />
+      <HelpHomeContent categories={categories} />
     </>
   );
 }

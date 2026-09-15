@@ -4,9 +4,13 @@ import { createContext, useContext, useState, useCallback, useEffect, ReactNode 
 import type { Lead, LeadStatus } from '@/lib/mock/leads';
 import type { LeadActivity, ActivityType, ActivityIcon } from '@/lib/mock/lead-activity';
 
+export type LoadStatus = 'loading' | 'ready' | 'error';
+
 interface LeadsContextValue {
   leads: Lead[];
   activities: LeadActivity[];
+  status: LoadStatus;
+  retry: () => void;
   addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => Lead;
   updateLead: (id: string, updates: Partial<Lead>) => void;
   deleteLead: (id: string) => void;
@@ -34,30 +38,39 @@ export function useLeads() {
 export function LeadsProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [activities, setActivities] = useState<LeadActivity[]>([]);
+  const [status, setStatus] = useState<LoadStatus>('loading');
+  const [reloadToken, setReloadToken] = useState(0);
 
   // Initial load from the backend (Phase 42 — CRM integration).
   useEffect(() => {
     let cancelled = false;
+    setStatus('loading');
     (async () => {
       try {
         const [leadsRes, actsRes] = await Promise.all([
           fetch('/api/leads', { cache: 'no-store' }),
           fetch('/api/activities', { cache: 'no-store' }),
         ]);
-        const leadsData = leadsRes.ok ? await leadsRes.json() : { leads: [] };
-        const actsData = actsRes.ok ? await actsRes.json() : { activities: [] };
+        if (!leadsRes.ok || !actsRes.ok) throw new Error('load failed');
+        const leadsData = await leadsRes.json();
+        const actsData = await actsRes.json();
         if (!cancelled) {
           setLeads(leadsData.leads ?? []);
           setActivities(actsData.activities ?? []);
+          setStatus('ready');
         }
       } catch {
-        // Network failure — keep empty state; AuthGuard handles logged-out users.
+        // Network/API failure — surface a retry state; AuthGuard handles
+        // logged-out users separately.
+        if (!cancelled) setStatus('error');
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadToken]);
+
+  const retry = useCallback(() => setReloadToken((t) => t + 1), []);
 
   const persistActivity = useCallback(
     (entry: LeadActivity) => {
@@ -188,6 +201,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       value={{
         leads,
         activities,
+        status,
+        retry,
         addLead,
         updateLead,
         deleteLead,

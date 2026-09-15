@@ -7,7 +7,8 @@ import { SITE_URL, generateBreadcrumbSchema, generateArticleSchema } from '@/lib
 import { Breadcrumbs, Badge, DarkCTABanner } from '@/components/ui';
 import { ArticleBody } from '@/components/marketing/ArticleBody';
 import { ArticleFeedback } from '@/components/marketing/ArticleFeedback';
-import { blogPosts, getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/blog';
+import { blogPosts } from '@/lib/blog';
+import { getBlogPosts, getBlogPostBySlug, getRelatedPosts } from '@/lib/content/wordpress';
 
 interface PageProps {
   params: { slug: string };
@@ -17,8 +18,8 @@ export function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const post = getBlogPostBySlug(params.slug);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const post = await getBlogPostBySlug(params.slug);
   if (!post) {
     return {
       title: 'Article Not Found',
@@ -50,11 +51,12 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function BlogArticlePage({ params }: PageProps) {
-  const post = getBlogPostBySlug(params.slug);
+export default async function BlogArticlePage({ params }: PageProps) {
+  const allPosts = await getBlogPosts();
+  const post = allPosts.find((p) => p.slug === params.slug);
   if (!post) notFound();
 
-  const relatedPosts = getRelatedBlogPosts(params.slug, 3);
+  const relatedPosts = getRelatedPosts(allPosts, params.slug, 3);
 
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Home', path: '/' },

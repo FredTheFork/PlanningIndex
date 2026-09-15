@@ -3,7 +3,7 @@ import { Newspaper } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema, generateArticleSchema } from '@/lib/seo';
 import { PageHero } from '@/components/ui';
-import { blogPosts } from '@/lib/blog';
+import { getBlogPosts } from '@/lib/content/wordpress';
 import BlogListContent from './BlogListContent';
 
 export const metadata: Metadata = {
@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/blog` },
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const posts = await getBlogPosts();
+
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Home', path: '/' },
     { name: 'Blog', path: '/blog' },
@@ -30,7 +32,7 @@ export default function BlogPage() {
     name: 'PlanningIndex Blog',
     url: `${SITE_URL}/blog`,
     description: 'Industry insights, planning application trends, and construction business tips.',
-    blogPost: blogPosts.map((post) => ({
+    blogPost: posts.map((post) => ({
       '@type': 'BlogPosting',
       headline: post.title,
       url: `${SITE_URL}/blog/${post.slug}`,
@@ -48,7 +50,7 @@ export default function BlogPage() {
         title="The PlanningIndex Blog"
         subtitle="Industry insights, planning application trends, and construction business tips to help you find and win more work."
       />
-      <BlogListContent />
+      <BlogListContent posts={posts} />
     </>
   );
 }
