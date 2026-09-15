@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb } from '@/lib/server/db';
 import type { ProposalStatus } from '@/lib/mock/proposals';
-import { getSessionUser, unauthorized } from '@/lib/server/auth';
+import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
 
 interface Params {
   params: { id: string };
@@ -10,6 +10,8 @@ interface Params {
 export async function GET(req: NextRequest, { params }: Params) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'proposals'))
+    return forbidden('Your plan does not include access to this feature.');
 
   const db = getDb();
   const proposal = db.proposals.find((p) => p.id === params.id && p.userId === user.id);
@@ -20,6 +22,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'proposals'))
+    return forbidden('Your plan does not include access to this feature.');
 
   try {
     const db = getDb();
@@ -84,6 +88,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(req: NextRequest, { params }: Params) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'proposals'))
+    return forbidden('Your plan does not include access to this feature.');
 
   const db = getDb();
   const index = db.proposals.findIndex((p) => p.id === params.id && p.userId === user.id);

@@ -27,6 +27,16 @@ API routes (`/api/checkout`, `/api/portal`, `/api/cancel-subscription`) graceful
 - Default hosting platforms (Vercel etc.) set NODE_ENV=production automatically, so a standard deploy is unaffected.
 - `.env.base44-defaults` holds non-functional placeholders (deliberately NOT `sk_`-prefixed so `isStripeConfigured()` stays false until real keys arrive via /run/base44/app.env).
 
+## Access enforcement (backend)
+- Plan access is enforced server-side, not just in the UI: `/api/leads*` and `/api/activities` require an active membership with CRM (`regional`/`national`/`local`), `/api/proposals*` additionally requires `permissions.proposals` (so the `local` plan gets 403). Unauthenticated calls get 401 first.
+- `/api/profile` PATCH rejects `councils` arrays longer than the plan's `maxCouncils` (0 without membership).
+- Helpers live in `lib/server/auth.ts`: `hasFeatureAccess(userId, 'crm'|'proposals')`, `maxCouncilsFor(userId)`, `forbidden(msg)`.
+- An "active" membership = status `active`/`trialing` AND `!cancelAtPeriodEnd` (same rule as login redirect and the `useAuth` hook).
+
+## Testing
+- `bash /tmp/integration-test.sh` (recreate if absent) runs 71 end-to-end checks against localhost:3000 covering auth (login/logout/expiry/password reset), membership activation/cancel/enforcement, CRM and proposal CRUD. It creates its own run-unique users and leaves the demo account intact.
+- The file-backed DB (`.data/db.json`) is cached in memory by the server process — direct file edits are invisible (and get overwritten by the next `saveDb()`) until a dev-server module reload is forced (e.g. `touch lib/server/db.ts`, then wait a few seconds).
+
 ## Architecture notes
 - No local database needed — Supabase is hosted externally.
 - Supabase migrations live in `supabase/migrations/` (applied on the hosted Supabase project, not locally).

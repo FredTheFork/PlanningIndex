@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb, newId, type DbLead } from '@/lib/server/db';
-import { getSessionUser, unauthorized } from '@/lib/server/auth';
+import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
 
 export async function GET(req: NextRequest) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'crm'))
+    return forbidden('Your plan does not include CRM access.');
 
   const db = getDb();
   const leads = db.leads
@@ -16,6 +18,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'crm'))
+    return forbidden('Your plan does not include CRM access.');
 
   try {
     const body = await req.json();

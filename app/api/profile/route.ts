@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb } from '@/lib/server/db';
-import { getSessionUser, unauthorized } from '@/lib/server/auth';
+import { getSessionUser, unauthorized, maxCouncilsFor } from '@/lib/server/auth';
 import type { DbProfile } from '@/lib/server/db';
 
 export async function GET(req: NextRequest) {
@@ -41,6 +41,16 @@ export async function PATCH(req: NextRequest) {
     const db = getDb();
     const profile = db.profiles[user.id];
     if (!profile) return NextResponse.json({ error: 'Profile not found.' }, { status: 404 });
+
+    if (Array.isArray(body.councils)) {
+      const maxCouncils = maxCouncilsFor(user.id);
+      if (body.councils.length > maxCouncils) {
+        return NextResponse.json(
+          { error: `Your plan allows up to ${maxCouncils} council${maxCouncils === 1 ? '' : 's'}.` },
+          { status: 400 }
+        );
+      }
+    }
 
     for (const field of EDITABLE_FIELDS) {
       if (field in body && body[field] !== undefined) {

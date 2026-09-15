@@ -79,6 +79,39 @@ export function unauthorized(): NextResponse {
   return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
 }
 
+export function forbidden(message: string): NextResponse {
+  return NextResponse.json({ error: message }, { status: 403 });
+}
+
+/**
+ * Backend enforcement of plan access. The frontend receives the same
+ * permission set via /api/auth/session, but the API must independently
+ * enforce it — an active membership is required, and the plan tier
+ * determines which features (CRM, proposals) are available.
+ */
+export function hasFeatureAccess(userId: string, feature: 'crm' | 'proposals'): boolean {
+  const db = getDb();
+  const subscription = db.subscriptions.find(
+    (s) =>
+      s.userId === userId &&
+      (s.status === 'active' || s.status === 'trialing') &&
+      !s.cancelAtPeriodEnd
+  );
+  if (!subscription) return false;
+  return planPermissions(subscription.planTier)[feature];
+}
+
+export function maxCouncilsFor(userId: string): number {
+  const db = getDb();
+  const subscription = db.subscriptions.find(
+    (s) =>
+      s.userId === userId &&
+      (s.status === 'active' || s.status === 'trialing') &&
+      !s.cancelAtPeriodEnd
+  );
+  return planPermissions(subscription?.planTier ?? null).maxCouncils;
+}
+
 export function setSessionCookie(res: NextResponse, token: string): NextResponse {
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,

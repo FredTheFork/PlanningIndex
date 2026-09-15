@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb } from '@/lib/server/db';
 import type { ActivityType, ActivityIcon } from '@/lib/mock/lead-activity';
-import { getSessionUser, unauthorized } from '@/lib/server/auth';
+import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
 
 export async function GET(req: NextRequest) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'crm'))
+    return forbidden('Your plan does not include access to this feature.');
 
   const leadId = req.nextUrl.searchParams.get('leadId');
   const db = getDb();
@@ -18,6 +20,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'crm'))
+    return forbidden('Your plan does not include access to this feature.');
 
   try {
     const { leadId, type, title, description, icon } = await req.json();

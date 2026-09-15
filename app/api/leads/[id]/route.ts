@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb } from '@/lib/server/db';
-import { getSessionUser, unauthorized } from '@/lib/server/auth';
+import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
 
 interface Params {
   params: { id: string };
@@ -9,6 +9,8 @@ interface Params {
 export async function GET(req: NextRequest, { params }: Params) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'crm'))
+    return forbidden('Your plan does not include access to this feature.');
 
   const db = getDb();
   const lead = db.leads.find((l) => l.id === params.id && l.userId === user.id);
@@ -19,6 +21,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'crm'))
+    return forbidden('Your plan does not include access to this feature.');
 
   try {
     const db = getDb();
@@ -40,6 +44,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(req: NextRequest, { params }: Params) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'crm'))
+    return forbidden('Your plan does not include access to this feature.');
 
   const db = getDb();
   const index = db.leads.findIndex((l) => l.id === params.id && l.userId === user.id);

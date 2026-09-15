@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb, newId, type DbProposal } from '@/lib/server/db';
-import { getSessionUser, unauthorized } from '@/lib/server/auth';
+import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
 
 export async function GET(req: NextRequest) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'proposals'))
+    return forbidden('Your plan does not include access to this feature.');
 
   const db = getDb();
   const leadId = req.nextUrl.searchParams.get('leadId');
@@ -17,6 +19,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = getSessionUser(req);
   if (!user) return unauthorized();
+  if (!hasFeatureAccess(user.id, 'proposals'))
+    return forbidden('Your plan does not include access to this feature.');
 
   try {
     const body = await req.json();
