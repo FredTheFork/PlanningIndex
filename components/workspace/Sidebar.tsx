@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Search, Users, LayoutGrid, FileText, Briefcase, IceCream as TeamIcon, Activity, CreditCard, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Search, Users, LayoutGrid, FileText, Activity, CreditCard, Settings, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem {
@@ -30,13 +30,6 @@ const navSections: NavSection[] = [
     label: 'Work',
     items: [
       { label: 'Proposals', href: '/app/proposals', icon: FileText },
-      { label: 'Jobs', href: '/app/jobs', icon: Briefcase },
-    ],
-  },
-  {
-    label: 'Team',
-    items: [
-      { label: 'Team', href: '/app/team', icon: TeamIcon },
       { label: 'Activity', href: '/app/activity', icon: Activity },
     ],
   },

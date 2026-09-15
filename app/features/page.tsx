@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Search, Map, Target, Users, FileText, ShieldCheck, CreditCard, CheckCircle2, LayoutGrid, Filter, Send, Mail, Calendar, FolderOpen, Check, ArrowRight } from 'lucide-react';
+import { Search, Map, Target, Users, FileText, CreditCard, CheckCircle2, LayoutGrid, Filter, Send, Mail, Calendar, FolderOpen, Check, ArrowRight } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import { PageHero, DarkCTABanner, SectionLabel } from '@/components/ui';
@@ -10,7 +10,6 @@ import {
   ProposalShowcase,
   MapSearchShowcase,
   OpportunityDiscoveryShowcase,
-  TeamShowcase,
   AccountShowcase,
 } from '@/components/marketing';
 
@@ -26,7 +25,6 @@ const capabilityNav = [
   { icon: Target, label: 'Opportunity Discovery' },
   { icon: Users, label: 'CRM' },
   { icon: FileText, label: 'Proposals' },
-  { icon: ShieldCheck, label: 'Team' },
   { icon: CreditCard, label: 'Account & Billing' },
 ];
 
@@ -65,13 +63,6 @@ const featurePoints = {
     'Professional proposal templates',
     'Sent by physical post — printed and delivered',
     'Delivery tracking to the property door',
-  ],
-  team: [
-    'Multiple users with role-based permissions',
-    'Owner, Admin, Sales, Estimator, and Installer roles',
-    'Shared leads across your company',
-    'Collaboration on proposals and notes',
-    'See who is working on what at a glance',
   ],
   account: [
     'Choose coverage from one council to nationwide',
@@ -209,20 +200,7 @@ export default function FeaturesPage() {
         <FeatureList items={featurePoints.proposals} />
       </ProductShowcaseSection>
 
-      {/* 6. Team */}
-      <ProductShowcaseSection
-        id="team"
-        label="Team"
-        title="Your whole team, working from the same data."
-        description="Multiple users with role-based permissions. Share leads, proposals, and notes across your company. Owner, Admin, Sales, Estimator, Installer — everyone sees what they need, nothing they shouldn't."
-        reverse
-        className="bg-[#f7f9fc]"
-      >
-        <TeamShowcase />
-        <FeatureList items={featurePoints.team} />
-      </ProductShowcaseSection>
-
-      {/* 7. Account & Billing */}
+      {/* 6. Account & Billing */}
       <ProductShowcaseSection
         id="account-and-billing"
         label="Account & Billing"

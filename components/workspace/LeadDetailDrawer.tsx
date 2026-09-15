@@ -93,7 +93,6 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
   const [notes, setNotes] = useState('');
   const [nextFollowUp, setNextFollowUp] = useState('');
   const [nextFollowUpType, setNextFollowUpType] = useState<FollowUpType | ''>('');
-  const [assignedTo, setAssignedTo] = useState('');
   const [estimatedValue, setEstimatedValue] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -109,7 +108,6 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
       setNotes(lead.notes);
       setNextFollowUp(lead.nextFollowUp ? lead.nextFollowUp.split('T')[0] : '');
       setNextFollowUpType(lead.nextFollowUpType || '');
-      setAssignedTo(lead.assignedTo);
       setEstimatedValue(lead.estimatedValue);
       setContactName(lead.contactName);
       setContactPhone(lead.contactPhone);
@@ -128,7 +126,6 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
       notes: notes.trim(),
       nextFollowUp: nextFollowUp || null,
       nextFollowUpType: nextFollowUpType || null,
-      assignedTo: assignedTo.trim() || 'Unassigned',
       estimatedValue: estimatedValue,
       contactName: contactName.trim(),
       contactPhone: contactPhone.trim(),
@@ -344,12 +341,6 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
                 value={estimatedValue}
                 onChange={(e) => setEstimatedValue(e.target.value)}
                 leftIcon={<PoundSterling size={15} />}
-              />
-              <Input
-                label="Assigned to"
-                name="assignedTo"
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
               />
             </div>
           </section>

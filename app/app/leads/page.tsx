@@ -7,7 +7,7 @@ import { Button, Badge, EmptyState, Table, type TableColumn } from '@/components
 import { useLeads } from '@/components/workspace/LeadsContext';
 import { AddLeadModal } from '@/components/workspace/AddLeadModal';
 import { LeadDetailDrawer } from '@/components/workspace/LeadDetailDrawer';
-import { filterLeads, getAssignedToOptions, leadStatusOptions, type Lead, type LeadStatus } from '@/lib/mock/leads';
+import { filterLeads, leadStatusOptions, type Lead, type LeadStatus } from '@/lib/mock/leads';
 
 const statusBadgeVariant = (status: LeadStatus): 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'accent' => {
   switch (status) {
@@ -30,16 +30,13 @@ export default function LeadsPage() {
   const { leads } = useLeads();
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [assignedFilter, setAssignedFilter] = useState('all');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const assignedOptions = useMemo(() => getAssignedToOptions(leads), [leads]);
-
   const filteredLeads = useMemo(
-    () => filterLeads(leads, { keyword, status: statusFilter, assignedTo: assignedFilter }),
-    [leads, keyword, statusFilter, assignedFilter]
+    () => filterLeads(leads, { keyword, status: statusFilter }),
+    [leads, keyword, statusFilter]
   );
 
   const handleRowClick = (lead: Lead) => {
@@ -120,12 +117,6 @@ export default function LeadsPage() {
         </div>
       ),
     },
-    {
-      key: 'assignedTo',
-      header: 'Assigned',
-      sortable: true,
-      render: (lead) => <span className="font-sans text-sm text-primary-600">{lead.assignedTo}</span>,
-    },
   ];
 
   return (
@@ -177,15 +168,6 @@ export default function LeadsPage() {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            <select
-              value={assignedFilter}
-              onChange={(e) => setAssignedFilter(e.target.value)}
-              className="px-3 py-2.5 border border-primary-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors cursor-pointer"
-            >
-              {assignedOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
           </div>
 
           <div className="flex items-center justify-between">
@@ -204,7 +186,7 @@ export default function LeadsPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => { setKeyword(''); setStatusFilter('all'); setAssignedFilter('all'); }}
+                    onClick={() => { setKeyword(''); setStatusFilter('all'); }}
                   >
                     Clear filters
                   </Button>

@@ -97,12 +97,6 @@ export default function PipelinePage() {
         ) : <span className="font-sans text-sm text-primary-300">—</span>
       ),
     },
-    {
-      key: 'assignedTo',
-      header: 'Assigned',
-      sortable: true,
-      render: (lead) => <span className="font-sans text-sm text-primary-600">{lead.assignedTo}</span>,
-    },
   ];
 
   return (

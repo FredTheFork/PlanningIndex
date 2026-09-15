@@ -16,7 +16,6 @@ export interface Lead {
   notes: string;
   nextFollowUp: string | null;
   nextFollowUpType: FollowUpType | null;
-  assignedTo: string;
   estimatedValue: string;
   createdAt: string;
   updatedAt: string;
@@ -78,7 +77,6 @@ export const mockLeads: Lead[] = [
     notes: 'Application validated. Property has 12 timber sash windows to replace. Good opportunity for a full window contract.',
     nextFollowUp: daysAhead(1),
     nextFollowUpType: 'Call',
-    assignedTo: 'Sarah Mitchell',
     estimatedValue: '£4,200',
     createdAt: daysAgo(2),
     updatedAt: daysAgo(2),
@@ -99,7 +97,6 @@ export const mockLeads: Lead[] = [
     notes: '6m x 4m rear extension with bi-fold doors. Load-bearing wall removal. Substantial project.',
     nextFollowUp: daysAhead(2),
     nextFollowUpType: 'Email',
-    assignedTo: 'James Carter',
     estimatedValue: '£18,500',
     createdAt: daysAgo(1),
     updatedAt: daysAgo(1),
@@ -120,7 +117,6 @@ export const mockLeads: Lead[] = [
     notes: 'New build, approved with conditions. Spoke to applicant — they are getting quotes from builders. Interested in our services.',
     nextFollowUp: daysAhead(3),
     nextFollowUpType: 'Visit',
-    assignedTo: 'Sarah Mitchell',
     estimatedValue: '£32,000',
     createdAt: daysAgo(6),
     updatedAt: daysAgo(3),
@@ -141,7 +137,6 @@ export const mockLeads: Lead[] = [
     notes: 'Loft conversion with rear dormer and juliet balcony. Left a voicemail — awaiting callback.',
     nextFollowUp: daysAhead(1),
     nextFollowUpType: 'Call',
-    assignedTo: 'Emma Roberts',
     estimatedValue: '£8,750',
     createdAt: daysAgo(7),
     updatedAt: daysAgo(4),
@@ -162,7 +157,6 @@ export const mockLeads: Lead[] = [
     notes: 'Full roof replacement — concrete tiles to natural slate plus two dormers. Proposal sent by post on 01 Sep.',
     nextFollowUp: daysAhead(5),
     nextFollowUpType: 'Call',
-    assignedTo: 'James Carter',
     estimatedValue: '£6,400',
     createdAt: daysAgo(8),
     updatedAt: daysAgo(1),
@@ -183,7 +177,6 @@ export const mockLeads: Lead[] = [
     notes: 'Wraparound extension with aluminium bi-fold doors. Proposal delivered 29 Aug. Awaiting response.',
     nextFollowUp: daysAhead(4),
     nextFollowUpType: 'Email',
-    assignedTo: 'Sarah Mitchell',
     estimatedValue: '£22,000',
     createdAt: daysAgo(16),
     updatedAt: daysAgo(3),
@@ -204,7 +197,6 @@ export const mockLeads: Lead[] = [
     notes: 'Two-storey extension. Sent proposal two weeks ago. Called to follow up — they are comparing quotes. Need to call again next week.',
     nextFollowUp: daysAhead(3),
     nextFollowUpType: 'Call',
-    assignedTo: 'James Carter',
     estimatedValue: '£28,000',
     createdAt: daysAgo(12),
     updatedAt: daysAgo(5),
@@ -225,7 +217,6 @@ export const mockLeads: Lead[] = [
     notes: 'Side extension approved. Client accepted our proposal. Contract signed. Start date: 15 September.',
     nextFollowUp: null,
     nextFollowUpType: null,
-    assignedTo: 'Sarah Mitchell',
     estimatedValue: '£12,000',
     createdAt: daysAgo(10),
     updatedAt: daysAgo(1),
@@ -246,7 +237,6 @@ export const mockLeads: Lead[] = [
     notes: 'Garage conversion. Client accepted proposal. Job completed. Client very happy — potential for follow-on work.',
     nextFollowUp: null,
     nextFollowUpType: null,
-    assignedTo: 'Emma Roberts',
     estimatedValue: '£5,500',
     createdAt: daysAgo(14),
     updatedAt: daysAgo(2),
@@ -267,7 +257,6 @@ export const mockLeads: Lead[] = [
     notes: 'Boundary wall project. Client went with another contractor — price was too competitive for us.',
     nextFollowUp: null,
     nextFollowUpType: null,
-    assignedTo: 'James Carter',
     estimatedValue: '£3,800',
     createdAt: daysAgo(15),
     updatedAt: daysAgo(7),
@@ -282,7 +271,7 @@ export function getLeadById(id: string): Lead | undefined {
 
 export function filterLeads(
   leads: Lead[],
-  filters: { keyword: string; status: string; assignedTo: string }
+  filters: { keyword: string; status: string }
 ): Lead[] {
   let results = [...leads];
 
@@ -301,20 +290,9 @@ export function filterLeads(
     results = results.filter((lead) => lead.status === filters.status);
   }
 
-  if (filters.assignedTo !== 'all') {
-    results = results.filter((lead) => lead.assignedTo === filters.assignedTo);
-  }
-
   return results;
 }
 
-export function getAssignedToOptions(leads: Lead[]): { value: string; label: string }[] {
-  const names = Array.from(new Set(leads.map((l) => l.assignedTo)));
-  return [
-    { value: 'all', label: 'All team members' },
-    ...names.map((name) => ({ value: name, label: name })),
-  ];
-}
 
 export function getPipelineSummary(leads: Lead[]) {
   const active = leads.filter((l) => l.status !== 'Won' && l.status !== 'Lost');
