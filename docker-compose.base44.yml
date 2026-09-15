@@ -12,5 +12,8 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX:-}
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS:-}
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
     command: sh -c "npm install && npx next dev -p 3000 -H 0.0.0.0"
     restart: unless-stopped

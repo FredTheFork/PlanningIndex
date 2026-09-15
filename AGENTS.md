@@ -21,6 +21,12 @@ External integrations need real values to function:
 
 API routes (`/api/checkout`, `/api/portal`, `/api/cancel-subscription`) gracefully return 503 when Stripe is not configured.
 
+## Production build / hosting
+- The app builds cleanly for production: `NODE_ENV=production npx next build` (142/142 pages, exit 0).
+- CRITICAL: never run `next build` with `NODE_ENV=development` (the dev compose sets it) — it mixes dev/prod runtimes and produces bogus prerender errors on every page (`<Html> should not be imported outside of pages/_document`, `useContext` of null).
+- Default hosting platforms (Vercel etc.) set NODE_ENV=production automatically, so a standard deploy is unaffected.
+- `.env.base44-defaults` holds non-functional placeholders (deliberately NOT `sk_`-prefixed so `isStripeConfigured()` stays false until real keys arrive via /run/base44/app.env).
+
 ## Architecture notes
 - No local database needed — Supabase is hosted externally.
 - Supabase migrations live in `supabase/migrations/` (applied on the hosted Supabase project, not locally).
