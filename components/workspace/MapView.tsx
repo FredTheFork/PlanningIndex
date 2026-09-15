@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import { MapPin } from 'lucide-react';
+import { MapPin, AlertTriangle } from 'lucide-react';
 import type { SearchApplication } from '@/lib/mock/applications';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -39,6 +39,7 @@ export function MapView({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const [mapFailed, setMapFailed] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || !MAPBOX_TOKEN) return;
@@ -46,16 +47,26 @@ export function MapView({
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [centerLng, centerLat],
-      zoom: 10,
-      attributionControl: false,
-    });
+    let map: mapboxgl.Map;
+    try {
+      map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [centerLng, centerLat],
+        zoom: 10,
+        attributionControl: false,
+      });
+    } catch {
+      // Constructor throws when WebGL is unavailable.
+      setMapFailed(true);
+      return;
+    }
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
+
+    // Style/token/network failures surface here — fall back to the list view hint.
+    map.on('error', () => setMapFailed(true));
 
     mapRef.current = map;
 
@@ -131,6 +142,22 @@ export function MapView({
           <MapPin size={32} className="text-primary-300 mx-auto mb-3" />
           <p className="font-sans text-sm text-primary-500">
             Map view requires a Mapbox access token.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (mapFailed) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px] rounded-xl border border-primary-200 bg-primary-50">
+        <div className="text-center px-6">
+          <AlertTriangle size={32} className="text-primary-300 mx-auto mb-3" />
+          <p className="font-sans font-medium text-sm text-primary-700">
+            Map could not be loaded
+          </p>
+          <p className="font-sans text-sm text-primary-500 mt-1">
+            Your {applications.length} {applications.length === 1 ? 'result is' : 'results are'} still available in the list view — try reloading the page to restore the map.
           </p>
         </div>
       </div>

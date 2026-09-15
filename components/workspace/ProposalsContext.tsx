@@ -18,7 +18,7 @@ interface ProposalsContextValue {
   status: LoadStatus;
   retry: () => void;
   addProposal: (proposal: Proposal) => void;
-  updateProposal: (id: string, updates: Partial<Proposal>) => void;
+  updateProposal: (id: string, updates: Partial<Proposal>) => Promise<boolean>;
   deleteProposal: (id: string) => void;
   getProposalById: (id: string) => Proposal | undefined;
   getProposalsByLeadId: (leadId: string) => Proposal[];
@@ -94,11 +94,11 @@ export function ProposalsProvider({ children }: { children: ReactNode }) {
     [refreshActivities]
   );
 
-  const updateProposal = useCallback((id: string, updates: Partial<Proposal>) => {
+  const updateProposal = useCallback((id: string, updates: Partial<Proposal>): Promise<boolean> => {
     setProposals((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates, updatedDate: new Date().toISOString() } : p))
     );
-    fetch(`/api/proposals/${id}`, {
+    return fetch(`/api/proposals/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
@@ -108,8 +108,9 @@ export function ProposalsProvider({ children }: { children: ReactNode }) {
         if (data?.proposal) {
           setProposals((prev) => prev.map((p) => (p.id === id ? data.proposal : p)));
         }
+        return true;
       })
-      .catch(() => {});
+      .catch(() => false);
   }, []);
 
   const deleteProposal = useCallback((id: string) => {

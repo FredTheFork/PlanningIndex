@@ -280,7 +280,13 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
                 ))}
               </div>
             ) : (
-              <p className="font-sans text-sm text-primary-400 py-2">No proposals yet for this lead.</p>
+              <div className="rounded-lg border border-dashed border-primary-200 bg-primary-50/50 px-4 py-5 text-center">
+                <FileText size={20} className="text-primary-300 mx-auto mb-2" />
+                <p className="font-sans text-sm font-medium text-primary-700">No proposals yet</p>
+                <p className="font-sans text-xs text-primary-400 mt-0.5">
+                  Create a professional proposal from this lead to send by post.
+                </p>
+              </div>
             )}
           </section>
 
@@ -414,7 +420,13 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
                 </div>
               </div>
             ) : (
-              <p className="font-sans text-sm text-primary-400 py-4">No activity recorded yet.</p>
+              <div className="rounded-lg border border-dashed border-primary-200 bg-primary-50/50 px-4 py-5 text-center">
+                <Calendar size={20} className="text-primary-300 mx-auto mb-2" />
+                <p className="font-sans text-sm font-medium text-primary-700">No activity yet</p>
+                <p className="font-sans text-xs text-primary-400 mt-0.5">
+                  Notes, status changes, and proposals will appear here as you work on this lead.
+                </p>
+              </div>
             )}
 
             <div className="mt-6 flex items-center gap-2 text-xs text-primary-400">

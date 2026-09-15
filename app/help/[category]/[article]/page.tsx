@@ -72,7 +72,7 @@ export default async function HelpArticlePage({ params }: PageProps) {
         category={category}
         article={article}
         relatedArticles={relatedArticles}
-        allCategories={helpCategories}
+        allCategories={categories}
       />
     </>
   );

@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { LayoutGrid, List, Search, MapPin, Calendar } from 'lucide-react';
-import { Button, Badge, EmptyState, Table, type TableColumn } from '@/components/ui';
+import { Button, Badge, EmptyState, ErrorState, Table, type TableColumn } from '@/components/ui';
+import { ListSkeleton } from '@/components/ui/skeletons';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import { PipelineBoard } from '@/components/workspace/PipelineBoard';
 import { LeadDetailDrawer } from '@/components/workspace/LeadDetailDrawer';
@@ -27,7 +28,7 @@ function formatDate(iso: string | null): string {
 }
 
 export default function PipelinePage() {
-  const { leads } = useLeads();
+  const { leads, status, retry } = useLeads();
   const [view, setView] = useState<'board' | 'list'>('board');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -128,7 +129,17 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      {leads.length === 0 ? (
+      {status === 'loading' ? (
+        <ListSkeleton rows={6} />
+      ) : status === 'error' ? (
+        <div className="rounded-xl border border-primary-200 bg-white">
+          <ErrorState
+            title="Couldn't load your pipeline"
+            description="There was a problem reaching the server. Your data is safe — please try again."
+            onRetry={retry}
+          />
+        </div>
+      ) : leads.length === 0 ? (
         <div className="rounded-xl border border-primary-200 bg-white">
           <EmptyState
             icon={LayoutGrid}

@@ -80,7 +80,7 @@ function htmlToSections(html: string): BlogSection[] {
   const blocks = parts.map((part) => part.split(/<\/h[23]>/i).pop() ?? part);
 
   blocks.forEach((block, i) => {
-    const section: BlogSection = {};
+    const section: BlogSection = { paragraphs: [] };
 
     const paragraphs = matchAll(block, 'p')
       .map(stripHtml)
