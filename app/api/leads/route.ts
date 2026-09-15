@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb, newId, type DbLead } from '@/lib/server/db';
 import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
+import { pickAllowed } from '@/lib/server/rate-limit';
+import { LEAD_CREATABLE_FIELDS } from '@/lib/server/fields';
 
 export async function GET(req: NextRequest) {
   const user = getSessionUser(req);
@@ -29,14 +31,14 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
     const now = new Date().toISOString();
-    const lead: DbLead = {
-      ...body,
+    const lead = {
+      ...pickAllowed(body, LEAD_CREATABLE_FIELDS),
       id: `lead-${newId()}`,
       userId: user.id,
       status: body.status ?? 'New',
       createdAt: now,
       updatedAt: now,
-    };
+    } as DbLead;
     db.leads.push(lead);
     saveDb();
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
+import type { Map as MapboxMap } from 'mapbox-gl';
 import { MapPin } from 'lucide-react';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -15,52 +15,62 @@ interface SingleMarkerMapProps {
 
 export function SingleMarkerMap({ lat, lng, label, address }: SingleMarkerMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<MapboxMap | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || !MAPBOX_TOKEN) return;
-    if (mapRef.current) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    let cancelled = false;
+    let map: MapboxMap | null = null;
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [lng, lat],
-      zoom: 14,
-      attributionControl: false,
-    });
+    // Lazy-load mapbox-gl so the library stays out of the page's initial
+    // JavaScript bundle until the map actually mounts.
+    (async () => {
+      const mapboxgl = (await import('mapbox-gl')).default;
+      if (cancelled || !containerRef.current) return;
 
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
+      mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const el = document.createElement('div');
-    el.style.cssText = [
-      'width:28px',
-      'height:28px',
-      'border-radius:50%',
-      'background:#0284C7',
-      'border:4px solid white',
-      'box-shadow:0 2px 8px rgba(0,0,0,0.3)',
-      'cursor:pointer',
-    ].join(';');
+      map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [lng, lat],
+        zoom: 14,
+        attributionControl: false,
+      });
 
-    new mapboxgl.Marker(el)
-      .setLngLat([lng, lat])
-      .setPopup(
-        new mapboxgl.Popup({ closeOnClick: false, closeButton: false, offset: 20 }).setHTML(
-          `<div style="font-family:Inter,sans-serif;padding:4px">` +
-            `<p style="font-weight:600;font-size:13px;color:#0F172A;margin:0 0 2px">${label}</p>` +
-            `<p style="font-size:11px;color:#64748B;margin:0">${address}</p>` +
-            `</div>`
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+      map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
+
+      const el = document.createElement('div');
+      el.style.cssText = [
+        'width:28px',
+        'height:28px',
+        'border-radius:50%',
+        'background:#0284C7',
+        'border:4px solid white',
+        'box-shadow:0 2px 8px rgba(0,0,0,0.3)',
+        'cursor:pointer',
+      ].join(';');
+
+      new mapboxgl.Marker(el)
+        .setLngLat([lng, lat])
+        .setPopup(
+          new mapboxgl.Popup({ closeOnClick: false, closeButton: false, offset: 20 }).setHTML(
+            `<div style="font-family:inherit;padding:4px">` +
+              `<p style="font-weight:600;font-size:13px;color:#0F172A;margin:0 0 2px">${label}</p>` +
+              `<p style="font-size:11px;color:#64748B;margin:0">${address}</p>` +
+              `</div>`
+          )
         )
-      )
-      .addTo(map);
+        .addTo(map);
 
-    mapRef.current = map;
+      mapRef.current = map;
+    })();
 
     return () => {
-      map.remove();
+      cancelled = true;
+      map?.remove();
       mapRef.current = null;
     };
   }, [lat, lng, label, address]);

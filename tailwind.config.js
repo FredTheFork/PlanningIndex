@@ -123,9 +123,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['"Archivo"', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', '"Courier New"', 'monospace'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-archivo)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-jetbrains-mono)', '"Courier New"', 'monospace'],
       },
       fontSize: {
         'display': ['clamp(2.25rem, 5vw, 3.5rem)', { lineHeight: '1.1', fontWeight: '700' }],

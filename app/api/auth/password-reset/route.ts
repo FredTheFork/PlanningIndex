@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { getDb, saveDb } from '@/lib/server/db';
+import { rateLimit } from '@/lib/server/rate-limit';
 
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = rateLimit(req, 'password-reset', 5, 15 * 60 * 1000);
+    if (limited) return limited;
+
     const { email } = (await req.json()) as { email?: string };
     const normalizedEmail = (email || '').trim().toLowerCase();
 

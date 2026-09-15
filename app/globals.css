@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Archivo:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import 'mapbox-gl/dist/mapbox-gl.css';
 
 @tailwind base;
@@ -10,7 +9,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   color: #0F172A;
   background-color: #F8FAFC;
   -webkit-font-smoothing: antialiased;
@@ -28,7 +27,7 @@ textarea:focus-visible {
 
 /* Typography utilities */
 .text-display {
-  font-family: 'Archivo', Inter, system-ui, sans-serif;
+  font-family: var(--font-archivo), var(--font-inter), system-ui, sans-serif;
   font-size: clamp(2.25rem, 5vw, 3.5rem);
   line-height: 1.1;
   font-weight: 700;
@@ -71,7 +70,7 @@ textarea:focus-visible {
 }
 
 .text-mono {
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-family: var(--font-jetbrains-mono), 'Courier New', monospace;
 }
 
 /* Shimmer loading */

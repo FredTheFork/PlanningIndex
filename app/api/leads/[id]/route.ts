@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb } from '@/lib/server/db';
 import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
+import { pickAllowed } from '@/lib/server/rate-limit';
+import { LEAD_EDITABLE_FIELDS } from '@/lib/server/fields';
 
 interface Params {
   params: { id: string };
@@ -30,7 +32,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!lead) return NextResponse.json({ error: 'Lead not found.' }, { status: 404 });
 
     const body = await req.json();
-    Object.assign(lead, body, { updatedAt: new Date().toISOString() });
+    const updates = pickAllowed(body, LEAD_EDITABLE_FIELDS);
+    Object.assign(lead, updates, { updatedAt: new Date().toISOString() });
     // Note: status-change activities are recorded by the client via
     // POST /api/activities (persisted + scoped server-side).
     saveDb();

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb, hashPassword, newId, emptyProfile } from '@/lib/server/db';
 import { setSessionCookie, createSession } from '@/lib/server/auth';
+import { rateLimit } from '@/lib/server/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = rateLimit(req, 'register', 10, 15 * 60 * 1000);
+    if (limited) return limited;
+
     const body = await req.json();
     const { email, password, companyName } = body as {
       email?: string;

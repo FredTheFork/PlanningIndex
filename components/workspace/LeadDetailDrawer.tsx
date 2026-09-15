@@ -338,7 +338,7 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
           {/* Value and assignment */}
           <section>
             <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Value & assignment</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Estimated value"
                 name="estimatedValue"
@@ -352,7 +352,7 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
           {/* Follow-up */}
           <section>
             <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Next follow-up</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Date"
                 type="date"

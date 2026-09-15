@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
+import type { Map as MapboxMap, Marker as MapboxMarker, Popup as MapboxPopup } from 'mapbox-gl';
 import { MapPin, AlertTriangle } from 'lucide-react';
 import type { SearchApplication } from '@/lib/mock/applications';
 
@@ -36,58 +36,81 @@ export function MapView({
   centerLng = -0.6,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const mapRef = useRef<MapboxMap | null>(null);
+  const markersRef = useRef<MapboxMarker[]>([]);
+  const popupRef = useRef<MapboxPopup | null>(null);
   const [mapFailed, setMapFailed] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || !MAPBOX_TOKEN) return;
-    if (mapRef.current) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    let cancelled = false;
+    let map: MapboxMap | null = null;
 
-    let map: mapboxgl.Map;
-    try {
-      map = new mapboxgl.Map({
-        container: containerRef.current,
-        style: 'mapbox://styles/mapbox/light-v11',
-        center: [centerLng, centerLat],
-        zoom: 10,
-        attributionControl: false,
+    // Lazy-load mapbox-gl so the library stays out of the page's initial
+    // JavaScript bundle until the map actually mounts.
+    (async () => {
+      const mapboxgl = (await import('mapbox-gl')).default;
+      if (cancelled || !containerRef.current) return;
+
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+
+      try {
+        map = new mapboxgl.Map({
+          container: containerRef.current,
+          style: 'mapbox://styles/mapbox/light-v11',
+          center: [centerLng, centerLat],
+          zoom: 10,
+          attributionControl: false,
+        });
+      } catch {
+        // Constructor throws when WebGL is unavailable.
+        setMapFailed(true);
+        return;
+      }
+
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+      map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
+
+      // Style/token/network failures surface here — fall back to the list view hint.
+      map.on('error', () => setMapFailed(true));
+
+      // Markers are added in a separate effect once the style has loaded.
+      map.on('load', () => {
+        if (cancelled) return;
+        mapRef.current = map;
+        setMapReady(true);
       });
-    } catch {
-      // Constructor throws when WebGL is unavailable.
-      setMapFailed(true);
-      return;
-    }
-
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
-
-    // Style/token/network failures surface here — fall back to the list view hint.
-    map.on('error', () => setMapFailed(true));
-
-    mapRef.current = map;
+    })();
 
     return () => {
+      cancelled = true;
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       if (popupRef.current) {
         popupRef.current.remove();
         popupRef.current = null;
       }
-      map.remove();
+      map?.remove();
       mapRef.current = null;
     };
   }, [centerLat, centerLng]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !mapReady) return;
 
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
+    let cancelled = false;
+
+    // The dynamic import is cached after the first load — this resolves
+    // instantly on every marker refresh.
+    (async () => {
+      const mapboxgl = (await import('mapbox-gl')).default;
+      if (cancelled) return;
+
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
 
     applications.forEach((app) => {
       const color = statusColors[app.status] || '#64748B';
@@ -115,9 +138,9 @@ export function MapView({
         popupRef.current = new mapboxgl.Popup({ closeOnClick: true, closeButton: true, offset: 15 })
           .setLngLat([app.lng, app.lat])
           .setHTML(
-            `<div style="font-family:Inter,sans-serif;padding:4px">` +
+            `<div style="font-family:inherit;padding:4px">` +
               `<p style="font-weight:600;font-size:13px;color:#0F172A;margin:0 0 4px">${app.title}</p>` +
-              `<p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94A3B8;margin:0 0 2px">${app.reference}</p>` +
+              `<p style="font-family:var(--font-jetbrains-mono),monospace;font-size:11px;color:#94A3B8;margin:0 0 2px">${app.reference}</p>` +
               `<p style="font-size:11px;color:#64748B;margin:0">${app.address}</p>` +
               `</div>`
           )
@@ -133,7 +156,12 @@ export function MapView({
 
       markersRef.current.push(marker);
     });
-  }, [applications, selectedId, hoveredId, onSelect, onHover]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applications, selectedId, hoveredId, onSelect, onHover, mapReady]);
 
   if (!MAPBOX_TOKEN) {
     return (

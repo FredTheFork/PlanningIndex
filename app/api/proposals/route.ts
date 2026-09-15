@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb, newId, type DbProposal } from '@/lib/server/db';
 import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
+import { pickAllowed } from '@/lib/server/rate-limit';
+import { PROPOSAL_CREATABLE_FIELDS } from '@/lib/server/fields';
 
 export async function GET(req: NextRequest) {
   const user = getSessionUser(req);
@@ -33,14 +35,14 @@ export async function POST(req: NextRequest) {
     if (!lead) return NextResponse.json({ error: 'Lead not found.' }, { status: 404 });
 
     const now = new Date().toISOString();
-    const proposal: DbProposal = {
-      ...body,
+    const proposal = {
+      ...pickAllowed(body, PROPOSAL_CREATABLE_FIELDS),
       id: body.id && !db.proposals.some((p) => p.id === body.id) ? body.id : `proposal-${newId()}`,
       userId: user.id,
       status: body.status ?? 'Draft',
       createdDate: body.createdDate || now,
       updatedDate: now,
-    };
+    } as DbProposal;
     db.proposals.push(proposal);
 
     db.activities.push({

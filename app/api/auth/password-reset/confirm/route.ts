@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb, hashPassword } from '@/lib/server/db';
+import { rateLimit } from '@/lib/server/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = rateLimit(req, 'password-reset-confirm', 10, 15 * 60 * 1000);
+    if (limited) return limited;
+
     const { token, password } = (await req.json()) as { token?: string; password?: string };
 
     if (!token || !password) {

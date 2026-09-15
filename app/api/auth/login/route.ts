@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, verifyPassword } from '@/lib/server/db';
 import { setSessionCookie, createSession, findSubscription } from '@/lib/server/auth';
+import { rateLimit } from '@/lib/server/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Brute-force protection: 10 attempts per IP per 5 minutes.
+    const limited = rateLimit(req, 'login', 10, 5 * 60 * 1000);
+    if (limited) return limited;
+
     const { email, password } = (await req.json()) as { email?: string; password?: string };
     const normalizedEmail = (email || '').trim().toLowerCase();
 

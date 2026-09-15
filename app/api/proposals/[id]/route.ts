@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb, saveDb } from '@/lib/server/db';
 import type { ProposalStatus } from '@/lib/mock/proposals';
 import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
+import { pickAllowed } from '@/lib/server/rate-limit';
+import { PROPOSAL_EDITABLE_FIELDS } from '@/lib/server/fields';
 
 interface Params {
   params: { id: string };
@@ -31,12 +33,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!proposal) return NextResponse.json({ error: 'Proposal not found.' }, { status: 404 });
 
     const body = await req.json();
+    const updates = pickAllowed(body, PROPOSAL_EDITABLE_FIELDS);
     const oldStatus = proposal.status;
-    const newStatus = (body.status ?? oldStatus) as ProposalStatus;
+    const newStatus = (updates.status as ProposalStatus | undefined) ?? oldStatus;
     const now = new Date().toISOString();
 
-    Object.assign(proposal, body);
-    proposal.updatedDate = now;
+    Object.assign(proposal, updates, { updatedDate: now });
 
     // Server owns the send / delivery state machine (Phase 43: send & track).
     if (newStatus !== oldStatus) {

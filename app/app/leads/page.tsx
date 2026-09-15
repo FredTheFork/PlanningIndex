@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Users, Plus, Search, MapPin, Calendar, Phone, Mail } from 'lucide-react';
+import { Users, Plus, Search, MapPin, Calendar, Phone } from 'lucide-react';
 import { Button, Badge, EmptyState, ErrorState, Table, type TableColumn } from '@/components/ui';
 import { TableSkeleton } from '@/components/ui/skeletons';
 import { useLeads } from '@/components/workspace/LeadsContext';
@@ -62,6 +62,7 @@ export default function LeadsPage() {
     {
       key: 'applicationReference',
       header: 'Application',
+      hideBelow: 'lg',
       render: (lead) => (
         <div>
           <p className="font-mono text-xs text-primary-600">{lead.applicationReference}</p>
@@ -73,6 +74,7 @@ export default function LeadsPage() {
       key: 'contactName',
       header: 'Contact',
       sortable: true,
+      hideBelow: 'md',
       render: (lead) => (
         <div>
           <p className="font-sans text-sm text-primary-900">{lead.contactName}</p>
@@ -101,6 +103,7 @@ export default function LeadsPage() {
       key: 'nextFollowUp',
       header: 'Follow-up',
       sortable: true,
+      hideBelow: 'lg',
       render: (lead) => (
         <div>
           {lead.nextFollowUp ? (
