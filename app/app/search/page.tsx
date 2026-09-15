@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SlidersHorizontal, Map as MapIcon, List } from 'lucide-react';
 import { SearchFiltersBar } from '@/components/workspace/SearchFiltersBar';
 import { SearchResultsList } from '@/components/workspace/SearchResultsList';
@@ -10,15 +10,15 @@ import { AddLeadModal } from '@/components/workspace/AddLeadModal';
 import {
   type SearchFilters,
   type SearchApplication,
-  mockApplications,
   filterApplications,
   defaultFilters,
 } from '@/lib/mock/applications';
 
 export default function SearchPage() {
   const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
-  const [results, setResults] = useState(mockApplications);
+  const [results, setResults] = useState<SearchApplication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [councils, setCouncils] = useState<{ value: string; label: string }[]>([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -26,15 +26,66 @@ export default function SearchPage() {
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [addLeadApp, setAddLeadApp] = useState<SearchApplication | null>(null);
 
+  // Real authority names for the council filter (falls back to the default
+  // list in SearchFiltersBar until the fetch completes).
   useEffect(() => {
+    let cancelled = false;
+    fetch('/api/applications/councils')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.councils?.length) {
+          setCouncils(data.councils.map((c: string) => ({ value: c, label: c })));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Server-side search: keyword / council / date-range hit Supabase
+  // (plan-gated). Remaining UI filters (status, type, trade tag, decision,
+  // radius, sort) apply client-side to the returned page.
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    const timer = setTimeout(() => {
-      const filtered = filterApplications(mockApplications, filters);
-      setResults(filtered);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [filters]);
+
+    const params = new URLSearchParams();
+    if (filters.keyword.trim()) params.set('keyword', filters.keyword.trim());
+    if (filters.council !== 'all') params.set('council', filters.council);
+    if (filters.dateRange !== 'all') {
+      const days = parseInt(filters.dateRange, 10);
+      if (!Number.isNaN(days)) {
+        params.set('dateFrom', new Date(Date.now() - days * 86_400_000).toISOString());
+      }
+    }
+    params.set('pageSize', '200');
+
+    fetch(`/api/applications?${params.toString()}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setResults(data.applications ?? []);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResults([]);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filters.keyword, filters.council, filters.dateRange]);
+
+  const visibleResults = useMemo(
+    () => filterApplications(results, filters),
+    [results, filters]
+  );
 
   const handleSearch = useCallback((newFilters: SearchFilters) => {
     setFilters(newFilters);
@@ -60,7 +111,7 @@ export default function SearchPage() {
 
   const radiusMiles = parseInt(filters.radius, 10) || 25;
 
-  if (loading && results.length === 0) {
+  if (loading && visibleResults.length === 0) {
     return <SearchSkeleton />;
   }
 
@@ -74,7 +125,7 @@ export default function SearchPage() {
       </div>
 
       {/* Horizontal filter bar - always visible */}
-      <SearchFiltersBar filters={filters} onSearch={handleSearch} variant="horizontal" />
+      <SearchFiltersBar filters={filters} onSearch={handleSearch} variant="horizontal" councils={councils} />
 
       {/* Mobile filter toggle */}
       <div className="lg:hidden">
@@ -111,14 +162,14 @@ export default function SearchPage() {
         {/* Sidebar filters - desktop always, mobile collapsible */}
         <aside className={`${showMobileFilters ? 'block' : 'hidden'} lg:block`}>
           <div className="rounded-xl border border-primary-200 bg-white p-4 lg:sticky lg:top-20">
-            <SearchFiltersBar filters={filters} onSearch={handleSearch} variant="sidebar" />
+            <SearchFiltersBar filters={filters} onSearch={handleSearch} variant="sidebar" councils={councils} />
           </div>
         </aside>
 
         {/* Results list - hidden on mobile when map is selected */}
         <div className={`${mobileView === 'map' ? 'hidden' : 'block'} lg:block`}>
           <SearchResultsList
-            applications={results}
+            applications={visibleResults}
             filters={filters}
             onSortChange={handleSortChange}
             onClearFilters={() => setFilters({ ...defaultFilters })}
@@ -133,7 +184,7 @@ export default function SearchPage() {
         {/* Map - hidden on mobile when list is selected */}
         <div className={`${mobileView === 'list' ? 'hidden' : 'block'} lg:block lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]`}>
           <MapView
-            applications={results}
+            applications={visibleResults}
             selectedId={selectedId}
             hoveredId={hoveredId}
             onSelect={handleMapSelect}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, FileText, Plus, Send, Calendar, Building2, CheckCircle2, XCircle, Clock, Ban, PoundSterling, Download } from 'lucide-react';
+import { ArrowLeft, MapPin, FileText, Plus, Send, Calendar, Building2, CheckCircle2, XCircle, Clock, Ban, PoundSterling, Download, ExternalLink } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
 import { ApplicationIntelligence } from '@/components/workspace/ApplicationIntelligence';
 import { SingleMarkerMap } from '@/components/workspace/SingleMarkerMap';
@@ -84,7 +84,9 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
     { label: 'Decision', value: app.decision, icon: CheckCircle2 },
     { label: 'Council', value: app.council, icon: Building2 },
     { label: 'Application type', value: app.applicationType, icon: FileText },
-    { label: 'Estimated value', value: app.estimatedValue, icon: PoundSterling },
+    ...(app.estimatedValue
+      ? [{ label: 'Estimated value', value: app.estimatedValue, icon: PoundSterling }]
+      : []),
   ];
 
   const docsByType = app.documents.reduce<Record<string, typeof app.documents>>((acc, doc) => {
@@ -156,7 +158,16 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
       {/* Location */}
       <section>
         <h2 className="font-sans font-semibold text-primary-900 text-base mb-3">Location</h2>
-        <SingleMarkerMap lat={app.lat} lng={app.lng} label={app.title} address={`${app.address}, ${app.postcode}`} />
+        {app.lat !== 0 || app.lng !== 0 ? (
+          <SingleMarkerMap lat={app.lat} lng={app.lng} label={app.title} address={`${app.address}, ${app.postcode}`} />
+        ) : (
+          <Card padding="md">
+            <p className="font-sans text-sm text-primary-500 flex items-center gap-1.5">
+              <MapPin size={14} className="text-primary-400 shrink-0" />
+              {app.address}{app.postcode ? `, ${app.postcode}` : ''}
+            </p>
+          </Card>
+        )}
       </section>
 
       <div className="h-px bg-primary-200" />
@@ -169,6 +180,21 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
       {/* Documents */}
       <section>
         <h2 className="font-sans font-semibold text-primary-900 text-base mb-4">Documents</h2>
+        {app.documents.length === 0 && (app.documentsUrl || app.infoUrl) ? (
+          <Card padding="md">
+            <p className="font-sans text-sm text-primary-500">
+              Document bundles aren’t stored in PlanningIndex — view the full file on the council portal.
+            </p>
+            <a
+              href={app.documentsUrl || app.infoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-sans text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors mt-2"
+            >
+              <ExternalLink size={14} /> Open council documents
+            </a>
+          </Card>
+        ) : (
         <div className="space-y-4">
           {Object.entries(docsByType).map(([type, docs]) => (
             <div key={type}>
@@ -192,6 +218,7 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
             </div>
           ))}
         </div>
+        )}
       </section>
 
       <div className="h-px bg-primary-200" />

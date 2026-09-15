@@ -46,16 +46,20 @@ export function ApplicationsNearYou({ applications }: ApplicationsNearYouProps) 
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant={relevanceVariant[app.tradeRelevance]}>{app.tradeTag}</Badge>
-                <span className="inline-flex items-center gap-0.5 font-sans text-xs text-primary-600 font-medium">
-                  <PoundSterling size={11} /> {app.estimatedValue}
-                </span>
+                {app.estimatedValue && (
+                  <span className="inline-flex items-center gap-0.5 font-sans text-xs text-primary-600 font-medium">
+                    <PoundSterling size={11} /> {app.estimatedValue}
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
-              <div className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 rounded-full ${distanceColor(app.distanceMiles)}`} />
-                <span className="font-sans text-xs text-primary-500">{distanceLabel(app.distanceMiles)}</span>
-              </div>
+              {app.distanceMiles > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${distanceColor(app.distanceMiles)}`} />
+                  <span className="font-sans text-xs text-primary-500">{distanceLabel(app.distanceMiles)}</span>
+                </div>
+              )}
               <Button size="sm" variant="outline" leftIcon={<Plus size={13} />}>
                 Leads
               </Button>
