@@ -21,6 +21,8 @@ External integrations need real values to function:
 
 API routes (`/api/checkout`, `/api/portal`, `/api/cancel-subscription`) gracefully return 503 when Stripe is not configured.
 
+Stripe flow (once a real `sk_` key is delivered): `/api/checkout` creates a Stripe Customer + hosted Checkout Session and stores a subscription record with status `incomplete` — access is granted ONLY by the webhook `app/api/webhooks/stripe/route.ts` on `checkout.session.completed` (events: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted, invoice.payment_failed; requires `STRIPE_WEBHOOK_SECRET`). Plan price IDs live in `lib/pricing.ts` and are empty until the 3 Stripe products × monthly/annual prices are created — `/tmp/setup-stripe-products.js` (recreate if absent) does this inside the container and prints the price IDs to paste into `lib/pricing.ts`.
+
 ## Production build / hosting
 - The app builds cleanly for production: `NODE_ENV=production npx next build` (142/142 pages, exit 0).
 - CRITICAL: never run `next build` with `NODE_ENV=development` (the dev compose sets it) — it mixes dev/prod runtimes and produces bogus prerender errors on every page (`<Html> should not be imported outside of pages/_document`, `useContext` of null).

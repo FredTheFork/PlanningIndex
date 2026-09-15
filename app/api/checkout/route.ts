@@ -46,7 +46,9 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         planTier: tier,
         billingCycle: cycle,
-        status: 'active',
+        // Pending until Stripe confirms payment via the webhook — creating
+        // a checkout session must never grant access by itself.
+        status: 'incomplete',
         currentPeriodEnd: new Date().toISOString(),
         cancelAtPeriodEnd: false,
       };

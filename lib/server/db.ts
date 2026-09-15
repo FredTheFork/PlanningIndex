@@ -50,7 +50,7 @@ export interface DbSubscription {
   userId: string;
   planTier: string;
   billingCycle: string;
-  status: 'active' | 'trialing' | 'canceled';
+  status: 'active' | 'trialing' | 'past_due' | 'incomplete' | 'canceled';
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   stripeCustomerId?: string | null;
