@@ -31,8 +31,8 @@ export const pricingTiers: PricingTier[] = [
     ],
     ctaLabel: 'Choose Local',
     ctaHref: '/choose-plan',
-    monthlyStripePriceId: '',
-    annualStripePriceId: '',
+    monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJyvnMAkLy',
+    annualStripePriceId: 'price_1UFzZlGgxdIg5idJwFY77xPK',
   },
   {
     name: 'Regional',
@@ -53,8 +53,8 @@ export const pricingTiers: PricingTier[] = [
     ],
     ctaLabel: 'Choose Regional',
     ctaHref: '/choose-plan',
-    monthlyStripePriceId: '',
-    annualStripePriceId: '',
+    monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJ3ThAISl5',
+    annualStripePriceId: 'price_1UFzZlGgxdIg5idJgPZQQoX4',
   },
   {
     name: 'National',
@@ -73,8 +73,8 @@ export const pricingTiers: PricingTier[] = [
     ],
     ctaLabel: 'Choose National',
     ctaHref: '/choose-plan',
-    monthlyStripePriceId: '',
-    annualStripePriceId: '',
+    monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJJJ047109',
+    annualStripePriceId: 'price_1UFzZmGgxdIg5idJ6TxrcxgY',
   },
   {
     name: 'Enterprise',
