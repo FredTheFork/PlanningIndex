@@ -40,7 +40,9 @@ function toIso(seconds: number | null | undefined): string {
   return new Date((seconds ?? 0) * 1000).toISOString();
 }
 
-function customerIdOf(customer: string | Stripe.Customer | null): string | null {
+function customerIdOf(
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
+): string | null {
   return typeof customer === 'string' ? customer : null;
 }
 
