@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getProfile, updateProfile } from '@/lib/api/client';
 import { Button, Select, Alert } from '@/components/ui';
 import { radiusOptions, tradeTagOptions } from '@/lib/mock/applications';
 
@@ -14,20 +14,14 @@ export default function PreferencesPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('default_search_radius, default_trade_tags')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (data) {
-        setDefaultRadius(data.default_search_radius || '25');
-        setSelectedTags(data.default_trade_tags || []);
+    (async () => {
+      const profile = await getProfile();
+      if (profile) {
+        setDefaultRadius(profile.defaultSearchRadius || '25');
+        setSelectedTags(profile.defaultTradeTags || []);
       }
       setLoading(false);
-    });
+    })();
   }, []);
 
   const toggleTag = (tag: string) => {
@@ -43,19 +37,13 @@ export default function PreferencesPage() {
     setSuccess(false);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      const updated = await updateProfile({
+        defaultSearchRadius: defaultRadius,
+        defaultTradeTags: selectedTags,
+      });
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          default_search_radius: defaultRadius,
-          default_trade_tags: selectedTags,
-        })
-        .eq('id', session.user.id);
-
-      if (updateError) {
-        setError(updateError.message);
+      if (!updated) {
+        setError('Failed to save. Please try again.');
         return;
       }
 

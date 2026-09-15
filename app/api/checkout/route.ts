@@ -1,33 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getDb, saveDb, newId } from '@/lib/server/db';
+import { getSessionUser, unauthorized, upsertSubscription } from '@/lib/server/auth';
 import { getStripeClient, isStripeConfigured, getStripePriceId, type BillingCycle, type PlanTier } from '@/lib/stripe';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://planningindex.co.uk';
 
 export async function POST(req: NextRequest) {
   try {
-    if (!isStripeConfigured()) {
-      return NextResponse.json(
-        { error: 'Payments are not yet configured. Please contact support to complete your subscription setup.' },
-        { status: 503 }
-      );
-    }
-
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
+    const user = getSessionUser(req);
+    if (!user) return unauthorized();
 
     const body = await req.json();
     const { tier, cycle } = body as { tier: PlanTier; cycle: BillingCycle };
@@ -40,6 +21,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: '/contact' });
     }
 
+    // Local mode: Stripe is not configured, so membership is activated directly
+    // by the backend (development / self-hosted flow).
+    if (!isStripeConfigured()) {
+      upsertSubscription(user.id, tier, cycle);
+      return NextResponse.json({ url: '/checkout/success', dev: true });
+    }
+
     const priceId = getStripePriceId(tier, cycle);
     if (!priceId) {
       return NextResponse.json(
@@ -50,41 +38,43 @@ export async function POST(req: NextRequest) {
 
     const stripe = getStripeClient();
 
-    const { data: customerData } = await supabase
-      .from('customers')
-      .select('stripe_customer_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    let customerId = customerData?.stripe_customer_id;
-
-    if (!customerId) {
+    const db = getDb();
+    let subscription = db.subscriptions.find((s) => s.userId === user.id && s.status !== 'canceled');
+    if (!subscription) {
+      subscription = {
+        id: newId(),
+        userId: user.id,
+        planTier: tier,
+        billingCycle: cycle,
+        status: 'active',
+        currentPeriodEnd: new Date().toISOString(),
+        cancelAtPeriodEnd: false,
+      };
+      db.subscriptions.push(subscription);
+    }
+    if (!subscription.stripeCustomerId) {
       const customer = await stripe.customers.create({
         email: user.email || undefined,
-        metadata: { supabase_user_id: user.id },
+        metadata: { user_id: user.id },
       });
-      customerId = customer.id;
-
-      await supabase.from('customers').upsert({
-        user_id: user.id,
-        stripe_customer_id: customerId,
-      });
+      subscription.stripeCustomerId = customer.id;
+      saveDb();
     }
 
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
+      customer: subscription.stripeCustomerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${SITE_URL}/checkout/cancelled`,
       metadata: {
-        supabase_user_id: user.id,
+        user_id: user.id,
         plan_tier: tier,
         billing_cycle: cycle,
       },
       subscription_data: {
         metadata: {
-          supabase_user_id: user.id,
+          user_id: user.id,
           plan_tier: tier,
           billing_cycle: cycle,
         },

@@ -23,7 +23,7 @@ import { createProposalFromLead, getTemplateById, type CompanyInfo } from '@/lib
 import { leadStatusOptions, type Lead, type LeadStatus, type FollowUpType } from '@/lib/mock/leads';
 import type { LeadActivity, ActivityIcon } from '@/lib/mock/lead-activity';
 import type { ProposalStatus } from '@/lib/mock/proposals';
-import { supabase } from '@/lib/supabase/client';
+import { getProfile } from '@/lib/api/client';
 
 interface LeadDetailDrawerProps {
   lead: Lead | null;
@@ -160,25 +160,23 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
 
     setTemplateModalOpen(false);
 
-    const { data: { session } } = await supabase.auth.getSession();
-    let companyInfo: CompanyInfo = {};
-    if (session?.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_name, address_line1, address_line2, city, postcode, company_phone, company_email, vat_number')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      if (profile) {
-        const addressParts = [profile.address_line1, profile.address_line2, profile.city, profile.postcode].filter(Boolean);
-        companyInfo = {
-          companyName: profile.company_name || '',
-          companyAddress: addressParts.join(', '),
-          companyPhone: profile.company_phone || '',
-          companyEmail: profile.company_email || '',
-          companyVatNumber: profile.vat_number || '',
-        };
-      }
-    }
+    const profile = await getProfile();
+    const companyInfo: CompanyInfo = profile
+      ? {
+          companyName: profile.companyName || '',
+          companyAddress: [
+            profile.addressLine1,
+            profile.addressLine2,
+            profile.city,
+            profile.postcode,
+          ]
+            .filter(Boolean)
+            .join(', '),
+          companyPhone: profile.companyPhone || '',
+          companyEmail: profile.companyEmail || '',
+          companyVatNumber: profile.vatNumber || '',
+        }
+      : {};
 
     const newProposal = createProposalFromLead(lead, template, companyInfo);
     addProposal(newProposal);

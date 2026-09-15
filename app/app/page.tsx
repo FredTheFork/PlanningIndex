@@ -15,6 +15,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getProfile } from '@/lib/api/client';
 import { Card, Badge, Button } from '@/components/ui';
 import { StatCard } from '@/components/workspace/StatCard';
 import { DashboardSection } from '@/components/workspace/DashboardSection';
@@ -74,17 +75,10 @@ export default function DashboardPage() {
     let cancelled = false;
     if (user?.id) {
       setCompanyLoading(true);
-      import('@/lib/supabase/client').then(({ supabase }) => {
-        supabase
-          .from('profiles')
-          .select('company_name')
-          .eq('id', user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (cancelled) return;
-            if (data?.company_name) setCompanyName(data.company_name);
-            setCompanyLoading(false);
-          });
+      getProfile().then((profile) => {
+        if (cancelled) return;
+        if (profile?.companyName) setCompanyName(profile.companyName);
+        setCompanyLoading(false);
       }).catch(() => {
         if (!cancelled) setCompanyLoading(false);
       });

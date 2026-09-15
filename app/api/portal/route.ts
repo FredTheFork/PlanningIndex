@@ -1,41 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getDb } from '@/lib/server/db';
+import { getSessionUser, unauthorized } from '@/lib/server/auth';
 import { getStripeClient, isStripeConfigured } from '@/lib/stripe';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://planningindex.co.uk';
 
 export async function POST(req: NextRequest) {
   try {
+    const user = getSessionUser(req);
+    if (!user) return unauthorized();
+
+    // Local mode: manage the plan by choosing a new one.
     if (!isStripeConfigured()) {
-      return NextResponse.json(
-        { error: 'Payments are not yet configured.' },
-        { status: 503 }
-      );
+      return NextResponse.json({ url: '/choose-plan?manage=1' });
     }
 
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const { data: customerData } = await supabase
-      .from('customers')
-      .select('stripe_customer_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!customerData?.stripe_customer_id) {
+    const db = getDb();
+    const subscription = db.subscriptions.find((s) => s.userId === user.id && s.status !== 'canceled');
+    if (!subscription?.stripeCustomerId) {
       return NextResponse.json(
         { error: 'No subscription found. Please choose a plan first.' },
         { status: 404 }
@@ -43,9 +25,8 @@ export async function POST(req: NextRequest) {
     }
 
     const stripe = getStripeClient();
-
     const session = await stripe.billingPortal.sessions.create({
-      customer: customerData.stripe_customer_id,
+      customer: subscription.stripeCustomerId,
       return_url: `${SITE_URL}/account/billing`,
     });
 

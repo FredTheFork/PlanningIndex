@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getProfile, updateProfile } from '@/lib/api/client';
 import { Button, Toggle, Alert } from '@/components/ui';
 
 export default function NotificationsPage() {
@@ -15,22 +15,16 @@ export default function NotificationsPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('notif_new_applications, notif_lead_updates, notif_proposal_status, notif_follow_up_reminders')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (data) {
-        setNotifNewApps(data.notif_new_applications ?? true);
-        setNotifLeadUpdates(data.notif_lead_updates ?? true);
-        setNotifProposalStatus(data.notif_proposal_status ?? true);
-        setNotifFollowUpReminders(data.notif_follow_up_reminders ?? true);
+    (async () => {
+      const profile = await getProfile();
+      if (profile) {
+        setNotifNewApps(profile.notifNewApplications ?? true);
+        setNotifLeadUpdates(profile.notifLeadUpdates ?? true);
+        setNotifProposalStatus(profile.notifProposalStatus ?? true);
+        setNotifFollowUpReminders(profile.notifFollowUpReminders ?? true);
       }
       setLoading(false);
-    });
+    })();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -40,21 +34,15 @@ export default function NotificationsPage() {
     setSuccess(false);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      const updated = await updateProfile({
+        notifNewApplications: notifNewApps,
+        notifLeadUpdates: notifLeadUpdates,
+        notifProposalStatus: notifProposalStatus,
+        notifFollowUpReminders: notifFollowUpReminders,
+      });
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          notif_new_applications: notifNewApps,
-          notif_lead_updates: notifLeadUpdates,
-          notif_proposal_status: notifProposalStatus,
-          notif_follow_up_reminders: notifFollowUpReminders,
-        })
-        .eq('id', session.user.id);
-
-      if (updateError) {
-        setError(updateError.message);
+      if (!updated) {
+        setError('Failed to save. Please try again.');
         return;
       }
 

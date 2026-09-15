@@ -1,56 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getDb, saveDb } from '@/lib/server/db';
+import { getSessionUser, unauthorized } from '@/lib/server/auth';
 import { getStripeClient, isStripeConfigured } from '@/lib/stripe';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export async function POST(req: NextRequest) {
   try {
-    if (!isStripeConfigured()) {
-      return NextResponse.json(
-        { error: 'Payments are not yet configured.' },
-        { status: 503 }
-      );
+    const user = getSessionUser(req);
+    if (!user) return unauthorized();
+
+    const db = getDb();
+    const subscription = db.subscriptions.find((s) => s.userId === user.id && s.status !== 'canceled');
+    if (!subscription) {
+      return NextResponse.json({ error: 'No active subscription found.' }, { status: 404 });
     }
 
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const { data: subData } = await supabase
-      .from('subscriptions')
-      .select('stripe_subscription_id, status')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!subData?.stripe_subscription_id) {
-      return NextResponse.json(
-        { error: 'No active subscription found.' },
-        { status: 404 }
-      );
+    // Local mode: cancel at period end without Stripe.
+    if (!isStripeConfigured() || !subscription.stripeSubscriptionId) {
+      subscription.cancelAtPeriodEnd = true;
+      saveDb();
+      return NextResponse.json({ success: true });
     }
 
     const stripe = getStripeClient();
-
-    await stripe.subscriptions.update(subData.stripe_subscription_id, {
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
 
-    await supabase
-      .from('subscriptions')
-      .update({ cancel_at_period_end: true })
-      .eq('user_id', user.id);
+    subscription.cancelAtPeriodEnd = true;
+    saveDb();
 
     return NextResponse.json({ success: true });
   } catch (err) {
