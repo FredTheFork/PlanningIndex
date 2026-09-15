@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { NavLinkDropdown } from '@/components/marketing';
+import { NavLinkDropdown } from '@/components/marketing/NavLinkDropdown';
 
 const navLinks = [
   { label: 'Planning Search', href: '/app' },

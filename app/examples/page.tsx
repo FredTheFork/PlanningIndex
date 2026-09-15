@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { Frame, Hammer, Home, Building2, Trees, Search, Target, Bookmark, FileText, Mail } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
-import { PageHero, DarkCTABanner, SectionLabel } from '@/components/ui';
-import { ScenarioWalkthrough, type Scenario } from '@/components/marketing';
+import { PageHero } from '@/components/ui/PageHero';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { ScenarioWalkthrough, type Scenario } from '@/components/marketing/ScenarioWalkthrough';
 
 export const metadata: Metadata = {
   title: 'How It Works',

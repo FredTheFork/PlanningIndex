@@ -2,16 +2,16 @@ import type { Metadata } from 'next';
 import { Search, Map, Target, Users, FileText, CreditCard, CheckCircle2, LayoutGrid, Filter, Send, Mail, Calendar, FolderOpen, Check, ArrowRight } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
-import { PageHero, DarkCTABanner, SectionLabel } from '@/components/ui';
-import {
-  ProductShowcaseSection,
-  PlanningSearchShowcase,
-  CRMPipelineShowcase,
-  ProposalShowcase,
-  MapSearchShowcase,
-  OpportunityDiscoveryShowcase,
-  AccountShowcase,
-} from '@/components/marketing';
+import { PageHero } from '@/components/ui/PageHero';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { ProductShowcaseSection } from '@/components/marketing/ProductShowcaseSection';
+import { PlanningSearchShowcase } from '@/components/marketing/PlanningSearchShowcase';
+import { CRMPipelineShowcase } from '@/components/marketing/CRMPipelineShowcase';
+import { ProposalShowcase } from '@/components/marketing/ProposalShowcase';
+import { MapSearchShowcase } from '@/components/marketing/MapSearchShowcase';
+import { OpportunityDiscoveryShowcase } from '@/components/marketing/OpportunityDiscoveryShowcase';
+import { AccountShowcase } from '@/components/marketing/AccountShowcase';
 
 export const metadata: Metadata = {
   title: 'Features',

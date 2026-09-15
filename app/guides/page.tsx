@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
-import { PageHero, DarkCTABanner, SectionLabel } from '@/components/ui';
-import { ArticleCard } from '@/components/marketing';
+import { PageHero } from '@/components/ui/PageHero';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { ArticleCard } from '@/components/marketing/ArticleCard';
 import { guides, getGuidesByCategory } from '@/lib/guides';
 
 export const metadata: Metadata = {

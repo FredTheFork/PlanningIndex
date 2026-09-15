@@ -37,6 +37,13 @@ API routes (`/api/checkout`, `/api/portal`, `/api/cancel-subscription`) graceful
 - `bash /tmp/integration-test.sh` (recreate if absent) runs 71 end-to-end checks against localhost:3000 covering auth (login/logout/expiry/password reset), membership activation/cancel/enforcement, CRM and proposal CRUD. It creates its own run-unique users and leaves the demo account intact.
 - The file-backed DB (`.data/db.json`) is cached in memory by the server process — direct file edits are invisible (and get overwritten by the next `saveDb()`) until a dev-server module reload is forced (e.g. `touch lib/server/db.ts`, then wait a few seconds).
 
+## Performance notes
+- Production build: all 142 routes compile static (○/●); First Load JS 87 kB shared / 104–123 kB per page. Marketing page switches are client-side (no reload): ~50–120 ms once Next's prefetch completes. Prefetch needs a few seconds over the sandbox proxy (≈250–750 ms per RSC payload), so the first click right after load is slower.
+- Direct imports are used in shared layout/pages (Navbar, home, features, examples, guides, blog): components/layout and marketing pages must NOT import from the `@/components/marketing` or `@/components/ui` barrels — barrels pull every showcase into each page's dev compile graph.
+- Blog images use next/image with `images.remotePatterns` for images.pexels.com (see next.config.mjs). The optimizer fetches from Pexels at request time.
+- Do NOT use `next dev --turbo`: Turbopack fails on mapbox-gl (ModuleBuildError, /app/search → 500). Plain webpack dev only.
+- To measure production: `docker compose -f docker-compose.base44.yml -f /tmp/compose.prod.yml up -d` with a command of `npm install --include=dev && NODE_ENV=production npx next build && NODE_ENV=production npx next start -p 3000 -H 0.0.0.0` — the `--include=dev` is critical because `npm install` with NODE_ENV=production prunes devDependencies (tailwindcss), which breaks the CSS/font pipeline.
+
 ## Architecture notes
 - No local database needed — Supabase is hosted externally.
 - Supabase migrations live in `supabase/migrations/` (applied on the hosted Supabase project, not locally).

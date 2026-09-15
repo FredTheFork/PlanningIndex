@@ -15,15 +15,15 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { DarkCTABanner, FAQSection, SectionLabel } from '@/components/ui';
-import {
-  WorkflowSteps,
-  ProductShowcaseSection,
-  PlanningSearchShowcase,
-  ApplicationDetailShowcase,
-  CRMPipelineShowcase,
-  ProposalShowcase,
-} from '@/components/marketing';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
+import { FAQSection } from '@/components/ui/FAQSection';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { WorkflowSteps } from '@/components/marketing/WorkflowSteps';
+import { ProductShowcaseSection } from '@/components/marketing/ProductShowcaseSection';
+import { PlanningSearchShowcase } from '@/components/marketing/PlanningSearchShowcase';
+import { ApplicationDetailShowcase } from '@/components/marketing/ApplicationDetailShowcase';
+import { CRMPipelineShowcase } from '@/components/marketing/CRMPipelineShowcase';
+import { ProposalShowcase } from '@/components/marketing/ProposalShowcase';
 
 const applications = [
   { title: 'Replacement windows and doors', location: 'Harefield, UB9', type: 'Windows', status: 'Pending', color: 'bg-amber-500' },
