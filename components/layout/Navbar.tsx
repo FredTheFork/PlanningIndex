@@ -57,7 +57,7 @@ export default function Navbar() {
             }`}
             style={{ fontSize: '1.25rem' }}
           >
-            PlanningIndex
+            planningindex<span className="text-[#003366]">.co.uk</span>
           </span>
         </Link>
 
