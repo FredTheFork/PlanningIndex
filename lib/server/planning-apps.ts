@@ -56,12 +56,10 @@ export function normalizeDate(value: unknown): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-export interface UpsertResult {
-  processed: number;
-  errors: { council_reference: string; error: string }[];
-}
-
-export async function upsertPlanningApplications(apps: PlanningAppInput[]): Promise<UpsertResult> {
+// Upsert is atomic per batch: on a Postgres error nothing is written and
+// the error is thrown so callers can retry the whole batch (sync_to_pi.rb
+// retries with backoff on HTTP 5xx).
+export async function upsertPlanningApplications(apps: PlanningAppInput[]): Promise<number> {
   const db = getPlanningDb();
   const now = new Date().toISOString();
 
@@ -84,13 +82,8 @@ export async function upsertPlanningApplications(apps: PlanningAppInput[]): Prom
     .from('planning_applications')
     .upsert(rows, { onConflict: 'council_reference' });
 
-  if (error) {
-    return {
-      processed: 0,
-      errors: [{ council_reference: 'batch', error: error.message }],
-    };
-  }
-  return { processed: rows.length, errors: [] };
+  if (error) throw new Error(error.message);
+  return rows.length;
 }
 
 // ---------------------------------------------------------------------------

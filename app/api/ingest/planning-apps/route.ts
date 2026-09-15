@@ -97,8 +97,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await upsertPlanningApplications(valid);
-    return NextResponse.json({ processed: result.processed, errors: [...errors, ...result.errors] });
+    const processed = await upsertPlanningApplications(valid);
+    return NextResponse.json({ processed, errors });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Ingest failed';
     return NextResponse.json({ error: message }, { status: 500 });

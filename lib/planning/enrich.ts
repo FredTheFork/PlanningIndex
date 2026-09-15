@@ -294,5 +294,7 @@ export function toSearchApplication(record: PlanningAppRecord): SearchApplicatio
     potentialWork: generatePotentialWork(tradeTags, title, description),
     potentialTrade: generatePotentialTrade(tradeTags),
     documents: [],
+    infoUrl: record.info_url ?? undefined,
+    documentsUrl: record.documents_url ?? undefined,
   };
 }

@@ -26,8 +26,6 @@ import { TodaysPriorities } from '@/components/workspace/TodaysPriorities';
 import { DashboardSkeleton } from '@/components/workspace/DashboardSkeleton';
 import {
   mockStats,
-  mockRecentApplications,
-  mockNearbyApplications,
   mockPipelineStages,
   mockPipelineSummary,
   mockFollowUps,
@@ -35,7 +33,8 @@ import {
   mockProposals,
   mockPriorities,
 } from '@/lib/mock/workspace';
-import type { MockStat, MockApplication, MockFollowUp, MockActivityItem } from '@/lib/mock/workspace';
+import type { MockStat, MockNearbyApplication, MockFollowUp, MockActivityItem } from '@/lib/mock/workspace';
+import type { SearchApplication } from '@/lib/mock/applications';
 
 const statIcons: Record<MockStat['icon'], typeof Search> = {
   search: Search,
@@ -65,10 +64,26 @@ export default function DashboardPage() {
   const [companyName, setCompanyName] = useState('your company');
   const [companyLoading, setCompanyLoading] = useState(true);
   const [hour, setHour] = useState(9);
+  const [recentApps, setRecentApps] = useState<SearchApplication[]>([]);
 
   useEffect(() => {
     const now = new Date();
     setHour(now.getHours());
+  }, []);
+
+  // Real planning applications (newest first) power the two application
+  // widgets on the dashboard.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/applications?pageSize=10')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled) setRecentApps(data?.applications ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -89,6 +104,18 @@ export default function DashboardPage() {
   }, [user]);
 
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  const nearbyApps: MockNearbyApplication[] = recentApps.slice(3, 7).map((app) => ({
+    id: app.id,
+    reference: app.reference,
+    title: app.title,
+    address: app.address,
+    distanceMiles: app.distanceMiles,
+    tradeRelevance: app.tradeTags.length >= 2 ? 'High' : app.tradeTags.length === 1 ? 'Medium' : 'Low',
+    tradeTag: app.tradeTags[0] ?? 'General',
+    estimatedValue: app.estimatedValue,
+    status: app.status,
+  }));
 
   if (companyLoading) {
     return <DashboardSkeleton />;
@@ -132,7 +159,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DashboardSection title="Recent opportunities" viewAllHref="/app/search" viewAllLabel="View all">
           <div className="space-y-3">
-            {mockRecentApplications.map((app: MockApplication) => (
+            {recentApps.slice(0, 3).map((app) => (
               <Card key={app.id} padding="md" className="hover:shadow-card-hover transition-shadow">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -144,8 +171,12 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2 mt-2">
                       <Badge variant={statusBadgeVariant(app.status)}>{app.status}</Badge>
                       <span className="font-sans text-xs text-primary-400">{app.dateReceived}</span>
-                      <span className="font-sans text-xs text-primary-300">·</span>
-                      <span className="font-sans text-xs text-primary-400">{app.distance}</span>
+                      {app.council && (
+                        <>
+                          <span className="font-sans text-xs text-primary-300">·</span>
+                          <span className="font-sans text-xs text-primary-400">{app.council}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <Button size="sm" variant="outline" leftIcon={<Plus size={13} />} className="shrink-0">
@@ -158,7 +189,7 @@ export default function DashboardPage() {
         </DashboardSection>
 
         <DashboardSection title="Applications near you" viewAllHref="/app/search" viewAllLabel="View all">
-          <ApplicationsNearYou applications={mockNearbyApplications} />
+          <ApplicationsNearYou applications={nearbyApps} />
         </DashboardSection>
       </div>
 

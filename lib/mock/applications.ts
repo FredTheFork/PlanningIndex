@@ -46,6 +46,10 @@ export interface SearchApplication {
   potentialWork: PotentialWorkItem[];
   potentialTrade: string;
   documents: ApplicationDocument[];
+  // Real (scraped) applications carry links back to the council portal;
+  // mock records leave them undefined.
+  infoUrl?: string;
+  documentsUrl?: string;
 }
 
 export interface SearchFilters {

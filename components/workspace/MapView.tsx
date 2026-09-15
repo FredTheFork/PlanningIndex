@@ -112,7 +112,9 @@ export function MapView({
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
 
-    applications.forEach((app) => {
+    // Scraped applications have no coordinates yet — only plot apps with a
+    // real position (0/0 would drop pins in the Gulf of Guinea).
+    applications.filter((app) => app.lat !== 0 || app.lng !== 0).forEach((app) => {
       const color = statusColors[app.status] || '#64748B';
       const isSelected = app.id === selectedId;
       const isHovered = app.id === hoveredId;
