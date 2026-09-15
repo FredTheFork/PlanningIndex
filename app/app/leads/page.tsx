@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Users, Plus, Search, MapPin, Calendar, Phone, Mail } from 'lucide-react';
-import { Button, Badge, EmptyState, Table, type TableColumn } from '@/components/ui';
+import { Users, Plus, Search, MapPin, Calendar, Phone } from 'lucide-react';
+import { Button, Badge, EmptyState, ErrorState, Table, type TableColumn } from '@/components/ui';
+import { TableSkeleton } from '@/components/ui/skeletons';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import { AddLeadModal } from '@/components/workspace/AddLeadModal';
 import { LeadDetailDrawer } from '@/components/workspace/LeadDetailDrawer';
-import { filterLeads, getAssignedToOptions, leadStatusOptions, type Lead, type LeadStatus } from '@/lib/mock/leads';
+import { filterLeads, leadStatusOptions, type Lead, type LeadStatus } from '@/lib/mock/leads';
 
 const statusBadgeVariant = (status: LeadStatus): 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'accent' => {
   switch (status) {
@@ -27,19 +28,16 @@ function formatDate(iso: string | null): string {
 }
 
 export default function LeadsPage() {
-  const { leads } = useLeads();
+  const { leads, status, retry } = useLeads();
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [assignedFilter, setAssignedFilter] = useState('all');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const assignedOptions = useMemo(() => getAssignedToOptions(leads), [leads]);
-
   const filteredLeads = useMemo(
-    () => filterLeads(leads, { keyword, status: statusFilter, assignedTo: assignedFilter }),
-    [leads, keyword, statusFilter, assignedFilter]
+    () => filterLeads(leads, { keyword, status: statusFilter }),
+    [leads, keyword, statusFilter]
   );
 
   const handleRowClick = (lead: Lead) => {
@@ -64,6 +62,7 @@ export default function LeadsPage() {
     {
       key: 'applicationReference',
       header: 'Application',
+      hideBelow: 'lg',
       render: (lead) => (
         <div>
           <p className="font-mono text-xs text-primary-600">{lead.applicationReference}</p>
@@ -75,6 +74,7 @@ export default function LeadsPage() {
       key: 'contactName',
       header: 'Contact',
       sortable: true,
+      hideBelow: 'md',
       render: (lead) => (
         <div>
           <p className="font-sans text-sm text-primary-900">{lead.contactName}</p>
@@ -103,6 +103,7 @@ export default function LeadsPage() {
       key: 'nextFollowUp',
       header: 'Follow-up',
       sortable: true,
+      hideBelow: 'lg',
       render: (lead) => (
         <div>
           {lead.nextFollowUp ? (
@@ -120,12 +121,6 @@ export default function LeadsPage() {
         </div>
       ),
     },
-    {
-      key: 'assignedTo',
-      header: 'Assigned',
-      sortable: true,
-      render: (lead) => <span className="font-sans text-sm text-primary-600">{lead.assignedTo}</span>,
-    },
   ];
 
   return (
@@ -142,7 +137,17 @@ export default function LeadsPage() {
         </Button>
       </div>
 
-      {leads.length === 0 ? (
+      {status === 'loading' ? (
+        <TableSkeleton rows={6} cols={6} />
+      ) : status === 'error' ? (
+        <div className="rounded-xl border border-primary-200 bg-white">
+          <ErrorState
+            title="Couldn't load your leads"
+            description="There was a problem reaching the server. Your data is safe — please try again."
+            onRetry={retry}
+          />
+        </div>
+      ) : leads.length === 0 ? (
         <div className="rounded-xl border border-primary-200 bg-white">
           <EmptyState
             icon={Users}
@@ -177,15 +182,6 @@ export default function LeadsPage() {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            <select
-              value={assignedFilter}
-              onChange={(e) => setAssignedFilter(e.target.value)}
-              className="px-3 py-2.5 border border-primary-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors cursor-pointer"
-            >
-              {assignedOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
           </div>
 
           <div className="flex items-center justify-between">
@@ -204,7 +200,7 @@ export default function LeadsPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => { setKeyword(''); setStatusFilter('all'); setAssignedFilter('all'); }}
+                    onClick={() => { setKeyword(''); setStatusFilter('all'); }}
                   >
                     Clear filters
                   </Button>

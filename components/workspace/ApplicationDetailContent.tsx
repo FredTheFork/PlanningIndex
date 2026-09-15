@@ -13,7 +13,7 @@ import { useLeads } from '@/components/workspace/LeadsContext';
 import { useProposals } from '@/components/workspace/ProposalsContext';
 import { createProposalFromLead, getTemplateById, type CompanyInfo } from '@/lib/mock/proposals';
 import type { SearchApplication } from '@/lib/mock/applications';
-import { supabase } from '@/lib/supabase/client';
+import { getProfile } from '@/lib/api/client';
 
 const statusVariant: Record<SearchApplication['status'], 'success' | 'warning' | 'danger' | 'neutral'> = {
   Approved: 'success',
@@ -54,25 +54,23 @@ export function ApplicationDetailContent({ application: app }: ApplicationDetail
     const template = getTemplateById(templateId);
     if (!template) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
-    let companyInfo: CompanyInfo = {};
-    if (session?.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_name, address_line1, address_line2, city, postcode, company_phone, company_email, vat_number')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      if (profile) {
-        const addressParts = [profile.address_line1, profile.address_line2, profile.city, profile.postcode].filter(Boolean);
-        companyInfo = {
-          companyName: profile.company_name || '',
-          companyAddress: addressParts.join(', '),
-          companyPhone: profile.company_phone || '',
-          companyEmail: profile.company_email || '',
-          companyVatNumber: profile.vat_number || '',
-        };
-      }
-    }
+    const profile = await getProfile();
+    const companyInfo: CompanyInfo = profile
+      ? {
+          companyName: profile.companyName || '',
+          companyAddress: [
+            profile.addressLine1,
+            profile.addressLine2,
+            profile.city,
+            profile.postcode,
+          ]
+            .filter(Boolean)
+            .join(', '),
+          companyPhone: profile.companyPhone || '',
+          companyEmail: profile.companyEmail || '',
+          companyVatNumber: profile.vatNumber || '',
+        }
+      : {};
 
     const newProposal = createProposalFromLead(existingLead, template, companyInfo);
     addProposal(newProposal);

@@ -30,7 +30,6 @@ export function AddLeadModal({ open, onClose, application }: AddLeadModalProps) 
   const [notes, setNotes] = useState('');
   const [nextFollowUp, setNextFollowUp] = useState('');
   const [nextFollowUpType, setNextFollowUpType] = useState<FollowUpType | ''>('');
-  const [assignedTo, setAssignedTo] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -42,7 +41,6 @@ export function AddLeadModal({ open, onClose, application }: AddLeadModalProps) 
       setNotes('');
       setNextFollowUp('');
       setNextFollowUpType('');
-      setAssignedTo(user?.email?.split('@')[0]?.split(/[.\s_-]+/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || '');
       setError('');
     }
   }, [open, application, user]);
@@ -74,7 +72,6 @@ export function AddLeadModal({ open, onClose, application }: AddLeadModalProps) 
       notes: notes.trim(),
       nextFollowUp: nextFollowUp || null,
       nextFollowUpType: nextFollowUpType || null,
-      assignedTo: assignedTo.trim() || 'Unassigned',
       estimatedValue: estimatedValue || application.estimatedValue,
       lat: application.lat,
       lng: application.lng,
@@ -148,13 +145,6 @@ export function AddLeadModal({ open, onClose, application }: AddLeadModalProps) 
             value={estimatedValue}
             onChange={(e) => setEstimatedValue(e.target.value)}
             placeholder="£5,000"
-          />
-          <Input
-            label="Assigned to"
-            name="assignedTo"
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            placeholder="Your name"
           />
         </div>
 

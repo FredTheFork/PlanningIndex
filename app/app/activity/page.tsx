@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { Activity as ActivityIcon, Plus, FileText, Mail, Check, Phone, Calendar, Send, Package } from 'lucide-react';
-import { Card, EmptyState } from '@/components/ui';
+import { Card, EmptyState, ErrorState } from '@/components/ui';
+import { ListSkeleton } from '@/components/ui/skeletons';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import type { LeadActivity, ActivityIcon as ActIcon } from '@/lib/mock/lead-activity';
 
@@ -75,7 +76,7 @@ function formatTime(iso: string): string {
 }
 
 export default function ActivityPage() {
-  const { activities, leads } = useLeads();
+  const { activities, leads, status, retry } = useLeads();
   const [activeFilter, setActiveFilter] = useState<FilterPill>('all');
 
   const filtered = useMemo(() => {
@@ -134,7 +135,17 @@ export default function ActivityPage() {
         })}
       </div>
 
-      {filtered.length === 0 ? (
+      {status === 'loading' ? (
+        <ListSkeleton rows={5} />
+      ) : status === 'error' ? (
+        <div className="rounded-xl border border-primary-200 bg-white">
+          <ErrorState
+            title="Couldn't load your activity"
+            description="There was a problem reaching the server. Your data is safe — please try again."
+            onRetry={retry}
+          />
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-primary-200 bg-white">
           <EmptyState
             icon={ActivityIcon}

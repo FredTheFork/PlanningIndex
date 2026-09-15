@@ -4,10 +4,14 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, ArrowRight } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateArticleSchema } from '@/lib/seo';
-import { Breadcrumbs, Badge, DarkCTABanner } from '@/components/ui';
+import Image from 'next/image';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { Badge } from '@/components/ui/Badge';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
 import { ArticleBody } from '@/components/marketing/ArticleBody';
 import { ArticleFeedback } from '@/components/marketing/ArticleFeedback';
-import { blogPosts, getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/blog';
+import { blogPosts } from '@/lib/blog';
+import { getBlogPosts, getBlogPostBySlug, getRelatedPosts } from '@/lib/content/wordpress';
 
 interface PageProps {
   params: { slug: string };
@@ -17,8 +21,8 @@ export function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const post = getBlogPostBySlug(params.slug);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const post = await getBlogPostBySlug(params.slug);
   if (!post) {
     return {
       title: 'Article Not Found',
@@ -50,11 +54,12 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function BlogArticlePage({ params }: PageProps) {
-  const post = getBlogPostBySlug(params.slug);
+export default async function BlogArticlePage({ params }: PageProps) {
+  const allPosts = await getBlogPosts();
+  const post = allPosts.find((p) => p.slug === params.slug);
   if (!post) notFound();
 
-  const relatedPosts = getRelatedBlogPosts(params.slug, 3);
+  const relatedPosts = getRelatedPosts(allPosts, params.slug, 3);
 
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Home', path: '/' },
@@ -106,10 +111,12 @@ export default function BlogArticlePage({ params }: PageProps) {
 
         <div className="max-w-4xl mx-auto px-6 -mt-8 relative z-10">
           <div className="relative overflow-hidden rounded-2xl border border-primary-200 h-72 sm:h-96 bg-primary-100">
-            <img
+            <Image
               src={post.image}
               alt={post.imageAlt}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              sizes="(min-width: 768px) 896px, 100vw"
+              className="object-cover"
             />
           </div>
         </div>
@@ -147,10 +154,12 @@ export default function BlogArticlePage({ params }: PageProps) {
                   <Link key={related.slug} href={`/blog/${related.slug}`} className="group block h-full">
                     <div className="bg-white rounded-xl border border-primary-200 overflow-hidden transition-all duration-200 hover:shadow-card-hover h-full flex flex-col">
                       <div className="h-36 overflow-hidden bg-primary-100 relative">
-                        <img
+                        <Image
                           src={related.image}
                           alt={related.imageAlt}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          sizes="(min-width: 768px) 33vw, 100vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
                       <div className="p-5 flex flex-col flex-1">

@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Alert } from '@/components/ui/Alert';
 import { useToast } from '@/components/ui/Toast';
 import { ProposalDocumentPreview } from '@/components/workspace/ProposalDocumentPreview';
 import { useProposals } from '@/components/workspace/ProposalsContext';
@@ -28,7 +29,8 @@ export function SendByPostModal({ open, onClose, proposal }: SendByPostModalProp
   const [confirmed, setConfirmed] = useState(false);
   const [sending, setSending] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
-  const { updateProposalStatus } = useProposals();
+  const [sendError, setSendError] = useState('');
+  const { sendProposal } = useProposals();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -40,6 +42,7 @@ export function SendByPostModal({ open, onClose, proposal }: SendByPostModalProp
     setConfirmed(false);
     setSending(false);
     setTrackingNumber(null);
+    setSendError('');
   };
 
   const handleClose = () => {
@@ -56,16 +59,27 @@ export function SendByPostModal({ open, onClose, proposal }: SendByPostModalProp
 
   const allDone = checklist.every(c => c.done);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     setSending(true);
-    setTimeout(() => {
-      updateProposalStatus(proposal.id, 'Sent');
-      const trk = `RM-TRK-${Math.floor(Math.random() * 900000 + 100000)}`;
-      setTrackingNumber(trk);
+    setSendError('');
+    try {
+      // Phase 44 — all print & post complexity stays behind the send API;
+      // the modal only handles the resulting state.
+      const result = await sendProposal(proposal.id, {
+        recipientName,
+        recipientAddress,
+        recipientPostcode,
+      });
+      setTrackingNumber(result.trackingNumber);
       setSending(false);
       setStep(4);
-      toast({ variant: 'success', title: 'Proposal sent by post', message: `${proposal.reference} has been sent to ${recipientAddress}.` });
-    }, 1500);
+      toast({ variant: 'success', title: 'Proposal sent by post', message: `${result.reference} has been sent to ${recipientAddress}.` });
+    } catch (err) {
+      setSending(false);
+      const message = err instanceof Error ? err.message : 'We could not send this proposal. Please try again in a moment.';
+      setSendError(message);
+      toast({ variant: 'danger', title: 'Sending failed', message });
+    }
   };
 
   return (
@@ -196,6 +210,11 @@ export function SendByPostModal({ open, onClose, proposal }: SendByPostModalProp
           <p className="font-sans text-sm text-primary-500 max-w-md mx-auto mb-6">
             Your proposal will be printed, enveloped, and posted by first class to:
           </p>
+          {sendError && (
+            <div className="max-w-md mx-auto mb-6 text-left">
+              <Alert variant="danger">{sendError}</Alert>
+            </div>
+          )}
           <div className="inline-block text-left rounded-xl border border-primary-200 bg-primary-50 p-4 mb-6">
             <p className="font-sans font-semibold text-primary-900 text-sm">{recipientName}</p>
             <p className="font-sans text-sm text-primary-600">{recipientAddress}</p>

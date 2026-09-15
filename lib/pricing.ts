@@ -23,7 +23,6 @@ export const pricingTiers: PricingTier[] = [
     priceSuffix: '/month',
     features: [
       '1 council',
-      '1 team member',
       'Planning search',
       'Map view',
       'Basic filters',
@@ -32,8 +31,8 @@ export const pricingTiers: PricingTier[] = [
     ],
     ctaLabel: 'Choose Local',
     ctaHref: '/choose-plan',
-    monthlyStripePriceId: '',
-    annualStripePriceId: '',
+    monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJyvnMAkLy',
+    annualStripePriceId: 'price_1UFzZlGgxdIg5idJwFY77xPK',
   },
   {
     name: 'Regional',
@@ -45,7 +44,6 @@ export const pricingTiers: PricingTier[] = [
     popular: true,
     features: [
       'Up to 10 councils',
-      '3 team members',
       'Everything in Local, plus:',
       'Advanced filters',
       'CRM pipeline',
@@ -55,8 +53,8 @@ export const pricingTiers: PricingTier[] = [
     ],
     ctaLabel: 'Choose Regional',
     ctaHref: '/choose-plan',
-    monthlyStripePriceId: '',
-    annualStripePriceId: '',
+    monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJ3ThAISl5',
+    annualStripePriceId: 'price_1UFzZlGgxdIg5idJgPZQQoX4',
   },
   {
     name: 'National',
@@ -67,18 +65,16 @@ export const pricingTiers: PricingTier[] = [
     priceSuffix: '/month',
     features: [
       'All councils',
-      '10 team members',
       'Everything in Regional, plus:',
       'Proposal templates',
       'Physical mail (50/month)',
-      'Team permissions',
       'API access',
       'Phone support',
     ],
     ctaLabel: 'Choose National',
     ctaHref: '/choose-plan',
-    monthlyStripePriceId: '',
-    annualStripePriceId: '',
+    monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJJJ047109',
+    annualStripePriceId: 'price_1UFzZmGgxdIg5idJ6TxrcxgY',
   },
   {
     name: 'Enterprise',
@@ -89,7 +85,6 @@ export const pricingTiers: PricingTier[] = [
     priceSuffix: '',
     features: [
       'All councils',
-      'Unlimited team members',
       'Everything in National, plus:',
       'Custom integrations',
       'Dedicated account manager',
@@ -147,15 +142,6 @@ export const comparisonRows: ComparisonRow[] = [
       { label: 'Proposal templates', values: [false, false, true, true] },
       { label: 'Physical mail', values: [false, '10/month', '50/month', 'Unlimited'] },
       { label: 'Delivery tracking', values: [false, true, true, true] },
-    ],
-  },
-  {
-    category: 'Team',
-    features: [
-      { label: 'Team members', values: ['1', '3', '10', 'Unlimited'] },
-      { label: 'Shared leads', values: [false, true, true, true] },
-      { label: 'Role permissions', values: [false, false, true, true] },
-      { label: 'Activity feed', values: [false, true, true, true] },
     ],
   },
   {

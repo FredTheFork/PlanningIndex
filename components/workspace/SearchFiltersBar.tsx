@@ -15,6 +15,21 @@ import {
   defaultFilters,
 } from '@/lib/mock/applications';
 
+// UK postcode: outward + inward code, with or without the space (e.g. HP6 5BA).
+const UK_POSTCODE_PATTERN = /^[A-Za-z]{1,2}\d[A-Za-z\d]?\s*\d[A-Za-z]{2}$/;
+
+/**
+ * The location field accepts place names as well as postcodes, so only
+ * validate when the input looks like a postcode attempt (contains a digit).
+ */
+function getLocationError(location: string): string | null {
+  const trimmed = location.trim();
+  if (trimmed && /\d/.test(trimmed) && !UK_POSTCODE_PATTERN.test(trimmed)) {
+    return 'That doesn\u2019t look like a valid UK postcode \u2014 check the format (e.g. HP6 5BA), or search by place name instead.';
+  }
+  return null;
+}
+
 interface SearchFiltersBarProps {
   filters: SearchFilters;
   onSearch: (filters: SearchFilters) => void;
@@ -23,6 +38,7 @@ interface SearchFiltersBarProps {
 
 export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: SearchFiltersBarProps) {
   const [local, setLocal] = useState<SearchFilters>(filters);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
     setLocal(filters);
@@ -30,9 +46,15 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
 
   const update = (field: keyof SearchFilters, value: string) => {
     setLocal((prev) => ({ ...prev, [field]: value }));
+    if (field === 'location') setLocationError(null);
   };
 
   const handleSearch = () => {
+    const error = getLocationError(local.location);
+    if (error) {
+      setLocationError(error);
+      return;
+    }
     onSearch(local);
   };
 
@@ -91,9 +113,12 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
             value={local.location}
             onChange={(e) => update('location', e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="block w-full pl-9 pr-3 py-2.5 border border-primary-300 rounded-lg shadow-sm placeholder:text-primary-400 focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors"
+            className={`block w-full pl-9 pr-3 py-2.5 border rounded-lg shadow-sm placeholder:text-primary-400 focus:outline-none focus:ring-2 focus:ring-accent-500/40 font-sans text-sm text-primary-900 bg-white transition-colors ${
+              locationError ? 'border-danger-400 focus:border-danger-500' : 'border-primary-300 focus:border-accent-500'
+            }`}
           />
         </div>
+        {locationError && <p className="font-sans text-xs text-danger-600">{locationError}</p>}
 
         <div className="relative">
           <select value={local.radius} onChange={(e) => update('radius', e.target.value)} className={selectClass}>
@@ -188,7 +213,9 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
             value={local.location}
             onChange={(e) => update('location', e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="block w-full pl-9 pr-3 py-2.5 border border-primary-300 rounded-lg shadow-sm placeholder:text-primary-400 focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:border-accent-500 font-sans text-sm text-primary-900 bg-white transition-colors"
+            className={`block w-full pl-9 pr-3 py-2.5 border rounded-lg shadow-sm placeholder:text-primary-400 focus:outline-none focus:ring-2 focus:ring-accent-500/40 font-sans text-sm text-primary-900 bg-white transition-colors ${
+              locationError ? 'border-danger-400 focus:border-danger-500' : 'border-primary-300 focus:border-accent-500'
+            }`}
           />
         </div>
 
@@ -255,6 +282,8 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
           <ChevronDownIcon />
         </div>
       </div>
+
+      {locationError && <p className="font-sans text-xs text-danger-600">{locationError}</p>}
 
       <div className="flex items-center justify-between">
         <Button onClick={handleSearch} leftIcon={<Search size={16} />}>

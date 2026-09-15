@@ -1,6 +1,16 @@
 import type { Metadata, Viewport } from 'next';
 import dynamic from 'next/dynamic';
+import { Inter, Archivo, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+
+// Self-hosted via next/font — no render-blocking Google Fonts CSS request.
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+const archivo = Archivo({ subsets: ['latin'], variable: '--font-archivo', display: 'swap' });
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains-mono',
+  display: 'swap',
+});
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { SITE_CONFIG, SITE_URL, KEYWORDS } from '@/lib/seo';
@@ -77,7 +87,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en-GB">
+    <html lang="en-GB" className={`${inter.variable} ${archivo.variable} ${jetbrainsMono.variable}`}>
       <body className="bg-surface-page font-sans text-primary-900 antialiased">
         <ToastProvider>
           <JsonLd data={[generateOrganizationSchema(), generateWebSiteSchema()]} />

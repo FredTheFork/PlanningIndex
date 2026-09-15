@@ -5,7 +5,8 @@ import { ChevronRight, Search } from 'lucide-react';
 import { JsonLd } from '@/components/seo';
 import { SITE_URL, generateBreadcrumbSchema, generateWebPageSchema } from '@/lib/seo';
 import { PageHero, Breadcrumbs } from '@/components/ui';
-import { helpCategories, getHelpCategoryBySlug, getAllHelpCategorySlugs } from '@/lib/help';
+import { getAllHelpCategorySlugs } from '@/lib/help';
+import { getHelpCategories, getHelpCategoryBySlug } from '@/lib/content/wordpress';
 import HelpCategoryContent from './HelpCategoryContent';
 
 interface PageProps {
@@ -16,8 +17,8 @@ export function generateStaticParams() {
   return getAllHelpCategorySlugs().map((slug) => ({ category: slug }));
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const category = getHelpCategoryBySlug(params.category);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const category = await getHelpCategoryBySlug(params.category);
   if (!category) {
     return {
       title: 'Category Not Found',
@@ -32,8 +33,9 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function HelpCategoryPage({ params }: PageProps) {
-  const category = getHelpCategoryBySlug(params.category);
+export default async function HelpCategoryPage({ params }: PageProps) {
+  const allCategories = await getHelpCategories();
+  const category = allCategories.find((c) => c.slug === params.category);
   if (!category) notFound();
 
   const breadcrumbs = generateBreadcrumbSchema([
@@ -69,7 +71,7 @@ export default function HelpCategoryPage({ params }: PageProps) {
           </p>
         </div>
       </section>
-      <HelpCategoryContent category={category} allCategories={helpCategories} />
+      <HelpCategoryContent category={category} allCategories={allCategories} />
     </>
   );
 }

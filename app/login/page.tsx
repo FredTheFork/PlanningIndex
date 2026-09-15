@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
 import { Button, Input, Alert } from '@/components/ui';
 
 export default function LoginPage() {
@@ -23,30 +22,20 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
 
-      if (signInError) {
-        setError(signInError.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Invalid email or password.');
         return;
       }
 
-      if (data.user) {
-        const { data: subData } = await supabase
-          .from('subscriptions')
-          .select('status, cancel_at_period_end')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
-
-        const sub = subData as { status: string; cancel_at_period_end: boolean } | null;
-        const isActive = sub && (sub.status === 'active' || sub.status === 'trialing') && !sub.cancel_at_period_end;
-
-        router.replace(isActive ? '/app' : '/choose-plan');
-      } else {
-        router.replace('/choose-plan');
-      }
+      router.replace(data.redirect || '/choose-plan');
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -113,7 +102,6 @@ export default function LoginPage() {
                 </button>
               }
             />
-
             <div className="flex justify-end">
               <Link
                 href="/forgot-password"
@@ -122,14 +110,13 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-
             <Button
               type="submit"
               fullWidth
               loading={loading}
               rightIcon={!loading ? <ArrowRight size={16} /> : undefined}
             >
-              Log In
+              Log in
             </Button>
           </form>
 

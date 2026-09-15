@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { FileText, Search, Plus, ArrowRight } from 'lucide-react';
-import { EmptyState, Button, Badge, Card, SearchInput } from '@/components/ui';
+import { EmptyState, ErrorState, Button, Badge, Card, SearchInput } from '@/components/ui';
+import { TableSkeleton } from '@/components/ui/skeletons';
 import { useProposals } from '@/components/workspace/ProposalsContext';
 import { useLeads } from '@/components/workspace/LeadsContext';
 import type { ProposalStatus } from '@/lib/mock/proposals';
@@ -61,7 +62,7 @@ const emptyStateMessages: Record<FilterPill, { title: string; description: strin
 };
 
 export default function ProposalsPage() {
-  const { proposals } = useProposals();
+  const { proposals, status, retry } = useProposals();
   const { getLeadById } = useLeads();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterPill>('all');
@@ -91,6 +92,40 @@ export default function ProposalsPage() {
       return true;
     });
   }, [proposals, search, activeFilter]);
+
+  if (status === 'loading') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-display font-bold text-primary-900 text-h2">Proposals</h1>
+          <p className="font-sans text-primary-500 text-sm mt-1">
+            Create, send, and track professional proposals by post.
+          </p>
+        </div>
+        <TableSkeleton rows={6} cols={6} />
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-display font-bold text-primary-900 text-h2">Proposals</h1>
+          <p className="font-sans text-primary-500 text-sm mt-1">
+            Create, send, and track professional proposals by post.
+          </p>
+        </div>
+        <div className="rounded-xl border border-primary-200 bg-white">
+          <ErrorState
+            title="Couldn't load your proposals"
+            description="There was a problem reaching the server. Your data is safe — please try again."
+            onRetry={retry}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (proposals.length === 0) {
     return (

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getSession } from '@/lib/api/client';
 import { Button, Input, Alert } from '@/components/ui';
 
 export default function SecurityPage() {
@@ -17,11 +17,12 @@ export default function SecurityPage() {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    (async () => {
+      const session = await getSession();
       if (session?.user) {
         setEmail(session.user.email || '');
       }
-    });
+    })();
   }, []);
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -41,10 +42,16 @@ export default function SecurityPage() {
     setSaving(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      const response = await fetch('/api/auth/password', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword }),
+      });
 
-      if (updateError) {
-        setError(updateError.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to update password.');
         return;
       }
 
@@ -59,7 +66,11 @@ export default function SecurityPage() {
   };
 
   const handleSignOutAll = async () => {
-    await supabase.auth.signOut({ scope: 'global' });
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    });
     router.push('/login');
   };
 

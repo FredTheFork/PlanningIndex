@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
 import { Button, Input, Alert } from '@/components/ui';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,13 +17,13 @@ export default function ResetPasswordPage() {
   const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        router.replace('/login');
-        return;
-      }
-      setVerifying(false);
-    });
+    const t = new URLSearchParams(window.location.search).get('token');
+    if (!t) {
+      router.replace('/forgot-password');
+      return;
+    }
+    setToken(t);
+    setVerifying(false);
   }, [router]);
 
   const handleReset = async (e: React.FormEvent) => {
@@ -39,13 +39,24 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (!token) {
+      setError('Missing reset token. Please request a new reset link.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
+      const response = await fetch('/api/auth/password-reset/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      });
 
-      if (updateError) {
-        setError(updateError.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Something went wrong. Please try again.');
         return;
       }
 

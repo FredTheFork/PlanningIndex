@@ -3,25 +3,32 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock, Search, X } from 'lucide-react';
-import { DarkCTABanner, SectionLabel, Badge } from '@/components/ui';
-import { blogPosts, getBlogCategories, getFeaturedBlogPost } from '@/lib/blog';
+import Image from 'next/image';
+import { DarkCTABanner } from '@/components/ui/DarkCTABanner';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { Badge } from '@/components/ui/Badge';
+import type { BlogPost } from '@/lib/blog';
 
-export default function BlogListContent() {
+interface BlogListContentProps {
+  posts: BlogPost[];
+}
+
+export default function BlogListContent({ posts }: BlogListContentProps) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const categories = getBlogCategories();
-  const featuredPost = getFeaturedBlogPost();
+  const categories = ['All', ...Array.from(new Set(posts.map((post) => post.category)))];
+  const featuredPost = posts[0];
 
   const filteredPosts = useMemo(() => {
-    let posts = blogPosts.filter((p) => p.slug !== featuredPost.slug);
+    let result = posts.filter((p) => p.slug !== featuredPost.slug);
 
     if (activeCategory !== 'All') {
-      posts = posts.filter((p) => p.category === activeCategory);
+      result = result.filter((p) => p.category === activeCategory);
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      posts = posts.filter(
+      result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.excerpt.toLowerCase().includes(q) ||
@@ -30,8 +37,8 @@ export default function BlogListContent() {
       );
     }
 
-    return posts;
-  }, [activeCategory, searchQuery, featuredPost.slug]);
+    return result;
+  }, [posts, activeCategory, searchQuery, featuredPost.slug]);
 
   return (
     <>
@@ -41,10 +48,12 @@ export default function BlogListContent() {
           <Link href={`/blog/${featuredPost.slug}`} className="group block">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div className="relative overflow-hidden rounded-2xl border border-primary-200 bg-primary-100 h-64 lg:h-80">
-                <img
+                <Image
                   src={featuredPost.image}
                   alt={featuredPost.imageAlt}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
               <div>
@@ -114,10 +123,12 @@ export default function BlogListContent() {
               <Link key={post.slug} href={`/blog/${post.slug}`} className="group block h-full">
                 <div className="bg-white rounded-xl border border-primary-200 overflow-hidden transition-all duration-200 hover:shadow-card-hover h-full flex flex-col">
                   <div className="h-44 overflow-hidden bg-primary-100 relative">
-                    <img
+                    <Image
                       src={post.image}
                       alt={post.imageAlt}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
                   <div className="p-6 flex flex-col flex-1">

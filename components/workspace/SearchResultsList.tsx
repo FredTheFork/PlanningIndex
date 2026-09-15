@@ -60,7 +60,7 @@ export function SearchResultsList({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
           <p className="font-sans font-semibold text-primary-900 text-sm">
             {applications.length} {applications.length === 1 ? 'application' : 'applications'} found

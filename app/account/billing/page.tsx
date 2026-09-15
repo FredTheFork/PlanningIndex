@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CreditCard, Check, ArrowRight, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getSession } from '@/lib/api/client';
 import { Button, Alert, Badge, ConfirmDialog } from '@/components/ui';
 import { pricingTiers } from '@/lib/pricing';
 
@@ -30,26 +30,22 @@ export default function BillingPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-      const { data: subData } = await supabase
-        .from('subscriptions')
-        .select('plan_tier, billing_cycle, status, current_period_end, cancel_at_period_end')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      setSubscription(subData as typeof subscription);
-
-      const { data: histData } = await supabase
-        .from('subscription_history')
-        .select('id, event_type, created_at, subscription_data')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      setPaymentHistory((histData as PaymentHistoryItem[]) || []);
+    (async () => {
+      const session = await getSession();
+      if (session?.membership) {
+        const m = session.membership;
+        setSubscription({
+          plan_tier: m.planTier,
+          billing_cycle: m.billingCycle,
+          status: m.status,
+          current_period_end: m.currentPeriodEnd,
+          cancel_at_period_end: m.cancelAtPeriodEnd,
+        });
+      }
+      // Payment history is populated by Stripe webhooks once payments are live.
+      setPaymentHistory([]);
       setLoading(false);
-    });
+    })();
   }, []);
 
   const handlePortal = async () => {
@@ -57,14 +53,10 @@ export default function BillingPage() {
     setError('');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
       const response = await fetch('/api/portal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
@@ -90,14 +82,10 @@ export default function BillingPage() {
     setError('');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
       const response = await fetch('/api/cancel-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
         },
       });
 

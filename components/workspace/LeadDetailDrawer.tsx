@@ -23,7 +23,7 @@ import { createProposalFromLead, getTemplateById, type CompanyInfo } from '@/lib
 import { leadStatusOptions, type Lead, type LeadStatus, type FollowUpType } from '@/lib/mock/leads';
 import type { LeadActivity, ActivityIcon } from '@/lib/mock/lead-activity';
 import type { ProposalStatus } from '@/lib/mock/proposals';
-import { supabase } from '@/lib/supabase/client';
+import { getProfile } from '@/lib/api/client';
 
 interface LeadDetailDrawerProps {
   lead: Lead | null;
@@ -93,7 +93,6 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
   const [notes, setNotes] = useState('');
   const [nextFollowUp, setNextFollowUp] = useState('');
   const [nextFollowUpType, setNextFollowUpType] = useState<FollowUpType | ''>('');
-  const [assignedTo, setAssignedTo] = useState('');
   const [estimatedValue, setEstimatedValue] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -109,7 +108,6 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
       setNotes(lead.notes);
       setNextFollowUp(lead.nextFollowUp ? lead.nextFollowUp.split('T')[0] : '');
       setNextFollowUpType(lead.nextFollowUpType || '');
-      setAssignedTo(lead.assignedTo);
       setEstimatedValue(lead.estimatedValue);
       setContactName(lead.contactName);
       setContactPhone(lead.contactPhone);
@@ -128,7 +126,6 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
       notes: notes.trim(),
       nextFollowUp: nextFollowUp || null,
       nextFollowUpType: nextFollowUpType || null,
-      assignedTo: assignedTo.trim() || 'Unassigned',
       estimatedValue: estimatedValue,
       contactName: contactName.trim(),
       contactPhone: contactPhone.trim(),
@@ -163,25 +160,23 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
 
     setTemplateModalOpen(false);
 
-    const { data: { session } } = await supabase.auth.getSession();
-    let companyInfo: CompanyInfo = {};
-    if (session?.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_name, address_line1, address_line2, city, postcode, company_phone, company_email, vat_number')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      if (profile) {
-        const addressParts = [profile.address_line1, profile.address_line2, profile.city, profile.postcode].filter(Boolean);
-        companyInfo = {
-          companyName: profile.company_name || '',
-          companyAddress: addressParts.join(', '),
-          companyPhone: profile.company_phone || '',
-          companyEmail: profile.company_email || '',
-          companyVatNumber: profile.vat_number || '',
-        };
-      }
-    }
+    const profile = await getProfile();
+    const companyInfo: CompanyInfo = profile
+      ? {
+          companyName: profile.companyName || '',
+          companyAddress: [
+            profile.addressLine1,
+            profile.addressLine2,
+            profile.city,
+            profile.postcode,
+          ]
+            .filter(Boolean)
+            .join(', '),
+          companyPhone: profile.companyPhone || '',
+          companyEmail: profile.companyEmail || '',
+          companyVatNumber: profile.vatNumber || '',
+        }
+      : {};
 
     const newProposal = createProposalFromLead(lead, template, companyInfo);
     addProposal(newProposal);
@@ -285,7 +280,13 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
                 ))}
               </div>
             ) : (
-              <p className="font-sans text-sm text-primary-400 py-2">No proposals yet for this lead.</p>
+              <div className="rounded-lg border border-dashed border-primary-200 bg-primary-50/50 px-4 py-5 text-center">
+                <FileText size={20} className="text-primary-300 mx-auto mb-2" />
+                <p className="font-sans text-sm font-medium text-primary-700">No proposals yet</p>
+                <p className="font-sans text-xs text-primary-400 mt-0.5">
+                  Create a professional proposal from this lead to send by post.
+                </p>
+              </div>
             )}
           </section>
 
@@ -337,7 +338,7 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
           {/* Value and assignment */}
           <section>
             <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Value & assignment</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Estimated value"
                 name="estimatedValue"
@@ -345,19 +346,13 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
                 onChange={(e) => setEstimatedValue(e.target.value)}
                 leftIcon={<PoundSterling size={15} />}
               />
-              <Input
-                label="Assigned to"
-                name="assignedTo"
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-              />
             </div>
           </section>
 
           {/* Follow-up */}
           <section>
             <h3 className="font-sans font-semibold text-primary-900 text-sm mb-3">Next follow-up</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Date"
                 type="date"
@@ -425,7 +420,13 @@ export function LeadDetailDrawer({ lead, open, onClose }: LeadDetailDrawerProps)
                 </div>
               </div>
             ) : (
-              <p className="font-sans text-sm text-primary-400 py-4">No activity recorded yet.</p>
+              <div className="rounded-lg border border-dashed border-primary-200 bg-primary-50/50 px-4 py-5 text-center">
+                <Calendar size={20} className="text-primary-300 mx-auto mb-2" />
+                <p className="font-sans text-sm font-medium text-primary-700">No activity yet</p>
+                <p className="font-sans text-xs text-primary-400 mt-0.5">
+                  Notes, status changes, and proposals will appear here as you work on this lead.
+                </p>
+              </div>
             )}
 
             <div className="mt-6 flex items-center gap-2 text-xs text-primary-400">

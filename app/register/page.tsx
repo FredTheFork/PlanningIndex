@@ -4,7 +4,6 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
 import { Button, Input, Alert, Checkbox } from '@/components/ui';
 
 function RegisterForm() {
@@ -49,24 +48,21 @@ function RegisterForm() {
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: companyName.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
 
-      if (signUpError) {
-        setError(signUpError.message);
-        return;
-      }
+      const data = await response.json();
 
-      if (data.user) {
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          company_name: companyName.trim(),
-        });
-        await supabase.from('customers').insert({
-          user_id: data.user.id,
-        });
+      if (!response.ok) {
+        setError(data.error || 'Something went wrong. Please try again.');
+        return;
       }
 
       router.push(plan ? `/choose-plan?plan=${plan}` : '/choose-plan');

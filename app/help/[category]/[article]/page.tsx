@@ -5,13 +5,8 @@ import { SITE_URL, generateBreadcrumbSchema, generateArticleSchema, generateWebP
 import { Breadcrumbs } from '@/components/ui';
 import { ArticleBody } from '@/components/marketing/ArticleBody';
 import { ArticleFeedback } from '@/components/marketing/ArticleFeedback';
-import {
-  getAllHelpArticleSlugs,
-  getHelpArticleBySlug,
-  getHelpCategoryBySlug,
-  getRelatedHelpArticles,
-  helpCategories,
-} from '@/lib/help';
+import { getAllHelpArticleSlugs } from '@/lib/help';
+import { getHelpCategories } from '@/lib/content/wordpress';
 import HelpArticleContent from './HelpArticleContent';
 
 interface PageProps {
@@ -25,8 +20,11 @@ export function generateStaticParams() {
   }));
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const article = getHelpArticleBySlug(params.category, params.article);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const categories = await getHelpCategories();
+  const article = categories
+    .find((c) => c.slug === params.category)
+    ?.articles.find((a) => a.slug === params.article);
   if (!article) {
     return {
       title: 'Article Not Found',
@@ -41,12 +39,15 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function HelpArticlePage({ params }: PageProps) {
-  const category = getHelpCategoryBySlug(params.category);
-  const article = getHelpArticleBySlug(params.category, params.article);
+export default async function HelpArticlePage({ params }: PageProps) {
+  const categories = await getHelpCategories();
+  const category = categories.find((c) => c.slug === params.category);
+  const article = category?.articles.find((a) => a.slug === params.article);
   if (!category || !article) notFound();
 
-  const relatedArticles = getRelatedHelpArticles(params.category, params.article, 3);
+  const relatedArticles = (category?.articles ?? [])
+    .filter((a) => a.slug !== params.article)
+    .slice(0, 3);
 
   const breadcrumbs = generateBreadcrumbSchema([
     { name: 'Home', path: '/' },
@@ -71,7 +72,7 @@ export default function HelpArticlePage({ params }: PageProps) {
         category={category}
         article={article}
         relatedArticles={relatedArticles}
-        allCategories={helpCategories}
+        allCategories={categories}
       />
     </>
   );

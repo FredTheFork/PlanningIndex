@@ -4,7 +4,7 @@ import { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { Check, ShieldCheck, Clock, Headphones } from 'lucide-react';
 import { PricingToggle } from '@/components/ui';
-import { supabase } from '@/lib/supabase/client';
+import { getSession } from '@/lib/api/client';
 import { pricingTiers, comparisonRows } from '@/lib/pricing';
 
 const trustBadges = [
@@ -18,7 +18,7 @@ export function PricingContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    getSession().then((session) => {
       setIsLoggedIn(Boolean(session));
     });
   }, []);

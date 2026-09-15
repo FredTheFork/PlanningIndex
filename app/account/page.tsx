@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getProfile, updateProfile } from '@/lib/api/client';
 import { Button, Input, Alert } from '@/components/ui';
 
 export default function ProfilePage() {
@@ -13,20 +13,14 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, phone')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (data) {
-        setFullName(data.full_name || '');
-        setPhone(data.phone || '');
+    (async () => {
+      const profile = await getProfile();
+      if (profile) {
+        setFullName(profile.fullName || '');
+        setPhone(profile.phone || '');
       }
       setLoading(false);
-    });
+    })();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -36,19 +30,11 @@ export default function ProfilePage() {
     setSuccess(false);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName.trim() || null, phone: phone.trim() || null })
-        .eq('id', session.user.id);
-
-      if (updateError) {
-        setError(updateError.message);
+      const updated = await updateProfile({ fullName: fullName.trim(), phone: phone.trim() });
+      if (!updated) {
+        setError('Failed to save. Please try again.');
         return;
       }
-
       setSuccess(true);
     } catch {
       setError('Something went wrong. Please try again.');

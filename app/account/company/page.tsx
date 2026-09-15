@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getProfile, updateProfile } from '@/lib/api/client';
 import { Button, Input, Alert } from '@/components/ui';
 
 export default function CompanyPage() {
@@ -22,29 +22,23 @@ export default function CompanyPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('company_name, address_line1, address_line2, city, postcode, phone, company_email, company_phone, website, logo_url, vat_number')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (data) {
-        setCompanyName(data.company_name || '');
-        setAddressLine1(data.address_line1 || '');
-        setAddressLine2(data.address_line2 || '');
-        setCity(data.city || '');
-        setPostcode(data.postcode || '');
-        setPhone(data.phone || '');
-        setCompanyEmail(data.company_email || '');
-        setCompanyPhone(data.company_phone || '');
-        setWebsite(data.website || '');
-        setLogoUrl(data.logo_url || '');
-        setVatNumber(data.vat_number || '');
+    (async () => {
+      const profile = await getProfile();
+      if (profile) {
+        setCompanyName(profile.companyName || '');
+        setAddressLine1(profile.addressLine1 || '');
+        setAddressLine2(profile.addressLine2 || '');
+        setCity(profile.city || '');
+        setPostcode(profile.postcode || '');
+        setPhone(profile.phone || '');
+        setCompanyEmail(profile.companyEmail || '');
+        setCompanyPhone(profile.companyPhone || '');
+        setWebsite(profile.website || '');
+        setLogoUrl(profile.logoUrl || '');
+        setVatNumber(profile.vatNumber || '');
       }
       setLoading(false);
-    });
+    })();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -54,28 +48,22 @@ export default function CompanyPage() {
     setSuccess(false);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      const updated = await updateProfile({
+        companyName: companyName.trim(),
+        addressLine1: addressLine1.trim(),
+        addressLine2: addressLine2.trim(),
+        city: city.trim(),
+        postcode: postcode.trim(),
+        phone: phone.trim(),
+        companyEmail: companyEmail.trim(),
+        companyPhone: companyPhone.trim(),
+        website: website.trim(),
+        logoUrl: logoUrl.trim(),
+        vatNumber: vatNumber.trim(),
+      });
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          company_name: companyName.trim() || null,
-          address_line1: addressLine1.trim() || null,
-          address_line2: addressLine2.trim() || null,
-          city: city.trim() || null,
-          postcode: postcode.trim() || null,
-          phone: phone.trim() || null,
-          company_email: companyEmail.trim() || null,
-          company_phone: companyPhone.trim() || null,
-          website: website.trim() || null,
-          logo_url: logoUrl.trim() || null,
-          vat_number: vatNumber.trim() || null,
-        })
-        .eq('id', session.user.id);
-
-      if (updateError) {
-        setError(updateError.message);
+      if (!updated) {
+        setError('Failed to save. Please try again.');
         return;
       }
 

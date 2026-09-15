@@ -252,7 +252,7 @@ export const guides: Guide[] = [
       {
         heading: 'Using the list view',
         paragraphs: [
-          'Toggle to List view on the Pipeline page to see all leads in a sortable table. This is useful when you want to sort by value, follow-up date, or assigned team member. Click any row to open the lead detail drawer.',
+          'Toggle to List view on the Pipeline page to see all leads in a sortable table. This is useful when you want to sort by value or follow-up date. Click any row to open the lead detail drawer.',
         ],
       },
       {
@@ -490,7 +490,7 @@ export const guides: Guide[] = [
   {
     slug: 'scaling-your-business-with-enterprise-plans',
     title: 'Scaling Your Business with Enterprise Plans',
-    excerpt: 'Add team members, share leads, and manage multiple users across your company.',
+    excerpt: 'Grow from one council to nationwide coverage as your pipeline grows.',
     category: 'Advanced',
     date: '2026-04-20',
     displayDate: 'Apr 2026',
@@ -500,38 +500,25 @@ export const guides: Guide[] = [
       {
         heading: 'When to upgrade',
         paragraphs: [
-          'As your business grows, you will need more council coverage, more team members, and more proposals per month. PlanningIndex plans scale with you: Local for solo tradespeople, Regional for growing businesses, National for established companies, and Enterprise for large organisations.',
+          'As your business grows, you will need more council coverage and more proposals per month. PlanningIndex plans scale with you: Local for solo tradespeople, Regional for growing businesses, National for established companies, and Enterprise for large organisations.',
         ],
       },
       {
-        heading: 'Adding team members',
+        heading: 'Growing your coverage',
         paragraphs: [
-          'On the Regional plan and above, you can add team members to your workspace. Each member has a role — Owner, Admin, Sales, Estimator, or Installer — that controls what they can see and do. Team members share the same leads, proposals, and pipeline.',
+          'Start with the councils where you actually work, then expand as your pipeline fills. The Regional plan covers up to 10 councils — ideal for a business serving a county or city region. National covers every council in the UK, so you can follow opportunities wherever they appear.',
         ],
       },
       {
-        heading: 'Assigning leads',
+        heading: 'Keeping the pipeline moving',
         paragraphs: [
-          'When you add a lead, you can assign it to a specific team member. The assigned person is responsible for following up and moving the lead through the pipeline. The Leads page can be filtered by assignee so each team member can focus on their own leads.',
-        ],
-      },
-      {
-        type: 'callout',
-        calloutType: 'info',
-        paragraphs: [
-          'Role-based permissions will be enforced server-side in the backend integration phase. The frontend currently supports role assignment and display; backend enforcement is coming.',
-        ],
-      },
-      {
-        heading: 'Sharing proposals',
-        paragraphs: [
-          'Any team member can create a proposal from a shared lead. The proposal is linked to the lead and visible to all team members. This means a salesperson can create the proposal and an estimator can review the pricing before it is sent.',
+          'As volume grows, the pipeline becomes more important than the search. Review your Pipeline page every morning: move leads through stages, schedule follow-ups, and archive anything that has gone cold so the board stays focused on live opportunities.',
         ],
       },
       {
         heading: 'Activity feed',
         paragraphs: [
-          'The Activity page shows a timeline of every action across the workspace — leads added, status changes, proposals created and sent, follow-ups scheduled. This gives managers visibility into what the team is working on without needing to ask.',
+          'The Activity page shows a timeline of every action across your workspace — leads added, status changes, proposals created and sent, follow-ups scheduled. It is the quickest way to see what has happened since you last logged in.',
         ],
       },
       {

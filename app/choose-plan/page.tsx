@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Check, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getSession } from '@/lib/api/client';
 import { pricingTiers } from '@/lib/pricing';
 import { Button, Alert, PricingToggle } from '@/components/ui';
 
@@ -20,7 +20,7 @@ function ChoosePlanContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    getSession().then((session) => {
       setIsLoggedIn(Boolean(session));
       setAuthChecked(true);
     });
@@ -41,17 +41,10 @@ function ChoosePlanContent() {
     setError('');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push(`/register?plan=${tierSlug}`);
-        return;
-      }
-
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ tier: tierSlug, cycle: annual ? 'annual' : 'monthly' }),
       });

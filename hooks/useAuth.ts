@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
+import { getSession, type SessionContext, type AuthUser } from '@/lib/api/client';
+
+export type { AuthUser };
 
 export interface SubscriptionStatus {
   plan_tier: string | null;
@@ -13,56 +14,42 @@ export interface SubscriptionStatus {
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<SessionContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
 
-  const fetchSubscription = async (userId: string) => {
-    const { data } = await supabase
-      .from('subscriptions')
-      .select('plan_tier, billing_cycle, status, current_period_end, cancel_at_period_end')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    setSubscription(data as SubscriptionStatus | null);
-  };
+  const refresh = useCallback(async () => {
+    const next = await getSession();
+    setSession(next);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
+    refresh();
+  }, [refresh]);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-      if (session?.user) {
-        fetchSubscription(session.user.id);
-      }
-    });
-
-    const {
-      data: { subscription: authSubscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-      if (session?.user) {
-        fetchSubscription(session.user.id);
-      } else {
-        setSubscription(null);
-      }
-    });
-
-    return () => authSubscription.unsubscribe();
+  const signOut = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setSession(null);
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setSubscription(null);
-  };
+  const user: AuthUser | null = session?.user ?? null;
+
+  const subscription: SubscriptionStatus | null = session?.membership
+    ? {
+        plan_tier: session.membership.planTier,
+        billing_cycle: session.membership.billingCycle,
+        status: session.membership.status,
+        current_period_end: session.membership.currentPeriodEnd,
+        cancel_at_period_end: session.membership.cancelAtPeriodEnd,
+      }
+    : null;
 
   const hasActiveSubscription = Boolean(
-    subscription &&
-      (subscription.status === 'active' || subscription.status === 'trialing') &&
-      !subscription.cancel_at_period_end
+    session?.membership &&
+      (session.membership.status === 'active' || session.membership.status === 'trialing') &&
+      !session.membership.cancelAtPeriodEnd
   );
 
   return {
@@ -71,5 +58,7 @@ export function useAuth() {
     signOut,
     subscription,
     hasActiveSubscription,
+    session,
+    refresh,
   };
 }

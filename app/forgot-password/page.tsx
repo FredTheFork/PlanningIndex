@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Mail, CheckCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
 import { Button, Input, Alert } from '@/components/ui';
 
 export default function ForgotPasswordPage() {
@@ -11,6 +10,7 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [resetUrl, setResetUrl] = useState('');
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,16 +20,22 @@ export default function ForgotPasswordPage() {
     setError('');
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email.trim().toLowerCase(),
-        { redirectTo: `${window.location.origin}/reset-password` }
-      );
+      const response = await fetch('/api/auth/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
 
-      if (resetError) {
-        setError(resetError.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Something went wrong. Please try again.');
         return;
       }
 
+      // Email delivery isn't configured in this environment, so the backend
+      // returns the reset link directly for the local flow.
+      setResetUrl(data.resetUrl || '');
       setSent(true);
     } catch {
       setError('Something went wrong. Please try again.');
@@ -64,6 +70,19 @@ export default function ForgotPasswordPage() {
               <p className="font-sans text-primary-500 text-sm mb-6">
                 We&apos;ve sent a password reset link to <strong>{email}</strong>. Click the link in the email to set a new password.
               </p>
+              {resetUrl && (
+                <div className="mb-6 p-4 rounded-lg bg-primary-50 border border-primary-200 text-left">
+                  <p className="font-sans text-xs text-primary-500 mb-2">
+                    Email delivery isn&apos;t configured yet — use this reset link:
+                  </p>
+                  <Link
+                    href={resetUrl}
+                    className="font-sans text-sm text-accent-600 hover:underline break-all"
+                  >
+                    {resetUrl}
+                  </Link>
+                </div>
+              )}
               <Link
                 href="/login"
                 className="font-sans font-semibold text-accent-600 hover:text-accent-700 transition-colors text-sm"

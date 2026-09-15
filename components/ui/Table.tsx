@@ -10,6 +10,15 @@ export interface TableColumn<T> {
   sortable?: boolean;
   width?: string;
   align?: 'left' | 'right' | 'center';
+  /** Hide this column below the given breakpoint (desktop-first tables). */
+  hideBelow?: 'sm' | 'md' | 'lg';
+}
+
+function hideClass(hideBelow?: 'sm' | 'md' | 'lg'): string {
+  if (hideBelow === 'sm') return 'hidden sm:table-cell';
+  if (hideBelow === 'md') return 'hidden md:table-cell';
+  if (hideBelow === 'lg') return 'hidden lg:table-cell';
+  return '';
 }
 
 interface TableProps<T> {
@@ -86,7 +95,7 @@ export function Table<T extends Record<string, unknown>>({
           <thead>
             <tr className="border-b border-primary-200 bg-primary-50">
               {columns.map((col) => (
-                <th key={String(col.key)} className={`px-4 py-3 ${alignClass(col.align)}`} style={col.width ? { width: col.width } : undefined}>
+                <th key={String(col.key)} className={`px-4 py-3 ${alignClass(col.align)} ${hideClass(col.hideBelow)}`} style={col.width ? { width: col.width } : undefined}>
                   <div className="h-4 bg-primary-200 rounded w-24 animate-pulse" />
                 </th>
               ))}
@@ -96,7 +105,7 @@ export function Table<T extends Record<string, unknown>>({
             {[...Array(loadingRows)].map((_, i) => (
               <tr key={i} className="border-b border-primary-100 last:border-b-0">
                 {columns.map((col) => (
-                  <td key={String(col.key)} className={`px-4 py-3.5 ${alignClass(col.align)}`}>
+                  <td key={String(col.key)} className={`px-4 py-3.5 ${alignClass(col.align)} ${hideClass(col.hideBelow)}`}>
                     <div className="h-4 bg-primary-100 rounded w-full animate-pulse" />
                   </td>
                 ))}
@@ -120,7 +129,7 @@ export function Table<T extends Record<string, unknown>>({
             {columns.map((col) => (
               <th
                 key={String(col.key)}
-                className={`px-4 py-3 font-sans font-semibold text-primary-600 text-xs uppercase tracking-wide ${alignClass(col.align)} ${col.sortable ? 'cursor-pointer select-none hover:text-primary-900' : ''}`}
+                className={`px-4 py-3 font-sans font-semibold text-primary-600 text-xs uppercase tracking-wide ${alignClass(col.align)} ${hideClass(col.hideBelow)} ${col.sortable ? 'cursor-pointer select-none hover:text-primary-900' : ''}`}
                 style={col.width ? { width: col.width } : undefined}
                 onClick={() => col.sortable && handleSort(col)}
               >
@@ -142,7 +151,7 @@ export function Table<T extends Record<string, unknown>>({
               className={`border-b border-primary-100 last:border-b-0 transition-colors ${zebra && index % 2 === 1 ? 'bg-primary-50/50' : 'bg-white'} ${onRowClick ? 'cursor-pointer hover:bg-accent-50' : 'hover:bg-primary-50'}`}
             >
               {columns.map((col) => (
-                <td key={String(col.key)} className={`px-4 py-3.5 font-sans text-sm text-primary-700 ${alignClass(col.align)}`}>
+                <td key={String(col.key)} className={`px-4 py-3.5 font-sans text-sm text-primary-700 ${alignClass(col.align)} ${hideClass(col.hideBelow)}`}>
                   {col.render ? col.render(row) : String(row[col.key as keyof T] ?? '')}
                 </td>
               ))}

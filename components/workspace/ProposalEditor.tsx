@@ -122,18 +122,24 @@ export function ProposalEditor({ proposal: initialProposal }: ProposalEditorProp
     }));
   };
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     const total = calculateProposalTotal(proposal.sections);
     const totalStr = `\u00A3${total.toLocaleString('en-GB')}`;
-    updateProposal(proposal.id, {
+    const saved = await updateProposal(proposal.id, {
       ...proposal,
       totalValue: totalStr,
     });
-    setTimeout(() => {
-      setSaving(false);
+    setSaving(false);
+    if (saved) {
       toast({ variant: 'success', title: 'Draft saved', message: 'Your proposal has been saved.' });
-    }, 500);
+    } else {
+      toast({
+        variant: 'danger',
+        title: 'Save failed',
+        message: 'We couldn\u2019t reach the server \u2014 your draft was not saved. Please try again.',
+      });
+    }
   }, [proposal, updateProposal, toast]);
 
   const isSent = proposal.status !== 'Draft' && proposal.status !== 'Ready';
