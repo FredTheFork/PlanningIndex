@@ -34,9 +34,13 @@ interface SearchFiltersBarProps {
   filters: SearchFilters;
   onSearch: (filters: SearchFilters) => void;
   variant?: 'horizontal' | 'sidebar';
+  /** Real authority names from /api/applications/councils; falls back to the
+   *  default mock list until (or if) none are available. */
+  councils?: { value: string; label: string }[];
 }
 
-export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: SearchFiltersBarProps) {
+export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal', councils }: SearchFiltersBarProps) {
+  const councilSelectOptions = councils?.length ? councils : councilOptions;
   const [local, setLocal] = useState<SearchFilters>(filters);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -131,7 +135,7 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
 
         <div className="relative">
           <select value={local.council} onChange={(e) => update('council', e.target.value)} className={selectClass}>
-            {councilOptions.map((opt) => (
+            {councilSelectOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
@@ -230,7 +234,7 @@ export function SearchFiltersBar({ filters, onSearch, variant = 'horizontal' }: 
 
         <div className="relative">
           <select value={local.council} onChange={(e) => update('council', e.target.value)} className={selectClass}>
-            {councilOptions.map((opt) => (
+            {councilSelectOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>

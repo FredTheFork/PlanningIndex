@@ -46,9 +46,19 @@ Stripe flow (once a real `sk_` key is delivered): `/api/checkout` creates a Stri
 - Do NOT use `next dev --turbo`: Turbopack fails on mapbox-gl (ModuleBuildError, /app/search → 500). Plain webpack dev only.
 - To measure production: `docker compose -f docker-compose.base44.yml -f /tmp/compose.prod.yml up -d` with a command of `npm install --include=dev && NODE_ENV=production npx next build && NODE_ENV=production npx next start -p 3000 -H 0.0.0.0` — the `--include=dev` is critical because `npm install` with NODE_ENV=production prunes devDependencies (tailwindcss), which breaks the CSS/font pipeline.
 
+## Planning applications pipeline (real data)
+- `NEXT_PUBLIC_SUPABASE_URL` must be the bare project URL; if a pasted value carries an `/rest/v1/` suffix or trailing slash, `lib/supabase/url.ts` (`normalizeSupabaseUrl`) strips it before `supabase-js` appends its own paths — otherwise every request 404s.
+- Source of truth: Supabase Postgres table `planning_applications` (migration `20260915210000_create_planning_applications.sql`; apply on the hosted project via the Supabase SQL editor). RLS is enabled with no policies — only the service role (`SUPABASE_SERVICE_ROLE_KEY`) can touch it.
+- Ingest: `ruby sync_to_pi.rb` (scraper machine) reads the local SQLite apps.db and POSTs batches of ~500 to `POST /api/ingest/planning-apps` with `Authorization: Bearer $PI_SYNC_KEY`. Upserts are idempotent on `council_reference`. Requires `PI_SYNC_KEY` on both sides (scraper env + app secret).
+- Search: `GET /api/applications` (plan-gated like /api/leads: 401 unauthenticated, 403 without active membership) queries Supabase with keyword/council/status/dateFrom + pagination; `GET /api/applications/[id]` and `GET /api/applications/councils` follow the same gating.
+- DB row → UI mapping lives in `lib/planning/enrich.ts` (status/type/trade-tag derivation, title summarizing, postcode extraction). `lib/mock/applications.ts` reuses its generatePotentialWork/generatePotentialTrade so mock and real data stay consistent.
+- Workspace search page (`app/app/search`), application detail, and the dashboard's two application widgets fetch from these routes — no mock planning applications in user-facing workspace views (mock remains for marketing/examples pages and CRM widgets).
+- Scraped apps have no lat/lng, so map pins are skipped (MapView filters 0/0 coords); distance/value fields are hidden when unknown.
+- `lib/server/planning-apps.ts` returns 503 via routes when Supabase/`SUPABASE_SERVICE_ROLE_KEY` is unconfigured (`isPlanningDataConfigured()` — placeholders in `.env.base44-defaults` keep it false until real values arrive).
+
 ## Architecture notes
 - No local database needed — Supabase is hosted externally.
 - Supabase migrations live in `supabase/migrations/` (applied on the hosted Supabase project, not locally).
 - Path alias `@/*` maps to repo root (see `tsconfig.json`).
 - `next.config.mjs` includes `allowedDevOrigins` for the Base44 preview origin.
-- `lib/mock/` contains mock planning application data used by the workspace search UI.
+- `lib/mock/` contains mock data for marketing pages and CRM widgets; workspace search/detail/dashboard application widgets use real Supabase data (see pipeline section above).

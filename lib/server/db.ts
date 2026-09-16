@@ -143,7 +143,7 @@ export function newId(): string {
 // --- Seeding ---------------------------------------------------------------
 
 const DEMO_EMAIL = 'demo@planningindex.co.uk';
-const DEMO_PASSWORD = 'Demo1234!';
+const DEMO_PASSWORD = 'demo1234!';
 
 export function emptyProfile(userId: string, companyName: string): DbProfile {
   return {

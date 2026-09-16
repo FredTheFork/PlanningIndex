@@ -14,6 +14,16 @@
       "requiredAtBoot": false
     },
     {
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "description": "Supabase service_role key (secret) — used server-side for planning-application ingest and search. Get it from your Supabase dashboard > Project Settings > API > service_role.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "PI_SYNC_KEY",
+      "description": "Shared bearer secret between sync_to_pi.rb (scraper machine, PI_SYNC_KEY env var) and the /api/ingest/planning-apps endpoint. Any strong random string.",
+      "requiredAtBoot": false
+    },
+    {
       "name": "STRIPE_SECRET_KEY",
       "description": "Stripe secret key (sk_...) — needed for checkout and subscription features. Get it from your Stripe dashboard > Developers > API keys.",
       "requiredAtBoot": false

@@ -81,12 +81,16 @@ export function ApplicationResultCard({
             <span className="font-sans text-xs text-primary-400 flex items-center gap-1">
               <Calendar size={11} /> {app.dateReceived}
             </span>
-            <span className="font-sans text-xs text-primary-500 flex items-center gap-1">
-              <Clock size={11} /> {app.distanceMiles} miles
-            </span>
-            <span className="inline-flex items-center gap-0.5 font-sans text-xs font-semibold text-primary-700">
-              <PoundSterling size={11} /> {app.estimatedValue}
-            </span>
+            {app.distanceMiles > 0 && (
+              <span className="font-sans text-xs text-primary-500 flex items-center gap-1">
+                <Clock size={11} /> {app.distanceMiles} miles
+              </span>
+            )}
+            {app.estimatedValue && (
+              <span className="inline-flex items-center gap-0.5 font-sans text-xs font-semibold text-primary-700">
+                <PoundSterling size={11} /> {app.estimatedValue}
+              </span>
+            )}
             <div className="flex flex-col gap-1.5 mt-1">
               <Link href={`/app/applications/${app.id}`}>
                 <Button size="sm" variant="outline" leftIcon={<FileText size={13} />}>
