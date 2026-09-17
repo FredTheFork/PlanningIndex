@@ -49,7 +49,11 @@ export function useAuth() {
   const hasActiveSubscription = Boolean(
     session?.membership &&
       (session.membership.status === 'active' || session.membership.status === 'trialing') &&
-      !session.membership.cancelAtPeriodEnd
+      !session.membership.cancelAtPeriodEnd &&
+      // Cardless trials expire on their own — a trialing membership past its
+      // period end no longer grants access.
+      (session.membership.status !== 'trialing' ||
+        new Date(session.membership.currentPeriodEnd).getTime() > Date.now())
   );
 
   return {

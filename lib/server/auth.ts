@@ -39,6 +39,9 @@ export interface SessionContext {
 
 export function planPermissions(planTier: string | null): Permissions {
   switch (planTier) {
+    case 'trial':
+      // 14-day free trial — full product access, no card required.
+      return { maxCouncils: 999, crm: true, proposals: true, monthlyMailAllowance: 50 };
     case 'national':
       return { maxCouncils: 999, crm: true, proposals: true, monthlyMailAllowance: 50 };
     case 'regional':
@@ -84,6 +87,24 @@ export function forbidden(message: string): NextResponse {
 }
 
 /**
+ * A membership grants access when it is active (or trialing and not yet
+ * expired) and not cancelled. Cardless free trials carry their own expiry in
+ * `currentPeriodEnd`, so a trialing subscription past that date is inactive —
+ * nothing external (Stripe webhooks) will ever flip its status.
+ */
+export function isSubscriptionActive(subscription: DbSubscription): boolean {
+  if (subscription.cancelAtPeriodEnd) return false;
+  if (subscription.status !== 'active' && subscription.status !== 'trialing') return false;
+  if (
+    subscription.status === 'trialing' &&
+    new Date(subscription.currentPeriodEnd).getTime() <= Date.now()
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Backend enforcement of plan access. The frontend receives the same
  * permission set via /api/auth/session, but the API must independently
  * enforce it — an active membership is required, and the plan tier
@@ -95,10 +116,7 @@ export async function hasFeatureAccess(
 ): Promise<boolean> {
   const db = await getDb();
   const subscription = db.subscriptions.find(
-    (s) =>
-      s.userId === userId &&
-      (s.status === 'active' || s.status === 'trialing') &&
-      !s.cancelAtPeriodEnd
+    (s) => s.userId === userId && isSubscriptionActive(s)
   );
   if (!subscription) return false;
   return planPermissions(subscription.planTier)[feature];
@@ -107,10 +125,7 @@ export async function hasFeatureAccess(
 export async function maxCouncilsFor(userId: string): Promise<number> {
   const db = await getDb();
   const subscription = db.subscriptions.find(
-    (s) =>
-      s.userId === userId &&
-      (s.status === 'active' || s.status === 'trialing') &&
-      !s.cancelAtPeriodEnd
+    (s) => s.userId === userId && isSubscriptionActive(s)
   );
   return planPermissions(subscription?.planTier ?? null).maxCouncils;
 }
@@ -140,9 +155,7 @@ export function clearSessionCookie(res: NextResponse): NextResponse {
 export async function findSubscription(userId: string): Promise<DbSubscription | null> {
   const db = await getDb();
   return (
-    db.subscriptions.find(
-      (s) => s.userId === userId && s.status !== 'canceled' && !s.cancelAtPeriodEnd
-    ) ??
+    db.subscriptions.find((s) => s.userId === userId && isSubscriptionActive(s)) ??
     db.subscriptions.find((s) => s.userId === userId && s.status !== 'canceled') ??
     null
   );
@@ -176,11 +189,16 @@ export async function upsertSubscription(
   userId: string,
   planTier: string,
   billingCycle: string,
-  status: 'active' | 'trialing' = 'active'
+  status: 'active' | 'trialing' = 'active',
+  periodDays?: number
 ): Promise<DbSubscription> {
   const db = await getDb();
   const periodEnd = new Date();
-  periodEnd.setMonth(periodEnd.getMonth() + (billingCycle === 'annual' ? 12 : 1));
+  if (periodDays) {
+    periodEnd.setDate(periodEnd.getDate() + periodDays);
+  } else {
+    periodEnd.setMonth(periodEnd.getMonth() + (billingCycle === 'annual' ? 12 : 1));
+  }
 
   let subscription = db.subscriptions.find((s) => s.userId === userId && s.status !== 'canceled');
   if (!subscription) {

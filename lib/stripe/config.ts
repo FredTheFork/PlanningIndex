@@ -9,7 +9,7 @@ export function isStripeConfigured(): boolean {
 }
 
 export type BillingCycle = 'monthly' | 'annual';
-export type PlanTier = 'local' | 'regional' | 'national' | 'enterprise';
+export type PlanTier = 'trial' | 'local' | 'regional' | 'national' | 'enterprise';
 
 // Price IDs can be overridden per environment without a code change — set
 // e.g. STRIPE_PRICE_REGIONAL_MONTHLY on the hosting platform (Vercel). This is

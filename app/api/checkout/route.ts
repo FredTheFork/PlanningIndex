@@ -21,6 +21,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: '/contact' });
     }
 
+    // The free trial is never a paid checkout — it is activated via /api/trial.
+    if (tier === 'trial') {
+      return NextResponse.json(
+        { error: 'The free trial is started via the trial endpoint.' },
+        { status: 400 }
+      );
+    }
+
     // Local mode: Stripe is not configured, so membership is activated
     // directly by the backend (development / self-hosted flow). NEVER in
     // production — a live site must not grant free memberships because a key

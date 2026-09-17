@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { Check, ShieldCheck, Clock, Headphones } from 'lucide-react';
 import { PricingToggle } from '@/components/ui';
-import { getSession } from '@/lib/api/client';
+import { usePlanPurchase } from '@/hooks/usePlanPurchase';
 import { pricingTiers, comparisonRows } from '@/lib/pricing';
 
 const trustBadges = [
@@ -15,13 +15,7 @@ const trustBadges = [
 
 export function PricingContent() {
   const [annual, setAnnual] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    getSession().then((session) => {
-      setIsLoggedIn(Boolean(session));
-    });
-  }, []);
+  const { purchase, loading, error } = usePlanPurchase();
 
   return (
     <>
@@ -32,20 +26,34 @@ export function PricingContent() {
             <PricingToggle onCycleChange={(cycle) => setAnnual(cycle === 'annual')} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {error && (
+            <div className="max-w-xl mx-auto mb-8">
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700">
+                {error}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {pricingTiers.map((tier) => {
               const price = annual ? tier.annualPrice : tier.monthlyPrice;
-              const displayPrice = price === null
-                ? 'Custom'
-                : annual
-                  ? `£${price.toLocaleString('en-GB')}`
-                  : `£${price}`;
+              const displayPrice = tier.trial
+                ? 'Free'
+                : price === null
+                  ? 'Custom'
+                  : annual
+                    ? `£${price.toLocaleString('en-GB')}`
+                    : `£${price}`;
 
-              const suffix = price === null
-                ? ''
-                : annual
-                  ? '/year'
-                  : tier.priceSuffix;
+              const suffix = tier.trial
+                ? '/14 days'
+                : price === null
+                  ? ''
+                  : annual
+                    ? '/year'
+                    : tier.priceSuffix;
+
+              const isLoading = loading === tier.slug;
 
               return (
                 <div
@@ -79,12 +87,12 @@ export function PricingContent() {
                       <span className="font-sans text-primary-400 text-sm">{suffix}</span>
                     )}
                   </div>
-                  {annual && price !== null && (
+                  {annual && price !== null && !tier.trial && (
                     <p className="font-sans text-xs text-emerald-600 font-medium mb-4">
                       Save 20% with annual billing
                     </p>
                   )}
-                  {!annual && <div className="mb-4" />}
+                  {(!annual || tier.trial) && <div className="mb-4" />}
 
                   <div className="border-t border-primary-100 pt-5 mb-6 flex-1">
                     <ul className="space-y-2.5">
@@ -113,24 +121,42 @@ export function PricingContent() {
                     </ul>
                   </div>
 
-                  <Link
-                    href={tier.slug === 'enterprise' ? tier.ctaHref : `/choose-plan?plan=${tier.slug}`}
-                    className={`inline-flex items-center justify-center rounded-lg font-sans font-semibold text-sm transition-colors w-full ${
-                      tier.popular
-                        ? 'bg-accent-600 text-white hover:bg-accent-700'
-                        : 'bg-primary-900 text-white hover:bg-primary-800'
-                    }`}
-                    style={{ padding: '12px 24px' }}
-                  >
-                    {tier.slug === 'enterprise' ? tier.ctaLabel : isLoggedIn ? 'Start Free Trial' : 'Get Started'}
-                  </Link>
+                  {tier.slug === 'enterprise' ? (
+                    <Link
+                      href={tier.ctaHref}
+                      className={`inline-flex items-center justify-center rounded-lg font-sans font-semibold text-sm transition-colors w-full ${
+                        tier.popular
+                          ? 'bg-accent-600 text-white hover:bg-accent-700'
+                          : 'bg-primary-900 text-white hover:bg-primary-800'
+                      }`}
+                      style={{ padding: '12px 24px' }}
+                    >
+                      {tier.ctaLabel}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => purchase(tier.slug, annual ? 'annual' : 'monthly')}
+                      className={`inline-flex items-center justify-center rounded-lg font-sans font-semibold text-sm transition-colors w-full disabled:opacity-60 disabled:cursor-not-allowed ${
+                        tier.trial
+                          ? 'bg-white text-primary-900 border border-primary-300 hover:border-primary-500'
+                          : tier.popular
+                            ? 'bg-accent-600 text-white hover:bg-accent-700'
+                            : 'bg-primary-900 text-white hover:bg-primary-800'
+                      }`}
+                      style={{ padding: '12px 24px' }}
+                    >
+                      {isLoading ? 'Please wait…' : tier.ctaLabel}
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
 
           <p className="text-center mt-8 font-sans text-sm text-primary-400">
-            All prices exclude VAT. 14-day free trial on every plan. No credit card required.
+            All prices exclude VAT. Prefer to try first? Start with a 14-day free trial — no credit card required.
           </p>
 
           {/* Trust badges */}
@@ -169,7 +195,7 @@ export function PricingContent() {
                   <th className="px-6 py-4 text-left font-sans font-semibold text-primary-600 text-xs uppercase tracking-wide w-1/3">
                     Feature
                   </th>
-                  {pricingTiers.map((tier) => (
+                  {pricingTiers.filter((tier) => !tier.trial).map((tier) => (
                     <th key={tier.name} className="px-6 py-4 text-center font-sans font-bold text-primary-900 text-sm">
                       {tier.name}
                     </th>

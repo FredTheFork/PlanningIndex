@@ -8,12 +8,33 @@ export interface PricingTier {
   monthlyStripePriceId: string;
   annualStripePriceId: string;
   popular?: boolean;
+  trial?: boolean;
   features: string[];
   ctaLabel: string;
   ctaHref: string;
 }
 
 export const pricingTiers: PricingTier[] = [
+  {
+    name: 'Free Trial',
+    slug: 'trial',
+    description: 'Try everything PlanningIndex offers, free.',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    priceSuffix: '/14 days',
+    trial: true,
+    features: [
+      'Full access for 14 days',
+      'All councils',
+      'CRM pipeline',
+      'Proposal builder',
+      'No credit card required',
+    ],
+    ctaLabel: 'Start Free Trial',
+    ctaHref: '/choose-plan',
+    monthlyStripePriceId: '',
+    annualStripePriceId: '',
+  },
   {
     name: 'Local',
     slug: 'local',
@@ -29,7 +50,7 @@ export const pricingTiers: PricingTier[] = [
       'Lead management',
       'Email support',
     ],
-    ctaLabel: 'Choose Local',
+    ctaLabel: 'Get Local',
     ctaHref: '/choose-plan',
     monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJyvnMAkLy',
     annualStripePriceId: 'price_1UFzZlGgxdIg5idJwFY77xPK',
@@ -51,7 +72,7 @@ export const pricingTiers: PricingTier[] = [
       'Physical mail (10/month)',
       'Priority support',
     ],
-    ctaLabel: 'Choose Regional',
+    ctaLabel: 'Get Regional',
     ctaHref: '/choose-plan',
     monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJ3ThAISl5',
     annualStripePriceId: 'price_1UFzZlGgxdIg5idJgPZQQoX4',
@@ -71,7 +92,7 @@ export const pricingTiers: PricingTier[] = [
       'API access',
       'Phone support',
     ],
-    ctaLabel: 'Choose National',
+    ctaLabel: 'Get National',
     ctaHref: '/choose-plan',
     monthlyStripePriceId: 'price_1UFzZlGgxdIg5idJJJ047109',
     annualStripePriceId: 'price_1UFzZmGgxdIg5idJ6TxrcxgY',

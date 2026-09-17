@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, verifyPassword } from '@/lib/server/db';
-import { setSessionCookie, createSession, findSubscription } from '@/lib/server/auth';
+import { setSessionCookie, createSession, findSubscription, isSubscriptionActive } from '@/lib/server/auth';
 import { rateLimit } from '@/lib/server/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -24,10 +24,7 @@ export async function POST(req: NextRequest) {
 
     const token = await createSession(user.id);
     const subscription = await findSubscription(user.id);
-    const active =
-      subscription &&
-      (subscription.status === 'active' || subscription.status === 'trialing') &&
-      !subscription.cancelAtPeriodEnd;
+    const active = subscription ? isSubscriptionActive(subscription) : false;
 
     const res = NextResponse.json({
       user: { id: user.id, email: user.email },

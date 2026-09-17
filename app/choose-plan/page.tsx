@@ -1,82 +1,23 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
-import { getSession } from '@/lib/api/client';
+import { Check, ShieldCheck, Clock } from 'lucide-react';
 import { pricingTiers } from '@/lib/pricing';
-import { Button, Alert, PricingToggle } from '@/components/ui';
+import { usePlanPurchase } from '@/hooks/usePlanPurchase';
+import { PricingToggle } from '@/components/ui';
 
 function ChoosePlanContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedPlan = searchParams.get('plan');
 
   const [annual, setAnnual] = useState(false);
-  const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    getSession().then((session) => {
-      setIsLoggedIn(Boolean(session));
-      setAuthChecked(true);
-    });
-  }, []);
-
-  const handleChoosePlan = async (tierSlug: string) => {
-    if (tierSlug === 'enterprise') {
-      router.push('/contact');
-      return;
-    }
-
-    if (!isLoggedIn) {
-      router.push(`/register?plan=${tierSlug}`);
-      return;
-    }
-
-    setLoading(tierSlug);
-    setError('');
-
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tier: tierSlug, cycle: annual ? 'annual' : 'monthly' }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to start checkout. Please try again.');
-        return;
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary-200 border-t-accent-600 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const { purchase, loading, error } = usePlanPurchase();
 
   return (
     <div className="min-h-screen bg-primary-50 py-12 px-6">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10">
           <Link href="/" className="inline-block mb-4">
             <span className="font-display font-bold text-primary-900 text-2xl">
@@ -87,13 +28,15 @@ function ChoosePlanContent() {
             Choose your plan
           </h1>
           <p className="font-sans text-primary-500 text-sm max-w-lg mx-auto">
-            Start with one council or cover the whole country. Upgrade, downgrade, or cancel anytime. 14-day free trial on every plan.
+            Buy the plan you need straight away, or start with a 14-day free trial — no credit card required. Upgrade, downgrade, or cancel anytime.
           </p>
         </div>
 
         {error && (
           <div className="max-w-2xl mx-auto mb-6">
-            <Alert variant="danger">{error}</Alert>
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700">
+              {error}
+            </div>
           </div>
         )}
 
@@ -101,20 +44,24 @@ function ChoosePlanContent() {
           <PricingToggle onCycleChange={(cycle) => setAnnual(cycle === 'annual')} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {pricingTiers.map((tier) => {
             const price = annual ? tier.annualPrice : tier.monthlyPrice;
-            const displayPrice = price === null
-              ? 'Custom'
-              : annual
-                ? `\u00A3${price.toLocaleString('en-GB')}`
-                : `\u00A3${price}`;
+            const displayPrice = tier.trial
+              ? 'Free'
+              : price === null
+                ? 'Custom'
+                : annual
+                  ? `\u00A3${price.toLocaleString('en-GB')}`
+                  : `\u00A3${price}`;
 
-            const suffix = price === null
-              ? ''
-              : annual
-                ? '/year'
-                : tier.priceSuffix;
+            const suffix = tier.trial
+              ? '/14 days'
+              : price === null
+                ? ''
+                : annual
+                  ? '/year'
+                  : tier.priceSuffix;
 
             const isLoading = loading === tier.slug;
             const isPreselected = preselectedPlan === tier.slug;
@@ -151,12 +98,12 @@ function ChoosePlanContent() {
                     <span className="font-sans text-primary-400 text-sm">{suffix}</span>
                   )}
                 </div>
-                {annual && price !== null && (
+                {annual && price !== null && !tier.trial && (
                   <p className="font-sans text-xs text-emerald-600 font-medium mb-4">
                     Save 20% with annual billing
                   </p>
                 )}
-                {!annual && <div className="mb-4" />}
+                {(!annual || tier.trial) && <div className="mb-4" />}
 
                 <div className="border-t border-primary-100 pt-5 mb-6 flex-1">
                   <ul className="space-y-2.5">
@@ -182,15 +129,21 @@ function ChoosePlanContent() {
                   </ul>
                 </div>
 
-                <Button
-                  onClick={() => handleChoosePlan(tier.slug)}
-                  fullWidth
-                  loading={isLoading}
-                  variant={tier.popular ? 'secondary' : 'primary'}
-                  rightIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => purchase(tier.slug, annual ? 'annual' : 'monthly')}
+                  className={`inline-flex items-center justify-center rounded-lg font-sans font-semibold text-sm transition-colors w-full disabled:opacity-60 disabled:cursor-not-allowed ${
+                    tier.trial
+                      ? 'bg-white text-primary-900 border border-primary-300 hover:border-primary-500'
+                      : tier.popular
+                        ? 'bg-accent-600 text-white hover:bg-accent-700'
+                        : 'bg-primary-900 text-white hover:bg-primary-800'
+                  }`}
+                  style={{ padding: '12px 24px' }}
                 >
-                  {tier.slug === 'enterprise' ? 'Contact Sales' : isLoggedIn ? 'Start Free Trial' : 'Get Started'}
-                </Button>
+                  {isLoading ? 'Please wait…' : tier.ctaLabel}
+                </button>
               </div>
             );
           })}
@@ -211,14 +164,6 @@ function ChoosePlanContent() {
           <Link href="/pricing" className="font-sans text-sm text-primary-500 hover:text-primary-900 transition-colors">
             Compare all features
           </Link>
-          {isLoggedIn && (
-            <>
-              <span className="text-primary-300 mx-2">|</span>
-              <Link href="/app" className="font-sans text-sm text-accent-600 hover:text-accent-700 transition-colors">
-                Go to dashboard
-              </Link>
-            </>
-          )}
         </div>
       </div>
     </div>
