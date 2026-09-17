@@ -11,19 +11,19 @@ export async function POST(req: NextRequest) {
     // No body — just log out the current session.
   }
 
-  const db = getDb();
+  const db = await getDb();
   const token = req.cookies.get(SESSION_COOKIE)?.value;
 
   if (all) {
     // Sign out everywhere: revoke every session for this user.
-    const user = getSessionUser(req);
+    const user = await getSessionUser(req);
     if (user) {
       db.sessions = db.sessions.filter((s) => s.userId !== user.id);
-      saveDb();
+      await saveDb();
     }
   } else if (token) {
     db.sessions = db.sessions.filter((s) => s.token !== token);
-    saveDb();
+    await saveDb();
   }
 
   return clearSessionCookie(NextResponse.json({ success: true }));

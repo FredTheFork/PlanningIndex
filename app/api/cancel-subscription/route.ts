@@ -5,10 +5,10 @@ import { getStripeClient, isStripeConfigured } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getSessionUser(req);
+    const user = await getSessionUser(req);
     if (!user) return unauthorized();
 
-    const db = getDb();
+    const db = await getDb();
     const subscription = db.subscriptions.find((s) => s.userId === user.id && s.status !== 'canceled');
     if (!subscription) {
       return NextResponse.json({ error: 'No active subscription found.' }, { status: 404 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     // Local mode: cancel at period end without Stripe.
     if (!isStripeConfigured() || !subscription.stripeSubscriptionId) {
       subscription.cancelAtPeriodEnd = true;
-      saveDb();
+      await saveDb();
       return NextResponse.json({ success: true });
     }
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     });
 
     subscription.cancelAtPeriodEnd = true;
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ success: true });
   } catch (err) {

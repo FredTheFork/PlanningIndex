@@ -5,12 +5,12 @@ import { pickAllowed } from '@/lib/server/rate-limit';
 import { PROPOSAL_CREATABLE_FIELDS } from '@/lib/server/fields';
 
 export async function GET(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'proposals'))
+  if (!(await hasFeatureAccess(user.id, 'proposals')))
     return forbidden('Your plan does not include access to this feature.');
 
-  const db = getDb();
+  const db = await getDb();
   const leadId = req.nextUrl.searchParams.get('leadId');
   const proposals = db.proposals
     .filter((p) => p.userId === user.id && (!leadId || p.leadId === leadId))
@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'proposals'))
+  if (!(await hasFeatureAccess(user.id, 'proposals')))
     return forbidden('Your plan does not include access to this feature.');
 
   try {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'leadId and projectTitle are required.' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const lead = db.leads.find((l) => l.id === body.leadId && l.userId === user.id);
     if (!lead) return NextResponse.json({ error: 'Lead not found.' }, { status: 404 });
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       timestamp: now,
       icon: 'file',
     });
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ proposal }, { status: 201 });
   } catch {

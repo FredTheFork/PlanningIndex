@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from 'crypto';
+import { isAppStateConfigured, loadAppState, saveAppState } from './app-state';
 import type { Lead } from '@/lib/mock/leads';
 import type { LeadActivity } from '@/lib/mock/lead-activity';
 import type { Proposal } from '@/lib/mock/proposals';
@@ -102,22 +103,45 @@ const DATA_DIR = path.join(process.cwd(), '.data');
 const DB_PATH = path.join(DATA_DIR, 'db.json');
 
 let cachedDb: Database | null = null;
+let initPromise: Promise<Database> | null = null;
 
-export function getDb(): Database {
-  if (cachedDb) return cachedDb;
+// Loads once, then serves from the in-memory cache. On serverless hosts
+// (Vercel) with Supabase configured the state is fetched over HTTP; without
+// credentials (local dev) it loads synchronously from the file store.
+async function initializeDb(): Promise<Database> {
+  if (isAppStateConfigured()) {
+    const remote = await loadAppState();
+    cachedDb = remote ?? seedDatabase();
+    if (!remote) await saveAppState(cachedDb); // bootstrap the empty row
+    return cachedDb;
+  }
   if (existsSync(DB_PATH)) {
     cachedDb = JSON.parse(readFileSync(DB_PATH, 'utf8')) as Database;
     return cachedDb;
   }
   cachedDb = seedDatabase();
-  saveDb();
+  await saveDb();
   return cachedDb;
 }
 
-export function saveDb(): void {
-  if (!cachedDb) return;
+export function getDb(): Promise<Database> {
+  initPromise ??= initializeDb().catch((err) => {
+    // Allow a later request to retry after a transient failure.
+    initPromise = null;
+    throw err;
+  });
+  return initPromise;
+}
+
+export async function saveDb(): Promise<void> {
+  const db = cachedDb;
+  if (!db) return;
+  if (isAppStateConfigured()) {
+    await saveAppState(db);
+    return;
+  }
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(DB_PATH, JSON.stringify(cachedDb, null, 2));
+  writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
 // --- Passwords -------------------------------------------------------------

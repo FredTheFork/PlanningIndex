@@ -5,12 +5,12 @@ import { pickAllowed } from '@/lib/server/rate-limit';
 import { LEAD_CREATABLE_FIELDS } from '@/lib/server/fields';
 
 export async function GET(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'crm'))
+  if (!(await hasFeatureAccess(user.id, 'crm')))
     return forbidden('Your plan does not include CRM access.');
 
-  const db = getDb();
+  const db = await getDb();
   const leads = db.leads
     .filter((l) => l.userId === user.id)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -18,9 +18,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'crm'))
+  if (!(await hasFeatureAccess(user.id, 'crm')))
     return forbidden('Your plan does not include CRM access.');
 
   try {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Property address is required.' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const now = new Date().toISOString();
     const lead = {
       ...pickAllowed(body, LEAD_CREATABLE_FIELDS),
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     } as DbLead;
     db.leads.push(lead);
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ lead }, { status: 201 });
   } catch {

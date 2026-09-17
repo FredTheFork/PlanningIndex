@@ -14,13 +14,13 @@ interface Params {
  * On success the proposal is returned in its new delivery state.
  */
 export async function POST(req: NextRequest, { params }: Params) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'proposals'))
+  if (!(await hasFeatureAccess(user.id, 'proposals')))
     return forbidden('Your plan does not include access to this feature.');
 
   try {
-    const db = getDb();
+    const db = await getDb();
     const proposal = db.proposals.find((p) => p.id === params.id && p.userId === user.id);
     if (!proposal) return NextResponse.json({ error: 'Proposal not found.' }, { status: 404 });
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     proposal.deliveryIssueReason = null;
     proposal.trackingNumber = dispatch.trackingNumber;
     proposal.estimatedDeliveryDate = dispatch.estimatedDeliveryDate;
-    saveDb();
+    await saveDb();
 
     db.activities.push({
       id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       timestamp: now,
       icon: 'send',
     });
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ proposal, provider: dispatch.provider });
   } catch {

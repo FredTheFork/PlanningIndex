@@ -10,25 +10,25 @@ interface Params {
 }
 
 export async function GET(req: NextRequest, { params }: Params) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'proposals'))
+  if (!(await hasFeatureAccess(user.id, 'proposals')))
     return forbidden('Your plan does not include access to this feature.');
 
-  const db = getDb();
+  const db = await getDb();
   const proposal = db.proposals.find((p) => p.id === params.id && p.userId === user.id);
   if (!proposal) return NextResponse.json({ error: 'Proposal not found.' }, { status: 404 });
   return NextResponse.json({ proposal });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'proposals'))
+  if (!(await hasFeatureAccess(user.id, 'proposals')))
     return forbidden('Your plan does not include access to this feature.');
 
   try {
-    const db = getDb();
+    const db = await getDb();
     const proposal = db.proposals.find((p) => p.id === params.id && p.userId === user.id);
     if (!proposal) return NextResponse.json({ error: 'Proposal not found.' }, { status: 404 });
 
@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         });
       }
     }
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ proposal });
   } catch {
@@ -88,16 +88,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'proposals'))
+  if (!(await hasFeatureAccess(user.id, 'proposals')))
     return forbidden('Your plan does not include access to this feature.');
 
-  const db = getDb();
+  const db = await getDb();
   const index = db.proposals.findIndex((p) => p.id === params.id && p.userId === user.id);
   if (index === -1) return NextResponse.json({ error: 'Proposal not found.' }, { status: 404 });
 
   db.proposals.splice(index, 1);
-  saveDb();
+  await saveDb();
   return NextResponse.json({ success: true });
 }

@@ -42,6 +42,11 @@
       "name": "NEXT_PUBLIC_MAPBOX_TOKEN",
       "description": "Mapbox public access token — needed for map features in the workspace. Get it from your Mapbox account > Access tokens.",
       "requiredAtBoot": false
+    },
+    {
+      "name": "RESEND_API_KEY",
+      "description": "Resend API key (re_...) — sends password-reset emails on the live site. Get it from resend.com > API Keys. Without it, reset links are only logged server-side.",
+      "requiredAtBoot": false
     }
   ]
 }

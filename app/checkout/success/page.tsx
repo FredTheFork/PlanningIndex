@@ -1,24 +1,55 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { getSession } from '@/lib/api/client';
+
+const POLL_INTERVAL_MS = 2500;
+const MAX_POLLS = 20; // ~50 seconds
+
+function hasActiveMembership(session: Awaited<ReturnType<typeof getSession>>): boolean {
+  return Boolean(
+    session?.membership &&
+      (session.membership.status === 'active' || session.membership.status === 'trialing') &&
+      !session.membership.cancelAtPeriodEnd
+  );
+}
 
 function CheckoutSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const [redirecting, setRedirecting] = useState(false);
+  const [waiting, setWaiting] = useState(true);
+  const pollCount = useRef(0);
 
+  // The Stripe webhook (not the redirect itself) activates the membership.
+  // Poll /api/auth/session until the webhook has landed, then go to the
+  // workspace — otherwise a slow webhook would bounce a paying customer back
+  // to /choose-plan.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setRedirecting(true);
-      router.replace('/app');
-    }, 5000);
+    let cancelled = false;
 
-    return () => clearTimeout(timer);
+    const poll = async () => {
+      pollCount.current += 1;
+      const session = await getSession();
+      if (cancelled) return;
+      if (hasActiveMembership(session) || pollCount.current >= MAX_POLLS) {
+        setWaiting(false);
+        setRedirecting(true);
+        router.replace('/app');
+        return;
+      }
+      setTimeout(poll, POLL_INTERVAL_MS);
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   return (
@@ -33,8 +64,9 @@ function CheckoutSuccessContent() {
         </h1>
 
         <p className="font-sans text-primary-500 leading-relaxed mb-8" style={{ fontSize: '1.05rem' }}>
-          Your subscription is now active. You have full access to every planning application across the UK.
-          {redirecting ? ' Taking you to your dashboard...' : ' You can start searching right away.'}
+          Payment received — confirming your subscription
+          {waiting ? '…' : '. Your subscription is now active and you have full access to every planning application across the UK.'}
+          {redirecting ? ' Taking you to your dashboard...' : ''}
         </p>
 
         {sessionId && (
@@ -43,11 +75,13 @@ function CheckoutSuccessContent() {
           </p>
         )}
 
-        <Link href="/app">
-          <Button rightIcon={<ArrowRight size={16} />}>
-            Go to Dashboard
-          </Button>
-        </Link>
+        {!waiting && (
+          <Link href="/app">
+            <Button rightIcon={<ArrowRight size={16} />}>
+              Go to Dashboard
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );

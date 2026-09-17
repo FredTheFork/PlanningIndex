@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://planningindex.co.u
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getSessionUser(req);
+    const user = await getSessionUser(req);
     if (!user) return unauthorized();
 
     // Local mode: manage the plan by choosing a new one.
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: '/choose-plan?manage=1' });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const subscription = db.subscriptions.find((s) => s.userId === user.id && s.status !== 'canceled');
     if (!subscription?.stripeCustomerId) {
       return NextResponse.json(

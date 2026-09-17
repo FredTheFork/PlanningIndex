@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const db = getDb();
+    const db = await getDb();
     if (db.users.some((u) => u.email === normalizedEmail)) {
       return NextResponse.json(
         { error: 'An account with this email already exists.' },
@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
     db.profiles[user.id] = emptyProfile(user.id, companyName.trim());
 
     // Team membership keyed by company owner's email — keep it simple: own team.
-    saveDb();
+    await saveDb();
 
-    const token = createSession(user.id);
+    const token = await createSession(user.id);
     const res = NextResponse.json({
       user: { id: user.id, email: user.email },
       redirect: '/choose-plan',

@@ -4,9 +4,9 @@ import { getSessionUser, unauthorized, maxCouncilsFor } from '@/lib/server/auth'
 import type { DbProfile } from '@/lib/server/db';
 
 export async function GET(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  const db = getDb();
+  const db = await getDb();
   return NextResponse.json({ profile: db.profiles[user.id] ?? null });
 }
 
@@ -33,17 +33,17 @@ const EDITABLE_FIELDS: (keyof DbProfile)[] = [
 ];
 
 export async function PATCH(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
 
   try {
     const body = await req.json();
-    const db = getDb();
+    const db = await getDb();
     const profile = db.profiles[user.id];
     if (!profile) return NextResponse.json({ error: 'Profile not found.' }, { status: 404 });
 
     if (Array.isArray(body.councils)) {
-      const maxCouncils = maxCouncilsFor(user.id);
+      const maxCouncils = await maxCouncilsFor(user.id);
       if (body.councils.length > maxCouncils) {
         return NextResponse.json(
           { error: `Your plan allows up to ${maxCouncils} council${maxCouncils === 1 ? '' : 's'}.` },
@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest) {
         (profile as unknown as Record<string, unknown>)[field] = body[field];
       }
     }
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ profile });
   } catch {

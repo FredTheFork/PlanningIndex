@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://planningindex.co.u
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getSessionUser(req);
+    const user = await getSessionUser(req);
     if (!user) return unauthorized();
 
     const body = await req.json();
@@ -21,10 +21,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: '/contact' });
     }
 
-    // Local mode: Stripe is not configured, so membership is activated directly
-    // by the backend (development / self-hosted flow).
+    // Local mode: Stripe is not configured, so membership is activated
+    // directly by the backend (development / self-hosted flow). NEVER in
+    // production — a live site must not grant free memberships because a key
+    // is missing.
     if (!isStripeConfigured()) {
-      upsertSubscription(user.id, tier, cycle);
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Payments are temporarily unavailable. Please try again shortly.' },
+          { status: 503 }
+        );
+      }
+      await upsertSubscription(user.id, tier, cycle);
       return NextResponse.json({ url: '/checkout/success', dev: true });
     }
 
@@ -38,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     const stripe = getStripeClient();
 
-    const db = getDb();
+    const db = await getDb();
     let subscription = db.subscriptions.find((s) => s.userId === user.id && s.status !== 'canceled');
     if (!subscription) {
       subscription = {
@@ -60,7 +68,7 @@ export async function POST(req: NextRequest) {
         metadata: { user_id: user.id },
       });
       subscription.stripeCustomerId = customer.id;
-      saveDb();
+      await saveDb();
     }
 
     const session = await stripe.checkout.sessions.create({

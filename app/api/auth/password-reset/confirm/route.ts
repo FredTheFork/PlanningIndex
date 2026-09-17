@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const db = getDb();
+    const db = await getDb();
     const reset = db.passwordResets.find((r) => r.token === token && !r.used);
     if (!reset || new Date(reset.expiresAt).getTime() <= Date.now()) {
       return NextResponse.json(
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     reset.used = true;
     // Revoke all sessions — the user must sign in again with the new password.
     db.sessions = db.sessions.filter((s) => s.userId !== user.id);
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ success: true });
   } catch {
