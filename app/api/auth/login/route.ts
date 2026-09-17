@@ -16,14 +16,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const user = db.users.find((u) => u.email === normalizedEmail);
     if (!user || !verifyPassword(password, user.passwordHash)) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
     }
 
-    const token = createSession(user.id);
-    const subscription = findSubscription(user.id);
+    const token = await createSession(user.id);
+    const subscription = await findSubscription(user.id);
     const active =
       subscription &&
       (subscription.status === 'active' || subscription.status === 'trialing') &&

@@ -58,6 +58,11 @@ Stripe flow (once a real `sk_` key is delivered): `/api/checkout` creates a Stri
 
 ## Architecture notes
 - No local database needed — Supabase is hosted externally.
+- App state store (users/sessions/profiles/subscriptions/CRM): `lib/server/db.ts` keeps everything as one JSON document. When `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are configured (e.g. Vercel production) it persists to the single-row `app_state` table (`supabase/migrations/20260917190000_create_app_state.sql`, service-role only) — Vercel's filesystem is read-only, so the old file store caused every registration/login to 500. Without credentials it falls back to the local `.data/db.json` (dev). `getDb()`/`saveDb()` and the `lib/server/auth.ts` helpers are therefore **async** — always `await` them. Concurrency: each lambda keeps its own in-memory copy and `saveDb()` upserts the whole document, so concurrent writes across instances are last-write-wins (acceptable at launch traffic; a per-user relational store is the long-term fix).
+- Stripe price IDs can be overridden without code changes via `STRIPE_PRICE_<TIER>_<CYCLE>` env vars (e.g. `STRIPE_PRICE_REGIONAL_MONTHLY=price_live_...`) — `getStripePriceId()` in `lib/stripe/config.ts` checks them before the test-mode IDs baked into `lib/pricing.ts`.
+- Production safety gates: `/api/checkout` returns 503 instead of granting a free membership when Stripe is unconfigured in production; `/api/auth/password-reset` never returns the reset link in the API response in production (account-takeover risk) — it emails it via Resend when `RESEND_API_KEY` is set (from-address `RESET_EMAIL_FROM`, domain must be Resend-verified), otherwise logs it server-side.
+- `/checkout/success` polls `/api/auth/session` until the Stripe webhook activates the membership (up to ~50s) before redirecting to `/app` — a slow webhook would otherwise bounce a paying user back to `/choose-plan`.
+- Rate limiting (`lib/server/rate-limit.ts`) is in-memory — on serverless it is per-instance only.
 - Supabase migrations live in `supabase/migrations/` (applied on the hosted Supabase project, not locally).
 - Path alias `@/*` maps to repo root (see `tsconfig.json`).
 - `next.config.mjs` includes `allowedDevOrigins` for the Base44 preview origin.

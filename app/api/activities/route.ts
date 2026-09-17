@@ -4,13 +4,13 @@ import type { ActivityType, ActivityIcon } from '@/lib/mock/lead-activity';
 import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib/server/auth';
 
 export async function GET(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'crm'))
+  if (!(await hasFeatureAccess(user.id, 'crm')))
     return forbidden('Your plan does not include access to this feature.');
 
   const leadId = req.nextUrl.searchParams.get('leadId');
-  const db = getDb();
+  const db = await getDb();
   const activities = db.activities
     .filter((a) => a.userId === user.id && (!leadId || a.leadId === leadId))
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -18,9 +18,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'crm'))
+  if (!(await hasFeatureAccess(user.id, 'crm')))
     return forbidden('Your plan does not include access to this feature.');
 
   try {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'leadId, type and title are required.' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const lead = db.leads.find((l) => l.id === leadId && l.userId === user.id);
     if (!lead) return NextResponse.json({ error: 'Lead not found.' }, { status: 404 });
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       icon: (icon || 'plus') as ActivityIcon,
     };
     db.activities.push(activity);
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ activity }, { status: 201 });
   } catch {

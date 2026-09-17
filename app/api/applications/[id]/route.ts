@@ -12,9 +12,9 @@ import { getSessionUser, unauthorized, forbidden, hasFeatureAccess } from '@/lib
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
-  if (!hasFeatureAccess(user.id, 'crm'))
+  if (!(await hasFeatureAccess(user.id, 'crm')))
     return forbidden('Your plan does not include planning application search.');
   if (!isPlanningDataConfigured()) {
     return NextResponse.json(

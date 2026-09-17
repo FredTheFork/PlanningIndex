@@ -50,8 +50,8 @@ export function planPermissions(planTier: string | null): Permissions {
   }
 }
 
-export function createSession(userId: string): string {
-  const db = getDb();
+export async function createSession(userId: string): Promise<string> {
+  const db = await getDb();
   const token = randomBytes(32).toString('hex');
   const now = Date.now();
   // Prune expired sessions while we're here.
@@ -62,14 +62,14 @@ export function createSession(userId: string): string {
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + SESSION_TTL_MS).toISOString(),
   });
-  saveDb();
+  await await saveDb();
   return token;
 }
 
-export function getSessionUser(req: NextRequest): DbUser | null {
+export async function getSessionUser(req: NextRequest): Promise<DbUser | null> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const db = getDb();
+  const db = await getDb();
   const session = db.sessions.find((s) => s.token === token);
   if (!session || new Date(session.expiresAt).getTime() <= Date.now()) return null;
   return db.users.find((u) => u.id === session.userId) ?? null;
@@ -89,8 +89,11 @@ export function forbidden(message: string): NextResponse {
  * enforce it — an active membership is required, and the plan tier
  * determines which features (CRM, proposals) are available.
  */
-export function hasFeatureAccess(userId: string, feature: 'crm' | 'proposals'): boolean {
-  const db = getDb();
+export async function hasFeatureAccess(
+  userId: string,
+  feature: 'crm' | 'proposals'
+): Promise<boolean> {
+  const db = await getDb();
   const subscription = db.subscriptions.find(
     (s) =>
       s.userId === userId &&
@@ -101,8 +104,8 @@ export function hasFeatureAccess(userId: string, feature: 'crm' | 'proposals'): 
   return planPermissions(subscription.planTier)[feature];
 }
 
-export function maxCouncilsFor(userId: string): number {
-  const db = getDb();
+export async function maxCouncilsFor(userId: string): Promise<number> {
+  const db = await getDb();
   const subscription = db.subscriptions.find(
     (s) =>
       s.userId === userId &&
@@ -134,8 +137,8 @@ export function clearSessionCookie(res: NextResponse): NextResponse {
   return res;
 }
 
-export function findSubscription(userId: string): DbSubscription | null {
-  const db = getDb();
+export async function findSubscription(userId: string): Promise<DbSubscription | null> {
+  const db = await getDb();
   return (
     db.subscriptions.find(
       (s) => s.userId === userId && s.status !== 'canceled' && !s.cancelAtPeriodEnd
@@ -145,10 +148,10 @@ export function findSubscription(userId: string): DbSubscription | null {
   );
 }
 
-export function buildSessionContext(user: DbUser): SessionContext {
-  const db = getDb();
+export async function buildSessionContext(user: DbUser): Promise<SessionContext> {
+  const db = await getDb();
   const profile = db.profiles[user.id] ?? null;
-  const subscription = findSubscription(user.id);
+  const subscription = await findSubscription(user.id);
   const membership: Membership | null = subscription
     ? {
         planTier: subscription.planTier,
@@ -169,13 +172,13 @@ export function buildSessionContext(user: DbUser): SessionContext {
   };
 }
 
-export function upsertSubscription(
+export async function upsertSubscription(
   userId: string,
   planTier: string,
   billingCycle: string,
   status: 'active' | 'trialing' = 'active'
-): DbSubscription {
-  const db = getDb();
+): Promise<DbSubscription> {
+  const db = await getDb();
   const periodEnd = new Date();
   periodEnd.setMonth(periodEnd.getMonth() + (billingCycle === 'annual' ? 12 : 1));
 
@@ -198,6 +201,6 @@ export function upsertSubscription(
     subscription.currentPeriodEnd = periodEnd.toISOString();
     subscription.cancelAtPeriodEnd = false;
   }
-  saveDb();
+  await await saveDb();
   return subscription;
 }

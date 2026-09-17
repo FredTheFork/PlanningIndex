@@ -3,7 +3,7 @@ import { getDb, saveDb, hashPassword } from '@/lib/server/db';
 import { getSessionUser, unauthorized, SESSION_COOKIE } from '@/lib/server/auth';
 
 export async function PATCH(req: NextRequest) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return unauthorized();
 
   try {
@@ -15,13 +15,13 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const db = getDb();
+    const db = await getDb();
     user.passwordHash = hashPassword(newPassword);
     // Revoke all other sessions (they may be on other devices).
     db.sessions = db.sessions.filter(
       (s) => s.userId !== user.id || s.token === req.cookies.get(SESSION_COOKIE)?.value
     );
-    saveDb();
+    await saveDb();
 
     return NextResponse.json({ success: true });
   } catch {

@@ -20,12 +20,12 @@ function mapStatus(status: Stripe.Subscription.Status): DbSubscription['status']
   return 'past_due';
 }
 
-function findSubscription(
+async function findSubscription(
   stripeSubscriptionId: string | null,
   stripeCustomerId: string | null,
   userId: string | null
-): DbSubscription | undefined {
-  const db = getDb();
+): Promise<DbSubscription | undefined> {
+  const db = await getDb();
   return (
     (stripeSubscriptionId &&
       db.subscriptions.find((s) => s.stripeSubscriptionId === stripeSubscriptionId)) ||
@@ -81,9 +81,9 @@ export async function POST(req: NextRequest) {
         const stripe = getStripeClient();
         const sub = await stripe.subscriptions.retrieve(session.subscription);
 
-        const db = getDb();
+        const db = await getDb();
         const userId = session.metadata?.user_id ?? null;
-        let record = findSubscription(
+        let record = await findSubscription(
           sub.id,
           customerIdOf(session.customer),
           userId
@@ -110,13 +110,13 @@ export async function POST(req: NextRequest) {
         record.cancelAtPeriodEnd = sub.cancel_at_period_end;
         record.stripeSubscriptionId = sub.id;
         record.stripeCustomerId = customerIdOf(sub.customer) ?? record.stripeCustomerId ?? null;
-        saveDb();
+        await saveDb();
         break;
       }
 
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
-        const record = findSubscription(sub.id, null, sub.metadata?.user_id ?? null);
+        const record = await findSubscription(sub.id, null, sub.metadata?.user_id ?? null);
         if (!record) break;
 
         record.status = mapStatus(sub.status);
@@ -124,24 +124,24 @@ export async function POST(req: NextRequest) {
         record.cancelAtPeriodEnd = sub.cancel_at_period_end;
         if (sub.metadata?.plan_tier) record.planTier = sub.metadata.plan_tier;
         if (sub.metadata?.billing_cycle) record.billingCycle = sub.metadata.billing_cycle;
-        saveDb();
+        await saveDb();
         break;
       }
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
-        const record = findSubscription(sub.id, null, sub.metadata?.user_id ?? null);
+        const record = await findSubscription(sub.id, null, sub.metadata?.user_id ?? null);
         if (!record) break;
 
         record.status = 'canceled';
         record.cancelAtPeriodEnd = false;
-        saveDb();
+        await saveDb();
         break;
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        const record = findSubscription(
+        const record = await findSubscription(
           typeof invoice.subscription === 'string' ? invoice.subscription : null,
           customerIdOf(invoice.customer),
           null
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
         if (!record) break;
 
         record.status = 'past_due';
-        saveDb();
+        await saveDb();
         break;
       }
 
